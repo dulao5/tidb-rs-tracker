@@ -7,11 +7,21 @@
 //
 //	<test pkg dir> <test name> <func file> <func name>
 //
-// Usage: covmap -repo <tidb root> -pkg pkg/tablecodec [-coverpkg ./pkg/...] [-tests A,B]
+// With -status, the outcome of each test's run is written as TSV too:
+//
+//	<test pkg dir> <test name> <status> <detail>
+//
+// status is ok (the test passed; its mapping is complete, possibly empty),
+// failed (the test failed, panicked or timed out; its mapping is a lower
+// bound) or skipped (t.Skip, or not compiled in with these build tags).
+//
+// Usage: covmap -repo <tidb root> -pkg pkg/tablecodec [-coverpkg ./pkg/...] [-tests A,B] [-status f]
 package main
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -30,7 +40,8 @@ import (
 
 const modulePrefix = "github.com/pingcap/tidb/"
 
-var testFuncRE = regexp.MustCompile(`(?m)^func (Test[A-Z_0-9]\w*)\(t \*testing\.T\)`)
+// The parameter may have any name or none: func TestX(tt *testing.T), func TestX(*testing.T).
+var testFuncRE = regexp.MustCompile(`(?m)^func (Test[A-Z_0-9]\w*)\((?:\w+ )?\*testing\.T\)`)
 
 func main() {
 	repo := flag.String("repo", "", "tidb repository root")
@@ -39,6 +50,7 @@ func main() {
 	only := flag.String("tests", "", "comma separated test names (default: all in package)")
 	tags := flag.String("tags", "intest,deadlock", "build tags (TiDB testkit requires intest)")
 	timeout := flag.Duration("timeout", 5*time.Minute, "per-test timeout")
+	statusPath := flag.String("status", "", "write each test's run outcome to this TSV file")
 	flag.Parse()
 	if *repo == "" || *pkg == "" {
 		log.Fatal("-repo and -pkg are required")
@@ -75,7 +87,7 @@ func main() {
 	}
 
 	pkgDir := filepath.Join(*repo, *pkg)
-	baseline, err := run(bin, pkgDir, tmp, "^$", *timeout)
+	baseline, _, err := run(bin, pkgDir, tmp, "^$", *timeout)
 	if err != nil {
 		// Some packages fail even with no tests selected (e.g. goleak in
 		// TestMain flags a goroutine that only the empty run leaves behind).
@@ -86,17 +98,29 @@ func main() {
 		log.Printf("baseline run (profile kept): %v", err)
 	}
 
+	var sw *bufio.Writer
+	if *statusPath != "" {
+		f, err := os.Create(*statusPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		sw = bufio.NewWriter(f)
+		defer sw.Flush()
+	}
+
 	idx := newFuncIndex(*repo)
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	for _, t := range tests {
 		start := time.Now()
-		blocks, err := run(bin, pkgDir, tmp, "^"+t+"$", *timeout)
+		blocks, out, err := run(bin, pkgDir, tmp, "^"+t+"$", *timeout)
 		if err != nil {
 			// Keep going: a failing test still tells us what it touched, but
 			// flag it so it is not mistaken for a clean mapping.
 			log.Printf("%s: %v", t, err)
 		}
+		status, detail := outcome(t, out, blocks != nil, err)
 		funcs := map[string]struct{}{}
 		for b := range blocks {
 			if _, ok := baseline[b]; ok {
@@ -115,6 +139,13 @@ func main() {
 			fmt.Fprintf(w, "%s\t%s\t%s\n", *pkg, t, f)
 		}
 		log.Printf("%s: %d funcs in %s", t, len(keys), time.Since(start).Round(time.Millisecond))
+		if status == "ok" && len(keys) == 0 && detail == "" {
+			detail = "no functions reached beyond package init"
+		}
+		log.Printf("%s: status %s %s", t, status, detail)
+		if sw != nil {
+			fmt.Fprintf(sw, "%s\t%s\t%s\t%s\n", *pkg, t, status, detail)
+		}
 	}
 }
 
@@ -154,18 +185,122 @@ type block struct {
 	line int
 }
 
-func run(bin, dir, tmp, filter string, timeout time.Duration) (map[block]struct{}, error) {
+// run runs the test binary with a -test.run filter. It returns the covered
+// blocks (nil if no profile was written), the combined -test.v output, and
+// the run error, if any.
+func run(bin, dir, tmp, filter string, timeout time.Duration) (map[block]struct{}, []byte, error) {
 	prof := filepath.Join(tmp, "cover.out")
 	_ = os.Remove(prof)
-	cmd := exec.Command(bin, "-test.run", filter, "-test.count=1",
+	cmd := exec.Command(bin, "-test.run", filter, "-test.count=1", "-test.v",
 		"-test.timeout", timeout.String(), "-test.coverprofile", prof)
 	cmd.Dir = dir // tests read testdata relative to the package dir
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
 	runErr := cmd.Run()
 	blocks, err := readProfile(prof)
 	if err != nil {
-		return nil, err
+		if runErr != nil {
+			err = fmt.Errorf("%v (no coverage profile: %v)", runErr, err)
+		}
+		return nil, out.Bytes(), err
 	}
-	return blocks, runErr
+	return blocks, out.Bytes(), runErr
+}
+
+// outcome classifies one test run from its -test.v output.
+func outcome(test string, out []byte, haveProfile bool, runErr error) (status, detail string) {
+	var result, msg, panicMsg string
+	lines := strings.Split(string(out), "\n")
+	runAt := 0
+	for i, l := range lines {
+		if strings.HasPrefix(l, "=== RUN   "+test) && strings.TrimSpace(l[len("=== RUN   "):]) == test {
+			runAt = i
+		}
+		for _, r := range []string{"PASS", "FAIL", "SKIP"} {
+			if strings.HasPrefix(l, "--- "+r+": "+test+" ") {
+				result = r
+				msg = testMessage(lines[runAt:i], r == "SKIP")
+			}
+		}
+		if panicMsg == "" && strings.HasPrefix(l, "panic: ") {
+			panicMsg = l
+		}
+	}
+	exit := ""
+	if runErr != nil {
+		var ee *exec.ExitError
+		if errors.As(runErr, &ee) {
+			exit = ee.String()
+		} else {
+			exit = runErr.Error()
+		}
+	}
+	noProfile := ""
+	if !haveProfile {
+		noProfile = "no coverage profile; "
+	}
+	switch {
+	case strings.HasPrefix(panicMsg, "panic: test timed out"):
+		return "failed", clean(noProfile + "timeout: " + strings.TrimPrefix(panicMsg, "panic: "))
+	case result == "SKIP":
+		return "skipped", clean(msg)
+	case result == "FAIL":
+		if panicMsg != "" {
+			msg = panicMsg
+		}
+		return "failed", clean(noProfile + exit + ": " + msg)
+	case result == "" && panicMsg != "":
+		return "failed", clean(noProfile + exit + ": " + panicMsg)
+	case result == "" && runErr == nil && bytes.Contains(out, []byte("no tests to run")):
+		return "skipped", "not compiled in (build tags)"
+	case result == "":
+		return "failed", clean(noProfile + exit + ": no test result")
+	case !haveProfile:
+		return "failed", clean(noProfile + exit)
+	case runErr != nil:
+		// The test passed but the process failed afterwards (e.g. a goleak
+		// check in TestMain). The profile was written by then, so the
+		// mapping is complete.
+		return "ok", clean("test passed; process " + exit + " after it")
+	}
+	return "ok", ""
+}
+
+var logLineRE = regexp.MustCompile(`^\s+\S+\.go:\d+: `)
+
+// testMessage picks the reason from the log lines a test printed before its
+// result line: the last t.Log/t.Skip line for a skip, the first testify
+// "Error:" (or else the first t.Error line) for a failure.
+func testMessage(lines []string, skip bool) string {
+	msg := ""
+	for i, l := range lines {
+		if !logLineRE.MatchString(l) {
+			continue
+		}
+		m := strings.TrimSpace(l)
+		if skip {
+			msg = m
+			continue
+		}
+		for _, n := range lines[i+1 : min(i+12, len(lines))] {
+			if t := strings.TrimSpace(n); strings.HasPrefix(t, "Error:") {
+				return m + " " + t
+			}
+		}
+		if msg == "" {
+			msg = m
+		}
+	}
+	return msg
+}
+
+// clean makes s fit one TSV field.
+func clean(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 200 {
+		s = s[:200]
+	}
+	return s
 }
 
 func readProfile(path string) (map[block]struct{}, error) {
