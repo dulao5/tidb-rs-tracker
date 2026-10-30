@@ -30,6 +30,10 @@ SCHEMA = os.path.join(ROOT, "sql", "tracker.sql")
 # coverage release asset.
 MIN_WEIGHT = 0.01
 
+# cov_status detail of a passing test that reached nothing beyond package
+# init (written by cmd/covmap).
+EMPTY_DETAIL = "no functions reached beyond package init"
+
 # file -> (columns, key columns). Rows are sorted by the key columns.
 TABLES = {
     "source.tsv": (["key", "value"], ["key"]),
@@ -222,8 +226,13 @@ def render_reports(db):
     )[0]
     scope_pkgs = q("SELECT count(*) FROM scope WHERE phase = 'P1'")[0][0]
     cov = dict(q("SELECT coverage, count(*) FROM unit_tests WHERE phase = 'P1' GROUP BY coverage"))
-    ok, failed, notrun = cov.get("ok", 0), cov.get("failed", 0), cov.get("not run", 0)
-    scope_tests = ok + failed + notrun
+    ok, failed, skipped, notrun = (cov.get(k, 0) for k in ("ok", "failed", "skipped", "not run"))
+    scope_tests = sum(cov.values())
+    empty = q(
+        "SELECT count(*) FROM unit_tests u JOIN cov_status c ON c.pkg = u.pkg AND c.test = u.name"
+        " WHERE u.phase = 'P1' AND u.coverage = 'ok' AND c.detail = ?",
+        EMPTY_DETAIL,
+    )[0][0]
     feats, links = q("SELECT (SELECT count(*) FROM features), (SELECT count(*) FROM test_feature)")[0]
 
     s = ["# Summary", "", head]
@@ -246,7 +255,9 @@ def render_reports(db):
     s.append(
         "P1 is the set of packages relevant to the prototype (`data/scope.tsv`). "
         "Each test in it is run alone with coverage to find the Go functions it reaches. "
-        "A failed run (usually a test that needs failpoints) stopped early, so its mapping is incomplete.\n"
+        "Tests that failed or produced no coverage in the full run were re-run with failpoints enabled. "
+        "A test that still fails stopped early, so its mapping is incomplete (a lower bound). "
+        "A skipped test reached nothing under this build (`t.Skip`, e.g. next-gen kernel only).\n"
     )
     s.append(
         table(
@@ -255,9 +266,29 @@ def render_reports(db):
                 ["Packages in P1", scope_pkgs, ""],
                 ["Unit tests in P1 packages", scope_tests, ""],
                 ["Coverage run ok", ok, pct(ok, scope_tests)],
+                ["… reached no function beyond package init", empty, pct(empty, scope_tests)],
                 ["Coverage run failed (mapping incomplete)", failed, pct(failed, scope_tests)],
-                ["No coverage output (not run, skipped, or nothing reached)", notrun, pct(notrun, scope_tests)],
+                ["Skipped (no mapping)", skipped, pct(skipped, scope_tests)],
+                ["No coverage outcome", notrun, pct(notrun, scope_tests)],
             ],
+        )
+    )
+
+    s += ["", "### Failed and skipped P1 tests", ""]
+    s.append("Reason recorded per test in `data/cov_status.tsv` (`detail`).\n")
+    s.append(
+        table(
+            ["status", "package", "test", "detail"],
+            [
+                [st, f"`{pkg}`", f"`{name}`", (detail or "").replace("|", "\\|")]
+                for st, pkg, name, detail in q(
+                    "SELECT c.status, c.pkg, c.test, c.detail FROM unit_tests u"
+                    " JOIN cov_status c ON c.pkg = u.pkg AND c.test = u.name"
+                    " WHERE u.phase = 'P1' AND c.status IN ('failed', 'skipped')"
+                    " GROUP BY c.pkg, c.test ORDER BY c.status, c.pkg, c.test"
+                )
+            ],
+            ["l", "l", "l", "l"],
         )
     )
 

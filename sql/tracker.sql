@@ -29,12 +29,17 @@ CREATE TABLE features (
   symbols TEXT NOT NULL
 );
 
--- Outcome of each unit test's coverage run.
+-- Outcome of each unit test's coverage run (the failpoint re-run's, if any).
+--   ok       the test passed; its mapping is complete. detail is set if it
+--            reached no function beyond package init, or if the process
+--            failed after the test passed (e.g. a goleak check in TestMain).
+--   failed   failed, panicked or timed out: the mapping is a lower bound.
+--   skipped  t.Skip (detail = message), or not compiled in with these tags.
 CREATE TABLE cov_status (
   pkg    TEXT NOT NULL,
   test   TEXT NOT NULL,
-  status TEXT NOT NULL,         -- ok / failed (failed = mapping incomplete)
-  detail TEXT,
+  status TEXT NOT NULL,         -- ok / failed / skipped (see below)
+  detail TEXT,                  -- reason: error, skip message, or a note on an ok run
   PRIMARY KEY (pkg, test)
 );
 

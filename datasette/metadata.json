@@ -7,7 +7,7 @@
         "tests": {"description": "Go unit tests and integration test files of TiDB at data/source.tsv tidb_commit."},
         "features": {"description": "v0 features: one per Go source file; symbols = functions in it reached by some test."},
         "test_feature": {"description": "Which features a test exercises. weight = the feature's share of the test's specificity mass; links below 0.01 are omitted."},
-        "cov_status": {"description": "Outcome of each test's coverage run. failed = run stopped early, mapping incomplete."},
+        "cov_status": {"description": "Outcome of each test's coverage run (the failpoint re-run's, if any). ok = mapping complete; failed = run stopped early, mapping incomplete; skipped = t.Skip or not compiled in. detail = reason."},
         "scope": {"description": "Packages in scope for a tidb-rs phase (P1 = prototype)."}
       },
       "queries": {
@@ -20,8 +20,8 @@
           "sql": "SELECT tf.feature, tf.weight, f.funcs FROM test_feature tf JOIN features f ON f.feature = tf.feature WHERE tf.pkg = :pkg AND tf.test = :test ORDER BY tf.weight DESC"
         },
         "incomplete_mappings": {
-          "title": "Tests whose coverage run failed (need failpoints, E3)",
-          "sql": "SELECT c.pkg, c.test, c.detail, t.uses_fp FROM cov_status c JOIN tests t ON t.kind = 'unit' AND t.pkg = c.pkg AND t.name = c.test WHERE c.status = 'failed' ORDER BY c.pkg, c.test"
+          "title": "Tests whose mapping is incomplete or missing (failed or skipped), with the reason",
+          "sql": "SELECT c.status, c.pkg, c.test, c.detail, t.uses_fp FROM cov_status c JOIN tests t ON t.kind = 'unit' AND t.pkg = c.pkg AND t.name = c.test WHERE c.status IN ('failed', 'skipped') ORDER BY c.status, c.pkg, c.test"
         }
       }
     }

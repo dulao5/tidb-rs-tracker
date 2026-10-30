@@ -92,11 +92,11 @@ CREATE TABLE IF NOT EXISTS test_func (
   PRIMARY KEY (test_id, func_id)
 );
 
--- Outcome of each test's coverage run. A test that failed (typically one that
--- needs failpoints enabled) stopped early, so its test_func rows are a lower
--- bound: treat its feature mapping as incomplete.
+-- Outcome of each test's coverage run. A test that failed stopped early, so
+-- its test_func rows are a lower bound: treat its feature mapping as
+-- incomplete. skipped = t.Skip or not compiled in. See sql/tracker.sql.
 CREATE TABLE IF NOT EXISTS cov_status (
   test_id INTEGER PRIMARY KEY REFERENCES go_test(id),
-  status  TEXT NOT NULL,               -- ok / failed
+  status  TEXT NOT NULL,               -- ok / failed / skipped
   detail  TEXT
 );
