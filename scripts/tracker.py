@@ -63,7 +63,7 @@ TABLES = {
         ["class", "outcome", "reason", "statements", "files"], ["class", "outcome", "reason"]
     ),
     "rs_integration_mismatch.tsv": (
-        ["file", "line", "conn", "class", "kind", "detail", "sql"], ["file", "line", "conn"]
+        ["file", "line", "conn", "class", "kind", "b_rejected", "detail", "sql"], ["file", "line", "conn"]
     ),
 }
 
@@ -157,7 +157,7 @@ def cmd_export(args):
 
 def _norm(text):
     """Groups messages that differ only in names and numbers."""
-    text = re.sub(r"'[^']*'", "?", text)
+    text = re.sub(r"(?<![A-Za-z])'[^']*'", "?", text)
     text = re.sub(r"`[^`]*`", "?", text)
     text = re.sub(r"\b\d+(\.\d+)?\b", "N", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -165,7 +165,7 @@ def _norm(text):
 
 
 def rs_reason(outcome, kind, detail):
-    """Short reason for a statement outcome (rs_integration_reason.tsv)."""
+    """Short reason for a statement outcome (rs_integration_reason.tsv); "" = none."""
     if outcome == "match":
         return ""
     if outcome == "unsupported":
@@ -176,9 +176,10 @@ def rs_reason(outcome, kind, detail):
     if outcome == "mismatch":
         return kind
     if outcome == "b_error":
-        return f"{kind}: {_norm(detail)}" if kind else _norm(detail)
+        return f"{kind}: {_norm(detail)}" if kind.isdigit() or kind == "client" else _norm(detail)
     if outcome == "a_error":
-        return _norm(detail)
+        code, sep, msg = detail.partition(": ")
+        return f"{code}: {_norm(msg)}" if sep and (code.isdigit() or code == "client") else _norm(detail)
     return kind  # skipped: why; write: "session" or ""
 
 
@@ -193,15 +194,24 @@ def cmd_import_integration(args):
     cols = TABLES["rs_integration.tsv"][0]
     out["rs_integration.tsv"] = [[r[c] for c in cols] for r in rows("files.tsv")]
     stmts = rows("statements.tsv")
+    # Session statements B had rejected in the connection before each mismatch.
+    rejected = {}
+    with open(os.path.join(src, "mismatches.jsonl"), encoding="utf-8") as f:
+        for line in f:
+            if not line.endswith("\n"):
+                break  # a run that is still writing
+            m = json.loads(line)
+            rejected[(m["file"], str(m["line"]), m["conn"])] = len(m.get("b_rejected_session_statements", []))
     reasons = collections.defaultdict(lambda: [0, set()])
     mism = []
     for r in stmts:
-        reason = rs_reason(r["outcome"], r["kind"], r["detail"])
+        reason = rs_reason(r["outcome"], r["kind"], r["detail"]) or "-"
         e = reasons[(r["class"], r["outcome"], reason)]
         e[0] += 1
         e[1].add(r["file"])
         if r["outcome"] == "mismatch":
-            mism.append([r["file"], r["line"], r["conn"], r["class"], r["kind"], r["detail"][:300], r["sql"][:500]])
+            n_rej = rejected.get((r["file"], r["line"], r["conn"]), 0)
+            mism.append([r["file"], r["line"], r["conn"], r["class"], r["kind"], n_rej, r["detail"][:300] or "-", r["sql"][:500]])
     out["rs_integration_reason.tsv"] = [[c, o, why, n, len(f)] for (c, o, why), (n, f) in reasons.items()]
     out["rs_integration_mismatch.tsv"] = mism
     for name, data in out.items():
@@ -542,17 +552,18 @@ def render_integration(q):
         "same rows, different order under ORDER BY; `columns`: column names or count; `metadata`: other "
         "column metadata (type, length, flags, charset); `error`: a different error code, or B answered "
         "where A failed; `shape`: result set vs OK; `warnings`: different SHOW WARNINGS under "
-        "`--enable_warnings`.\n"
+        "`--enable_warnings`. `B rej.`: session statements (SET, USE, ...) B had rejected earlier in "
+        "that connection, so its session may differ from A's (e.g. SET NAMES gbk).\n"
     )
     kinds = q("SELECT kind, count(*) FROM rs_integration_mismatch GROUP BY kind ORDER BY count(*) DESC, kind")
     if kinds:
         o.append(table(["kind", "statements"], kinds))
         o.append("")
         o.append(table(
-            ["file:line", "kind", "statement", "difference"],
-            [[f"`{f}:{l}`" + ("" if c == "default" else f" ({c})"), k, f"`{_cell(sq, 90)}`", _cell(d, 160)]
-             for f, l, c, k, d, sq in q("SELECT file, line, conn, kind, detail, sql FROM rs_integration_mismatch ORDER BY file, line")],
-            ["l", "l", "l", "l"],
+            ["file:line", "kind", "B rej.", "statement", "difference"],
+            [[f"`{f}:{l}`" + ("" if c == "default" else f" ({c})"), k, rj, f"`{_cell(sq, 90)}`", _cell(d, 160)]
+             for f, l, c, k, rj, d, sq in q("SELECT file, line, conn, kind, b_rejected, detail, sql FROM rs_integration_mismatch ORDER BY file, line")],
+            ["l", "l", "r", "l", "l"],
         ))
     else:
         o.append("None.")

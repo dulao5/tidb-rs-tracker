@@ -86,7 +86,7 @@ CREATE TABLE rs_integration (
 CREATE TABLE rs_integration_reason (
   class      TEXT NOT NULL,          -- select / show / explain / session / write
   outcome    TEXT NOT NULL,
-  reason     TEXT NOT NULL,
+  reason     TEXT NOT NULL,          -- "-" when there is none (match, plain write)
   statements INTEGER NOT NULL,
   files      INTEGER NOT NULL,
   PRIMARY KEY (class, outcome, reason)
@@ -101,6 +101,7 @@ CREATE TABLE rs_integration_mismatch (
   conn   TEXT NOT NULL,
   class  TEXT NOT NULL,
   kind   TEXT NOT NULL,
+  b_rejected INTEGER NOT NULL,     -- session statements B had rejected earlier in this connection
   detail TEXT NOT NULL,
   sql    TEXT NOT NULL,
   PRIMARY KEY (file, line, conn)
