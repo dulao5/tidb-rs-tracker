@@ -5,6 +5,7 @@
 # Usage: [OUT=covmap] [TESTS=list.tsv] run_covmap.sh <tidb root> pkg/a pkg/b ...
 #   OUT    output dir under work/ (default covmap; failpoint re-runs use covmap-fp)
 #   TESTS  TSV of <pkg> <test>: run only the listed tests of each package
+#   TIMEOUT per-test timeout (covmap -timeout, default 5m)
 set -u
 repo=$1; shift
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -24,8 +25,10 @@ for p in "$@"; do
   # owned by one runner, and the per-process tmp files keep outputs apart.
   mkdir "$out.lock" 2>/dev/null || { echo "busy $p"; continue; }
   echo "== $p $(date +%T)"
-  (cd /tmp && CC=/usr/bin/clang CXX=/usr/bin/clang++ "$root/work/bin/covmap" -repo "$repo" -pkg "$p" \
-     -tests "$only" -status "$out_dir/status/$b.tsv.$$.tmp" \
+  # A short TMPDIR: tests put unix sockets in t.TempDir(), and macOS's default
+  # /var/folders/... path exceeds the 104-byte socket path limit.
+  (cd /tmp && TMPDIR=/tmp CC=/usr/bin/clang CXX=/usr/bin/clang++ "$root/work/bin/covmap" -repo "$repo" -pkg "$p" \
+     -tests "$only" -timeout "${TIMEOUT:-5m}" -status "$out_dir/status/$b.tsv.$$.tmp" \
      > "$out.$$.tmp" 2> "$out_dir/logs/$b.log") &&
     mv "$out.$$.tmp" "$out" && mv "$out_dir/status/$b.tsv.$$.tmp" "$out_dir/status/$b.tsv" ||
     { echo "FAILED $p"; rm -f "$out.$$.tmp" "$out_dir/status/$b.tsv.$$.tmp"; }
