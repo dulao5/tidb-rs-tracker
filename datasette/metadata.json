@@ -4,11 +4,33 @@
   "databases": {
     "tracker": {
       "tables": {
-        "tests": {"description": "Go unit tests and integration test files of TiDB at data/source.tsv tidb_commit."},
-        "features": {"description": "v0 features: one per Go source file; symbols = functions in it reached by some test."},
-        "test_feature": {"description": "Which features a test exercises. weight = the feature's share of the test's specificity mass; links below 0.01 are omitted."},
-        "cov_status": {"description": "Outcome of each test's coverage run (the failpoint re-run's, if any). ok = mapping complete; failed = run stopped early, mapping incomplete; skipped = t.Skip or not compiled in. detail = reason."},
-        "scope": {"description": "Packages in scope for a tidb-rs phase (P1 = prototype)."}
+        "tests": {
+          "description": "Go unit tests and integration test files of TiDB at data/source.tsv tidb_commit."
+        },
+        "features": {
+          "description": "v0 features: one per Go source file; symbols = functions in it reached by some test."
+        },
+        "test_feature": {
+          "description": "Which features a test exercises. weight = the feature's share of the test's specificity mass; links below 0.01 are omitted."
+        },
+        "cov_status": {
+          "description": "Outcome of each test's coverage run (the failpoint re-run's, if any). ok = mapping complete; failed = run stopped early, mapping incomplete; skipped = t.Skip or not compiled in. detail = reason."
+        },
+        "scope": {
+          "description": "Packages in scope for a tidb-rs phase (P1 = prototype)."
+        },
+        "rs_run": {
+          "description": "R1: the integration-test run imported into rs_* (tidb-rs commit, Go TiDB version, test files' TiDB commit, date, runner, duration)."
+        },
+        "rs_integration": {
+          "description": "R1: per integration test file, statement outcomes when run in hybrid mode (all statements on Go TiDB, reads also on tidb-rs, compared live). statements = match + mismatch + unsupported + b_error + a_error + skipped + write; score = match / (match + mismatch + unsupported + b_error)."
+        },
+        "rs_integration_reason": {
+          "description": "R1: outcome counts by statement class and reason: tidb-rs's unsupported message, its error, the mismatch kind, Go TiDB's own error (a_error) or why a read was skipped. Names and numbers are replaced by ? and N."
+        },
+        "rs_integration_mismatch": {
+          "description": "R1: every read where tidb-rs answered differently from Go TiDB. kind: rows, order, columns, metadata, error, shape, warnings."
+        }
       },
       "queries": {
         "tests_for_feature": {
@@ -22,6 +44,18 @@
         "incomplete_mappings": {
           "title": "Tests whose mapping is incomplete or missing (failed or skipped), with the reason",
           "sql": "SELECT c.status, c.pkg, c.test, c.detail, t.uses_fp FROM cov_status c JOIN tests t ON t.kind = 'unit' AND t.pkg = c.pkg AND t.name = c.test WHERE c.status IN ('failed', 'skipped') ORDER BY c.status, c.pkg, c.test"
+        },
+        "rs_files_by_share": {
+          "title": "Integration files by share of scored reads that match (R1)",
+          "sql": "SELECT file, reads, match + mismatch + unsupported + b_error AS scored, match, round(100.0 * match / NULLIF(match + mismatch + unsupported + b_error, 0), 1) AS share, mismatch, unsupported, b_error, a_error, skipped FROM rs_integration ORDER BY share DESC, scored DESC"
+        },
+        "rs_mismatches": {
+          "title": "Reads where tidb-rs answered differently (R1)",
+          "sql": "SELECT file, line, conn, kind, detail, sql FROM rs_integration_mismatch ORDER BY kind, file, line"
+        },
+        "rs_unsupported_reasons": {
+          "title": "Why tidb-rs answered 'not supported' (R1)",
+          "sql": "SELECT reason, sum(statements) AS statements, sum(files) AS file_hits FROM rs_integration_reason WHERE outcome = 'unsupported' GROUP BY reason ORDER BY statements DESC"
         }
       }
     }

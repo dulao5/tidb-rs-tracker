@@ -6,7 +6,7 @@ It answers three questions:
 
 1. **What does TiDB test?** Every Go unit test and integration test file in TiDB.
 2. **What does each test exercise?** A per-test coverage map from tests to Go functions, grouped into features.
-3. **How far is tidb-rs?** Which of those tests and features tidb-rs passes (not yet collected, see R1 below).
+3. **How far is tidb-rs?** Which of those tests and features tidb-rs passes. R1: per-statement results of TiDB's integration tests run against tidb-rs ([report](reports/integration.md)).
 
 The data covers TiDB `master` at the commit in [`data/source.tsv`](data/source.tsv).
 
@@ -14,6 +14,7 @@ The data covers TiDB `master` at the commit in [`data/source.tsv`](data/source.t
 
 - [Summary](reports/summary.md): test counts, coverage-mapping progress, tests by area.
 - [Features](reports/features.md): each feature and how many tests exercise it as a main subject.
+- [Integration tests on tidb-rs](reports/integration.md) (R1): share of read statements where tidb-rs answers like Go TiDB, per file, with every mismatch and the top reasons for the rest.
 
 Reports are generated from `data/` and CI fails if they are out of date.
 
@@ -49,6 +50,10 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `features.tsv` | feature | v0 features: one per Go source file, with the functions in it that some test reaches. |
 | `cov_status.tsv` | pkg, test | Outcome of each test's coverage run: `ok` (mapping complete), `failed` (mapping incomplete, a lower bound) or `skipped` (`t.Skip` or not compiled in; no mapping), with the reason in `detail`. |
 | `test_feature.tsv` | pkg, test, feature | Which features a test exercises, with a weight (see below). |
+| `rs_run.tsv` | key | R1 run: tidb-rs commit, Go TiDB version, TiDB commit of the test files, date, runner, duration. |
+| `rs_integration.tsv` | file | R1: per integration test file, statements, reads and outcomes (match, mismatch, unsupported, b_error, a_error, skipped, write). |
+| `rs_integration_reason.tsv` | class, outcome, reason | R1: outcome counts by statement class and reason (unsupported message, error, mismatch kind, skip reason). |
+| `rs_integration_mismatch.tsv` | file, line, conn | R1: every read where tidb-rs answered differently from Go TiDB. |
 
 ### Why text files and not a database in git
 
@@ -62,6 +67,17 @@ The raw coverage (17M test→function rows, 1.9 GB) is too large for git. It is 
 ### Feature weights
 
 A test reaches thousands of functions, most of them shared plumbing (session setup, bootstrap, planner entry). Each function gets a specificity `idf = ln(N / n)`, where `N` is the number of mapped tests and `n` the number that reach the function. Plumbing reached by almost every test scores near zero. A test's weight for a feature is that feature's share of the test's total specificity. `test_feature.tsv` keeps links with weight ≥ 0.01 (about 51k of 2.1M); every mapped test keeps at least one.
+
+## tidb-rs integration results (R1)
+
+The run happens in tidb-rs, which owns the binary, the cluster scripts and the A/B harness: `scripts/integrationtest.sh` there starts a tiup playground, joins tidb-rs, runs `ab integrationtest` over `tests/integrationtest/t` and writes an output directory (see tidb-rs `tools/ab/README.md`, "Integration tests"). Import it here:
+
+```sh
+python3 scripts/tracker.py import-integration <tidb-rs>/target/integrationtest   # -> data/rs_*.tsv
+python3 scripts/tracker.py report
+```
+
+Per-statement detail (about 52k rows) goes to `work/rs_statements.tsv`, which is not committed; the committed tables keep per-file counts, reasons and every mismatch. In CI the run would be a tidb-rs job (Linux, tiup) whose output directory is an artifact this repo imports.
 
 ## Refreshing the data
 
@@ -109,7 +125,7 @@ Every phase records its data-quality numbers (mapping rate, failure rate, spot-c
 
 | phase | content | status |
 | --- | --- | --- |
-| R1 | Collect tidb-rs results per Go test / integration file (pass, fail, unsupported) from tidb-rs CI into `data/`. | todo |
+| R1 | Collect tidb-rs results per Go test / integration file (pass, fail, unsupported) from tidb-rs CI into `data/`. | integration files: first run imported ([report](reports/integration.md)); Go unit tests: todo |
 | R2 | Progress reports per feature and area: share of weighted tests that pass. | todo |
 | R3 | Publish a browsable site (Datasette Lite on GitHub Pages): https://dulao5.github.io/tidb-rs-tracker/ | done |
 
