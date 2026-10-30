@@ -62,3 +62,46 @@ FROM tests t
 LEFT JOIN scope s ON s.pkg = t.pkg
 LEFT JOIN cov_status c ON c.pkg = t.pkg AND c.test = t.name
 WHERE t.kind = 'unit';
+
+-- R1: tidb-rs on TiDB's integration tests, one run (tidb-rs scripts/integrationtest.sh).
+-- Every statement runs on Go TiDB (A); reads also run on tidb-rs (B) and are compared live.
+CREATE TABLE rs_run (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+
+CREATE TABLE rs_integration (
+  file           TEXT PRIMARY KEY,   -- test name, e.g. executor/aggregate
+  statements     INTEGER NOT NULL,   -- = match + mismatch + unsupported + b_error + a_error + skipped + write
+  reads          INTEGER NOT NULL,   -- statements classified as reads (SELECT/TABLE/VALUES/WITH, SHOW, EXPLAIN/DESC)
+  match          INTEGER NOT NULL,   -- B answered like A (same rows, columns, error code)
+  mismatch       INTEGER NOT NULL,   -- B answered differently (wrong rows, metadata, error code, warnings)
+  unsupported    INTEGER NOT NULL,   -- B: error 1235 "not supported yet"
+  b_error        INTEGER NOT NULL,   -- B failed otherwise while A succeeded
+  a_error        INTEGER NOT NULL,   -- A failed without --error (any statement); not scored
+  skipped        INTEGER NOT NULL,   -- read not sent to B (in a transaction, local temporary table, ...)
+  write          INTEGER NOT NULL,   -- non-read statements (A only; session statements mirrored to B)
+  b_set_rejected INTEGER NOT NULL    -- mirrored session statements (SET, USE, PREPARE) B rejected
+);
+
+-- Outcome reasons: B's unsupported message, B's error, mismatch kind, A's error, skip reason
+-- (names and numbers replaced by ? and N).
+CREATE TABLE rs_integration_reason (
+  class      TEXT NOT NULL,          -- select / show / explain / session / write
+  outcome    TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  statements INTEGER NOT NULL,
+  files      INTEGER NOT NULL,
+  PRIMARY KEY (class, outcome, reason)
+);
+
+-- Every mismatch. kind: rows (wrong values or row count), order, columns (names/count),
+-- metadata (types, flags, ...), error (different error, or B answered where A failed),
+-- shape (result set vs OK), warnings.
+CREATE TABLE rs_integration_mismatch (
+  file   TEXT NOT NULL,
+  line   INTEGER NOT NULL,
+  conn   TEXT NOT NULL,
+  class  TEXT NOT NULL,
+  kind   TEXT NOT NULL,
+  detail TEXT NOT NULL,
+  sql    TEXT NOT NULL,
+  PRIMARY KEY (file, line, conn)
+);

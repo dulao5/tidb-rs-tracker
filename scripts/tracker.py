@@ -5,6 +5,8 @@
   tracker.py build [-o tracker.db]    data/*.tsv -> SQLite (for Datasette / ad-hoc SQL)
   tracker.py report                   data/*.tsv -> reports/*.md
   tracker.py check                    validate data/, and fail if reports/ is stale
+  tracker.py import-integration <dir> tidb-rs `scripts/integrationtest.sh` output -> data/rs_*.tsv
+                                      (statement detail -> work/rs_statements.tsv, not committed)
 
 data/ is the source of truth. Every file is a sorted TSV with a header row, so
 a re-extraction shows up as a reviewable git diff. Row order and keys never
@@ -15,6 +17,8 @@ import argparse
 import collections
 import json
 import os
+import re
+import shutil
 import sqlite3
 import sys
 import tempfile
@@ -48,7 +52,25 @@ TABLES = {
     "features.tsv": (["feature", "module", "funcs", "symbols"], ["feature"]),
     "cov_status.tsv": (["pkg", "test", "status", "detail"], ["pkg", "test"]),
     "test_feature.tsv": (["pkg", "test", "feature", "weight"], ["pkg", "test", "feature"]),
+    # R1: tidb-rs on TiDB's integration tests (tidb-rs `scripts/integrationtest.sh`).
+    "rs_run.tsv": (["key", "value"], ["key"]),
+    "rs_integration.tsv": (
+        ["file", "statements", "reads", "match", "mismatch", "unsupported", "b_error", "a_error",
+         "skipped", "write", "b_set_rejected"],
+        ["file"],
+    ),
+    "rs_integration_reason.tsv": (
+        ["class", "outcome", "reason", "statements", "files"], ["class", "outcome", "reason"]
+    ),
+    "rs_integration_mismatch.tsv": (
+        ["file", "line", "conn", "class", "kind", "detail", "sql"], ["file", "line", "conn"]
+    ),
 }
+
+# Statement outcomes of the integration run. The first four are the scored read outcomes.
+RS_SCORED = ["match", "mismatch", "unsupported", "b_error"]
+RS_OUTCOMES = RS_SCORED + ["a_error", "skipped", "write"]
+RS_STATEMENTS = os.path.join(ROOT, "work", "rs_statements.tsv")
 
 
 def die(msg):
@@ -130,6 +152,69 @@ def cmd_export(args):
     print("scope.tsv is maintained by hand; not touched")
 
 
+# ---------------------------------------------------------------- import-integration
+
+
+def _norm(text):
+    """Groups messages that differ only in names and numbers."""
+    text = re.sub(r"'[^']*'", "?", text)
+    text = re.sub(r"`[^`]*`", "?", text)
+    text = re.sub(r"\b\d+(\.\d+)?\b", "N", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:120]
+
+
+def rs_reason(outcome, kind, detail):
+    """Short reason for a statement outcome (rs_integration_reason.tsv)."""
+    if outcome == "match":
+        return ""
+    if outcome == "unsupported":
+        if kind == "login":
+            return "B cannot log in as the test's user (no privilege system)"
+        m = re.search(r"doesn't yet support '(.*)'", detail)
+        return _norm(m.group(1) if m else detail)
+    if outcome == "mismatch":
+        return kind
+    if outcome == "b_error":
+        return f"{kind}: {_norm(detail)}" if kind else _norm(detail)
+    if outcome == "a_error":
+        return _norm(detail)
+    return kind  # skipped: why; write: "session" or ""
+
+
+def cmd_import_integration(args):
+    src = args.dir
+    def rows(name):
+        with open(os.path.join(src, name), encoding="utf-8") as f:
+            header = f.readline().rstrip("\n").split("\t")
+            return [dict(zip(header, line.rstrip("\n").split("\t"))) for line in f]
+    out = {}
+    out["rs_run.tsv"] = [(r["key"], r["value"]) for r in rows("run.tsv")]
+    cols = TABLES["rs_integration.tsv"][0]
+    out["rs_integration.tsv"] = [[r[c] for c in cols] for r in rows("files.tsv")]
+    stmts = rows("statements.tsv")
+    reasons = collections.defaultdict(lambda: [0, set()])
+    mism = []
+    for r in stmts:
+        reason = rs_reason(r["outcome"], r["kind"], r["detail"])
+        e = reasons[(r["class"], r["outcome"], reason)]
+        e[0] += 1
+        e[1].add(r["file"])
+        if r["outcome"] == "mismatch":
+            mism.append([r["file"], r["line"], r["conn"], r["class"], r["kind"], r["detail"][:300], r["sql"][:500]])
+    out["rs_integration_reason.tsv"] = [[c, o, why, n, len(f)] for (c, o, why), (n, f) in reasons.items()]
+    out["rs_integration_mismatch.tsv"] = mism
+    for name, data in out.items():
+        cols, key = TABLES[name]
+        idx = [cols.index(k) for k in key]
+        data = sorted(data, key=lambda r: [str(r[i]) for i in idx])
+        write_tsv(os.path.join(DATA, name), cols, data)
+        print(f"{name}: {len(data)} rows")
+    os.makedirs(os.path.dirname(RS_STATEMENTS), exist_ok=True)
+    shutil.copyfile(os.path.join(src, "statements.tsv"), RS_STATEMENTS)
+    print(f"{os.path.relpath(RS_STATEMENTS, ROOT)}: {len(stmts)} statements (not committed)")
+
+
 # ---------------------------------------------------------------- build
 
 
@@ -178,6 +263,7 @@ def cmd_check(args):
     bad = [r for r in data["test_feature.tsv"][1] if r[2] not in feats]
     if bad:
         errors.append(f"test_feature.tsv: {len(bad)} rows name unknown features, e.g. {bad[0][2]}")
+    errors += check_integration(data)
     with tempfile.TemporaryDirectory() as d:
         generated = render_reports(build(os.path.join(d, "t.db")))
     for fname, text in generated.items():
@@ -188,6 +274,44 @@ def cmd_check(args):
     if errors:
         die("\n  ".join(["check failed:"] + errors))
     print("check ok")
+
+
+def check_integration(data):
+    """R1 tables: counts add up, files are known integration tests, reasons match files."""
+    errors = []
+    integ = {r[3] for r in data["tests.tsv"][1] if r[0] == "integration"}
+    cols, rows = data["rs_integration.tsv"]
+    totals = collections.Counter()
+    for r in rows:
+        v = dict(zip(cols, r))
+        try:
+            n = {c: int(v[c]) for c in cols[1:]}
+        except ValueError:
+            errors.append(f"rs_integration.tsv: non-integer count in {v['file']}")
+            continue
+        if f"tests/integrationtest/t/{v['file']}.test" not in integ:
+            errors.append(f"rs_integration.tsv: {v['file']} is not an integration test in tests.tsv")
+        if n["statements"] != sum(n[o] for o in RS_OUTCOMES):
+            errors.append(f"rs_integration.tsv: {v['file']}: statements != sum of outcomes")
+        if sum(n[o] for o in RS_SCORED) > n["reads"]:
+            errors.append(f"rs_integration.tsv: {v['file']}: more scored reads than reads")
+        totals.update(n)
+    rcols, rrows = data["rs_integration_reason.tsv"]
+    by_outcome = collections.Counter()
+    for r in rrows:
+        v = dict(zip(rcols, r))
+        if v["outcome"] not in RS_OUTCOMES:
+            errors.append(f"rs_integration_reason.tsv: unknown outcome {v['outcome']}")
+        by_outcome[v["outcome"]] += int(v["statements"])
+    for o in RS_OUTCOMES:
+        if by_outcome[o] != totals[o]:
+            errors.append(f"rs_integration_reason.tsv: {o} sums to {by_outcome[o]}, rs_integration.tsv says {totals[o]}")
+    n_mism = len(data["rs_integration_mismatch.tsv"][1])
+    if n_mism != totals["mismatch"]:
+        errors.append(f"rs_integration_mismatch.tsv: {n_mism} rows, rs_integration.tsv says {totals['mismatch']} mismatches")
+    if rows and not data["rs_run.tsv"][1]:
+        errors.append("rs_run.tsv is empty but rs_integration.tsv has rows")
+    return errors
 
 
 # ---------------------------------------------------------------- report
@@ -338,7 +462,124 @@ def render_reports(db):
             )
         )
         f.append("")
-    return {"summary.md": "\n".join(s) + "\n", "features.md": "\n".join(f).rstrip("\n") + "\n"}
+    return {
+        "summary.md": "\n".join(s) + "\n",
+        "features.md": "\n".join(f).rstrip("\n") + "\n",
+        "integration.md": render_integration(q),
+    }
+
+
+def _cell(text, n=100):
+    """A TSV field (escaped \\n, \\t) as a Markdown table cell."""
+    text = text.replace("\\n", " ").replace("\\t", " ").replace("|", "\\|")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def render_integration(q):
+    """reports/integration.md: R1, tidb-rs on TiDB's integration tests."""
+    run = dict(q("SELECT key, value FROM rs_run"))
+    o = ["# tidb-rs on TiDB's integration tests (R1)", "", "<!-- Generated by scripts/tracker.py report. Do not edit. -->", ""]
+    if not run:
+        o.append("No run imported yet (`scripts/tracker.py import-integration`).")
+        return "\n".join(o) + "\n"
+    o.append(
+        f"Run: tidb-rs `{run.get('tidb_rs_commit', '?')[:10]}`"
+        + (" (with uncommitted changes)" if run.get("tidb_rs_dirty") == "yes" else "")
+        + f" against Go TiDB {run.get('tidb_version', '?')}, test files from TiDB `{run.get('tests_commit', '?')[:10]}`,"
+        f" {run.get('date', '?')} on {run.get('runner', '?')}, {int(run.get('seconds', 0)) // 60} min.\n"
+    )
+    o.append(
+        "Each `.test` file runs in hybrid mode on one tiup playground: every statement runs on Go TiDB (A) "
+        "in the file's sessions, as mysql-tester would run it; read statements (SELECT/TABLE/VALUES/WITH, "
+        "SHOW, EXPLAIN/DESC) also run on tidb-rs (B), in B sessions that mirror A's database and session "
+        "statements, and B's answer is compared with A's on the same data. Rows (as multisets unless the "
+        "query has a top-level ORDER BY and no `--sorted_result`), column metadata, error codes, and with "
+        "`--enable_warnings` the warnings must be equal. A is the reference, not the `.result` files (those "
+        "are recorded on TiDB master). Details: tidb-rs `tools/ab/README.md`.\n"
+    )
+    tot = dict(zip(
+        ["files", "statements", "reads"] + RS_OUTCOMES + ["b_set_rejected"],
+        q("SELECT count(*), sum(statements), sum(reads), " + ", ".join(f"sum({c})" for c in RS_OUTCOMES)
+          + ", sum(b_set_rejected) FROM rs_integration")[0],
+    ))
+    scored = sum(tot[c] for c in RS_SCORED)
+    o += ["## Overall", ""]
+    o.append(
+        "Score: the share of scored reads (match + mismatch + unsupported + b_error) that match. "
+        "Reads where A itself failed unexpectedly (`a_error`, mostly features of TiDB master missing in "
+        "the release) and reads not sent to B (`skipped`) are not scored.\n"
+    )
+    o.append(table(["", "statements", "share"], [
+        ["Files", tot["files"], ""],
+        ["Statements", tot["statements"], ""],
+        ["… reads", tot["reads"], pct(tot["reads"], tot["statements"])],
+        ["… scored reads", scored, pct(scored, tot["reads"])],
+        ["**match**", f"**{tot['match']}**", f"**{pct(tot['match'], scored)}**"],
+        ["mismatch", tot["mismatch"], pct(tot["mismatch"], scored)],
+        ["unsupported (B: 1235)", tot["unsupported"], pct(tot["unsupported"], scored)],
+        ["b_error (B failed otherwise)", tot["b_error"], pct(tot["b_error"], scored)],
+        ["a_error (A failed; any statement)", tot["a_error"], ""],
+        ["skipped reads", tot["skipped"], ""],
+        ["write (A only)", tot["write"], ""],
+        ["… session statements B rejected", tot["b_set_rejected"], ""],
+    ]))
+
+    o += ["", "## By statement class", ""]
+    cls = collections.defaultdict(collections.Counter)
+    for c, out, n in q("SELECT class, outcome, sum(statements) FROM rs_integration_reason GROUP BY class, outcome"):
+        cls[c][out] += n
+    rows = []
+    for c in ["select", "show", "explain"]:
+        k = cls.get(c, collections.Counter())
+        sc = sum(k[x] for x in RS_SCORED)
+        rows.append([c, sum(k.values()), sc] + [k[x] for x in RS_SCORED] + [pct(k["match"], sc), k["a_error"], k["skipped"]])
+    o.append(table(["class", "statements", "scored", "match", "mismatch", "unsupported", "b_error", "match share", "a_error", "skipped"], rows))
+
+    o += ["", "## Mismatches", ""]
+    o.append(
+        "Every statement where B answered differently from A. `rows`: wrong values or row count; `order`: "
+        "same rows, different order under ORDER BY; `columns`: column names or count; `metadata`: other "
+        "column metadata (type, length, flags, charset); `error`: a different error code, or B answered "
+        "where A failed; `shape`: result set vs OK; `warnings`: different SHOW WARNINGS under "
+        "`--enable_warnings`.\n"
+    )
+    kinds = q("SELECT kind, count(*) FROM rs_integration_mismatch GROUP BY kind ORDER BY count(*) DESC, kind")
+    if kinds:
+        o.append(table(["kind", "statements"], kinds))
+        o.append("")
+        o.append(table(
+            ["file:line", "kind", "statement", "difference"],
+            [[f"`{f}:{l}`" + ("" if c == "default" else f" ({c})"), k, f"`{_cell(sq, 90)}`", _cell(d, 160)]
+             for f, l, c, k, d, sq in q("SELECT file, line, conn, kind, detail, sql FROM rs_integration_mismatch ORDER BY file, line")],
+            ["l", "l", "l", "l"],
+        ))
+    else:
+        o.append("None.")
+
+    def reasons(outcome, limit, title, note):
+        rows = q(
+            "SELECT reason, sum(statements), count(DISTINCT class), sum(files) FROM rs_integration_reason"
+            " WHERE outcome = ? GROUP BY reason ORDER BY sum(statements) DESC, reason LIMIT ?", outcome, limit)
+        total = q("SELECT count(DISTINCT reason) FROM rs_integration_reason WHERE outcome = ?", outcome)[0][0]
+        o.extend(["", f"## {title}", "", note + f" Top {min(limit, total)} of {total} reasons.\n"])
+        o.append(table(["reason", "statements"], [[_cell(r or "-", 120), n] for r, n, _, _ in rows], ["l", "r"]))
+
+    reasons("unsupported", 40, "Top reasons: unsupported", "B's `ER_NOT_SUPPORTED_YET` message (names replaced by ?, numbers by N).")
+    reasons("b_error", 25, "Top reasons: b_error", "B's error code and message while A succeeded.")
+    reasons("a_error", 25, "Top reasons: a_error", "A's own failures (statements of any class without `--error`). Mostly TiDB-master features missing in the release under test.")
+    reasons("skipped", 10, "Skipped reads", "Reads that were not sent to B.")
+
+    o += ["", "## Per file", ""]
+    o.append("`share` = match / scored reads.\n")
+    rows = []
+    for r in q("SELECT file, statements, reads, " + ", ".join(RS_OUTCOMES) + " FROM rs_integration ORDER BY file"):
+        f, st, rd = r[:3]
+        k = dict(zip(RS_OUTCOMES, r[3:]))
+        sc = sum(k[x] for x in RS_SCORED)
+        rows.append([f"`{f}`", st, rd, sc, k["match"], pct(k["match"], sc), k["mismatch"], k["unsupported"], k["b_error"], k["a_error"], k["skipped"]])
+    o.append(table(["file", "statements", "reads", "scored", "match", "share", "mismatch", "unsupported", "b_error", "a_error", "skipped"], rows))
+    return "\n".join(o) + "\n"
 
 
 def cmd_report(args):
@@ -362,6 +603,9 @@ def main():
     b.set_defaults(func=cmd_build)
     sub.add_parser("report").set_defaults(func=cmd_report)
     sub.add_parser("check").set_defaults(func=cmd_check)
+    i = sub.add_parser("import-integration")
+    i.add_argument("dir")
+    i.set_defaults(func=cmd_import_integration)
     args = p.parse_args()
     args.func(args)
 
