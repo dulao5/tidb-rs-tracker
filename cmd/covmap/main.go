@@ -1,0 +1,265 @@
+// Command covmap maps each Go test of one TiDB package to the non-test
+// functions it covers, net of the coverage produced by package
+// initialization alone.
+//
+// It builds the test binary once with -coverpkg, runs it with an empty
+// filter to get the baseline, then once per test. Output is TSV:
+//
+//	<test pkg dir> <test name> <func file> <func name>
+//
+// Usage: covmap -repo <tidb root> -pkg pkg/tablecodec [-coverpkg ./pkg/...] [-tests A,B]
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+const modulePrefix = "github.com/pingcap/tidb/"
+
+var testFuncRE = regexp.MustCompile(`(?m)^func (Test[A-Z_0-9]\w*)\(t \*testing\.T\)`)
+
+func main() {
+	repo := flag.String("repo", "", "tidb repository root")
+	pkg := flag.String("pkg", "", "package dir relative to repo root")
+	coverpkg := flag.String("coverpkg", "./pkg/...", "-coverpkg pattern")
+	only := flag.String("tests", "", "comma separated test names (default: all in package)")
+	tags := flag.String("tags", "intest,deadlock", "build tags (TiDB testkit requires intest)")
+	timeout := flag.Duration("timeout", 5*time.Minute, "per-test timeout")
+	flag.Parse()
+	if *repo == "" || *pkg == "" {
+		log.Fatal("-repo and -pkg are required")
+	}
+
+	tmp, err := os.MkdirTemp("", "covmap")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+
+	bin := filepath.Join(tmp, "test.bin")
+	// Packages under a nested go.mod (e.g. pkg/parser) must be built from
+	// that module's root, covering that module only.
+	modDir, target, cover := *repo, "./"+*pkg, *coverpkg
+	if sub := nestedModule(*repo, *pkg); sub != "" {
+		modDir = filepath.Join(*repo, sub)
+		rel, _ := filepath.Rel(sub, *pkg)
+		target, cover = "./"+rel, "./..."
+	}
+	build := exec.Command("go", "test", "-c", "-o", bin, "-tags="+*tags, "-cover", "-covermode=set",
+		"-coverpkg="+cover, target)
+	build.Dir = modDir
+	build.Stderr = os.Stderr
+	if err := build.Run(); err != nil {
+		log.Fatalf("build test binary: %v", err)
+	}
+
+	tests := strings.FieldsFunc(*only, func(r rune) bool { return r == ',' })
+	if len(tests) == 0 {
+		if tests, err = listTests(filepath.Join(*repo, *pkg)); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	pkgDir := filepath.Join(*repo, *pkg)
+	baseline, err := run(bin, pkgDir, tmp, "^$", *timeout)
+	if err != nil {
+		// Some packages fail even with no tests selected (e.g. goleak in
+		// TestMain flags a goroutine that only the empty run leaves behind).
+		// The profile is still usable, so only a missing profile is fatal.
+		if baseline == nil {
+			log.Fatalf("baseline run: %v", err)
+		}
+		log.Printf("baseline run (profile kept): %v", err)
+	}
+
+	idx := newFuncIndex(*repo)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+	for _, t := range tests {
+		start := time.Now()
+		blocks, err := run(bin, pkgDir, tmp, "^"+t+"$", *timeout)
+		if err != nil {
+			// Keep going: a failing test still tells us what it touched, but
+			// flag it so it is not mistaken for a clean mapping.
+			log.Printf("%s: %v", t, err)
+		}
+		funcs := map[string]struct{}{}
+		for b := range blocks {
+			if _, ok := baseline[b]; ok {
+				continue
+			}
+			if f := idx.lookup(b); f != "" {
+				funcs[f] = struct{}{}
+			}
+		}
+		keys := make([]string, 0, len(funcs))
+		for f := range funcs {
+			keys = append(keys, f)
+		}
+		sort.Strings(keys)
+		for _, f := range keys {
+			fmt.Fprintf(w, "%s\t%s\t%s\n", *pkg, t, f)
+		}
+		log.Printf("%s: %d funcs in %s", t, len(keys), time.Since(start).Round(time.Millisecond))
+	}
+}
+
+// nestedModule returns the repo-relative dir of the closest go.mod strictly
+// below the repo root that contains pkg, or "" if pkg is in the root module.
+func nestedModule(repo, pkg string) string {
+	for d := pkg; d != "." && d != "/" && d != ""; d = filepath.Dir(d) {
+		if _, err := os.Stat(filepath.Join(repo, d, "go.mod")); err == nil {
+			return d
+		}
+	}
+	return ""
+}
+
+func listTests(dir string) ([]string, error) {
+	files, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, f := range files {
+		src, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range testFuncRE.FindAllSubmatch(src, -1) {
+			out = append(out, string(m[1]))
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// block identifies a coverage block: "<file rel to repo>:<startLine>".
+type block struct {
+	file string
+	line int
+}
+
+func run(bin, dir, tmp, filter string, timeout time.Duration) (map[block]struct{}, error) {
+	prof := filepath.Join(tmp, "cover.out")
+	_ = os.Remove(prof)
+	cmd := exec.Command(bin, "-test.run", filter, "-test.count=1",
+		"-test.timeout", timeout.String(), "-test.coverprofile", prof)
+	cmd.Dir = dir // tests read testdata relative to the package dir
+	runErr := cmd.Run()
+	blocks, err := readProfile(prof)
+	if err != nil {
+		return nil, err
+	}
+	return blocks, runErr
+}
+
+func readProfile(path string) (map[block]struct{}, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	out := map[block]struct{}{}
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		// github.com/pingcap/tidb/pkg/x/y.go:12.34,15.2 3 1
+		l := sc.Text()
+		if strings.HasPrefix(l, "mode:") || !strings.HasSuffix(l, " 1") {
+			continue
+		}
+		colon := strings.LastIndexByte(l, ':')
+		if colon < 0 {
+			continue
+		}
+		dot := strings.IndexByte(l[colon:], '.')
+		if dot < 0 {
+			continue
+		}
+		line, err := strconv.Atoi(l[colon+1 : colon+dot])
+		if err != nil {
+			continue
+		}
+		out[block{strings.TrimPrefix(l[:colon], modulePrefix), line}] = struct{}{}
+	}
+	return out, sc.Err()
+}
+
+type span struct {
+	start, end int
+	name       string
+}
+
+// funcIndex lazily parses source files to resolve a line to its enclosing
+// function, named "Func" or "Recv.Method".
+type funcIndex struct {
+	repo  string
+	files map[string][]span
+}
+
+func newFuncIndex(repo string) *funcIndex {
+	return &funcIndex{repo: repo, files: map[string][]span{}}
+}
+
+func (x *funcIndex) lookup(b block) string {
+	spans, ok := x.files[b.file]
+	if !ok {
+		spans = parseSpans(filepath.Join(x.repo, b.file))
+		x.files[b.file] = spans
+	}
+	for _, s := range spans {
+		if b.line >= s.start && b.line <= s.end {
+			return b.file + "\t" + s.name
+		}
+	}
+	return ""
+}
+
+func parseSpans(path string) []span {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, path, nil, parser.SkipObjectResolution)
+	if err != nil {
+		return nil
+	}
+	var out []span
+	for _, d := range f.Decls {
+		fn, ok := d.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+		name := fn.Name.Name
+		if fn.Recv != nil && len(fn.Recv.List) == 1 {
+			name = recvName(fn.Recv.List[0].Type) + "." + name
+		}
+		out = append(out, span{fset.Position(fn.Pos()).Line, fset.Position(fn.End()).Line, name})
+	}
+	return out
+}
+
+func recvName(e ast.Expr) string {
+	switch t := e.(type) {
+	case *ast.StarExpr:
+		return recvName(t.X)
+	case *ast.IndexExpr:
+		return recvName(t.X)
+	case *ast.IndexListExpr:
+		return recvName(t.X)
+	case *ast.Ident:
+		return t.Name
+	}
+	return "?"
+}
