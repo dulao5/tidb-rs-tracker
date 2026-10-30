@@ -1,6 +1,8 @@
 key	value
-note	extracted 2026-10-22..23 on macOS (Mac mini), Go 1.25.6, tags intest,deadlock
+note	extracted 2026-10-22..23 on macOS (Mac mini), Go 1.25.6, tags intest,deadlock; failpoint re-runs (raw_fp_asset) 2026-10-30, same machine and tags, TMPDIR=/tmp
 raw_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-4cee7f2084/covmap-4cee7f2084.tar.zst
+raw_fp_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-4cee7f2084/covmap-fp-4cee7f2084.tar.zst
+raw_fp_sha256	222fc2c0befa34ae8868780d35d90a254c4746ae9c86e031de13b5eeaf32fd77
 raw_sha256	065571957dc87af494d74af63e69da77760410b1e11386dea87f1e53da97ba78
 tidb_commit	4cee7f20849923b9ee1ca71b01e6811d0537cadd
 tidb_repo	https://github.com/pingcap/tidb

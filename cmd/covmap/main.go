@@ -282,8 +282,15 @@ func testMessage(lines []string, skip bool) string {
 			msg = m
 			continue
 		}
-		for _, n := range lines[i+1 : min(i+12, len(lines))] {
+		next := lines[i+1 : min(i+12, len(lines))]
+		for j, n := range next {
 			if t := strings.TrimSpace(n); strings.HasPrefix(t, "Error:") {
+				// "Error: Not equal:" is followed by expected / actual lines.
+				for _, x := range next[j+1 : min(j+3, len(next))] {
+					if x = strings.TrimSpace(x); x != "" && !strings.HasPrefix(x, "Test:") {
+						t += " " + x
+					}
+				}
 				return m + " " + t
 			}
 		}

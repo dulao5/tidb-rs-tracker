@@ -13,53 +13,117 @@ TiDB source: `4cee7f2084` (https://github.com/pingcap/tidb)
 | … using failpoints | 983 |
 | Integration test files (`tests/integrationtest/t`) | 263 |
 | … SQL statements in them | 52277 |
-| Features (v0: one per Go source file) | 1499 |
-| Test → feature links (weight ≥ 0.01) | 50816 |
+| Features (v0: one per Go source file) | 1509 |
+| Test → feature links (weight ≥ 0.01) | 51321 |
 
 ## Coverage mapping (P1 scope)
 
-P1 is the set of packages relevant to the prototype (`data/scope.tsv`). Each test in it is run alone with coverage to find the Go functions it reaches. A failed run (usually a test that needs failpoints) stopped early, so its mapping is incomplete.
+P1 is the set of packages relevant to the prototype (`data/scope.tsv`). Each test in it is run alone with coverage to find the Go functions it reaches. Tests that failed or produced no coverage in the full run were re-run with failpoints enabled. A test that still fails stopped early, so its mapping is incomplete (a lower bound). A skipped test reached nothing under this build (`t.Skip`, e.g. next-gen kernel only).
 
 |  | count | share |
 | --- | ---: | ---: |
 | Packages in P1 | 250 |  |
 | Unit tests in P1 packages | 5501 |  |
-| Coverage run ok | 5038 | 91.6% |
-| Coverage run failed (mapping incomplete) | 306 | 5.6% |
-| No coverage output (not run, skipped, or nothing reached) | 157 | 2.9% |
+| Coverage run ok | 5446 | 99.0% |
+| … reached no function beyond package init | 42 | 0.8% |
+| Coverage run failed (mapping incomplete) | 1 | 0.0% |
+| Skipped (no mapping) | 54 | 1.0% |
+| No coverage outcome | 0 | 0.0% |
+
+### Failed and skipped P1 tests
+
+Reason recorded per test in `data/cov_status.tsv` (`detail`).
+
+| status | package | test | detail |
+| --- | --- | --- | --- |
+| failed | `pkg/executor` | `TestSlowLogMaxPerSec` | exit status 1: result.go:49: Error: Not equal: expected: '[tidb_slow_log_max_per_sec 0]\n' actual : '[tidb_slow_log_max_per_sec 1000000]\n' |
+| skipped | `pkg/executor` | `TestCancelImportJobWithoutDXFTask` | import_into_test.go:342: import job and dxf task is submitted together in classic, no such case |
+| skipped | `pkg/executor` | `TestCheckRuleWithKeyspaceID` | infoschema_reader_keyspace_test.go:31: keyspace-prefixed label rule IDs are parsed only in nextgen |
+| skipped | `pkg/executor` | `TestCopClientSend` | distsql_test.go:69: not stable |
+| skipped | `pkg/executor` | `TestCoprocessorOOMTiCase` | executor_failpoint_test.go:297: skip |
+| skipped | `pkg/executor` | `TestExplainForConnPlanCache` | explainfor_test.go:257: unstable |
+| skipped | `pkg/executor` | `TestKeyspaceSample` | sample_test.go:138: Keyspace is not supported in classic mode |
+| skipped | `pkg/executor` | `TestLimitAndIndexScan` | chunk_size_control_test.go:131: not stable because coprocessor may result in goroutine leak |
+| skipped | `pkg/executor` | `TestLimitAndTableScan` | chunk_size_control_test.go:100: not stable because coprocessor may result in goroutine leak |
+| skipped | `pkg/executor` | `TestNextGenS3ExternalID` | import_into_test.go:150: only for nextgen |
+| skipped | `pkg/executor` | `TestNextGenUnsupportedLocalSortAndOptions` | import_into_test.go:323: only for nextgen |
+| skipped | `pkg/executor` | `TestProjectionParallelRequiredRows` | executor_required_rows_test.go:573: not stable because of goroutine schedule |
+| skipped | `pkg/executor/importer` | `TestCalResourceParams` | importer_testkit_test.go:557: we only cal resource related params in nextgen |
+| skipped | `pkg/executor/test/admintest` | `TestAdminShowDDLJobsRU` | show_ddl_jobs_test.go:71: DDL job RU is only displayed in NextGen |
+| skipped | `pkg/executor/test/infoschema` | `TestKeyspaceMeta` | infoschema_test.go:1230: Keyspace is not supported in classic mode |
+| skipped | `pkg/executor/test/simpletest` | `TestStarterUsernamePolicyInSimpleExec` | simple_test.go:45: starter deploy mode is nextgen-only |
+| skipped | `pkg/executor/test/tiflashtest` | `TestTiFlashPartitionTableReader` | tiflash_test.go:401: too slow |
+| skipped | `pkg/executor/test/tiflashtest` | `TestTiFlashPartitionTableShuffledHashJoin` | tiflash_test.go:325: too slow |
+| skipped | `pkg/expression` | `TestConstant2Pb` | expr_to_pb_test.go:45: constant pb has changed |
+| skipped | `pkg/expression` | `TestEmbedTextBuiltin` | builtin_inference_test.go:34: EMBED_TEXT is only supported in starter deployment mode |
+| skipped | `pkg/expression` | `TestExprOnlyPushDownToFlash` | expr_to_pb_test.go:1489: Skip this unstable test temporarily and bring it back before 2021-07-26 |
+| skipped | `pkg/infoschema` | `TestEnableInfoSchemaV2` | infoschema_test.go:1115: This feature is not enabled yet |
+| skipped | `pkg/infoschema/test/clustertablestest` | `TestUniversalBindingFromHistory` | cluster_tables_test.go:1244: skip it temporarily |
+| skipped | `pkg/meta` | `TestSetGetDXFScheduleTuneFactors` | meta_test.go:1444: only for next-gen |
+| skipped | `pkg/parser` | `TestCompareReservedWordsWithMySQL` | not compiled in (build tags) |
+| skipped | `pkg/planner/cascades/rule/apply/decorrelateapply` | `TestXFDeCorrelateShouldDeleteIntermediaryApply` | xf_decorrelate_apply_test.go:40: skip this test for now, cause decorrelateapply.XFDeCorrelateSimpleApply rule is not applied in the cascades optimizer fully, and this test is not meaningful now. |
+| skipped | `pkg/planner/core` | `TestTiFlashFTSMatchWordDirtyTxn` | fts_resolve_index_test.go:116: starter deploy mode is nextgen-only |
+| skipped | `pkg/planner/core` | `TestTiFlashFTSMatchWordPreparedPlanCache` | fts_resolve_index_test.go:96: starter deploy mode is nextgen-only |
+| skipped | `pkg/planner/core` | `TestTiFlashFTSMatchWordPushDown` | fts_resolve_index_test.go:51: starter deploy mode is nextgen-only |
+| skipped | `pkg/planner/core/casetest` | `TestJSONPlanInExplainForNextGen` | plan_test.go:407: Please run TestJSONPlanInExplain under the non next-gen mode |
+| skipped | `pkg/planner/core/casetest` | `TestNormalizedPlanForNextGen` | plan_test.go:216: Please run TestNormalizedPlan under the non next-gen mode |
+| skipped | `pkg/planner/core/casetest/partition` | `TestListPartitionPruningForNextGen` | integration_partition_test.go:80: Please run TestListPartitionPruning under the non next-gen mode |
+| skipped | `pkg/planner/core/tests/pointget` | `TestIssue52592ForNextGen` | point_get_plan_test.go:409: Please run the TestIssue52592 |
+| skipped | `pkg/server` | `TestMatchIdentityWithVariantsStarter` | conn_test.go:89: starter deploy mode is nextgen-only |
+| skipped | `pkg/server` | `TestReadHandshakeGatewayTLSAttrStarter` | conn_test.go:165: starter deploy mode is nextgen-only |
+| skipped | `pkg/server` | `TestStartShutdownMarksUnhealthyBeforeStarterCallback` | server_test.go:278: only for nextgen kernel |
+| skipped | `pkg/server/handler/tests` | `TestDDLCheckHandler` | http_handler_test.go:1158: DDL check handler is only available for next-gen kernel |
+| skipped | `pkg/server/handler/tests` | `TestDXFAPI` | dxf_test.go:63: DXF API is only supported in nextgen kernel and only available in the SYSTEM keyspace |
+| skipped | `pkg/server/handler/tests` | `TestDXFMaintenanceAPINotAvailableInUserKeyspace` | dxf_test.go:613: DXF maintenance APIs are only supported in the SYSTEM keyspace of the nextgen kernel |
+| skipped | `pkg/server/handler/tests` | `TestDXFScheduleTuneAPI` | dxf_test.go:673: only supported in nextgen kernel and only available in the SYSTEM keyspace |
+| skipped | `pkg/session` | `TestBootstrapSessionImplUserKSVersionGuard` | session_test.go:228: keyspace guard only applies to next-gen kernel |
+| skipped | `pkg/session` | `TestBootstrapSessionWithExternalWorkloadManagerAttachesBootstrapDomain` | not compiled in (build tags) |
+| skipped | `pkg/session` | `TestCreateSessionWithDomainOptionsAttachesExternalWorkloadManager` | not compiled in (build tags) |
+| skipped | `pkg/session` | `TestKeyspaceEtcdNamespace` | bootstrap_test.go:1520: keyspace is not supported in classic kernel |
+| skipped | `pkg/session` | `TestStarterBootstrapFileLoadInStarter` | starter_bootstrap_file_test.go:138: starter deploy mode is only available in nextgen |
+| skipped | `pkg/session` | `TestUpgradeGCV2AbortUsesPostLockBootstrapVersion` | not compiled in (build tags) |
+| skipped | `pkg/session` | `TestUsePipelinedDMLDisabledInStarter` | not compiled in (build tags) |
+| skipped | `pkg/session/test/bootstraptest` | `TestBootstrapInNextGenInvalidSystemTable` | bootstrap_upgrade_test.go:1554: this is only checked in next-gen kernel |
+| skipped | `pkg/session/test/meta` | `TestNextgenBootstrap` | session_test.go:249: This test is only for nextgen kernel. |
+| skipped | `pkg/sessionctx/sessionstates` | `TestStarterSessionTokenLifetime` | session_token_test.go:165: starter deploy mode is only available for nextgen TiDB |
+| skipped | `pkg/sessionctx/variable` | `TestTiDBDMLTypeInNextGen` | not compiled in (build tags) |
+| skipped | `pkg/sessionctx/variable` | `TestTiDBPessimisticTransactionFairLocking` | not compiled in (build tags) |
+| skipped | `pkg/sessionctx/variable` | `TestTiDBReplicaReadInNextGen` | not compiled in (build tags) |
+| skipped | `pkg/statistics/handle/handletest` | `TestEvictedColumnLoadedStatus` | handle_test.go:721: skip this test because it is useless |
+| skipped | `pkg/statistics/handle/usage` | `TestDumpColStatsUsageWriter_ConcurrentMultiTables` | session_stats_collect_test.go:168: Skipping concurrent stats test - run manually if needed |
 
 ## Unit tests by area
 
 | area | tests | SQL-level | in P1 | mapped | mapping incomplete |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `pkg/executor` | 1482 | 1011 | 1482 | 1273 | 166 |
+| `pkg/executor` | 1482 | 1011 | 1482 | 1464 | 1 |
 | `pkg/ddl` | 1172 | 845 | 0 | 0 | 0 |
-| `pkg/planner` | 964 | 333 | 964 | 911 | 15 |
-| `pkg/util` | 871 | 51 | 156 | 153 | 2 |
+| `pkg/planner` | 964 | 333 | 964 | 956 | 0 |
+| `pkg/util` | 871 | 51 | 156 | 156 | 0 |
 | `br/pkg` | 677 | 35 | 0 | 0 | 0 |
-| `pkg/expression` | 584 | 69 | 584 | 573 | 7 |
-| `pkg/statistics` | 418 | 262 | 418 | 394 | 20 |
-| `pkg/parser` | 354 | 0 | 354 | 337 | 0 |
+| `pkg/expression` | 584 | 69 | 584 | 581 | 0 |
+| `pkg/statistics` | 418 | 262 | 418 | 416 | 0 |
+| `pkg/parser` | 354 | 0 | 354 | 353 | 0 |
 | `pkg/lightning` | 284 | 1 | 0 | 0 | 0 |
-| `pkg/session` | 273 | 111 | 273 | 244 | 13 |
-| `pkg/server` | 271 | 74 | 271 | 225 | 35 |
+| `pkg/session` | 273 | 111 | 273 | 264 | 0 |
+| `pkg/server` | 271 | 74 | 271 | 264 | 0 |
 | `pkg/dxf` | 222 | 38 | 0 | 0 | 0 |
-| `pkg/types` | 211 | 0 | 211 | 210 | 0 |
-| `pkg/store` | 203 | 8 | 58 | 51 | 7 |
-| `pkg/sessionctx` | 189 | 16 | 189 | 180 | 3 |
+| `pkg/types` | 211 | 0 | 211 | 211 | 0 |
+| `pkg/store` | 203 | 8 | 58 | 58 | 0 |
+| `pkg/sessionctx` | 189 | 16 | 189 | 185 | 0 |
 | `pkg/ingestor` | 183 | 0 | 0 | 0 | 0 |
 | `pkg/objstore` | 162 | 0 | 0 | 0 | 0 |
-| `pkg/infoschema` | 141 | 79 | 141 | 131 | 8 |
+| `pkg/infoschema` | 141 | 79 | 141 | 139 | 0 |
 | `dumpling/export` | 133 | 0 | 0 | 0 | 0 |
-| `pkg/meta` | 129 | 0 | 129 | 116 | 1 |
+| `pkg/meta` | 129 | 0 | 129 | 128 | 0 |
 | `pkg/ttl` | 128 | 74 | 0 | 0 | 0 |
 | `lightning/pkg` | 126 | 0 | 0 | 0 | 0 |
-| `pkg/table` | 101 | 58 | 101 | 99 | 2 |
+| `pkg/table` | 101 | 58 | 101 | 101 | 0 |
 | `pkg/inference` | 100 | 0 | 0 | 0 | 0 |
 | `pkg/bindinfo` | 82 | 68 | 0 | 0 | 0 |
 | `pkg/privilege` | 80 | 65 | 0 | 0 | 0 |
 | `pkg/domain` | 70 | 13 | 0 | 0 | 0 |
-| `pkg/sessiontxn` | 66 | 65 | 66 | 37 | 27 |
+| `pkg/sessiontxn` | 66 | 65 | 66 | 66 | 0 |
 | `pkg/timer` | 51 | 3 | 0 | 0 | 0 |
 | `pkg/config` | 48 | 0 | 0 | 0 | 0 |
 | `pkg/dumpformat` | 45 | 0 | 0 | 0 | 0 |

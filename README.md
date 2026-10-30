@@ -24,7 +24,7 @@ python3 scripts/tracker.py build          # data/*.tsv -> tracker.db
 uvx datasette tracker.db -m datasette/metadata.json
 ```
 
-Datasette opens in the browser with filtering, faceting and SQL, plus canned queries: tests for a feature, features of a test, and tests whose mapping is incomplete. `tracker.db` is also attached to every CI run as an artifact.
+Datasette opens in the browser with filtering, faceting and SQL, plus canned queries: tests for a feature, features of a test, and tests whose mapping is incomplete or missing (with the reason). `tracker.db` is also attached to every CI run as an artifact.
 
 ## Layout
 
@@ -47,14 +47,17 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `scope.tsv` | pkg | Packages in scope for a tidb-rs phase (`P1` = prototype). Maintained by hand. |
 | `tests.tsv` | kind, pkg, name, path | Unit tests (`TestXxx`) and integration test files, with flags: SQL-level (`uses_store`), failpoints (`uses_fp`). |
 | `features.tsv` | feature | v0 features: one per Go source file, with the functions in it that some test reaches. |
-| `cov_status.tsv` | pkg, test | Outcome of each test's coverage run. `failed` means the mapping is incomplete. |
+| `cov_status.tsv` | pkg, test | Outcome of each test's coverage run: `ok` (mapping complete), `failed` (mapping incomplete, a lower bound) or `skipped` (`t.Skip` or not compiled in; no mapping), with the reason in `detail`. |
 | `test_feature.tsv` | pkg, test, feature | Which features a test exercises, with a weight (see below). |
 
 ### Why text files and not a database in git
 
 A re-extraction must be reviewable. With sorted TSV, `git diff` shows exactly which tests appeared or disappeared and which mappings moved; a SQLite file (even through Git LFS) cannot be diffed or merged. SQLite is a local cache, rebuilt in about a second.
 
-The raw coverage (17M test→function rows, 1.9 GB) is too large for git. It is published as a release asset (71 MB, zstd) named in `source.tsv` with its sha256; `scripts/fetch-raw.sh` downloads and verifies it.
+The raw coverage (17M test→function rows, 1.9 GB) is too large for git. It is published as release assets named in `source.tsv` with their sha256; `scripts/fetch-raw.sh` downloads and verifies them:
+
+- `raw_asset` (71 MB, zstd): `covmap/<pkg>.tsv`, the full run of every P1 package.
+- `raw_fp_asset` (8.5 MB): `covmap-fp/<pkg>.tsv` and `covmap-fp/status/<pkg>.tsv`, the re-run with failpoints enabled of every test that failed or produced no coverage in the full run (E3). `load-raw.sh` replaces those tests' coverage and outcome with the re-run's.
 
 ### Feature weights
 
@@ -66,14 +69,25 @@ Needs a TiDB checkout, Go, `sqlite3` and `zstd`.
 
 ```sh
 scripts/fetch-raw.sh                                   # or regenerate: scripts/run_covmap.sh <tidb> pkg/a pkg/b ...
-scripts/load-raw.sh <tidb>                             # work/extract.db: inventory + raw coverage + features
+scripts/load-raw.sh <tidb> [work/extract.db]           # inventory + raw coverage (+ covmap-fp overlay) + features
 python3 scripts/tracker.py export work/extract.db      # -> data/*.tsv
 python3 scripts/tracker.py report                      # -> reports/*.md
 ```
 
 Then review `git diff data/` and commit. A new raw coverage set goes to a new release `raw-<tidb commit>`, and `source.tsv` is updated to point at it.
 
-Notes for macOS: Homebrew clang may fail to build cgo against the current SDK; `run_covmap.sh` uses `/usr/bin/clang`. TiDB's testkit requires `-tags=intest`; covmap uses `intest,deadlock`. Tests that need failpoints must run in a separate worktree after `make failpoint-enable`, which rewrites sources.
+`<tidb>` for `load-raw.sh` is a clean checkout at `tidb_commit` (it is only scanned for tests).
+
+Notes for macOS: Homebrew clang may fail to build cgo against the current SDK; `run_covmap.sh` uses `/usr/bin/clang`. It also sets `TMPDIR=/tmp`: tests that listen on a unix socket in `t.TempDir()` fail (and some then hang to the timeout) under the default `/var/folders/...` path, which exceeds the 104-byte socket path limit. TiDB's testkit requires `-tags=intest`; covmap uses `intest,deadlock`.
+
+Failpoint re-runs need a separate TiDB worktree, because `make failpoint-enable` rewrites sources in place:
+
+```sh
+git -C <tidb> worktree add --detach ../tidb-fp <tidb_commit> && make -C ../tidb-fp failpoint-enable
+OUT=covmap-fp TESTS=work/rerun.tsv scripts/run_covmap.sh ../tidb-fp pkg/a pkg/b ...   # rerun.tsv: pkg<TAB>test
+```
+
+The rewrite keeps every function's file and name (checked for all 341 rewritten files at `4cee7f2084`), so the mapping by file + function is unchanged; the generated `binding__failpoint_binding__.go` files are dropped by `load-raw.sh`.
 
 ## Plan
 
@@ -82,8 +96,8 @@ Notes for macOS: Homebrew clang may fail to build cgo against the current SDK; `
 | phase | content | done when | status |
 | --- | --- | --- | --- |
 | E1 | Test inventory: unit tests and integration test files. | All of `pkg`, `br`, `lightning`, `dumpling`, `cmd` scanned. | done: 10,165 unit tests, 263 integration files |
-| E2 | Per-test coverage for the 250 P1 packages. | Every P1 test has a coverage outcome. | done: 5,344 of 5,501 have an outcome (306 incomplete); 157 produced no coverage |
-| E3 | Re-run the 306 incomplete tests with failpoints enabled; explain the 157 with no coverage. | Incomplete < 1% of P1, each remaining one has a reason. | todo |
+| E2 | Per-test coverage for the 250 P1 packages. | Every P1 test has a coverage outcome. | done: all 5,501 have an outcome (after E3) |
+| E3 | Re-run the 306 incomplete tests with failpoints enabled; explain the 157 with no coverage. | Incomplete < 1% of P1, each remaining one has a reason. | done: ok 5,446 (42 of them reach nothing beyond package init), failed 1 (0.02%), skipped 54 (0.98%; next-gen-only, build-tag-gated or disabled upstream), no outcome 0. Was ok 5,038 / failed 306 / no output 157. |
 | E4 | Coverage for all remaining unit tests (about 4,800). | Same criteria as E2/E3 for all packages. | todo |
 | E5 | Integration tests: run each `.test` file against a coverage-instrumented `tidb-server`. | Every integration file has a mapping. | todo |
 | E6 | Better features: cluster functions by co-coverage instead of one file per feature; spot-check samples by hand. | Spot-check precision measured and recorded. | todo |

@@ -47,25 +47,25 @@ pkg/executor	TestAdminShowSlowIARemoteReadStats	ok
 pkg/executor	TestAfterDetachSessionCanExecute	ok	
 pkg/executor	TestAllocateContinuousRowID	ok	
 pkg/executor	TestAlterUserHasPrivilegedOptions	ok	
-pkg/executor	TestAnalyzeBuildsRequest	failed	exit status 1
+pkg/executor	TestAnalyzeBuildsRequest	ok	
 pkg/executor	TestAnalyzeIndexExtractTopN	ok	
-pkg/executor	TestAnalyzeKillDuringSaveDoesNotHang	failed	exit status 1
+pkg/executor	TestAnalyzeKillDuringSaveDoesNotHang	ok	
 pkg/executor	TestAnalyzePartitionTableByConcurrencyInDynamic	ok	
-pkg/executor	TestAnalyzeSaveResultErrorDoesNotHang	failed	exit status 1
-pkg/executor	TestAnalyzeV2ReleaseColumnCollectorMemoryImmediately	failed	exit status 1
+pkg/executor	TestAnalyzeSaveResultErrorDoesNotHang	ok	
+pkg/executor	TestAnalyzeV2ReleaseColumnCollectorMemoryImmediately	ok	
 pkg/executor	TestApplyCacheRatio	ok	
 pkg/executor	TestApplyColumnType	ok	
 pkg/executor	TestApplyConcurrency	ok	
-pkg/executor	TestApplyGoroutinePanic	failed	exit status 1
+pkg/executor	TestApplyGoroutinePanic	ok	
 pkg/executor	TestApplyMLogPurgeDeleteTiFlashThreads	ok	
 pkg/executor	TestApplyMLogPurgeMaintenanceSessionVarsEnablesAndRestoresMView	ok	
 pkg/executor	TestApplyMultiColumnType	ok	
 pkg/executor	TestApplyWithOtherOperators	ok	
-pkg/executor	TestAssertHistoricalStatsAfterAlterTable	failed	exit status 1
+pkg/executor	TestAssertHistoricalStatsAfterAlterTable	ok	
 pkg/executor	TestAutoRandomID	ok	
 pkg/executor	TestAutoRandomIDAllowZero	ok	
 pkg/executor	TestBRIEAcquireTaskCancellationRecordsTerminalState	ok	
-pkg/executor	TestBRIEBuilderOptions	failed	exit status 1
+pkg/executor	TestBRIEBuilderOptions	ok	
 pkg/executor	TestBRIECreateDatabase	ok	
 pkg/executor	TestBRIECreateTable	ok	
 pkg/executor	TestBRIECreateTables	ok	
@@ -75,7 +75,7 @@ pkg/executor	TestBatchGetforRangeandListPartitionTable	ok
 pkg/executor	TestBatchInsertWithOnDuplicate	ok	
 pkg/executor	TestBatchLogForReversedScan	ok	
 pkg/executor	TestBatchPointGetLockExistKey	ok	
-pkg/executor	TestBatchPointGetRepeatableRead	failed	exit status 2
+pkg/executor	TestBatchPointGetRepeatableRead	ok	
 pkg/executor	TestBatchRetrieverHelper	ok	
 pkg/executor	TestBenchDaily	ok	
 pkg/executor	TestBuildAnalyzePreFlushUsesStatementContext	ok	
@@ -84,16 +84,18 @@ pkg/executor	TestBuildExecutorForIndexJoinHashJoinErrorCleansChildren	ok
 pkg/executor	TestBuildKvRangesForIndexJoinWithoutCwc	ok	
 pkg/executor	TestBuildKvRangesForIndexJoinWithoutCwcAndWithMemoryTracker	ok	
 pkg/executor	TestBuildMLogPurgeDeleteRowIDRanges	ok	
-pkg/executor	TestBuildProjectionForIndexJoinPanic	failed	exit status 1
+pkg/executor	TestBuildProjectionForIndexJoinPanic	ok	
 pkg/executor	TestBuildPurgeMaterializedViewLogDeleteSQL	ok	
 pkg/executor	TestCacheSnapShot	ok	
 pkg/executor	TestCanBroadcastToTiDBRPCForTestRejectsInvalidEndpoints	ok	
 pkg/executor	TestCancelDistributionJob	ok	
+pkg/executor	TestCancelImportJobWithoutDXFTask	skipped	import_into_test.go:342: import job and dxf task is submitted together in classic, no such case
 pkg/executor	TestCancelMaterializedViewJobPrecheckErrorNotRewritten	ok	
-pkg/executor	TestCancelParseSlowLog	failed	exit status 2
+pkg/executor	TestCancelParseSlowLog	ok	
 pkg/executor	TestCapturePath	ok	
 pkg/executor	TestCheckActRowsWithUnistore	ok	
 pkg/executor	TestCheckMaxExecutionTimeExceededPreservesPendingKillReason	ok	
+pkg/executor	TestCheckRuleWithKeyspaceID	skipped	infoschema_reader_keyspace_test.go:31: keyspace-prefixed label rule IDs are parsed only in nextgen
 pkg/executor	TestChecksum	ok	
 pkg/executor	TestClassicS3ExternalID	ok	
 pkg/executor	TestClearTaskKeepsUnfinishedBRIETasks	ok	
@@ -117,20 +119,22 @@ pkg/executor	TestCompactTableWithSpecifiedHashPartitionAndOnePartitionFailed	ok
 pkg/executor	TestCompactTableWithSpecifiedRangePartition	ok	
 pkg/executor	TestCompactTableWithTiFlashDown	ok	
 pkg/executor	TestCompactTableWithTiFlashDownAndRestore	ok	
-pkg/executor	TestConfigCheckOfStorageBlockCacheSize	failed	exit status 1
-pkg/executor	TestContextCancelWhenReadFromCopIterator	failed	exit status 2
+pkg/executor	TestConfigCheckOfStorageBlockCacheSize	ok	
+pkg/executor	TestContextCancelWhenReadFromCopIterator	ok	
 pkg/executor	TestConvertReadableSizeToByteSize	ok	
+pkg/executor	TestCopClientSend	skipped	distsql_test.go:69: not stable
 pkg/executor	TestCoprCacheWithoutExecutionInfo	ok	
 pkg/executor	TestCoprocessorBatchByStore	ok	
 pkg/executor	TestCoprocessorBlockIssues56916	ok	
+pkg/executor	TestCoprocessorOOMTiCase	skipped	executor_failpoint_test.go:297: skip
 pkg/executor	TestCoprocessorPagingReqKeyRangeSorted	ok	
 pkg/executor	TestCoprocessorPagingSize	ok	
-pkg/executor	TestCriticalErrorInspection	failed	exit status 1
+pkg/executor	TestCriticalErrorInspection	ok	
 pkg/executor	TestDDLJobRUComments	ok	
 pkg/executor	TestDML	ok	
 pkg/executor	TestDMLBuildCancellationPreservesTimeout	ok	
 pkg/executor	TestDMLChildChunkInitCapByRowWidth	ok	
-pkg/executor	TestDMLMaxExecutionTimeExpiresBeforeExecutorOpen	failed	exit status 1
+pkg/executor	TestDMLMaxExecutionTimeExpiresBeforeExecutorOpen	ok	
 pkg/executor	TestDeadlocksTable	ok	
 pkg/executor	TestDeleteIgnoreWithFK	ok	
 pkg/executor	TestDeleteLockKey	ok	
@@ -148,7 +152,7 @@ pkg/executor	TestDirectReadingwithIndexJoin	ok
 pkg/executor	TestDistributeTable	ok	
 pkg/executor	TestDivPrecisionIncrement	ok	
 pkg/executor	TestDropGlobalIndex	ok	
-pkg/executor	TestDumpHistoricalStatsByTable	failed	exit status 1
+pkg/executor	TestDumpHistoricalStatsByTable	ok	
 pkg/executor	TestDumpHistoricalStatsFallback	ok	
 pkg/executor	TestDumpHistoricalStatsMetaForMultiTables	ok	
 pkg/executor	TestDumpReal	ok	
@@ -169,6 +173,7 @@ pkg/executor	TestExplainAnalyzeRUFormatIgnoresLiteralLength	ok
 pkg/executor	TestExplainDotForExplainPlan	ok	
 pkg/executor	TestExplainDotForQuery	ok	
 pkg/executor	TestExplainFor	ok	
+pkg/executor	TestExplainForConnPlanCache	skipped	explainfor_test.go:257: unstable
 pkg/executor	TestExplainForJSON	ok	
 pkg/executor	TestExplainForVerbose	ok	
 pkg/executor	TestExplainFormatInCtx	ok	
@@ -183,8 +188,8 @@ pkg/executor	TestFilterTemporaryTableKeys	ok
 pkg/executor	TestFixParseSlowLogFile	ok	
 pkg/executor	TestFlushStatsDelta	ok	
 pkg/executor	TestFormatSQL	ok	
-pkg/executor	TestGCHistoryStatsAfterDropTable	failed	exit status 1
-pkg/executor	TestGCOutdatedHistoryStats	failed	exit status 1
+pkg/executor	TestGCHistoryStatsAfterDropTable	ok	
+pkg/executor	TestGCOutdatedHistoryStats	ok	
 pkg/executor	TestGetAnalyzePanicErr	ok	
 pkg/executor	TestGetLackHandles	ok	
 pkg/executor	TestGetMvccByEncodedKeyRegionError	ok	
@@ -199,19 +204,19 @@ pkg/executor	TestGrantDBScopeCaseInsensitiveWithNewCollationDisabled	ok
 pkg/executor	TestGrantGlobal	ok	
 pkg/executor	TestGrantTableScope	ok	
 pkg/executor	TestGrantTableScopeCaseInsensitiveWithNewCollationDisabled	ok	
-pkg/executor	TestHandleForeignKeyCascadePanic	failed	exit status 1
+pkg/executor	TestHandleForeignKeyCascadePanic	ok	
 pkg/executor	TestHashJoinV2UnderApply	ok	
 pkg/executor	TestIdexMerge	ok	
-pkg/executor	TestImportIntoChildSessionInheritsMaintenanceFlag	failed	exit status 1
+pkg/executor	TestImportIntoChildSessionInheritsMaintenanceFlag	ok	
 pkg/executor	TestImportIntoRejectsMaterializedViewLogBaseTable	ok	
 pkg/executor	TestImportIntoShouldHaveSameFlagsAsInsert	ok	
 pkg/executor	TestImportIntoValidateColAssignmentsWithEncodeCtx	ok	
 pkg/executor	TestInconsistentIndex	ok	
 pkg/executor	TestIndexLookUpAdaptiveLimitRuntimeStats	ok	
 pkg/executor	TestIndexLookUpPartitionRangesUseMemoryTracker	ok	
-pkg/executor	TestIndexLookUpPushDownCopTask	failed	exit status 1
-pkg/executor	TestIndexLookUpPushDownExec	failed	exit status 1
-pkg/executor	TestIndexLookUpPushDownPartitionExec	failed	exit status 1
+pkg/executor	TestIndexLookUpPushDownCopTask	ok	
+pkg/executor	TestIndexLookUpPushDownExec	ok	
+pkg/executor	TestIndexLookUpPushDownPartitionExec	ok	
 pkg/executor	TestIndexLookUpStats	ok	
 pkg/executor	TestIndexMerge4PlanCache	ok	
 pkg/executor	TestIndexReaderPartitionRangesUseMemoryTracker	ok	
@@ -223,9 +228,9 @@ pkg/executor	TestInsertNullInNonStrictMode	ok
 pkg/executor	TestInsertNullIntoNotNullGenerated	ok	
 pkg/executor	TestInsertOnDuplicateKeyWithBinlog	ok	
 pkg/executor	TestInsertRuntimeStat	ok	
-pkg/executor	TestInspectionResult	failed	exit status 1
-pkg/executor	TestInspectionSummary	failed	exit status 1
-pkg/executor	TestIntegrationCopCache	failed	exit status 1
+pkg/executor	TestInspectionResult	ok	
+pkg/executor	TestInspectionSummary	ok	
+pkg/executor	TestIntegrationCopCache	ok	
 pkg/executor	TestIsUnsupportedBroadcastQueryErr	ok	
 pkg/executor	TestIssue11124	ok	
 pkg/executor	TestIssue20236	ok	
@@ -246,9 +251,12 @@ pkg/executor	TestIssue55669	ok
 pkg/executor	TestIssue58870	ok	
 pkg/executor	TestIssue58875	ok	
 pkg/executor	TestJoinExec	ok	
+pkg/executor	TestKeyspaceSample	skipped	sample_test.go:138: Keyspace is not supported in classic mode
 pkg/executor	TestKillTableReader	ok	
 pkg/executor	TestLastQueryInfoRUV2	ok	
 pkg/executor	TestLeftJoinForUpdate	ok	
+pkg/executor	TestLimitAndIndexScan	skipped	chunk_size_control_test.go:131: not stable because coprocessor may result in goroutine leak
+pkg/executor	TestLimitAndTableScan	skipped	chunk_size_control_test.go:100: not stable because coprocessor may result in goroutine leak
 pkg/executor	TestLimitRequiredRows	ok	
 pkg/executor	TestLocalTemporaryTableNoNetworkWithCreateOutsideTxn	ok	
 pkg/executor	TestLocalTemporaryTableNoNetworkWithInsideTxn	ok	
@@ -262,12 +270,12 @@ pkg/executor	TestMVTaskCancelControllerIsManualCancelRequested	ok
 pkg/executor	TestMViewCompleteDeltaApplyOpenValidatesMappingsBeforeOpeningChild	ok	
 pkg/executor	TestMapBRIEErrPreservesCancelCause	ok	
 pkg/executor	TestMaxChunkSize	ok	
-pkg/executor	TestMaxExecutionTimeIncludesTSOWaitTime	failed	exit status 1
+pkg/executor	TestMaxExecutionTimeIncludesTSOWaitTime	ok	
 pkg/executor	TestMaxPreparedStmtCount	ok	
 pkg/executor	TestMemCacheReadLock	ok	
 pkg/executor	TestMemoryAndDiskUsageAfterClose	ok	
 pkg/executor	TestMergeJoinRequiredRows	ok	
-pkg/executor	TestMetricTableData	failed	exit status 1
+pkg/executor	TestMetricTableData	ok	
 pkg/executor	TestMoveInfoSchemaToFront	ok	
 pkg/executor	TestMoveWrittenSharedLockKeysToExclusive	ok	
 pkg/executor	TestMultiAutoRandomID	ok	
@@ -275,7 +283,9 @@ pkg/executor	TestMultipleApply	ok
 pkg/executor	TestMySQLInsertID	ok	
 pkg/executor	TestNestedLoopApply	ok	
 pkg/executor	TestNewLockCtxPropagatesSharedLockUpgrade	ok	
-pkg/executor	TestNodeLoadInspection	failed	exit status 1
+pkg/executor	TestNextGenS3ExternalID	skipped	import_into_test.go:150: only for nextgen
+pkg/executor	TestNextGenUnsupportedLocalSortAndOptions	skipped	import_into_test.go:323: only for nextgen
+pkg/executor	TestNodeLoadInspection	ok	
 pkg/executor	TestNormalGlobalTemporaryTableNoNetwork	ok	
 pkg/executor	TestObserveStmtBeginOnTopProfiling	ok	
 pkg/executor	TestObserveStmtFinishedOnTopProfiling	ok	
@@ -285,8 +295,8 @@ pkg/executor	TestObserveStmtFinishedOnTopProfilingKeeps	ok
 pkg/executor	TestOrderByAndLimit	ok	
 pkg/executor	TestOrderedParallelApply	ok	
 pkg/executor	TestOrderedParallelApplyEdgeCases	ok	
-pkg/executor	TestOrderedParallelApplyGoroutinePanic	failed	exit status 1
-pkg/executor	TestOrderedParallelApplyKillSignal	failed	exit status 1
+pkg/executor	TestOrderedParallelApplyGoroutinePanic	ok	
+pkg/executor	TestOrderedParallelApplyKillSignal	ok	
 pkg/executor	TestOrderedParallelApplyLargeInner	ok	
 pkg/executor	TestOrderedParallelApplyLeftOuterSemiJoin	ok	
 pkg/executor	TestOrderedParallelApplyNested	ok	
@@ -299,13 +309,13 @@ pkg/executor	TestParallelApplyWithLimitOnRangeColumnsPartition	ok
 pkg/executor	TestParameterPushDown	ok	
 pkg/executor	TestParseSlowLogFile	ok	
 pkg/executor	TestParseSlowLogFileSerial	ok	
-pkg/executor	TestParseSlowLogPanic	failed	exit status 1
+pkg/executor	TestParseSlowLogPanic	ok	
 pkg/executor	TestParseSlowLogSessionConnectAttrs	ok	
-pkg/executor	TestPartitionIndexLookUpMergeWithSkewedPartitions	failed	exit status 1
+pkg/executor	TestPartitionIndexLookUpMergeWithSkewedPartitions	ok	
 pkg/executor	TestPartitionInfoDisable	ok	
 pkg/executor	TestPartitionMemCacheReadLock	ok	
 pkg/executor	TestPartitionRangeSplitter	ok	
-pkg/executor	TestPartitionTableHistoricalStats	failed	exit status 1
+pkg/executor	TestPartitionTableHistoricalStats	ok	
 pkg/executor	TestPartitionTableIndexJoinIndexLookUp	ok	
 pkg/executor	TestPartitionTableRandomlyIndexLookUpReader	ok	
 pkg/executor	TestPartitionTableWithDifferentJoin	ok	
@@ -313,16 +323,17 @@ pkg/executor	TestPessimisticUpdatePKLazyCheck	ok
 pkg/executor	TestPlanCacheWithDifferentVariableTypes	ok	
 pkg/executor	TestPointGetForTemporaryTable	ok	
 pkg/executor	TestPointGetLockExistKey	ok	
-pkg/executor	TestPointGetRepeatableRead	failed	exit status 2
+pkg/executor	TestPointGetRepeatableRead	ok	
 pkg/executor	TestPointGetUserVarPlanCache	ok	
 pkg/executor	TestPointGetwithRangeAndListPartitionTable	ok	
-pkg/executor	TestPointReadScanDetailsInDiagnostics	failed	exit status 1
+pkg/executor	TestPointReadScanDetailsInDiagnostics	ok	
 pkg/executor	TestPrepareAndCompleteSlowLogItemsForRules	ok	
 pkg/executor	TestPrepareStmtAfterIsolationReadChange	ok	
+pkg/executor	TestProjectionParallelRequiredRows	skipped	executor_required_rows_test.go:573: not stable because of goroutine schedule
 pkg/executor	TestProjectionUnparallelRequiredRows	ok	
 pkg/executor	TestRUDetailsForStatementLogPreservesUnfinalizedRU	ok	
-pkg/executor	TestReadPoolTaskDetailsInDiagnostics	failed	exit status 1
-pkg/executor	TestRecordHistoryStatsAfterAnalyze	failed	exit status 1
+pkg/executor	TestReadPoolTaskDetailsInDiagnostics	ok	
+pkg/executor	TestRecordHistoryStatsAfterAnalyze	ok	
 pkg/executor	TestRecordHistoryStatsMetaAfterAnalyze	ok	
 pkg/executor	TestRecordSetNewChunkAfterFinish	ok	
 pkg/executor	TestRecordSetNextAfterFinish	ok	
@@ -340,7 +351,7 @@ pkg/executor	TestRefreshStatsWithRestoreAdmin	ok
 pkg/executor	TestRefreshTableStats	ok	
 pkg/executor	TestReplayPath	ok	
 pkg/executor	TestResetContextOfStmtTiKVShortCircuitExpression	ok	
-pkg/executor	TestResourceGroupTag	failed	exit status 1
+pkg/executor	TestResourceGroupTag	ok	
 pkg/executor	TestReturnValues	ok	
 pkg/executor	TestRevokeColumnScope	ok	
 pkg/executor	TestRevokeDBScope	ok	
@@ -407,9 +418,9 @@ pkg/executor	TestShowStatsLocked	ok
 pkg/executor	TestShowStatsMeta	ok	
 pkg/executor	TestShowStatusSnapshot	ok	
 pkg/executor	TestShowTableDistributions	ok	
-pkg/executor	TestShuffleExit	failed	exit status 1
-pkg/executor	TestSkipNonServingTiDBRPCNodesForTiDBTypeCoprocessor	failed	exit status 1
-pkg/executor	TestSlowLogMaxPerSec	failed	exit status 1
+pkg/executor	TestShuffleExit	ok	
+pkg/executor	TestSkipNonServingTiDBRPCNodesForTiDBTypeCoprocessor	ok	
+pkg/executor	TestSlowLogMaxPerSec	failed	exit status 1: result.go:49: Error: Not equal: expected: '[tidb_slow_log_max_per_sec 0]\n' actual : '[tidb_slow_log_max_per_sec 1000000]\n'
 pkg/executor	TestSlowLogParseTime	ok	
 pkg/executor	TestSlowLogRUVersion	ok	
 pkg/executor	TestSlowQuery	ok	
@@ -424,8 +435,8 @@ pkg/executor	TestSlowQuerySessionAlias	ok
 pkg/executor	TestSlowQueryWithoutSlowLog	ok	
 pkg/executor	TestSnapshotWithConcurrentWrite	ok	
 pkg/executor	TestSortRequiredRows	ok	
-pkg/executor	TestSplitBatchCreateTable	failed	exit status 1
-pkg/executor	TestSplitBatchCreateTableFailWithEntryTooLarge	failed	exit status 1
+pkg/executor	TestSplitBatchCreateTable	ok	
+pkg/executor	TestSplitBatchCreateTableFailWithEntryTooLarge	ok	
 pkg/executor	TestSplitBatchCreateTableWithTableId	ok	
 pkg/executor	TestSplitByColon	ok	
 pkg/executor	TestSplitIndex	ok	
@@ -433,28 +444,32 @@ pkg/executor	TestSplitRegion	ok
 pkg/executor	TestSplitRegionTimeout	ok	
 pkg/executor	TestSplitTable	ok	
 pkg/executor	TestSplitTablesQueryMatch	ok	
-pkg/executor	TestStatementRUAnalyzeNoDelayLifecycle	failed	exit status 1
-pkg/executor	TestStatementRUCalculationTraversal	failed	exit status 1
-pkg/executor	TestStatementRUCursorExclusion	failed	exit status 1
+pkg/executor	TestStatementRUAnalyzeNoDelayLifecycle	ok	
+pkg/executor	TestStatementRUCalculationTraversal	ok	
+pkg/executor	TestStatementRUCursorExclusion	ok	
+pkg/executor	TestStatementRUFileTransferOutcomeHandoff	ok	
 pkg/executor	TestStatementRUFinalOutcomeFirstRecordWins	ok	
 pkg/executor	TestStatementRUFullReportFreeze	ok	
 pkg/executor	TestStatementRUMPPHashState	ok	
-pkg/executor	TestStatementRUMPPPublication	failed	exit status 1
+pkg/executor	TestStatementRUMPPPublication	ok	
 pkg/executor	TestStatementRUMPPUnits	ok	
-pkg/executor	TestStatementRUPointGetTerminalPlanHandoff	failed	exit status 1
+pkg/executor	TestStatementRUPointGetTerminalPlanHandoff	ok	
 pkg/executor	TestStatementRUPublisherIsolation	ok	
-pkg/executor	TestStatementRUReportModesSQL	failed	exit status 1
+pkg/executor	TestStatementRUReportModesSQL	ok	
 pkg/executor	TestStatementRUReportingFailures	ok	
-pkg/executor	TestStatementRUReportingModes	failed	exit status 1
-pkg/executor	TestStatementRUResultFinalizationAndPublication	failed	exit status 1
-pkg/executor	TestStatementRUResultProjectionCompleteness	failed	exit status 1
-pkg/executor	TestStatementRUResultValueContracts	failed	exit status 1
-pkg/executor	TestStatementRURetryAndReplay	failed	exit status 1
+pkg/executor	TestStatementRUReportingModes	ok	
+pkg/executor	TestStatementRUResultFinalizationAndPublication	ok	
+pkg/executor	TestStatementRUResultProjectionCompleteness	ok	
+pkg/executor	TestStatementRUResultSetTerminalOutcomes	ok	
+pkg/executor	TestStatementRUResultValueContracts	ok	
+pkg/executor	TestStatementRURetryAndReplay	ok	
+pkg/executor	TestStatementRUScalarSubqueryTerminalLifecycle	ok	
 pkg/executor	TestStatementRUTTLJobEligibility	ok	
 pkg/executor	TestStatementRUTerminalFirstCallWins	ok	
 pkg/executor	TestStatementRUTerminalUsesStmtCtxFlatPlanCache	ok	
 pkg/executor	TestStatementRUUsesConfig	ok	
-pkg/executor	TestStatementRUWriteLifecycle	failed	exit status 1
+pkg/executor	TestStatementRUWrappedStatements	ok	
+pkg/executor	TestStatementRUWriteLifecycle	ok	
 pkg/executor	TestStepShouldLargeThanMinStep	ok	
 pkg/executor	TestStmtLabel	ok	
 pkg/executor	TestStmtSummaryRetriverV2_TableStatementsSummary	ok	
@@ -467,27 +482,27 @@ pkg/executor	TestStorageEnginesInSlowQuery	ok
 pkg/executor	TestStreamAggRequiredRows	ok	
 pkg/executor	TestStrictNotNullCheckForInsert	ok	
 pkg/executor	TestSubqueries	ok	
-pkg/executor	TestTSOFail	failed	exit status 1
+pkg/executor	TestTSOFail	ok	
 pkg/executor	TestTableReaderRequiredRows	ok	
 pkg/executor	TestTableSampleBasic	ok	
 pkg/executor	TestTableSampleMultiRegions	ok	
 pkg/executor	TestTableSampleNoSplitTable	ok	
 pkg/executor	TestTableSamplePlan	ok	
 pkg/executor	TestTableStorageStats	ok	
-pkg/executor	TestThresholdCheckInspection	failed	exit status 1
-pkg/executor	TestThresholdCheckInspection2	failed	exit status 1
-pkg/executor	TestThresholdCheckInspection3	failed	exit status 1
-pkg/executor	TestTiDBClusterConfig	failed	exit status 1
-pkg/executor	TestTiDBClusterInfo	failed	exit status 1
-pkg/executor	TestTiDBClusterLog	failed	exit status 1
+pkg/executor	TestThresholdCheckInspection	ok	
+pkg/executor	TestThresholdCheckInspection2	ok	
+pkg/executor	TestThresholdCheckInspection3	ok	
+pkg/executor	TestTiDBClusterConfig	ok	
+pkg/executor	TestTiDBClusterInfo	ok	
+pkg/executor	TestTiDBClusterLog	ok	
 pkg/executor	TestTiDBClusterLogError	ok	
 pkg/executor	TestTiDBHotRegionsHistory	ok	
 pkg/executor	TestTiDBHotRegionsHistoryError	ok	
 pkg/executor	TestTiDBLastTxnInfoCommitMode	ok	
-pkg/executor	TestTiFlashSystemTableWithTiFlashV620	failed	exit status 1
-pkg/executor	TestTiFlashSystemTableWithTiFlashV630	failed	exit status 1
-pkg/executor	TestTiFlashSystemTableWithTiFlashV640	failed	exit status 1
-pkg/executor	TestTiKVClientReadTimeout	failed	exit status 1
+pkg/executor	TestTiFlashSystemTableWithTiFlashV620	ok	
+pkg/executor	TestTiFlashSystemTableWithTiFlashV630	ok	
+pkg/executor	TestTiFlashSystemTableWithTiFlashV640	ok	
+pkg/executor	TestTiKVClientReadTimeout	ok	
 pkg/executor	TestTikvRegionPeers	ok	
 pkg/executor	TestTikvRegionStatus	ok	
 pkg/executor	TestTopNRequiredRows	ok	
@@ -497,14 +512,14 @@ pkg/executor	TestTrafficError	ok
 pkg/executor	TestTrafficForm	ok	
 pkg/executor	TestTrafficPrivilege	ok	
 pkg/executor	TestTrafficShow	ok	
-pkg/executor	TestTxnWriteThroughputSLI	failed	exit status 1
+pkg/executor	TestTxnWriteThroughputSLI	ok	
 pkg/executor	TestUnion	ok	
 pkg/executor	TestUnionExecCloseReturnsAfterWorkerPanicDuringShutdown	ok	
-pkg/executor	TestUnionExecCloseWaitsForWorkers	failed	exit status 1
+pkg/executor	TestUnionExecCloseWaitsForWorkers	ok	
 pkg/executor	TestUnionScanForMemBufferReader	ok	
 pkg/executor	TestUnsignedPartitionColumn	ok	
 pkg/executor	TestUpdateMaterializedViewLogPurgeInfoOnSuccessMonotonicCheckpoint	ok	
-pkg/executor	TestUpdateRowRetryAndThenDupKey	failed	exit status 1
+pkg/executor	TestUpdateRowRetryAndThenDupKey	ok	
 pkg/executor	TestUpdateWithOnUpdateAndAutoGenerated	ok	
 pkg/executor	TestValidInspectionSummaryRules	ok	
 pkg/executor	TestValidateMViewCompleteDeltaWritableInputColTypesAllowsNullableInput	ok	
@@ -619,8 +634,9 @@ pkg/executor/aggregate	TestFallBackAction	ok
 pkg/executor/aggregate	TestGetCorrectResult	ok	
 pkg/executor/aggregate	TestRandomFail	ok	
 pkg/executor/importer	TestASTArgsFromStmt	ok	
-pkg/executor/importer	TestAdjustDiskQuota	failed	exit status 1
+pkg/executor/importer	TestAdjustDiskQuota	ok	
 pkg/executor/importer	TestAdjustOptions	ok	
+pkg/executor/importer	TestCalResourceParams	skipped	importer_testkit_test.go:557: we only cal resource related params in nextgen
 pkg/executor/importer	TestCalculateSubtaskCnt	ok	
 pkg/executor/importer	TestCalculateSubtaskCntUsesRealSizeNotFileSize	ok	
 pkg/executor/importer	TestCancelPendingJob	ok	
@@ -636,8 +652,9 @@ pkg/executor/importer	TestGetDefMaxEngineSize	ok
 pkg/executor/importer	TestGetJobInfoNullField	ok	
 pkg/executor/importer	TestGetLocalBackendCfg	ok	
 pkg/executor/importer	TestGetRegionSplitSizeKeys	ok	
-pkg/executor/importer	TestGetTargetNodeCpuCnt	failed	exit status 1
-pkg/executor/importer	TestImportPlanParquetLocation	failed	exit status 1
+pkg/executor/importer	TestGetTargetNodeCpuCnt	ok	
+pkg/executor/importer	TestImportFromSelectCleanup	ok	
+pkg/executor/importer	TestImportPlanParquetLocation	ok	
 pkg/executor/importer	TestInitCompressedFiles	ok	
 pkg/executor/importer	TestInitDefaultOptions	ok	
 pkg/executor/importer	TestInitOptionsDisallowOnDuplicateKeyWithLocalSort	ok	
@@ -663,11 +680,11 @@ pkg/executor/importer	TestProcessChunkWith	ok
 pkg/executor/importer	TestSampleIndexSizeRatio	ok	
 pkg/executor/importer	TestSampleIndexSizeRatioVeryLongRows	ok	
 pkg/executor/importer	TestStartDiskQuotaCheck	ok	
-pkg/executor/importer	TestSupportedSuffixForServerDisk	failed	exit status 1
-pkg/executor/importer	TestVerifyChecksum	failed	exit status 1
+pkg/executor/importer	TestSupportedSuffixForServerDisk	ok	
+pkg/executor/importer	TestVerifyChecksum	ok	
 pkg/executor/internal/applycache	TestApplyCache	ok	
 pkg/executor/internal/applycache	TestApplyCacheConcurrent	ok	
-pkg/executor/internal/calibrateresource	TestCalibrateResource	failed	exit status 1
+pkg/executor/internal/calibrateresource	TestCalibrateResource	ok	
 pkg/executor/internal/exec	TestAdaptiveLimitControllerAllowsOneGrowthPerProgressEpoch	ok	
 pkg/executor/internal/exec	TestAdaptiveLimitControllerBoundsLookupAdmission	ok	
 pkg/executor/internal/exec	TestAdaptiveLimitControllerDirectLookupGrowsOnNoOutput	ok	
@@ -688,7 +705,7 @@ pkg/executor/internal/mpp	TestNeedReportExecutionSummary	ok
 pkg/executor/internal/mpp	TestStatementRUMPPConcurrentReports	ok	
 pkg/executor/internal/mpp	TestStatementRUMPPPartialReports	ok	
 pkg/executor/internal/mpp	TestStatementRUMPPReportRoute	ok	
-pkg/executor/internal/mpp	TestStatementRUMPPReportsCompleteAtTimeout	failed	exit status 1
+pkg/executor/internal/mpp	TestStatementRUMPPReportsCompleteAtTimeout	ok	
 pkg/executor/internal/mpp	TestZoneHelperTryQuickFill	ok	
 pkg/executor/internal/pdhelper	TestTTLCache	ok	
 pkg/executor/internal/querywatch	TestQueryWatch	ok	
@@ -704,6 +721,7 @@ pkg/executor/join	TestAntiSemiJoinProbeAllJoinKeys	ok
 pkg/executor/join	TestAntiSemiJoinProbeBasic	ok	
 pkg/executor/join	TestAntiSemiJoinTypeNullBuildKey	ok	
 pkg/executor/join	TestBalanceOfFilteredRows	ok	
+pkg/executor/join	TestBitMaskInUint32	ok	no functions reached beyond package init
 pkg/executor/join	TestBuild	ok	
 pkg/executor/join	TestColumnsAllDataTypes	ok	
 pkg/executor/join	TestColumnsBasic	ok	
@@ -712,11 +730,13 @@ pkg/executor/join	TestConcurrentMap	ok
 pkg/executor/join	TestConcurrentMapHashTableMemoryUsage	ok	
 pkg/executor/join	TestConcurrentMapMemoryUsage	ok	
 pkg/executor/join	TestFallBackAction	ok	
+pkg/executor/join	TestFixedOffsetInRowLayout	ok	no functions reached beyond package init
 pkg/executor/join	TestHashJoinRandomFail	ok	
 pkg/executor/join	TestHashJoinRuntimeStats	ok	
-pkg/executor/join	TestHashJoinV2HashStateAcrossRepeatedOpen	failed	exit status 1
+pkg/executor/join	TestHashJoinV2HashStateAcrossRepeatedOpen	ok	
 pkg/executor/join	TestHashRowContainer	ok	
 pkg/executor/join	TestHashTableSize	ok	
+pkg/executor/join	TestHeapObjectCanMove	ok	no functions reached beyond package init
 pkg/executor/join	TestIndexJoinRuntimeStats	ok	
 pkg/executor/join	TestInnerJoinProbeAllJoinKeys	ok	
 pkg/executor/join	TestInnerJoinProbeBasic	ok	
@@ -725,7 +745,7 @@ pkg/executor/join	TestInnerJoinProbeWithSel	ok
 pkg/executor/join	TestInnerJoinSpillBasic	ok	
 pkg/executor/join	TestInnerJoinSpillWithOtherCondition	ok	
 pkg/executor/join	TestInnerJoinUnderApplyExec	ok	
-pkg/executor/join	TestIssue59377	failed	exit status 1
+pkg/executor/join	TestIssue59377	ok	
 pkg/executor/join	TestJoinTableMetaKeyInlinedAndFixed	ok	
 pkg/executor/join	TestJoinTableMetaKeyMode	ok	
 pkg/executor/join	TestJoinTableMetaNullMapLength	ok	
@@ -773,6 +793,8 @@ pkg/executor/join	TestSetupPartitionInfo	ok
 pkg/executor/join	TestTagHelper	ok	
 pkg/executor/join	TestTagHelperInit	ok	
 pkg/executor/join	TestTaggedBits	ok	
+pkg/executor/join	TestUintptrCanHoldPointer	ok	no functions reached beyond package init
+pkg/executor/join	TestUnalignmentLoad	ok	no functions reached beyond package init
 pkg/executor/join/test/indexjoin	TestIndexJoinInnerCTEStorageConcurrentBuild	ok	
 pkg/executor/join/test/indexjoin	TestIndexJoinNullEQ	ok	
 pkg/executor/join/test/indexjoin	TestIndexJoinNullEQMultiKey	ok	
@@ -781,8 +803,8 @@ pkg/executor/join/test/indexjoin	TestIndexJoinNullEQUniqueKey	ok
 pkg/executor/join/test/indexjoin	TestIndexLookupJoinHang	ok	
 pkg/executor/join/test/indexjoin	TestIssue16887	ok	
 pkg/executor/join/test/indexjoin	TestIssue18068	ok	
-pkg/executor/join/test/indexjoin	TestIssue45716	failed	exit status 1
-pkg/executor/join/test/indexjoin	TestIssue54055	failed	exit status 1
+pkg/executor/join/test/indexjoin	TestIssue45716	ok	
+pkg/executor/join/test/indexjoin	TestIssue54055	ok	
 pkg/executor/join/test/indexjoin	TestIssue54064	ok	
 pkg/executor/join/test/indexjoin	TestIssue54688	ok	
 pkg/executor/join/test/indexjoin	TestPartitionTableIndexJoinAndIndexReader	ok	
@@ -848,13 +870,13 @@ pkg/executor/staticrecordset	TestCursorWillBeClosed	ok
 pkg/executor/staticrecordset	TestCursorWillBlockMinStartTS	ok	
 pkg/executor/staticrecordset	TestDDLInsideTXNNotBlockMinStartTS	ok	
 pkg/executor/staticrecordset	TestDetachError	ok	
-pkg/executor/staticrecordset	TestFinishStmtError	failed	exit status 1
+pkg/executor/staticrecordset	TestFinishStmtError	ok	
 pkg/executor/staticrecordset	TestStaticRecordSet	ok	
 pkg/executor/staticrecordset	TestStaticRecordSetExceedGCTime	ok	
 pkg/executor/staticrecordset	TestStaticRecordSetWithTxn	ok	
 pkg/executor/test/admintest	TestAdminCheckGeneratedColumns	ok	
 pkg/executor/test/admintest	TestAdminCheckGlobalIndex	ok	
-pkg/executor/test/admintest	TestAdminCheckGlobalIndexDuringDDL	failed	exit status 1
+pkg/executor/test/admintest	TestAdminCheckGlobalIndexDuringDDL	ok	
 pkg/executor/test/admintest	TestAdminCheckGlobalIndexWithClusterIndex	ok	
 pkg/executor/test/admintest	TestAdminCheckPartitionTableFailed	ok	
 pkg/executor/test/admintest	TestAdminCheckTableErrorLocate	ok	
@@ -875,21 +897,22 @@ pkg/executor/test/admintest	TestAdminRecoverIndex	ok
 pkg/executor/test/admintest	TestAdminRecoverIndex1	ok	
 pkg/executor/test/admintest	TestAdminRecoverMVIndex	ok	
 pkg/executor/test/admintest	TestAdminRecoverPartitionTableIndex	ok	
+pkg/executor/test/admintest	TestAdminShowDDLJobsRU	skipped	show_ddl_jobs_test.go:71: DDL job RU is only displayed in NextGen
 pkg/executor/test/admintest	TestCheckFailReport	ok	
 pkg/executor/test/admintest	TestClusteredAdminCleanupIndex	ok	
 pkg/executor/test/admintest	TestClusteredIndexAdminRecoverIndex	ok	
-pkg/executor/test/admintest	TestFastAdminCheckPropagateSessionVarsToSysSession	failed	exit status 1
-pkg/executor/test/admintest	TestFastAdminCheckQuickPassSkipBucketed	failed	exit status 1
-pkg/executor/test/admintest	TestFastAdminCheckWithError	failed	exit status 1
+pkg/executor/test/admintest	TestFastAdminCheckPropagateSessionVarsToSysSession	ok	
+pkg/executor/test/admintest	TestFastAdminCheckQuickPassSkipBucketed	ok	
+pkg/executor/test/admintest	TestFastAdminCheckWithError	ok	
 pkg/executor/test/admintest	TestFastCheckTableConcurrent	ok	
 pkg/executor/test/aggregate	TestAggInDisk	ok	
 pkg/executor/test/aggregate	TestHashAggRuntimeStat	ok	
 pkg/executor/test/aggregate	TestIssue20658	ok	
-pkg/executor/test/aggregate	TestIssue50849	failed	exit status 1
+pkg/executor/test/aggregate	TestIssue50849	ok	
 pkg/executor/test/aggregate	TestParallelHashAgg	ok	
 pkg/executor/test/aggregate	TestParallelStreamAggGroupConcat	ok	
-pkg/executor/test/aggregate	TestRandomPanicConsume	failed	exit status 2
-pkg/executor/test/aggregate	TestStreamAggPendingMemDeltaBatching	failed	exit status 1
+pkg/executor/test/aggregate	TestRandomPanicConsume	ok	
+pkg/executor/test/aggregate	TestStreamAggPendingMemDeltaBatching	ok	
 pkg/executor/test/aggregate	TestSumIntDistinct	ok	
 pkg/executor/test/aggregate	TestSumIntMockCopPushDown	ok	
 pkg/executor/test/analyzetest	TestAdjustSampleRateNote	ok	
@@ -910,14 +933,14 @@ pkg/executor/test/analyzetest	TestAnalyzePartitionTableWithDynamicMode	ok
 pkg/executor/test/analyzetest	TestAnalyzePartitionUnderDynamic	ok	
 pkg/executor/test/analyzetest	TestAnalyzePartitionVerify	ok	
 pkg/executor/test/analyzetest	TestAnalyzeReplicaReadFollower	ok	
-pkg/executor/test/analyzetest	TestAnalyzeRestrict	failed	exit status 1
+pkg/executor/test/analyzetest	TestAnalyzeRestrict	ok	
 pkg/executor/test/analyzetest	TestAnalyzeSampleRateReason	ok	
-pkg/executor/test/analyzetest	TestAnalyzeSamplingWorkPanic	failed	exit status 1
+pkg/executor/test/analyzetest	TestAnalyzeSamplingWorkPanic	ok	
 pkg/executor/test/analyzetest	TestAnalyzeTooLongColumns	ok	
-pkg/executor/test/analyzetest	TestAutoAnalyzeAwareGlobalVariableChange	failed	exit status 1
+pkg/executor/test/analyzetest	TestAutoAnalyzeAwareGlobalVariableChange	ok	
 pkg/executor/test/analyzetest	TestDynamicExpandMustForceAllColumns	ok	
 pkg/executor/test/analyzetest	TestExtractTopN	ok	
-pkg/executor/test/analyzetest	TestFailedAnalyzeRequestV2	failed	exit status 1
+pkg/executor/test/analyzetest	TestFailedAnalyzeRequestV2	ok	
 pkg/executor/test/analyzetest	TestGeneratedColumns	ok	
 pkg/executor/test/analyzetest	TestInsertAnalyzeJobWithLongInstance	ok	
 pkg/executor/test/analyzetest	TestIssue20874	ok	
@@ -926,12 +949,12 @@ pkg/executor/test/analyzetest	TestIssue35056Related	ok
 pkg/executor/test/analyzetest	TestIssue55438	ok	
 pkg/executor/test/analyzetest	TestIssue61609	ok	
 pkg/executor/test/analyzetest	TestIssue66918	ok	
-pkg/executor/test/analyzetest	TestKillAutoAnalyze	failed	exit status 1
-pkg/executor/test/analyzetest	TestKillAutoAnalyzeIndex	failed	exit status 1
+pkg/executor/test/analyzetest	TestKillAutoAnalyze	ok	
+pkg/executor/test/analyzetest	TestKillAutoAnalyzeIndex	ok	
 pkg/executor/test/analyzetest	TestShowAanalyzeStatusJobInfo	ok	
 pkg/executor/test/analyzetest	TestSkipStatsForGeneratedColumnsOnSkippedColumns	ok	
 pkg/executor/test/analyzetest	TestSmallTableAnalyzeV2	ok	
-pkg/executor/test/analyzetest	TestSnapshotAnalyzeAndMaxTSAnalyze	failed	exit status 1
+pkg/executor/test/analyzetest	TestSnapshotAnalyzeAndMaxTSAnalyze	ok	
 pkg/executor/test/analyzetest/columns	TestAnalyzeColumnsWithClusteredIndex	ok	
 pkg/executor/test/analyzetest/columns	TestAnalyzeColumnsWithDynamicPartitionTable	ok	
 pkg/executor/test/analyzetest/columns	TestAnalyzeColumnsWithIndex	ok	
@@ -940,6 +963,9 @@ pkg/executor/test/analyzetest/columns	TestAnalyzeColumnsWithStaticPartitionTable
 pkg/executor/test/analyzetest/columns	TestAnalyzeColumnsWithVirtualColumnIndex	ok	
 pkg/executor/test/analyzetest/memorycontrol	TestAnalyzeSessionMemTrackerDetachOnClose	ok	
 pkg/executor/test/analyzetest/memorycontrol	TestAnalyzeV2MemoryUsageMetricNeverNegative	ok	
+pkg/executor/test/analyzetest/memorycontrol	TestGlobalMemoryControlForAnalyze	ok	
+pkg/executor/test/analyzetest/memorycontrol	TestGlobalMemoryControlForAutoAnalyze	ok	
+pkg/executor/test/analyzetest/memorycontrol	TestGlobalMemoryControlForPrepareAnalyze	ok	
 pkg/executor/test/analyzetest/memorycontrol	TestLiveSessionManagerTracksLatestProcessInfo	ok	
 pkg/executor/test/analyzetest/memorycontrol	TestMemQuotaAnalyze	ok	
 pkg/executor/test/analyzetest/memorycontrol	TestMemQuotaAnalyze2	ok	
@@ -949,17 +975,18 @@ pkg/executor/test/analyzetest/options	TestSavedAnalyzeColumnOptions	ok
 pkg/executor/test/analyzetest/options	TestSavedAnalyzeOptions	ok	
 pkg/executor/test/analyzetest/options	TestSavedAnalyzeOptionsForMultipleTables	ok	
 pkg/executor/test/analyzetest/options	TestSavedPartitionAnalyzeOptions	ok	
-pkg/executor/test/analyzetest/panictest	TestPanicInHandleAnalyzeWorkerPanic	failed	exit status 1
-pkg/executor/test/analyzetest/panictest	TestPanicInHandleResultErrorWithSingleGoroutine	failed	exit status 1
+pkg/executor/test/analyzetest/panictest	TestPanicInHandleAnalyzeWorkerPanic	ok	
+pkg/executor/test/analyzetest/panictest	TestPanicInHandleResultErrorWithSingleGoroutine	ok	
 pkg/executor/test/autoidtest	TestFilterDifferentAllocators	ok	
 pkg/executor/test/autoidtest	TestInsertWithAutoidSchema	ok	
 pkg/executor/test/autoidtest	TestIssue39528	ok	
 pkg/executor/test/autoidtest	TestIssue52622	ok	
-pkg/executor/test/autoidtest	TestMockAutoIDServiceError	failed	exit status 1
+pkg/executor/test/autoidtest	TestMockAutoIDServiceError	ok	
 pkg/executor/test/cte	TestCTEDelSpillFile	ok	
 pkg/executor/test/cte	TestCTEExecError	ok	
 pkg/executor/test/cte	TestCTEIssue49096	ok	
 pkg/executor/test/cte	TestCTEIterationMemTracker	ok	
+pkg/executor/test/cte	TestCTEPanic	ok	
 pkg/executor/test/cte	TestCTEShareCorColumn	ok	
 pkg/executor/test/cte	TestCTETableInvalidTask	ok	
 pkg/executor/test/cte	TestSpillToDisk	ok	
@@ -1023,14 +1050,14 @@ pkg/executor/test/executor	TestProcessInfoOfSubQuery	ok
 pkg/executor/test/executor	TestQueryWithKill	ok	
 pkg/executor/test/executor	TestSelectVar	ok	
 pkg/executor/test/executor	TestSessionRootTrackerDetach	ok	
-pkg/executor/test/executor	TestSignalCheckpointForSort	failed	exit status 1
+pkg/executor/test/executor	TestSignalCheckpointForSort	ok	
 pkg/executor/test/executor	TestTableSampleTemporaryTable	ok	
 pkg/executor/test/executor	TestTiDBCurrentTS	ok	
 pkg/executor/test/executor	TestTiDBLastQueryInfo	ok	
 pkg/executor/test/executor	TestTiDBLastTxnInfo	ok	
 pkg/executor/test/executor	TestTimestampDefaultValueTimeZone	ok	
 pkg/executor/test/executor	TestTimezonePushDown	ok	
-pkg/executor/test/executor	TestTwiceCloseUnionExec	failed	exit status 1
+pkg/executor/test/executor	TestTwiceCloseUnionExec	ok	
 pkg/executor/test/executor	TestUnion2	ok	
 pkg/executor/test/executor	TestUnionLimit	ok	
 pkg/executor/test/executor	TestUnreasonablyClose	ok	
@@ -1061,13 +1088,19 @@ pkg/executor/test/fktest	TestForeignKeyRuntimeStats	ok
 pkg/executor/test/fktest	TestLockKeysInDML	ok	
 pkg/executor/test/fktest	TestLockKeysInInsertIgnore	ok	
 pkg/executor/test/fktest	TestPrivilegeCheckInForeignKeyCascade	ok	
+pkg/executor/test/indexmergereadtest	TestIndexMergeCoprGoroutinesLeak	ok	
+pkg/executor/test/indexmergereadtest	TestIndexMergeError	ok	
 pkg/executor/test/indexmergereadtest	TestIndexMergeIntersectionConcurrency	ok	
-pkg/executor/test/indexmergereadtest	TestIndexMergeLimitNotPushedOnPartialSideButKeepOrder	failed	exit status 1
+pkg/executor/test/indexmergereadtest	TestIndexMergeLimitNotPushedOnPartialSideButKeepOrder	ok	
 pkg/executor/test/indexmergereadtest	TestIndexMergeLimitPushedAsIntersectionEmbeddedLimit	ok	
+pkg/executor/test/indexmergereadtest	TestIndexMergePanic	ok	
+pkg/executor/test/indexmergereadtest	TestIndexMergePickAndExecTaskPanic	ok	
+pkg/executor/test/indexmergereadtest	TestIndexMergeProcessWorkerHang	ok	
 pkg/executor/test/indexmergereadtest	TestIndexMergeReaderIssue45279	ok	
 pkg/executor/test/indexmergereadtest	TestIndexMergeReaderMemTracker	ok	
 pkg/executor/test/indexmergereadtest	TestIndexMergeWithPreparedStmt	ok	
 pkg/executor/test/indexmergereadtest	TestIntersectionWithDifferentConcurrency	ok	
+pkg/executor/test/indexmergereadtest	TestIntersectionWorkerPanic	ok	
 pkg/executor/test/indexmergereadtest	TestIssues46005	ok	
 pkg/executor/test/indexmergereadtest	TestIssues70910	ok	
 pkg/executor/test/indexmergereadtest	TestMVIndexMergePlanTree	ok	
@@ -1086,14 +1119,15 @@ pkg/executor/test/infoschema	TestInfoSchemaConditionWorks	ok
 pkg/executor/test/infoschema	TestInfoSchemaDDLJobs	ok	
 pkg/executor/test/infoschema	TestInfoSchemaExcludeNonPublicColumns	ok	
 pkg/executor/test/infoschema	TestInfoschemaTablesSpecialOptimizationCovered	ok	
-pkg/executor/test/infoschema	TestInspectionTables	failed	exit status 1
+pkg/executor/test/infoschema	TestInspectionTables	ok	
 pkg/executor/test/infoschema	TestJoinSystemTableContainsView	ok	
+pkg/executor/test/infoschema	TestKeyspaceMeta	skipped	infoschema_test.go:1230: Keyspace is not supported in classic mode
 pkg/executor/test/infoschema	TestPartitionsTable	ok	
 pkg/executor/test/infoschema	TestReferencedTableSchemaWithForeignKey	ok	
 pkg/executor/test/infoschema	TestSameTableNameInTwoSchemas	ok	
 pkg/executor/test/infoschema	TestShowColumnsWithSubQueryView	ok	
 pkg/executor/test/infoschema	TestStatisticShowPublicIndexes	ok	
-pkg/executor/test/infoschema	TestTableRowsOnlySkipsColumnLengthRead	failed	exit status 1
+pkg/executor/test/infoschema	TestTableRowsOnlySkipsColumnLengthRead	ok	
 pkg/executor/test/infoschema	TestTablesTable	ok	
 pkg/executor/test/infoschema	TestUserPrivileges	ok	
 pkg/executor/test/issuetest	TestCalculateBatchSize	ok	
@@ -1102,10 +1136,10 @@ pkg/executor/test/issuetest	TestIndexJoin31494	ok
 pkg/executor/test/issuetest	TestIndexReaderIssue53871AndIssue54160	ok	
 pkg/executor/test/issuetest	TestIssue20975	ok	
 pkg/executor/test/issuetest	TestIssue20975WithPartitionTable	ok	
-pkg/executor/test/issuetest	TestIssue24210	failed	exit status 1
+pkg/executor/test/issuetest	TestIssue24210	ok	
 pkg/executor/test/issuetest	TestIssue28650	ok	
 pkg/executor/test/issuetest	TestIssue29498	ok	
-pkg/executor/test/issuetest	TestIssue30289	failed	exit status 1
+pkg/executor/test/issuetest	TestIssue30289	ok	
 pkg/executor/test/issuetest	TestIssue31678	ok	
 pkg/executor/test/issuetest	TestIssue33038	ok	
 pkg/executor/test/issuetest	TestIssue33214	ok	
@@ -1114,7 +1148,7 @@ pkg/executor/test/issuetest	TestIssue42662	ok
 pkg/executor/test/issuetest	TestIssue50393	ok	
 pkg/executor/test/issuetest	TestIssue51777	ok	
 pkg/executor/test/issuetest	TestIssue51874	ok	
-pkg/executor/test/issuetest	TestIssue51998	failed	exit status 1
+pkg/executor/test/issuetest	TestIssue51998	ok	
 pkg/executor/test/issuetest	TestIssue52978	ok	
 pkg/executor/test/issuetest	TestIssue53221	ok	
 pkg/executor/test/issuetest	TestIssue55881	ok	
@@ -1124,34 +1158,38 @@ pkg/executor/test/issuetest	TestUnionIssue	ok
 pkg/executor/test/jointest	TestIssue11895	ok	
 pkg/executor/test/jointest	TestIssue11896	ok	
 pkg/executor/test/jointest	TestIssue18070	ok	
-pkg/executor/test/jointest	TestIssue20779	failed	exit status 1
-pkg/executor/test/jointest	TestIssue30211	failed	exit status 1
+pkg/executor/test/jointest	TestIssue20779	ok	
+pkg/executor/test/jointest	TestIssue30211	ok	
 pkg/executor/test/jointest	TestIssue37932	ok	
-pkg/executor/test/jointest	TestIssue49033	failed	exit status 1
+pkg/executor/test/jointest	TestIssue49033	ok	
 pkg/executor/test/jointest	TestJoin2	ok	
 pkg/executor/test/jointest	TestJoinLeak	ok	
 pkg/executor/test/jointest	TestNullEmptyAwareSemiJoin	ok	
 pkg/executor/test/jointest	TestSingleTaskIncrementalIndexHashJoin	ok	
-pkg/executor/test/jointest/hashjoin	TestBuildHashTablePanic	failed	exit status 1
-pkg/executor/test/jointest/hashjoin	TestCreateTasksPanic	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestBuildHashTablePanic	ok	
+pkg/executor/test/jointest/hashjoin	TestCreateTasksPanic	ok	
 pkg/executor/test/jointest/hashjoin	TestExplainAnalyzeJoin	ok	
-pkg/executor/test/jointest/hashjoin	TestFullOuterJoinHashJoinV1	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestFullOuterJoinHashJoinV1	ok	
 pkg/executor/test/jointest/hashjoin	TestFullOuterJoinHashJoinV1AgainstRewriteOracle	ok	
 pkg/executor/test/jointest/hashjoin	TestFullOuterJoinHashJoinV1Spill	ok	
 pkg/executor/test/jointest/hashjoin	TestHashJoin	ok	
-pkg/executor/test/jointest/hashjoin	TestIndexNestedLoopHashJoin	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestIndexNestedLoopHashJoin	ok	
 pkg/executor/test/jointest/hashjoin	TestInlineProjection4HashJoinIssue15316	ok	
-pkg/executor/test/jointest/hashjoin	TestIssue20270	failed	exit status 1
-pkg/executor/test/jointest/hashjoin	TestIssue52902	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestIssue18572_1	ok	
+pkg/executor/test/jointest/hashjoin	TestIssue18572_2	ok	
+pkg/executor/test/jointest/hashjoin	TestIssue18572_3	ok	
+pkg/executor/test/jointest/hashjoin	TestIssue20270	ok	
+pkg/executor/test/jointest/hashjoin	TestIssue31129	ok	
+pkg/executor/test/jointest/hashjoin	TestIssue52902	ok	
 pkg/executor/test/jointest/hashjoin	TestIssue54755	ok	
 pkg/executor/test/jointest/hashjoin	TestIssue55016	ok	
 pkg/executor/test/jointest/hashjoin	TestIssue56214	ok	
 pkg/executor/test/jointest/hashjoin	TestIssue56825	ok	
-pkg/executor/test/jointest/hashjoin	TestKillDuringBuild	failed	exit status 1
-pkg/executor/test/jointest/hashjoin	TestKillDuringProbe	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestKillDuringBuild	ok	
+pkg/executor/test/jointest/hashjoin	TestKillDuringProbe	ok	
 pkg/executor/test/jointest/hashjoin	TestOuterTableBuildHashTableIsuse13933	ok	
-pkg/executor/test/jointest/hashjoin	TestProcessOneProbeChunkPanic	failed	exit status 1
-pkg/executor/test/jointest/hashjoin	TestSplitPartitionPanic	failed	exit status 1
+pkg/executor/test/jointest/hashjoin	TestProcessOneProbeChunkPanic	ok	
+pkg/executor/test/jointest/hashjoin	TestSplitPartitionPanic	ok	
 pkg/executor/test/loaddatatest	TestFix56408	ok	
 pkg/executor/test/loaddatatest	TestLoadData	ok	
 pkg/executor/test/loaddatatest	TestLoadDataAutoRandomError	ok	
@@ -1167,46 +1205,46 @@ pkg/executor/test/loaddatatest	TestLoadDataReplace	ok
 pkg/executor/test/loaddatatest	TestLoadDataSpecifiedColumns	ok	
 pkg/executor/test/loaddatatest	TestLoadDataWithUppercaseUserVars	ok	
 pkg/executor/test/loadremotetest	TestLoadRemote	ok	
-pkg/executor/test/materializedviewlog	TestCancelMaterializedViewLogPurgeJob	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestCancelMaterializedViewLogPurgeJob	ok	
 pkg/executor/test/materializedviewlog	TestCreateVectorIndexOnMaterializedViewLogTableRejected	ok	
 pkg/executor/test/materializedviewlog	TestMViewEnableControlsMLogCommitTSAccessAndPurge	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogAdaptiveThrottleFallbackOnCountFailure	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogAdaptiveThrottleFallbackOnDeadlineFailure	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogAdaptiveThrottleFallbackOnSleepFailure	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogBatchDelete	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogBeginFailure	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogCancelWatcherUsesHistRequest	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDefaultMVMaintainIsolationReadEnginesDoesNotInheritCurrentSession	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDeleteErrorAfterPartialSuccess	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDeleteErrorNoDirtyWrite	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogBeginFailure	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogCancelWatcherUsesHistRequest	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDefaultMVMaintainIsolationReadEnginesDoesNotInheritCurrentSession	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDeleteErrorAfterPartialSuccess	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDeleteErrorNoDirtyWrite	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDisallowExplicitTransaction	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogDoesNotMarkDDLExecution	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogEarlyFailureWritesHist	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogFinalizeFailureAfterCommitIsWarning	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogFinalizeFailureUsesWithoutCancel	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogEarlyFailureWritesHist	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogFinalizeFailureAfterCommitIsWarning	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogFinalizeFailureUsesWithoutCancel	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogFinalizeRetrySucceeds	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogInternalSQLFallsBackWhenApplyMaintenanceMemQuotaFails	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogInternalSQLFallsBackWhenApplyMaintenanceMemQuotaFails	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogInternalSQLNoScheduleSetsNextUnixSecondsNull	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogInternalSQLStartWithNoNextSetsNextUnixSecondsNull	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogLastPurgedTSOShortCircuit	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogLockRowMissing	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogManualCancelAfterPartialSuccess	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogManualSQLFailsWhenApplyMaintenanceMemQuotaFails	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogManualCancelAfterPartialSuccess	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogManualSQLFailsWhenApplyMaintenanceMemQuotaFails	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogMissingMLog	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogMissingPublicMViewRefreshRow	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogNextUnixSecondsOnlyUpdatesForInternalSQL	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogNoDB	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogNowaitConflict	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogPrivilege	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogRunningHistHeartbeat	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogRunningHistHeartbeat	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogSkipsWhenCutoffFenceWouldGoBackward	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUpdatesStatsMetaRowCount	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesConfiguredTiFlashThreadsForCountAndDelete	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesCurrentSessionMVMaintainIsolationReadEngines	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesCurrentSessionMVMaintainMemQuota	failed	exit status 1
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesRowIDRangeDeleteSQL	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesConfiguredTiFlashThreadsForCountAndDelete	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesCurrentSessionMVMaintainIsolationReadEngines	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesCurrentSessionMVMaintainMemQuota	ok	
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogUsesRowIDRangeDeleteSQL	ok	
 pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogWritesState	ok	
-pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogZeroStartTS	failed	exit status 1
+pkg/executor/test/materializedviewlog	TestPurgeMaterializedViewLogZeroStartTS	ok	
 pkg/executor/test/materializedviewlog	TestTruncateMaterializedViewRelatedTablesRejected	ok	
 pkg/executor/test/memtest	TestGlobalMemArbitrator	ok	
 pkg/executor/test/memtest	TestInsertUpdateTrackerOnCleanUp	ok	
@@ -1261,7 +1299,7 @@ pkg/executor/test/plancache	TestPreparedPlanCacheOperators	ok
 pkg/executor/test/plancache	TestPreparedPlanCachePlanSelectionRegressions	ok	
 pkg/executor/test/plancache	TestPreparedPlanCacheSessionInteractions	ok	
 pkg/executor/test/planreplayer	TestExplainExploreReplayer	ok	
-pkg/executor/test/planreplayer	TestPlanReplayer	failed	exit status 1
+pkg/executor/test/planreplayer	TestPlanReplayer	ok	
 pkg/executor/test/planreplayer	TestPlanReplayerCapture	ok	
 pkg/executor/test/planreplayer	TestPlanReplayerCaptureSEM	ok	
 pkg/executor/test/planreplayer	TestPlanReplayerContinuesCapture	ok	
@@ -1271,33 +1309,33 @@ pkg/executor/test/planreplayer	TestPlanReplayerDumpPresignedURLOutput	ok
 pkg/executor/test/planreplayer	TestPlanReplayerDumpSingle	ok	
 pkg/executor/test/planreplayer	TestPlanReplayerLoadIgnoresLowResolutionTSO	ok	
 pkg/executor/test/planreplayer	TestPlanReplayerLoadReportsCreateDatabaseError	ok	
-pkg/executor/test/planreplayer	TestPlanReplayerLoadTiFlashPlanWithHypoReplica	failed	exit status 1
-pkg/executor/test/recovertest	TestFlashbackClusterWithManyDBs	failed	exit status 1
-pkg/executor/test/recovertest	TestFlashbackRetryGetMinSafeTime	failed	exit status 1
+pkg/executor/test/planreplayer	TestPlanReplayerLoadTiFlashPlanWithHypoReplica	ok	
+pkg/executor/test/recovertest	TestFlashbackClusterWithManyDBs	ok	
+pkg/executor/test/recovertest	TestFlashbackRetryGetMinSafeTime	ok	
 pkg/executor/test/recovertest	TestFlashbackSchema	ok	
 pkg/executor/test/recovertest	TestFlashbackSchemaWithManyTables	ok	
-pkg/executor/test/recovertest	TestFlashbackTSOWithSafeTs	failed	exit status 1
+pkg/executor/test/recovertest	TestFlashbackTSOWithSafeTs	ok	
 pkg/executor/test/recovertest	TestFlashbackTable	ok	
-pkg/executor/test/recovertest	TestFlashbackWithSafeTs	failed	exit status 1
-pkg/executor/test/recovertest	TestRecoverClusterMeetError	failed	exit status 1
-pkg/executor/test/recovertest	TestRecoverTable	failed	exit status 1
-pkg/executor/test/recovertest	TestRecoverTableMeetError	failed	exit status 1
+pkg/executor/test/recovertest	TestFlashbackWithSafeTs	ok	
+pkg/executor/test/recovertest	TestRecoverClusterMeetError	ok	
+pkg/executor/test/recovertest	TestRecoverTable	ok	
+pkg/executor/test/recovertest	TestRecoverTableMeetError	ok	
 pkg/executor/test/recovertest	TestRecoverTablePrivilege	ok	
 pkg/executor/test/recovertest	TestRecoverTempTable	ok	
-pkg/executor/test/seqtest	TestAdminShowNextID	failed	exit status 1
-pkg/executor/test/seqtest	TestAnalyzeNextRawErrorNoLeak	failed	exit status 1
+pkg/executor/test/seqtest	TestAdminShowNextID	ok	
+pkg/executor/test/seqtest	TestAnalyzeNextRawErrorNoLeak	ok	
 pkg/executor/test/seqtest	TestAutoRandRecoverTable	ok	
 pkg/executor/test/seqtest	TestBatchInsertDelete	ok	
 pkg/executor/test/seqtest	TestCartesianProduct	ok	
 pkg/executor/test/seqtest	TestCoprocessorPriority	ok	
-pkg/executor/test/seqtest	TestEarlyClose	failed	exit status 1
+pkg/executor/test/seqtest	TestEarlyClose	ok	
 pkg/executor/test/seqtest	TestIndexDoubleReadClose	ok	
-pkg/executor/test/seqtest	TestIndexMergeReaderClose	failed	exit status 1
+pkg/executor/test/seqtest	TestIndexMergeReaderClose	ok	
 pkg/executor/test/seqtest	TestInsertFromSelectConflictRetryAutoID	ok	
-pkg/executor/test/seqtest	TestIssue18744	failed	exit status 1
+pkg/executor/test/seqtest	TestIssue18744	ok	
 pkg/executor/test/seqtest	TestIssue21884	ok	
-pkg/executor/test/seqtest	TestOOMPanicInHashJoinWhenFetchBuildRows	failed	exit status 1
-pkg/executor/test/seqtest	TestParallelHashAggClose	failed	exit status 1
+pkg/executor/test/seqtest	TestOOMPanicInHashJoinWhenFetchBuildRows	ok	
+pkg/executor/test/seqtest	TestParallelHashAggClose	ok	
 pkg/executor/test/seqtest	TestPessimisticConflictRetryAutoID	ok	
 pkg/executor/test/seqtest	TestPrepareDealloc	ok	
 pkg/executor/test/seqtest	TestPrepareMaxParamCountCheck	ok	
@@ -1311,7 +1349,7 @@ pkg/executor/test/seqtest	TestPreparedLimitOffset	ok
 pkg/executor/test/seqtest	TestPreparedUpdate	ok	
 pkg/executor/test/seqtest	TestShow	ok	
 pkg/executor/test/seqtest	TestShowStatsHealthy	ok	
-pkg/executor/test/seqtest	TestUnparallelHashAggClose	failed	exit status 1
+pkg/executor/test/seqtest	TestUnparallelHashAggClose	ok	
 pkg/executor/test/showtest	TestAutoRandomBase	ok	
 pkg/executor/test/showtest	TestAutoRandomWithLargeSignedShowTableRegions	ok	
 pkg/executor/test/showtest	TestCollation	ok	
@@ -1347,6 +1385,7 @@ pkg/executor/test/simpletest	TestMaxUserConnections	ok
 pkg/executor/test/simpletest	TestRole	ok	
 pkg/executor/test/simpletest	TestSelectWhereInvalidDSTTime	ok	
 pkg/executor/test/simpletest	TestSetPwd	ok	
+pkg/executor/test/simpletest	TestStarterUsernamePolicyInSimpleExec	skipped	simple_test.go:45: starter deploy mode is nextgen-only
 pkg/executor/test/simpletest	TestTransaction	ok	
 pkg/executor/test/simpletest	TestUser	ok	
 pkg/executor/test/simpletest	TestUserWithSetNames	ok	
@@ -1371,19 +1410,21 @@ pkg/executor/test/tiflashtest	TestInjectExtraProj	ok
 pkg/executor/test/tiflashtest	TestIssue41014	ok	
 pkg/executor/test/tiflashtest	TestIssue50358	ok	
 pkg/executor/test/tiflashtest	TestIssue57149	ok	
+pkg/executor/test/tiflashtest	TestIssue59703	ok	
 pkg/executor/test/tiflashtest	TestIssue59877	ok	
 pkg/executor/test/tiflashtest	TestJoinRace	ok	
 pkg/executor/test/tiflashtest	TestMPP47766	ok	
-pkg/executor/test/tiflashtest	TestMPPMemoryTracker	failed	exit status 1
-pkg/executor/test/tiflashtest	TestMppAggShouldAlignFinalMode	failed	exit status 1
+pkg/executor/test/tiflashtest	TestMPPMemoryTracker	ok	
+pkg/executor/test/tiflashtest	TestMPPRecovery	ok	
+pkg/executor/test/tiflashtest	TestMppAggShouldAlignFinalMode	ok	
 pkg/executor/test/tiflashtest	TestMppApply	ok	
 pkg/executor/test/tiflashtest	TestMppEnum	ok	
 pkg/executor/test/tiflashtest	TestMppExecution	ok	
-pkg/executor/test/tiflashtest	TestMppGoroutinesExitFromErrors	failed	exit status 1
-pkg/executor/test/tiflashtest	TestMppStoreCntWithErrors	failed	exit status 1
-pkg/executor/test/tiflashtest	TestMppTableReaderCacheForSingleSQL	failed	exit status 1
+pkg/executor/test/tiflashtest	TestMppGoroutinesExitFromErrors	ok	
+pkg/executor/test/tiflashtest	TestMppStoreCntWithErrors	ok	
+pkg/executor/test/tiflashtest	TestMppTableReaderCacheForSingleSQL	ok	
 pkg/executor/test/tiflashtest	TestMppUnionAll	ok	
-pkg/executor/test/tiflashtest	TestMppVersionError	failed	exit status 1
+pkg/executor/test/tiflashtest	TestMppVersionError	ok	
 pkg/executor/test/tiflashtest	TestNoAliveTiFlashRetry	ok	
 pkg/executor/test/tiflashtest	TestNonsupportCharsetTable	ok	
 pkg/executor/test/tiflashtest	TestPartitionTable	ok	
@@ -1391,7 +1432,9 @@ pkg/executor/test/tiflashtest	TestReadPartitionTable	ok
 pkg/executor/test/tiflashtest	TestReadUnsigedPK	ok	
 pkg/executor/test/tiflashtest	TestTiFlashComputeDispatchPolicy	ok	
 pkg/executor/test/tiflashtest	TestTiFlashPartitionTableBroadcastJoin	ok	
+pkg/executor/test/tiflashtest	TestTiFlashPartitionTableReader	skipped	tiflash_test.go:401: too slow
 pkg/executor/test/tiflashtest	TestTiFlashPartitionTableShuffledHashAggregation	ok	
+pkg/executor/test/tiflashtest	TestTiFlashPartitionTableShuffledHashJoin	skipped	tiflash_test.go:325: too slow
 pkg/executor/test/tiflashtest	TestTiFlashPlanCacheable	ok	
 pkg/executor/test/tiflashtest	TestTiFlashVirtualColumn	ok	
 pkg/executor/test/tiflashtest	TestTiflashEmptyDynamicPruneResult	ok	
@@ -1399,8 +1442,8 @@ pkg/executor/test/tiflashtest	TestTiflashPartitionTableScan	ok
 pkg/executor/test/tiflashtest	TestTiflashSupportStaleRead	ok	
 pkg/executor/test/tiflashtest	TestUnionScan	ok	
 pkg/executor/test/tiflashtest	TestUnionWithEmptyDualTable	ok	
-pkg/executor/test/txn	TestColumnNotMatchError	failed	exit status 1
-pkg/executor/test/txn	TestInnodbLockWaitTimeout	failed	exit status 1
+pkg/executor/test/txn	TestColumnNotMatchError	ok	
+pkg/executor/test/txn	TestInnodbLockWaitTimeout	ok	
 pkg/executor/test/txn	TestInvalidReadCacheTable	ok	
 pkg/executor/test/txn	TestInvalidReadTemporaryTable	ok	
 pkg/executor/test/txn	TestRollbackToSavepointReleasePessimisticLock	ok	
@@ -1418,7 +1461,7 @@ pkg/executor/test/writetest	TestIssue18681	ok
 pkg/executor/test/writetest	TestIssue34358	ok	
 pkg/executor/test/writetest	TestLatch	ok	
 pkg/executor/test/writetest	TestLoadDataMissingColumn	ok	
-pkg/executor/test/writetest	TestMLogAddColumnRejectsNonPublicBaseColumn	failed	exit status 1
+pkg/executor/test/writetest	TestMLogAddColumnRejectsNonPublicBaseColumn	ok	
 pkg/executor/test/writetest	TestMLogAlterAddGeneratedColumn	ok	
 pkg/executor/test/writetest	TestMLogAlterDropTrackedGeneratedColumnCurrentBehavior	ok	
 pkg/executor/test/writetest	TestMLogAlterGeneratedColumnConstraints	ok	
@@ -1444,10 +1487,10 @@ pkg/executor/test/writetest	TestMLogLoadDataReplacePKAndUKConflict	ok
 pkg/executor/test/writetest	TestMLogMultiRowIODKU	ok	
 pkg/executor/test/writetest	TestMLogMultiTableDelete	ok	
 pkg/executor/test/writetest	TestMLogMultiTableUpdate	ok	
-pkg/executor/test/writetest	TestMLogOnlineDDLAddTrackedColumn	failed	exit status 1
-pkg/executor/test/writetest	TestMLogOnlineDDLAddUntrackedColumn	failed	exit status 1
+pkg/executor/test/writetest	TestMLogOnlineDDLAddTrackedColumn	ok	
+pkg/executor/test/writetest	TestMLogOnlineDDLAddUntrackedColumn	ok	
 pkg/executor/test/writetest	TestMLogOnlineDDLDropTrackedColumnRejected	ok	
-pkg/executor/test/writetest	TestMLogOnlineDDLDropUntrackedColumn	failed	exit status 1
+pkg/executor/test/writetest	TestMLogOnlineDDLDropUntrackedColumn	ok	
 pkg/executor/test/writetest	TestMLogPartialColumnsMapping	ok	
 pkg/executor/test/writetest	TestMLogPartitionedTableNotSupported	ok	
 pkg/executor/test/writetest	TestMLogPrunedColumns	ok	
@@ -1559,6 +1602,7 @@ pkg/expression	TestConcatWSSig	ok
 pkg/expression	TestConnectionID	ok	
 pkg/expression	TestConstLevel	ok	
 pkg/expression	TestConstant	ok	
+pkg/expression	TestConstant2Pb	skipped	expr_to_pb_test.go:45: constant pb has changed
 pkg/expression	TestConstantFolding	ok	
 pkg/expression	TestConstantFoldingCharsetConvert	ok	
 pkg/expression	TestConstantHashEquals	ok	
@@ -1598,6 +1642,7 @@ pkg/expression	TestDoubleRow2Vec	ok
 pkg/expression	TestDoubleVec2Row	ok	
 pkg/expression	TestElt	ok	
 pkg/expression	TestEmbedTextASTHelpers	ok	
+pkg/expression	TestEmbedTextBuiltin	skipped	builtin_inference_test.go:34: EMBED_TEXT is only supported in starter deployment mode
 pkg/expression	TestEmbedTextBuiltinNullAndErrors	ok	
 pkg/expression	TestEscapeFTSLikePattern	ok	
 pkg/expression	TestEval	ok	
@@ -1608,6 +1653,7 @@ pkg/expression	TestEvaluateExprWithNullMeetError	ok
 pkg/expression	TestEvaluateExprWithNullNoChangeRetType	ok	
 pkg/expression	TestExp	ok	
 pkg/expression	TestExportSet	ok	
+pkg/expression	TestExprOnlyPushDownToFlash	skipped	expr_to_pb_test.go:1489: Skip this unstable test temporarily and bring it back before 2021-07-26
 pkg/expression	TestExprOnlyPushDownToTiKV	ok	
 pkg/expression	TestExprPushDownToFlash	ok	
 pkg/expression	TestExprPushDownToTiKV	ok	
@@ -1704,7 +1750,7 @@ pkg/expression	TestJSONPretty	ok
 pkg/expression	TestJSONQuote	ok	
 pkg/expression	TestJSONRemove	ok	
 pkg/expression	TestJSONSchemaValid	ok	
-pkg/expression	TestJSONSchemaValidCache	failed	exit status 1
+pkg/expression	TestJSONSchemaValidCache	ok	
 pkg/expression	TestJSONSearch	ok	
 pkg/expression	TestJSONSetInsertReplace	ok	
 pkg/expression	TestJSONStorageFree	ok	
@@ -1755,7 +1801,7 @@ pkg/expression	TestOtherFunc2Pb	ok
 pkg/expression	TestPBToExpr	ok	
 pkg/expression	TestPBToExprWithNewCollation	ok	
 pkg/expression	TestPBToScalarFuncExpr	ok	
-pkg/expression	TestPanicIfPbCodeUnspecified	failed	exit status 1
+pkg/expression	TestPanicIfPbCodeUnspecified	ok	
 pkg/expression	TestParseFTSBooleanSearchString	ok	
 pkg/expression	TestParseFTSSearchTerm	ok	
 pkg/expression	TestPassword	ok	
@@ -1768,7 +1814,7 @@ pkg/expression	TestProjectionBenefitsFromPushedDown	ok
 pkg/expression	TestProjectionColumn2Pb	ok	
 pkg/expression	TestPushCollationDown	ok	
 pkg/expression	TestPushDownNot	ok	
-pkg/expression	TestPushDownSwitcher	failed	exit status 1
+pkg/expression	TestPushDownSwitcher	ok	
 pkg/expression	TestQuarter	ok	
 pkg/expression	TestQuote	ok	
 pkg/expression	TestRTrim	ok	
@@ -1842,7 +1888,7 @@ pkg/expression	TestSubstring	ok
 pkg/expression	TestSubstringIndex	ok	
 pkg/expression	TestSysDate	ok	
 pkg/expression	TestTan	ok	
-pkg/expression	TestTiDBBoundedStaleness	failed	exit status 1
+pkg/expression	TestTiDBBoundedStaleness	ok	
 pkg/expression	TestTiDBVersion	ok	
 pkg/expression	TestTidbParseTso	ok	
 pkg/expression	TestTidbParseTsoLogical	ok	
@@ -1879,6 +1925,7 @@ pkg/expression	TestUncompressRejectsHandcraftedPayloadLargerThanDeclaredLength	o
 pkg/expression	TestUncompressRejectsInflatedDataLargerThanDeclaredLength	ok	
 pkg/expression	TestUncompressRejectsInflatedDataLargerThanDeclaredLengthVectorized	ok	
 pkg/expression	TestUncompressTracksInflateMemory	ok	
+pkg/expression	TestUnfoldableFuncs	ok	no functions reached beyond package init
 pkg/expression	TestUnhexFunc	ok	
 pkg/expression	TestUnixTimestamp	ok	
 pkg/expression	TestUpper	ok	
@@ -2022,7 +2069,7 @@ pkg/expression/integration_test	TestTiDBEncodeKey	ok
 pkg/expression/integration_test	TestTiDBRowChecksumBuiltin	ok	
 pkg/expression/integration_test	TestTiDBRowChecksumBuiltinAfterAddColumn	ok	
 pkg/expression/integration_test	TestTiDBRowChecksumBuiltinAfterDropColumn	ok	
-pkg/expression/integration_test	TestTimeBuiltin	failed	exit status 1
+pkg/expression/integration_test	TestTimeBuiltin	ok	
 pkg/expression/integration_test	TestTimestamp	ok	
 pkg/expression/integration_test	TestVector	ok	
 pkg/expression/integration_test	TestVectorAggregations	ok	
@@ -2036,9 +2083,9 @@ pkg/expression/integration_test	TestVectorConversion	ok
 pkg/expression/integration_test	TestVectorDefaultValue	ok	
 pkg/expression/integration_test	TestVectorExplainTruncate	ok	
 pkg/expression/integration_test	TestVectorFunctions	ok	
-pkg/expression/integration_test	TestVectorIndexExplain	failed	exit status 2
+pkg/expression/integration_test	TestVectorIndexExplain	ok	
 pkg/expression/integration_test	TestVectorIndexSyntax	ok	
-pkg/expression/integration_test	TestVectorLong	failed	exit status 2
+pkg/expression/integration_test	TestVectorLong	ok	
 pkg/expression/integration_test	TestVectorMiscFunctions	ok	
 pkg/expression/integration_test	TestVectorOperators	ok	
 pkg/expression/integration_test	TestVectorSearchExtractProj	ok	
@@ -2066,6 +2113,7 @@ pkg/infoschema	TestBundles	ok
 pkg/infoschema	TestCacheSize	ok	
 pkg/infoschema	TestContains	ok	
 pkg/infoschema	TestDataStructFieldsCorrectnessInSchemaChange	ok	
+pkg/infoschema	TestEnableInfoSchemaV2	skipped	infoschema_test.go:1115: This feature is not enabled yet
 pkg/infoschema	TestFix62253	ok	
 pkg/infoschema	TestGCOldFKVersion	ok	
 pkg/infoschema	TestGetAndSet	ok	
@@ -2111,7 +2159,7 @@ pkg/infoschema/isvalidator	TestSchemaValidator	ok
 pkg/infoschema/perfschema	TestPerfSchemaTables	ok	
 pkg/infoschema/perfschema	TestPredefinedTables	ok	
 pkg/infoschema/perfschema	TestSessionConnectAttrs	ok	
-pkg/infoschema/perfschema	TestTiKVProfileCPU	failed	exit status 1
+pkg/infoschema/perfschema	TestTiKVProfileCPU	ok	
 pkg/infoschema/test/cachetest	TestCacheEmptySchemaVersion	ok	
 pkg/infoschema/test/cachetest	TestCacheWithSchemaTsZero	ok	
 pkg/infoschema/test/cachetest	TestGetByTimestamp	ok	
@@ -2121,9 +2169,9 @@ pkg/infoschema/test/cachetest	TestInsert	ok
 pkg/infoschema/test/cachetest	TestNewCache	ok	
 pkg/infoschema/test/cachetest	TestReSize	ok	
 pkg/infoschema/test/clustertablestest	TestAddFieldsForBinding	ok	
-pkg/infoschema/test/clustertablestest	TestAttributes	failed	exit status 1
+pkg/infoschema/test/clustertablestest	TestAttributes	ok	
 pkg/infoschema/test/clustertablestest	TestBatchCreateBindingFromHistory	ok	
-pkg/infoschema/test/clustertablestest	TestBatchCreateBindingFromHistoryAtomic	failed	exit status 1
+pkg/infoschema/test/clustertablestest	TestBatchCreateBindingFromHistoryAtomic	ok	
 pkg/infoschema/test/clustertablestest	TestBindingFromHistoryWithTiFlashBindable	ok	
 pkg/infoschema/test/clustertablestest	TestClusterIndexUsageTable	ok	
 pkg/infoschema/test/clustertablestest	TestClusterInfoTime	ok	
@@ -2136,7 +2184,7 @@ pkg/infoschema/test/clustertablestest	TestCreateBindingRepeatedly	ok
 pkg/infoschema/test/clustertablestest	TestCreateBindingWithUsingKeyword	ok	
 pkg/infoschema/test/clustertablestest	TestDataLockWaitsPrivilege	ok	
 pkg/infoschema/test/clustertablestest	TestErrorCasesCreateBindingFromHistory	ok	
-pkg/infoschema/test/clustertablestest	TestForClusterServerInfo	failed	exit status 1
+pkg/infoschema/test/clustertablestest	TestForClusterServerInfo	ok	
 pkg/infoschema/test/clustertablestest	TestFormatStoreServerVersion	ok	
 pkg/infoschema/test/clustertablestest	TestFormatVersion	ok	
 pkg/infoschema/test/clustertablestest	TestIndexUsageTable	ok	
@@ -2158,7 +2206,7 @@ pkg/infoschema/test/clustertablestest	TestSelectClusterTablePrivilege	ok
 pkg/infoschema/test/clustertablestest	TestSelectHiddenColumn	ok	
 pkg/infoschema/test/clustertablestest	TestServerInfoResolveLoopBackAddr	ok	
 pkg/infoschema/test/clustertablestest	TestSetBindingStatusBySQLDigest	ok	
-pkg/infoschema/test/clustertablestest	TestSimpleStmtSummaryEvictedCount	failed	exit status 1
+pkg/infoschema/test/clustertablestest	TestSimpleStmtSummaryEvictedCount	ok	
 pkg/infoschema/test/clustertablestest	TestSlowQuery	ok	
 pkg/infoschema/test/clustertablestest	TestSlowQueryOOM	ok	
 pkg/infoschema/test/clustertablestest	TestSomeTables	ok	
@@ -2169,7 +2217,7 @@ pkg/infoschema/test/clustertablestest	TestStmtSummaryHistoryTableWithUserTimezon
 pkg/infoschema/test/clustertablestest	TestStmtSummaryInternalQuery	ok	
 pkg/infoschema/test/clustertablestest	TestStmtSummaryIssue35340	ok	
 pkg/infoschema/test/clustertablestest	TestStmtSummaryResultRows	ok	
-pkg/infoschema/test/clustertablestest	TestStmtSummaryTable	failed	exit status 1
+pkg/infoschema/test/clustertablestest	TestStmtSummaryTable	ok	
 pkg/infoschema/test/clustertablestest	TestStmtSummaryTablePrivilege	ok	
 pkg/infoschema/test/clustertablestest	TestStorageEnginesInStmtSummary	ok	
 pkg/infoschema/test/clustertablestest	TestSystemSchemaID	ok	
@@ -2178,6 +2226,7 @@ pkg/infoschema/test/clustertablestest	TestTableRowIDShardingInfo	ok
 pkg/infoschema/test/clustertablestest	TestTestDataLockWaits	ok	
 pkg/infoschema/test/clustertablestest	TestTiDBTrx	ok	
 pkg/infoschema/test/clustertablestest	TestTiDBTrxSummary	ok	
+pkg/infoschema/test/clustertablestest	TestUniversalBindingFromHistory	skipped	cluster_tables_test.go:1244: skip it temporarily
 pkg/infoschema/test/clustertablestest	TestUnusedIndexView	ok	
 pkg/infoschema/test/infoschemav2test	TestCachedTable	ok	
 pkg/infoschema/test/infoschemav2test	TestFindTableByPartitionID	ok	
@@ -2188,13 +2237,13 @@ pkg/infoschema/test/infoschemav2test	TestGCOldVersionPivotDeletedLeadsToTableNot
 pkg/infoschema/test/infoschemav2test	TestGetAndResetRecentInfoSchemaTS	ok	
 pkg/infoschema/test/infoschemav2test	TestInfoSchemaCachedAutoIncrement	ok	
 pkg/infoschema/test/infoschemav2test	TestIssue54926	ok	
-pkg/infoschema/test/infoschemav2test	TestListTablesWithSpecialAttribute	failed	exit status 1
+pkg/infoschema/test/infoschemav2test	TestListTablesWithSpecialAttribute	ok	
 pkg/infoschema/test/infoschemav2test	TestSchemaSimpleTableInfos	ok	
 pkg/infoschema/test/infoschemav2test	TestSnapshotInfoschemaReader	ok	
 pkg/infoschema/test/infoschemav2test	TestSpecialSchemas	ok	
 pkg/infoschema/test/infoschemav2test	TestTiDBSchemaCacheSizeVariable	ok	
 pkg/infoschema/test/infoschemav2test	TestTrace	ok	
-pkg/infoschema/test/infoschemav2test	TestUnrelatedDDLTriggerReload	failed	exit status 1
+pkg/infoschema/test/infoschemav2test	TestUnrelatedDDLTriggerReload	ok	
 pkg/kv	TestBackOff	ok	
 pkg/kv	TestBasicFunc	ok	
 pkg/kv	TestCommonHandlesFitIntHandleRange	ok	
@@ -2227,22 +2276,29 @@ pkg/kv	TestRetryExceedCountError	ok
 pkg/kv	TestSetCDCWriteSource	ok	
 pkg/kv	TestSetLossyDDLReorgSource	ok	
 pkg/kv	TestVersion	ok	
+pkg/meta	TestAutoRandomTableIDKey	ok	
+pkg/meta	TestAutoTableIDKey	ok	
 pkg/meta	TestBootTableVersion	ok	
 pkg/meta	TestCreateMySQLDatabase	ok	
 pkg/meta	TestCreateSysDatabaseByIDIfNotExists	ok	
+pkg/meta	TestDBKey	ok	
 pkg/meta	TestElement	ok	
 pkg/meta	TestInfoSchemaMiscFieldsCorrectnessAfterBootstrap	ok	
 pkg/meta	TestInfoSchemaV2DataFieldsCorrectnessAfterBootstrap	ok	
 pkg/meta	TestInfoSchemaV2SpecialAttributeCorrectnessAfterBootstrap	ok	
 pkg/meta	TestIsDatabaseExist	ok	
 pkg/meta	TestIsTableInfoMustLoad	ok	
+pkg/meta	TestIsTableInfoMustLoadSubStringsOrder	ok	no functions reached beyond package init
 pkg/meta	TestIterDatabases	ok	
 pkg/meta	TestMaskingPolicy	ok	
 pkg/meta	TestMeta	ok	
 pkg/meta	TestNameExtractFromJob	ok	
 pkg/meta	TestPlacementPolicy	ok	
 pkg/meta	TestResourceGroup	ok	
+pkg/meta	TestSequenceKey	ok	
+pkg/meta	TestSetGetDXFScheduleTuneFactors	skipped	meta_test.go:1444: only for next-gen
 pkg/meta	TestSnapshot	ok	
+pkg/meta	TestTableKey	ok	
 pkg/meta	TestTableNameExtract	ok	
 pkg/meta/autoid	TestAllocCanceledRPCReturnsQuickly	ok	
 pkg/meta/autoid	TestAllocComputationIssue	ok	
@@ -2260,12 +2316,14 @@ pkg/meta/autoid	TestRollbackAlloc	ok
 pkg/meta/autoid	TestSequenceAutoid	ok	
 pkg/meta/autoid	TestSignedAutoid	ok	
 pkg/meta/autoid	TestSinglePointAllocTransfer	ok	
-pkg/meta/autoid	TestUnsignedAutoid	failed	exit status 1
+pkg/meta/autoid	TestUnsignedAutoid	ok	
 pkg/meta/metabuild	TestMetaBuildContext	ok	
 pkg/meta/metadef	TestIsMemDB	ok	
 pkg/meta/metadef	TestIsReservedID	ok	
 pkg/meta/metadef	TestIsSystemDB	ok	
 pkg/meta/metadef	TestIsSystemRelatedDB	ok	
+pkg/meta/model	TestActionBDRMap	ok	no functions reached beyond package init
+pkg/meta/model	TestActionTypeReserved	ok	no functions reached beyond package init
 pkg/meta/model	TestAddCheckConstraintArgs	ok	
 pkg/meta/model	TestAddColumnArgs	ok	
 pkg/meta/model	TestAddIndexArgs	ok	
@@ -2307,12 +2365,14 @@ pkg/meta/model	TestGetSetDefaultValueArgs	ok
 pkg/meta/model	TestGetSetTiFlashReplicaArgs	ok	
 pkg/meta/model	TestGetShardRowIDArgs	ok	
 pkg/meta/model	TestGetUpdateTiFlashReplicaStatusArgs	ok	
+pkg/meta/model	TestGlobalIndexV1SupportedForNextGen	ok	no functions reached beyond package init
 pkg/meta/model	TestInFinalState	ok	
 pkg/meta/model	TestIsIndexPrefixCovered	ok	
 pkg/meta/model	TestJobCheckInvolvingSchemaInfo	ok	
 pkg/meta/model	TestJobClone	ok	
 pkg/meta/model	TestJobCodec	ok	
 pkg/meta/model	TestJobEncodeV2	ok	
+pkg/meta/model	TestJobSize	ok	no functions reached beyond package init
 pkg/meta/model	TestJobStartTime	ok	
 pkg/meta/model	TestJobVerInUse	ok	
 pkg/meta/model	TestLocation	ok	
@@ -2335,6 +2395,7 @@ pkg/meta/model	TestRepairTableArgs	ok
 pkg/meta/model	TestResourceGroupArgs	ok	
 pkg/meta/model	TestSchemaState	ok	
 pkg/meta/model	TestState	ok	
+pkg/meta/model	TestStorageClassTransitionsJSONIncludesAfterSeconds	ok	no functions reached beyond package init
 pkg/meta/model	TestString	ok	
 pkg/meta/model	TestSubJobToProxyJobWithResumeReason	ok	
 pkg/meta/model	TestTTLDefaultJobInterval	ok	
@@ -2366,6 +2427,7 @@ pkg/parser	TestCTEMerge	ok
 pkg/parser	TestCharset	ok	
 pkg/parser	TestCharsetIntroducer	ok	
 pkg/parser	TestComment	ok	
+pkg/parser	TestCompareReservedWordsWithMySQL	skipped	not compiled in (build tags)
 pkg/parser	TestCompatMariaDB	ok	
 pkg/parser	TestCompatTypes	ok	
 pkg/parser	TestDBAStmt	ok	
@@ -2403,6 +2465,10 @@ pkg/parser	TestInsertStatementMemoryAllocation	ok
 pkg/parser	TestInt	ok	
 pkg/parser	TestIntervalPartition	ok	
 pkg/parser	TestIssue45898	ok	
+pkg/parser	TestKeywordConsistent	ok	no functions reached beyond package init
+pkg/parser	TestKeywords	ok	no functions reached beyond package init
+pkg/parser	TestKeywordsLength	ok	no functions reached beyond package init
+pkg/parser	TestKeywordsSorting	ok	no functions reached beyond package init
 pkg/parser	TestLateralParsing	ok	
 pkg/parser	TestLikeEscape	ok	
 pkg/parser	TestLiteral	ok	
@@ -2512,6 +2578,7 @@ pkg/parser/ast	TestBinaryStringLiteralNoBackslashEscapes	ok
 pkg/parser/ast	TestBinaryStringLiteralSkipsComments	ok	
 pkg/parser/ast	TestByItemRestore	ok	
 pkg/parser/ast	TestCacheable	ok	
+pkg/parser/ast	TestCancelMaterializedViewJobStmtIsStmtNode	ok	no functions reached beyond package init
 pkg/parser/ast	TestCaseExpr	ok	
 pkg/parser/ast	TestChar	ok	
 pkg/parser/ast	TestColumnNameExprRestore	ok	
@@ -2587,10 +2654,12 @@ pkg/parser/ast	TestProcedure	ok
 pkg/parser/ast	TestProcedureRestore	ok	
 pkg/parser/ast	TestProcedureVisitor	ok	
 pkg/parser/ast	TestProcedureVisitorCover	ok	
+pkg/parser/ast	TestPurgeMaterializedViewLogStmtIsStmtNode	ok	no functions reached beyond package init
 pkg/parser/ast	TestRedactTrafficStmt	ok	
 pkg/parser/ast	TestRedactURL	ok	
 pkg/parser/ast	TestRefreshMaterializedViewCommand	ok	
 pkg/parser/ast	TestRefreshMaterializedViewMode	ok	
+pkg/parser/ast	TestRefreshMaterializedViewStmtIsStmtNode	ok	no functions reached beyond package init
 pkg/parser/ast	TestRefreshStatsStmt	ok	
 pkg/parser/ast	TestRefreshStatsStmtDedup	ok	
 pkg/parser/ast	TestRemovePlacementRestore	ok	
@@ -2598,6 +2667,7 @@ pkg/parser/ast	TestResourceGroupDDLStmtRestore	ok
 pkg/parser/ast	TestRestoreWithError	ok	
 pkg/parser/ast	TestRowExprRestore	ok	
 pkg/parser/ast	TestSelectFieldRestore	ok	
+pkg/parser/ast	TestSensitiveStatement	ok	no functions reached beyond package init
 pkg/parser/ast	TestSequenceRestore	ok	
 pkg/parser/ast	TestSetPwdStmtSecureText	ok	
 pkg/parser/ast	TestSetStmtSecureTextRedactsEmbeddingAPIKeys	ok	
@@ -2618,6 +2688,7 @@ pkg/parser/ast	TestUnmarshalCIStr	ok
 pkg/parser/ast	TestValuesExpr	ok	
 pkg/parser/ast	TestVariableExpr	ok	
 pkg/parser/ast	TestWalk	ok	
+pkg/parser/ast	TestWalkWritebackInventory	ok	no functions reached beyond package init
 pkg/parser/ast	TestWhenClause	ok	
 pkg/parser/ast	TestWildCardFieldRestore	ok	
 pkg/parser/ast	TestWindowFuncExprRestore	ok	
@@ -2670,15 +2741,22 @@ pkg/parser/generate_keyword	TestParseLine	ok
 pkg/parser/mysql	TestBuildTiDBXReleaseVersion	ok	
 pkg/parser/mysql	TestFlags	ok	
 pkg/parser/mysql	TestNormalizeTiDBReleaseVersionForNextGen	ok	
+pkg/parser/mysql	TestPrivAllConsistency	ok	no functions reached beyond package init
 pkg/parser/mysql	TestPrivColumn	ok	
 pkg/parser/mysql	TestPrivSetString	ok	
 pkg/parser/mysql	TestPrivString	ok	
 pkg/parser/mysql	TestPrivsHas	ok	
 pkg/parser/mysql	TestSQLError	ok	
+pkg/parser/mysql	TestSQLMode	ok	no functions reached beyond package init
+pkg/parser/mysql	TestVersionSeparator	ok	no functions reached beyond package init
 pkg/parser/opcode	TestT	ok	
+pkg/parser/terror	TestErrCode	ok	no functions reached beyond package init
 pkg/parser/terror	TestErrorEqual	ok	
+pkg/parser/terror	TestJson	ok	no functions reached beyond package init
 pkg/parser/terror	TestLog	ok	
 pkg/parser/terror	TestTError	ok	
+pkg/parser/terror	TestTraceAndLocation	ok	no functions reached beyond package init
+pkg/parser/test_driver	TestAcceptInPlaceHonorsSkipChildren	ok	no functions reached beyond package init
 pkg/parser/types	TestCompactStr	ok	
 pkg/parser/types	TestEnumSetFlen	ok	
 pkg/parser/types	TestFieldType	ok	
@@ -2741,7 +2819,7 @@ pkg/planner/cardinality	TestTopNAssistedEstimationWithNewCollation	ok
 pkg/planner/cardinality	TestTopNAssistedEstimationWithoutNewCollation	ok	
 pkg/planner/cardinality	TestUninitializedStats	ok	
 pkg/planner/cardinality	TestUniqCompEqualEst	ok	
-pkg/planner/cardinality	TestVirtualColumnIndexEstimation	failed	exit status 1
+pkg/planner/cardinality	TestVirtualColumnIndexEstimation	ok	
 pkg/planner/cascades	TestCascadesDrive	ok	
 pkg/planner/cascades	TestXFormedOperatorShouldDeriveTheirStatsOwn	ok	
 pkg/planner/cascades/base	TestHash64a	ok	
@@ -2752,7 +2830,12 @@ pkg/planner/cascades/memo	TestGroupExpressionHashCollision	ok
 pkg/planner/cascades/memo	TestGroupExpressionHashEquals	ok	
 pkg/planner/cascades/memo	TestGroupHashEquals	ok	
 pkg/planner/cascades/memo	TestGroupIDGenerator_NextGroupID	ok	
+pkg/planner/cascades/memo	TestGroupParentGERefs	ok	
+pkg/planner/cascades/memo	TestInsertGE	ok	
+pkg/planner/cascades/memo	TestIteratorLogicalPlan	ok	
+pkg/planner/cascades/memo	TestMemo	ok	
 pkg/planner/cascades/memo	TestMergeGroup	ok	
+pkg/planner/cascades/memo	TestRawHashMap	ok	no functions reached beyond package init
 pkg/planner/cascades/memo	TestRecursiveMergeGroup	ok	
 pkg/planner/cascades/old	TestAggPushDownGather	ok	
 pkg/planner/cascades/old	TestAppliedRuleSet	ok	
@@ -2784,6 +2867,15 @@ pkg/planner/cascades/pattern	TestGetOperand	ok
 pkg/planner/cascades/pattern	TestNewPattern	ok	
 pkg/planner/cascades/pattern	TestOperandMatch	ok	
 pkg/planner/cascades/pattern	TestPatternSetChildren	ok	
+pkg/planner/cascades/rule	TestBinderAny	ok	
+pkg/planner/cascades/rule	TestBinderFail	ok	
+pkg/planner/cascades/rule	TestBinderMultiAny	ok	
+pkg/planner/cascades/rule	TestBinderMultiNext	ok	
+pkg/planner/cascades/rule	TestBinderOneNode	ok	
+pkg/planner/cascades/rule	TestBinderSubTreeMatch	ok	
+pkg/planner/cascades/rule	TestBinderSuccess	ok	
+pkg/planner/cascades/rule	TestBinderTopNode	ok	
+pkg/planner/cascades/rule/apply/decorrelateapply	TestXFDeCorrelateShouldDeleteIntermediaryApply	skipped	xf_decorrelate_apply_test.go:40: skip this test for now, cause decorrelateapply.XFDeCorrelateSimpleApply rule is not applied in the cascades optimizer fully, and this test is not meaningful now.
 pkg/planner/cascades/task	TestSimpleTaskScheduler	ok	
 pkg/planner/cascades/task	TestTaskFunctionality	ok	
 pkg/planner/cascades/task	TestTaskStack	ok	
@@ -2871,7 +2963,7 @@ pkg/planner/core	TestGetPushedDownTopNHeavyFunctionNotFirstByItem	ok
 pkg/planner/core	TestGroupByWhenNotExistCols	ok	
 pkg/planner/core	TestHandleAnalyzeOptions	ok	
 pkg/planner/core	TestHandleAnalyzeOptionsWithDefault	ok	
-pkg/planner/core	TestHandleFineGrainedShuffle	failed	exit status 1
+pkg/planner/core	TestHandleFineGrainedShuffle	ok	
 pkg/planner/core	TestHashAggMemCostGatedOnFreeOrdering	ok	
 pkg/planner/core	TestHashAggMemCostNotDividedByConcurrency	ok	
 pkg/planner/core	TestHexIntOrStrPushDownToTiFlash	ok	
@@ -2939,6 +3031,7 @@ pkg/planner/core	TestNoneAccessPathsFoundByIsolationRead	ok
 pkg/planner/core	TestNormalizedDigest	ok	
 pkg/planner/core	TestNotReadOnlySQLOnTiFlash	ok	
 pkg/planner/core	TestNumberFunctionPushDown	ok	
+pkg/planner/core	TestOptRuleListFlagAlignment	ok	no functions reached beyond package init
 pkg/planner/core	TestOptimizerCostFactors	ok	
 pkg/planner/core	TestOuterJoinEliminator	ok	
 pkg/planner/core	TestOuterWherePredicatePushDown	ok	
@@ -2998,6 +3091,9 @@ pkg/planner/core	TestTablePartition	ok
 pkg/planner/core	TestTablePlansAndTablePlanInPhysicalTableReaderClone	ok	
 pkg/planner/core	TestTableScanCostWithForce	ok	
 pkg/planner/core	TestTiFlashCostFactors	ok	
+pkg/planner/core	TestTiFlashFTSMatchWordDirtyTxn	skipped	fts_resolve_index_test.go:116: starter deploy mode is nextgen-only
+pkg/planner/core	TestTiFlashFTSMatchWordPreparedPlanCache	skipped	fts_resolve_index_test.go:96: starter deploy mode is nextgen-only
+pkg/planner/core	TestTiFlashFTSMatchWordPushDown	skipped	fts_resolve_index_test.go:51: starter deploy mode is nextgen-only
 pkg/planner/core	TestTiFlashFineGrainedShuffleWithMaxTiFlashThreads	ok	
 pkg/planner/core	TestTiFlashHashAggPreAggMode	ok	
 pkg/planner/core	TestTiFlashReadForWriteStmt	ok	
@@ -3029,10 +3125,12 @@ pkg/planner/core/casetest	TestInvertedIndex	ok
 pkg/planner/core/casetest	TestIsolationReadDoNotFilterSystemDB	ok	
 pkg/planner/core/casetest	TestIsolationReadTiFlashNotChoosePointGet	ok	
 pkg/planner/core/casetest	TestJSONPlanInExplain	ok	
+pkg/planner/core/casetest	TestJSONPlanInExplainForNextGen	skipped	plan_test.go:407: Please run TestJSONPlanInExplain under the non next-gen mode
 pkg/planner/core/casetest	TestMergeContinuousSelections	ok	
 pkg/planner/core/casetest	TestNDVGroupCols	ok	
 pkg/planner/core/casetest	TestNormalizedPlan	ok	
 pkg/planner/core/casetest	TestNormalizedPlanForDiffStore	ok	
+pkg/planner/core/casetest	TestNormalizedPlanForNextGen	skipped	plan_test.go:216: Please run TestNormalizedPlan under the non next-gen mode
 pkg/planner/core/casetest	TestOuterJoinElimination	ok	
 pkg/planner/core/casetest	TestPlanDigest4InList	ok	
 pkg/planner/core/casetest	TestPreferRangeScan	ok	
@@ -3074,6 +3172,7 @@ pkg/planner/core/casetest/cbotest	TestTop2SeedGreedyJoinReorderWithLoadedStats	o
 pkg/planner/core/casetest/ch	TestQ2	ok	
 pkg/planner/core/casetest/ch	TestQ5	ok	
 pkg/planner/core/casetest/correlated	TestCorrelatedSubquery	ok	
+pkg/planner/core/casetest/correlated	TestNaturalJoinWithCorrelatedSubquery	ok	
 pkg/planner/core/casetest/correlated	TestWrongDecorrelate	ok	
 pkg/planner/core/casetest/dag	TestDAGPlanBuilderAgg	ok	
 pkg/planner/core/casetest/dag	TestDAGPlanBuilderBasePhysicalPlan	ok	
@@ -3121,11 +3220,11 @@ pkg/planner/core/casetest/hint	TestOptimizerCostFactorHints	ok
 pkg/planner/core/casetest/hint	TestQBHintHandlerDuplicateObjects	ok	
 pkg/planner/core/casetest/hint	TestReadFromStorageHint	ok	
 pkg/planner/core/casetest/hint	TestReadFromStorageHintAndIsolationRead	ok	
-pkg/planner/core/casetest/index	TestAnalyzeColumnarIndex	failed	exit status 2
+pkg/planner/core/casetest/index	TestAnalyzeColumnarIndex	ok	
 pkg/planner/core/casetest/index	TestCorrelatedColumnPathNotPrunedByRisk	ok	
 pkg/planner/core/casetest/index	TestForceIndexLimit	ok	
-pkg/planner/core/casetest/index	TestIndexPruneWithSharedClusteredPrefix	failed	exit status 1
-pkg/planner/core/casetest/index	TestInvertedIndex	failed	exit status 2
+pkg/planner/core/casetest/index	TestIndexPruneWithSharedClusteredPrefix	ok	
+pkg/planner/core/casetest/index	TestInvertedIndex	ok	
 pkg/planner/core/casetest/index	TestInvisibleIndex	ok	
 pkg/planner/core/casetest/index	TestNullConditionForPrefixIndex	ok	
 pkg/planner/core/casetest/index	TestOrderedIndexWithIsNull	ok	
@@ -3134,9 +3233,9 @@ pkg/planner/core/casetest/index	TestPartialIndexWithPlanCache	ok
 pkg/planner/core/casetest/index	TestRangeDerivation	ok	
 pkg/planner/core/casetest/index	TestRangeIntersection	ok	
 pkg/planner/core/casetest/index	TestRowFunctionMatchTheIndexRangeScan	ok	
-pkg/planner/core/casetest/index	TestVectorIndex	failed	exit status 2
-pkg/planner/core/casetest/indexmerge	TestAnalyzeColumnarIndex	failed	exit status 2
-pkg/planner/core/casetest/indexmerge	TestAnalyzeVectorIndex	failed	exit status 2
+pkg/planner/core/casetest/index	TestVectorIndex	ok	
+pkg/planner/core/casetest/indexmerge	TestAnalyzeColumnarIndex	ok	
+pkg/planner/core/casetest/indexmerge	TestAnalyzeVectorIndex	ok	
 pkg/planner/core/casetest/indexmerge	TestCollectFilters4MVIndexMutations	ok	
 pkg/planner/core/casetest/indexmerge	TestHintForIntersectionIndexMerge	ok	
 pkg/planner/core/casetest/indexmerge	TestIndexMergePathGeneration	ok	
@@ -3197,9 +3296,9 @@ pkg/planner/core/casetest/join	TestKeepingJoinKeys	ok
 pkg/planner/core/casetest/join	TestSemiJoinOrder	ok	
 pkg/planner/core/casetest/logicalplan	TestGroupBySchema	ok	
 pkg/planner/core/casetest/logicalplan	TestLogicalPlanTypeRegression	ok	
-pkg/planner/core/casetest/mpp	TestAlternativeEngineRestrictedRoundGates	failed	exit status 1
+pkg/planner/core/casetest/mpp	TestAlternativeEngineRestrictedRoundGates	ok	
 pkg/planner/core/casetest/mpp	TestAlternativeEngineRestrictedRounds	ok	
-pkg/planner/core/casetest/mpp	TestAlternativeEngineRoundsSkipSingleScanIndexJoin	failed	exit status 1
+pkg/planner/core/casetest/mpp	TestAlternativeEngineRoundsSkipSingleScanIndexJoin	ok	
 pkg/planner/core/casetest/mpp	TestMPPAvgRewrite	ok	
 pkg/planner/core/casetest/mpp	TestMPPExchangeSender	ok	
 pkg/planner/core/casetest/mpp	TestMPPJoin	ok	
@@ -3214,7 +3313,7 @@ pkg/planner/core/casetest/mpp	TestMPPShuffledJoin	ok
 pkg/planner/core/casetest/mpp	TestMPPWithBroadcastExchangeUnderNewCollation	ok	
 pkg/planner/core/casetest/mpp	TestMPPWithHashExchangeUnderNewCollation	ok	
 pkg/planner/core/casetest/mpp	TestMppAggTopNWithJoin	ok	
-pkg/planner/core/casetest/mpp	TestMppFineGrainedJoinAndAgg	failed	exit status 1
+pkg/planner/core/casetest/mpp	TestMppFineGrainedJoinAndAgg	ok	
 pkg/planner/core/casetest/mpp	TestMppJoinDecimal	ok	
 pkg/planner/core/casetest/mpp	TestMppJoinExchangeColumnPrune	ok	
 pkg/planner/core/casetest/mpp	TestMppUnionAll	ok	
@@ -3236,6 +3335,7 @@ pkg/planner/core/casetest/partition	TestListColumnsPartitionPruner	ok
 pkg/planner/core/casetest/partition	TestListPartitionAgg	ok	
 pkg/planner/core/casetest/partition	TestListPartitionOrderLimit	ok	
 pkg/planner/core/casetest/partition	TestListPartitionPruning	ok	
+pkg/planner/core/casetest/partition	TestListPartitionPruningForNextGen	skipped	integration_partition_test.go:80: Please run TestListPartitionPruning under the non next-gen mode
 pkg/planner/core/casetest/partition	TestListPartitionRandomTransaction	ok	
 pkg/planner/core/casetest/partition	TestListPartitionView	ok	
 pkg/planner/core/casetest/partition	TestPartitionPruneWithPredicateSimplification	ok	
@@ -3272,6 +3372,7 @@ pkg/planner/core/casetest/physicalplantest	TestMPPPreferBCJ	ok
 pkg/planner/core/casetest/physicalplantest	TestMPPRightOuterJoin	ok	
 pkg/planner/core/casetest/physicalplantest	TestMPPRightSemiJoin	ok	
 pkg/planner/core/casetest/physicalplantest	TestMPPSinglePartitionType	ok	
+pkg/planner/core/casetest/physicalplantest	TestPhysicalApplyIsNotPhysicalJoin	ok	no functions reached beyond package init
 pkg/planner/core/casetest/physicalplantest	TestPointgetIndexChoosen	ok	
 pkg/planner/core/casetest/physicalplantest	TestQueryBlockHint	ok	
 pkg/planner/core/casetest/physicalplantest	TestRefine	ok	
@@ -3287,6 +3388,7 @@ pkg/planner/core/casetest/plancache	TestCacheable	ok
 pkg/planner/core/casetest/plancache	TestCheckPlanClone	ok	
 pkg/planner/core/casetest/plancache	TestCoalescePlanCacheUpdate	ok	
 pkg/planner/core/casetest/plancache	TestDropPrepare	ok	
+pkg/planner/core/casetest/plancache	TestFastPointGetClone	ok	no functions reached beyond package init
 pkg/planner/core/casetest/plancache	TestFixControl44823	ok	
 pkg/planner/core/casetest/plancache	TestGetParamSQLFromASTConcurrently	ok	
 pkg/planner/core/casetest/plancache	TestIndexRange	ok	
@@ -3345,20 +3447,30 @@ pkg/planner/core/casetest/pushdown	TestPushDownToTiFlashWithKeepOrder	ok
 pkg/planner/core/casetest/pushdown	TestPushDownToTiFlashWithKeepOrderInFastMode	ok	
 pkg/planner/core/casetest/pushdown	TestSelPushDownTiFlash	ok	
 pkg/planner/core/casetest/pushdown	TestVirtualColumnIndexPushdown	ok	
+pkg/planner/core/casetest/rule	TestCDCJoinReorder	ok	
 pkg/planner/core/casetest/rule	TestCommonHandleIndexOrdering	ok	
 pkg/planner/core/casetest/rule	TestCommonHandleIndexRanges	ok	
 pkg/planner/core/casetest/rule	TestCommonHandleIndexRangesWithTupleCompare	ok	
+pkg/planner/core/casetest/rule	TestCorrelate	ok	
 pkg/planner/core/casetest/rule	TestCorrelateAlternativeChoosesApply	ok	
 pkg/planner/core/casetest/rule	TestCorrelateNullSemantics	ok	
 pkg/planner/core/casetest/rule	TestCorrelateParallelApply	ok	
+pkg/planner/core/casetest/rule	TestCorrelateWithCostFactors	ok	
 pkg/planner/core/casetest/rule	TestCorrelatedInApplyEliminatesDistinct	ok	
+pkg/planner/core/casetest/rule	TestDPJoinReorder	ok	
+pkg/planner/core/casetest/rule	TestDPJoinReorderLeadingHint	ok	
 pkg/planner/core/casetest/rule	TestDerivedTopNSuite	ok	
 pkg/planner/core/casetest/rule	TestDual	ok	
 pkg/planner/core/casetest/rule	TestEliminateProjectionSuite	ok	
 pkg/planner/core/casetest/rule	TestEmptySelectionEliminator	ok	
+pkg/planner/core/casetest/rule	TestJoinReorderPushSelection	ok	
 pkg/planner/core/casetest/rule	TestJoinReorderSuite	ok	
+pkg/planner/core/casetest/rule	TestOrderAwareJoinReorderAlternativeRound	ok	
+pkg/planner/core/casetest/rule	TestOrderAwareJoinReorderPushSelection	ok	
 pkg/planner/core/casetest/rule	TestOuter2InnerSuite	ok	
+pkg/planner/core/casetest/rule	TestOuterToSemiJoin	ok	
 pkg/planner/core/casetest/rule	TestPredicatePushdownSuite	ok	
+pkg/planner/core/casetest/rule	TestPredicateSimplification	ok	
 pkg/planner/core/casetest/rule	TestSemiJoinRewrite	ok	
 pkg/planner/core/casetest/rule	TestWrapCastForAggFuncs	ok	
 pkg/planner/core/casetest/scalarsubquery	TestExplainNonEvaledSubquery	ok	
@@ -3379,18 +3491,21 @@ pkg/planner/core/casetest/tpch	TestQ3RCAndDisableTikv	ok
 pkg/planner/core/casetest/tpch	TestQ4	ok	
 pkg/planner/core/casetest/tpch	TestQ5	ok	
 pkg/planner/core/casetest/tpch	TestQ9	ok	
-pkg/planner/core/casetest/vectorsearch	TestANNIndexNormalizedPlan	failed	exit status 2
-pkg/planner/core/casetest/vectorsearch	TestANNIndexWithNonIntClusteredPk	failed	exit status 2
-pkg/planner/core/casetest/vectorsearch	TestANNInexWithSimpleCBO	failed	exit status 2
-pkg/planner/core/casetest/vectorsearch	TestTiFlashANNIndex	failed	exit status 2
+pkg/planner/core/casetest/vectorsearch	TestANNIndexNormalizedPlan	ok	
+pkg/planner/core/casetest/vectorsearch	TestANNIndexWithNonIntClusteredPk	ok	
+pkg/planner/core/casetest/vectorsearch	TestANNInexWithSimpleCBO	ok	
+pkg/planner/core/casetest/vectorsearch	TestTiFlashANNIndex	ok	
+pkg/planner/core/casetest/vectorsearch	TestVectorIndexProtobufMatch	ok	no functions reached beyond package init
 pkg/planner/core/casetest/vectorsearch	TestVectorSearchHeavyFunction	ok	
 pkg/planner/core/casetest/vectorsearch	TestVectorSearchWithPKAuto	ok	
 pkg/planner/core/casetest/vectorsearch	TestVectorSearchWithPKForceTiKV	ok	
 pkg/planner/core/casetest/windows	TestWindowFunctionDescCanPushDown	ok	
 pkg/planner/core/casetest/windows	TestWindowPlanWithOtherOperators	ok	
 pkg/planner/core/casetest/windows	TestWindowPushDownPlans	ok	
+pkg/planner/core/casetest/windows	TestWindowSubqueryOuterRef	ok	
 pkg/planner/core/casetest/windows	TestWindowSubqueryRewrite	ok	
 pkg/planner/core/casetest/windows	TestWindowWithOuterJoinAndCTE	ok	
+pkg/planner/core/generator/hash64_equals	TestGenHash64EqualsField	ok	no functions reached beyond package init
 pkg/planner/core/generator/hash64_equals	TestHash64Equals	ok	
 pkg/planner/core/generator/plan_cache	TestPlanClone	ok	
 pkg/planner/core/generator/shallow_ref	TestHash64Equals	ok	
@@ -3484,6 +3599,7 @@ pkg/planner/core/tests/partition	TestBenchDaily	ok
 pkg/planner/core/tests/pointget	TestIssue18042	ok	
 pkg/planner/core/tests/pointget	TestIssue20692	ok	
 pkg/planner/core/tests/pointget	TestIssue52592	ok	
+pkg/planner/core/tests/pointget	TestIssue52592ForNextGen	skipped	point_get_plan_test.go:409: Please run the TestIssue52592
 pkg/planner/core/tests/pointget	TestIssue56832	ok	
 pkg/planner/core/tests/pointget	TestPointGetId	ok	
 pkg/planner/core/tests/pointget	TestPointGetPlanCache	ok	
@@ -3612,15 +3728,17 @@ pkg/planner/util	TestSliceRecursiveFlattenIter	ok
 pkg/planner/util/fixcontrol	TestFixControl	ok	
 pkg/planner/util/fixcontrol	TestParseToMapEmptyValue	ok	
 pkg/planner/util/utilfuncp	TestCloneConstantsForPlanCacheWithNilEntry	ok	
+pkg/server	TestAuthPlugin2	ok	
 pkg/server	TestAuthSessionTokenPlugin	ok	
 pkg/server	TestAuthSha	ok	
 pkg/server	TestChangeUserAndResetSessionResourceGroupCounter	ok	
+pkg/server	TestChangeUserAuth	ok	
 pkg/server	TestChangeUserAuthFailureRestoresOldSession	ok	
 pkg/server	TestCloseConn	ok	
 pkg/server	TestCommitWaitGroup	ok	
 pkg/server	TestConnAddMetrics	ok	
 pkg/server	TestConnDMLExecutionTimeout	ok	
-pkg/server	TestConnExecutionTimeout	failed	exit status 1
+pkg/server	TestConnExecutionTimeout	ok	
 pkg/server	TestConnIACacheMetrics	ok	
 pkg/server	TestConvertColumnInfo	ok	
 pkg/server	TestCursorDetachMemTracker	ok	
@@ -3637,16 +3755,19 @@ pkg/server	TestEmptyOrgName	ok
 pkg/server	TestExtensionChangeUser	ok	
 pkg/server	TestGetConAttrs	ok	
 pkg/server	TestGetSessionVarsWaitTimeout	ok	
+pkg/server	TestHandleAuthPlugin	ok	
 pkg/server	TestHandshakeResponseCompatibilityAndFailurePaths	ok	
-pkg/server	TestInitStatsSessionBlockGC	failed	exit status 1
-pkg/server	TestInitStatsSessionBlockGCCanBeCanceled	failed	exit status 1
-pkg/server	TestInitTiDBListenerIsIdempotent	failed	exit status 1
+pkg/server	TestInitStatsSessionBlockGC	ok	
+pkg/server	TestInitStatsSessionBlockGCCanBeCanceled	ok	
+pkg/server	TestInitTiDBListenerIsIdempotent	ok	
 pkg/server	TestInitialHandshake	ok	
 pkg/server	TestIssue1768	ok	
 pkg/server	TestIssue33699	ok	
 pkg/server	TestIssue46197	ok	
 pkg/server	TestIssue54335	ok	
+pkg/server	TestLDAPAuthSwitch	ok	
 pkg/server	TestMalformHandshakeHeader	ok	
+pkg/server	TestMatchIdentityWithVariantsStarter	skipped	conn_test.go:89: starter deploy mode is nextgen-only
 pkg/server	TestMaxAllowedPacket	ok	
 pkg/server	TestMemoryLeak	ok	
 pkg/server	TestMemoryTrackForPrepareBinaryProtocol	ok	
@@ -3660,48 +3781,54 @@ pkg/server	TestParseHandshakeAttrsTruncation	ok
 pkg/server	TestParseHandshakeResponse	ok	
 pkg/server	TestPrefetchBatchPointGet	ok	
 pkg/server	TestPrefetchPartitionTable	ok	
-pkg/server	TestPrefetchPointKeys4Delete	failed	exit status 1
+pkg/server	TestPrefetchPointKeys4Delete	ok	
 pkg/server	TestPrefetchPointKeys4Update	ok	
 pkg/server	TestProcessInfoForExecuteCommand	ok	
 pkg/server	TestQueryEndWithZero	ok	
-pkg/server	TestRcReadCheckTSConflict	failed	exit status 1
-pkg/server	TestRcReadCheckTSConflictExtra	failed	exit status 1
+pkg/server	TestRcReadCheckTSConflict	ok	
+pkg/server	TestRcReadCheckTSConflictExtra	ok	
+pkg/server	TestReadHandshakeGatewayTLSAttrStarter	skipped	conn_test.go:165: starter deploy mode is nextgen-only
 pkg/server	TestResultSetWriteSQLRespDurationIncludesFailedRowWrite	ok	
 pkg/server	TestServerShutdownFlags	ok	
 pkg/server	TestSeverHealth	ok	
 pkg/server	TestShouldInstallConnectionAlive	ok	
 pkg/server	TestShowErrors	ok	
 pkg/server	TestShutDown	ok	
-pkg/server	TestStatementDurationMetrics	failed	exit status 1
+pkg/server	TestStartShutdownMarksUnhealthyBeforeStarterCallback	skipped	server_test.go:278: only for nextgen kernel
+pkg/server	TestStatementDurationMetrics	ok	
 pkg/server	TestStats	ok	
 pkg/server	TestStmtSendLongDataMaxAllowedPacket	ok	
 pkg/server	TestStmtSendLongDataMemQuotaQuery	ok	
-pkg/server	TestTiFlashFallback	failed	exit status 1
-pkg/server	TestUptime	failed	exit status 1
+pkg/server	TestTiFlashFallback	ok	
+pkg/server	TestUptime	ok	
 pkg/server	TestUserConnectionCount	ok	
 pkg/server/handler	TestAutoIDOwnerHandler	ok	
 pkg/server/handler/extractorhandler	TestExtractHandler	ok	
 pkg/server/handler/extractorhandler	TestExtractHandlerInfoSchemaV2	ok	
 pkg/server/handler/optimizor	TestDumpPlanReplayerAPI	ok	
-pkg/server/handler/optimizor	TestDumpPlanReplayerAPIWithHistoryStats	failed	exit status 1
-pkg/server/handler/optimizor	TestDumpStatsAPI	failed	exit status 2
+pkg/server/handler/optimizor	TestDumpPlanReplayerAPIWithHistoryStats	ok	
+pkg/server/handler/optimizor	TestDumpStatsAPI	ok	
 pkg/server/handler/optimizor	TestIssue43192	ok	
 pkg/server/handler/optimizor	TestIssue64802	ok	
 pkg/server/handler/optimizor	TestIssue64802WithPanic	ok	
-pkg/server/handler/optimizor	TestLoadNullStatsFile	failed	exit status 2
+pkg/server/handler/optimizor	TestLoadNullStatsFile	ok	
 pkg/server/handler/optimizor	TestPlanReplayerLoadWithSemicolonInColumnComment	ok	
 pkg/server/handler/optimizor	TestPlanReplayerWithMultiForeignKey	ok	
-pkg/server/handler/optimizor	TestStatsPriorityQueueAPI	failed	exit status 2
+pkg/server/handler/optimizor	TestStatsPriorityQueueAPI	ok	
 pkg/server/handler/tests	TestAllHistory	ok	
 pkg/server/handler/tests	TestAllServerInfo	ok	
 pkg/server/handler/tests	TestAutoIDOwnerRouteRegistration	ok	
 pkg/server/handler/tests	TestCheckCN	ok	
+pkg/server/handler/tests	TestDDLCheckHandler	skipped	http_handler_test.go:1158: DDL check handler is only available for next-gen kernel
 pkg/server/handler/tests	TestDDLHookHandler	ok	
+pkg/server/handler/tests	TestDXFAPI	skipped	dxf_test.go:63: DXF API is only supported in nextgen kernel and only available in the SYSTEM keyspace
+pkg/server/handler/tests	TestDXFMaintenanceAPINotAvailableInUserKeyspace	skipped	dxf_test.go:613: DXF maintenance APIs are only supported in the SYSTEM keyspace of the nextgen kernel
+pkg/server/handler/tests	TestDXFScheduleTuneAPI	skipped	dxf_test.go:673: only supported in nextgen kernel and only available in the SYSTEM keyspace
 pkg/server/handler/tests	TestDebugRoutes	ok	
 pkg/server/handler/tests	TestDebugZip	ok	
 pkg/server/handler/tests	TestDecodeColumnValue	ok	
-pkg/server/handler/tests	TestDeleteKeyHandler	failed	exit status 1
-pkg/server/handler/tests	TestFailpointHandler	failed	exit status 1
+pkg/server/handler/tests	TestDeleteKeyHandler	ok	
+pkg/server/handler/tests	TestFailpointHandler	ok	
 pkg/server/handler/tests	TestGC	ok	
 pkg/server/handler/tests	TestGetIndexMVCC	ok	
 pkg/server/handler/tests	TestGetMVCCNotFound	ok	
@@ -3732,10 +3859,10 @@ pkg/server/handler/tests	TestSetLabelsConcurrentWithGetLabel	ok
 pkg/server/handler/tests	TestSetLabelsConcurrentWithStoreTopology	ok	
 pkg/server/handler/tests	TestSetLabelsWithEtcd	ok	
 pkg/server/handler/tests	TestTTL	ok	
-pkg/server/handler/tests	TestTestHandler	failed	exit status 1
+pkg/server/handler/tests	TestTestHandler	ok	
 pkg/server/handler/tests	TestTiFlashReplica	ok	
-pkg/server/handler/tests	TestTiFlashReplicaSummary	failed	exit status 1
-pkg/server/handler/tests	TestUpgrade	failed	exit status 1
+pkg/server/handler/tests	TestTiFlashReplicaSummary	ok	
+pkg/server/handler/tests	TestUpgrade	ok	
 pkg/server/handler/tests	TestWriteDBTablesData	ok	
 pkg/server/handler/tikvhandler	TestDXFNodesHandler	ok	
 pkg/server/handler/tikvhandler	TestParsePauseScaleInFlag	ok	
@@ -3776,7 +3903,7 @@ pkg/server/tests	TestConfigDefaultValue	ok
 pkg/server/tests	TestDBStmtCount	ok	
 pkg/server/tests	TestDefaultCharacterAndCollation	ok	
 pkg/server/tests	TestExplainFor	ok	
-pkg/server/tests	TestLoadData1	failed	exit status 1
+pkg/server/tests	TestLoadData1	ok	
 pkg/server/tests	TestLoadDataAutoRandom	ok	
 pkg/server/tests	TestLoadDataAutoRandomWithSpecialTerm	ok	
 pkg/server/tests	TestLoadDataInTransaction	ok	
@@ -3784,7 +3911,7 @@ pkg/server/tests	TestLoadDataListPartition	ok
 pkg/server/tests	TestPrepareExecute	ok	
 pkg/server/tests	TestStmtCount	ok	
 pkg/server/tests/commontest	TestAuditPluginInfoForStarting	ok	
-pkg/server/tests/commontest	TestAuditPluginRetrying	failed	exit status 1
+pkg/server/tests/commontest	TestAuditPluginRetrying	ok	
 pkg/server/tests/commontest	TestAuth	ok	
 pkg/server/tests/commontest	TestAuthSocket	ok	
 pkg/server/tests/commontest	TestBatchGetTypeForRowExpr	ok	
@@ -3793,7 +3920,7 @@ pkg/server/tests/commontest	TestClientDisconnectKillsAutocommitInsert	ok
 pkg/server/tests/commontest	TestClientDisconnectKillsExplicitTxn	ok	
 pkg/server/tests/commontest	TestClientErrors	ok	
 pkg/server/tests/commontest	TestClientWithCollation	ok	
-pkg/server/tests/commontest	TestCloseConnForUndeterminedError	failed	exit status 1
+pkg/server/tests/commontest	TestCloseConnForUndeterminedError	ok	
 pkg/server/tests/commontest	TestConnectionCount	ok	
 pkg/server/tests/commontest	TestConnectionWillNotLeak	ok	
 pkg/server/tests/commontest	TestCreateTableFlen	ok	
@@ -3804,15 +3931,15 @@ pkg/server/tests/commontest	TestFieldList	ok
 pkg/server/tests/commontest	TestGracefulShutdown	ok	
 pkg/server/tests/commontest	TestInitConnect	ok	
 pkg/server/tests/commontest	TestInternalSessionTxnStartTS	ok	
-pkg/server/tests/commontest	TestIssue53634	failed	exit status 1
-pkg/server/tests/commontest	TestIssue54254	failed	exit status 1
+pkg/server/tests/commontest	TestIssue53634	ok	
+pkg/server/tests/commontest	TestIssue54254	ok	
 pkg/server/tests/commontest	TestIssue57531	ok	
-pkg/server/tests/commontest	TestIssue62673	failed	exit status 1
+pkg/server/tests/commontest	TestIssue62673	ok	
 pkg/server/tests/commontest	TestIssues	ok	
 pkg/server/tests/commontest	TestLazyRowIterator	ok	
-pkg/server/tests/commontest	TestLoadDataLocalPessimisticRetryDesync	failed	exit status 1
-pkg/server/tests/commontest	TestLoadDataLocalRetryDesync	failed	exit status 1
-pkg/server/tests/commontest	TestLoadDataLocalRetryDesyncExplicitTxn	failed	exit status 1
+pkg/server/tests/commontest	TestLoadDataLocalPessimisticRetryDesync	ok	
+pkg/server/tests/commontest	TestLoadDataLocalRetryDesync	ok	
+pkg/server/tests/commontest	TestLoadDataLocalRetryDesyncExplicitTxn	ok	
 pkg/server/tests/commontest	TestLocalhostClientMapping	ok	
 pkg/server/tests/commontest	TestMultiStatements	ok	
 pkg/server/tests/commontest	TestNO_DEFAULT_VALUEFlag	ok	
@@ -3841,13 +3968,13 @@ pkg/server/tests/commontest	TestStatusPort	ok
 pkg/server/tests/commontest	TestSumAvg	ok	
 pkg/server/tests/commontest	TestSystemTimeZone	ok	
 pkg/server/tests/commontest	TestTiDBIdleTransactionTimeout	ok	
-pkg/server/tests/commontest	TestTopSQLCPUProfile	failed	exit status 1
+pkg/server/tests/commontest	TestTopSQLCPUProfile	ok	
 pkg/server/tests/commontest	TestTopSQLCatchRunningSQL	ok	
-pkg/server/tests/commontest	TestTopSQLResourceTag	failed	exit status 1
-pkg/server/tests/commontest	TestTopSQLStatementStats	failed	exit status 1
-pkg/server/tests/commontest	TestTopSQLStatementStats2	failed	exit status 1
-pkg/server/tests/commontest	TestTopSQLStatementStats3	failed	exit status 1
-pkg/server/tests/commontest	TestTopSQLStatementStats4	failed	exit status 1
+pkg/server/tests/commontest	TestTopSQLResourceTag	ok	
+pkg/server/tests/commontest	TestTopSQLStatementStats	ok	
+pkg/server/tests/commontest	TestTopSQLStatementStats2	ok	
+pkg/server/tests/commontest	TestTopSQLStatementStats3	ok	
+pkg/server/tests/commontest	TestTopSQLStatementStats4	ok	
 pkg/server/tests/commontest	TestTypeAndCharsetOfSendLongData	ok	
 pkg/server/tests/commontest	TestUint64	ok	
 pkg/server/tests/commontest	TestVectorTypeBinaryProtocol	ok	
@@ -3856,7 +3983,7 @@ pkg/server/tests/commontest	TestVectorTypeTextProtocol	ok
 pkg/server/tests/commontest	TestWarningForParseError	ok	
 pkg/server/tests/cursor	TestConcurrentExecuteAndFetch	ok	
 pkg/server/tests/cursor	TestCursorExceedQuota	ok	
-pkg/server/tests/cursor	TestCursorFetchErrorInFetch	failed	exit status 1
+pkg/server/tests/cursor	TestCursorFetchErrorInFetch	ok	
 pkg/server/tests/cursor	TestCursorFetchExecuteCheck	ok	
 pkg/server/tests/cursor	TestCursorFetchShouldSpill	ok	
 pkg/server/tests/cursor	TestLazyExecuteProjection	ok	
@@ -3877,10 +4004,14 @@ pkg/session	TestBenchDaily	ok
 pkg/session	TestBindInfoUniqueIndex	ok	
 pkg/session	TestBootstrap	ok	
 pkg/session	TestBootstrapInitExpensiveQueryHandle	ok	
+pkg/session	TestBootstrapSessionImplUserKSVersionGuard	skipped	session_test.go:228: keyspace guard only applies to next-gen kernel
+pkg/session	TestBootstrapSessionWithExternalWorkloadManagerAttachesBootstrapDomain	skipped	not compiled in (build tags)
 pkg/session	TestBootstrapWithError	ok	
 pkg/session	TestCheckSystemTableConstraint	ok	
+pkg/session	TestCreateSessionWithDomainOptionsAttachesExternalWorkloadManager	skipped	not compiled in (build tags)
 pkg/session	TestCrossKSSessionDistSQLCtxDoesNotExposeTypedNilRUReporter	ok	
 pkg/session	TestDDLTableCreateBackfillTable	ok	
+pkg/session	TestDDLTableVersionTables	ok	no functions reached beyond package init
 pkg/session	TestDistSQLCtxPagingSizeBytesGlobalUpdate	ok	
 pkg/session	TestDistSQLCtxPagingSizeBytesRequiresHardCappedResourceGroup	ok	
 pkg/session	TestDomapHandleNil	ok	
@@ -3889,17 +4020,20 @@ pkg/session	TestGetStartMode	ok
 pkg/session	TestGlobalVariableInitDomainSkipsStatusEndpointClaim	ok	
 pkg/session	TestIndexMergeInNewCluster	ok	
 pkg/session	TestIssue61890	ok	
+pkg/session	TestKeyspaceEtcdNamespace	skipped	bootstrap_test.go:1520: keyspace is not supported in classic kernel
 pkg/session	TestMemArbitratorSession	ok	
 pkg/session	TestMustGetStoreBootstrapVersionRetriesTransaction	ok	
+pkg/session	TestMySQLDBTables	ok	no functions reached beyond package init
 pkg/session	TestNormalizeStmtCancellationError	ok	
 pkg/session	TestNullKeyspaceEtcdNamespace	ok	
 pkg/session	TestOldPasswordUpgrade	ok	
-pkg/session	TestScalarSubqueryRegistryTxnReplay	failed	exit status 1
+pkg/session	TestScalarSubqueryRegistryTxnReplay	ok	
 pkg/session	TestSchemaCacheSizeVar	ok	
 pkg/session	TestSetProcessInfoDuringRetry	ok	
 pkg/session	TestSharedLockLostRollsBackTransaction	ok	
 pkg/session	TestStarterBootstrapFileBootstrapBlocks	ok	
 pkg/session	TestStarterBootstrapFileInitialBootstrap	ok	
+pkg/session	TestStarterBootstrapFileLoadInStarter	skipped	starter_bootstrap_file_test.go:138: starter deploy mode is only available in nextgen
 pkg/session	TestStarterBootstrapFileLoadNoopOutsideStarter	ok	
 pkg/session	TestStarterBootstrapFileUpgrade	ok	
 pkg/session	TestStarterBootstrapFileUpgradePartialFailure	ok	
@@ -3923,7 +4057,7 @@ pkg/session	TestTiDBServerMemoryLimitUpgradeTo651_2	ok
 pkg/session	TestTiDBStatsLoadPseudoTimeoutUpgradeFrom610To650	ok	
 pkg/session	TestTiDBStoreBatchSizeUpgradeFrom650To660	ok	
 pkg/session	TestTiDBTiDBOptTiDBOptimizerEnableNAAJWhenUpgradingToVer138	ok	
-pkg/session	TestTiDBUpgradeToVer136	failed	exit status 1
+pkg/session	TestTiDBUpgradeToVer136	ok	
 pkg/session	TestTiDBUpgradeToVer140	ok	
 pkg/session	TestTiDBUpgradeToVer143	ok	
 pkg/session	TestTiDBUpgradeToVer145	ok	
@@ -3935,11 +4069,15 @@ pkg/session	TestTiDBUpgradeToVer240	ok
 pkg/session	TestTiDBUpgradeToVer252	ok	
 pkg/session	TestTiDBUpgradeToVer254	ok	
 pkg/session	TestUpgrade	ok	
+pkg/session	TestUpgradeGCV2AbortUsesPostLockBootstrapVersion	skipped	not compiled in (build tags)
 pkg/session	TestUpgradeToVer279BackfillsIgnoreInlistPlanDigest	ok	
 pkg/session	TestUpgradeToVer281BackfillsDefaultStringMatchSelectivity	ok	
 pkg/session	TestUpgradeToVer282RefreshesBindingDigest	ok	
 pkg/session	TestUpgradeToVer283BackfillsAnalyzeDefaultOptions	ok	
+pkg/session	TestUpgradeToVerFunctionsCheck	ok	no functions reached beyond package init
 pkg/session	TestUpgradeVersion285TTLTaskScanIndexID	ok	
+pkg/session	TestUsePipelinedDMLDisabledInStarter	skipped	not compiled in (build tags)
+pkg/session	TestVersionedBootstrapSchemas	ok	no functions reached beyond package init
 pkg/session	TestWaitSystemBootVersion	ok	
 pkg/session	TestWriteClusterIDToMySQLTiDBWhenUpgradingTo242	ok	
 pkg/session/cursor	TestCursorHandleClose	ok	
@@ -3949,7 +4087,7 @@ pkg/session/cursor	TestNewCursor	ok
 pkg/session/cursor	TestRangeCursor	ok	
 pkg/session/sessmgr	TestProcessInfoShallowCP	ok	
 pkg/session/syssession	TestDomainAdvancedSessionPoolInternalSessionRegistry	ok	
-pkg/session/syssession	TestDomainAdvancedSessionPoolPutBackDirtySession	failed	exit status 1
+pkg/session/syssession	TestDomainAdvancedSessionPoolPutBackDirtySession	ok	
 pkg/session/syssession	TestInternalSessionAvoidReuse	ok	
 pkg/session/syssession	TestInternalSessionCheckNoPendingTxn	ok	
 pkg/session/syssession	TestInternalSessionClose	ok	
@@ -3970,16 +4108,17 @@ pkg/session/syssession	TestSessionPoolWithSession	ok
 pkg/session/syssession	TestSessionProxyMethods	ok	
 pkg/session/syssession	TestSessionThreadUnsafeOperations	ok	
 pkg/session/test	TestBootstrapSQLWithExtension	ok	
+pkg/session/test	TestDoDDLJobQuit	ok	
 pkg/session/test	TestEmptyInitSQLFile	ok	
 pkg/session/test	TestErrorHappenWhileInit	ok	
 pkg/session/test	TestFieldText	ok	
 pkg/session/test	TestFixSetTiDBSnapshotTS	ok	
-pkg/session/test	TestHandleAssertionFailureForPartitionedTable	failed	exit status 1
+pkg/session/test	TestHandleAssertionFailureForPartitionedTable	ok	
 pkg/session/test	TestInitSystemVariable	ok	
 pkg/session/test	TestInitUsers	ok	
 pkg/session/test	TestIssue60266	ok	
 pkg/session/test	TestKeysNeedLock	ok	
-pkg/session/test	TestLoadSchemaFailed	failed	exit status 1
+pkg/session/test	TestLoadSchemaFailed	ok	
 pkg/session/test	TestMatchIdentity	ok	
 pkg/session/test	TestParseErrorWarn	ok	
 pkg/session/test	TestParseWithParams	ok	
@@ -4002,6 +4141,7 @@ pkg/session/test/bootstraptest	TestAnalyzeDistsqlConcurrencyByUpgrade750To850	ok
 pkg/session/test/bootstraptest	TestAnalyzeVersionUpgradeFrom300To500	ok	
 pkg/session/test/bootstraptest	TestAnalyzeVersionUpgradeRewritesLegacyV1To2	ok	
 pkg/session/test/bootstraptest	TestAutoAnalyzeConcurrencyDefaultOnlyAffectsFreshBootstrap	ok	
+pkg/session/test/bootstraptest	TestBootstrapInNextGenInvalidSystemTable	skipped	bootstrap_upgrade_test.go:1554: this is only checked in next-gen kernel
 pkg/session/test/bootstraptest	TestBootstrapMaskingPolicyTable	ok	
 pkg/session/test/bootstraptest	TestBootstrapMaterializedViewSystemTables	ok	
 pkg/session/test/bootstraptest	TestBootstrapOperateViewPrivilege	ok	
@@ -4028,7 +4168,7 @@ pkg/session/test/bootstraptest	TestUpgradeBDRSecondary	ok
 pkg/session/test/bootstraptest	TestUpgradeBindInfo	ok	
 pkg/session/test/bootstraptest	TestUpgradeClusteredIndexDefaultValue	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion256PlanCacheSkipStatsOnBinding	ok	
-pkg/session/test/bootstraptest	TestUpgradeVersion280MaskingPolicy	failed	exit status 1
+pkg/session/test/bootstraptest	TestUpgradeVersion280MaskingPolicy	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion284EnableTxnFile	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion316MaterializedViewBootstrap	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion317OperateViewPrivilege	ok	
@@ -4036,9 +4176,9 @@ pkg/session/test/bootstraptest	TestUpgradeVersion66	ok
 pkg/session/test/bootstraptest	TestUpgradeVersion74	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion75	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersion83AndVersion84	ok	
-pkg/session/test/bootstraptest	TestUpgradeVersionForPausedJob	failed	exit status 2
-pkg/session/test/bootstraptest	TestUpgradeVersionForResumeJob	failed	exit status 2
-pkg/session/test/bootstraptest	TestUpgradeVersionForSystemPausedJob	failed	exit status 2
+pkg/session/test/bootstraptest	TestUpgradeVersionForPausedJob	ok	
+pkg/session/test/bootstraptest	TestUpgradeVersionForResumeJob	ok	
+pkg/session/test/bootstraptest	TestUpgradeVersionForSystemPausedJob	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersionMockLatest	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersionWithUpgradeHTTPOp	ok	
 pkg/session/test/bootstraptest	TestUpgradeVersionWithoutUpgradeHTTPOp	ok	
@@ -4071,8 +4211,9 @@ pkg/session/test/meta	TestInformationSchemaCreateTime	ok
 pkg/session/test/meta	TestInitDDLTables	ok	
 pkg/session/test/meta	TestInitMetaTable	ok	
 pkg/session/test/meta	TestMetaTableRegion	ok	
+pkg/session/test/meta	TestNextgenBootstrap	skipped	session_test.go:249: This test is only for nextgen kernel.
 pkg/session/test/meta	TestRecordTTLRows	ok	
-pkg/session/test/nontransactionaltest	TestNonTransactionalDMLErrorMessage	failed	exit status 1
+pkg/session/test/nontransactionaltest	TestNonTransactionalDMLErrorMessage	ok	
 pkg/session/test/nontransactionaltest	TestNonTransactionalDMLSharding	ok	
 pkg/session/test/nontransactionaltest	TestNonTransactionalDMLWorkWithForeignKey	ok	
 pkg/session/test/nontransactionaltest	TestNonTransactionalDmlIgnoreMaxExecutionTime	ok	
@@ -4096,6 +4237,7 @@ pkg/session/test/temporarytabletest	TestLocalTemporaryTableUpdate	ok
 pkg/session/test/temporarytabletest	TestSchemaCheckerTempTable	ok	
 pkg/session/test/txn	TestAutoCommitRespectsReadOnly	ok	
 pkg/session/test/txn	TestAutocommit	ok	
+pkg/session/test/txn	TestCommitTSOrderCheck	ok	
 pkg/session/test/txn	TestDisableTxnAutoRetry	ok	
 pkg/session/test/txn	TestErrorRollback	ok	
 pkg/session/test/txn	TestInTrans	ok	
@@ -4105,17 +4247,18 @@ pkg/session/test/txn	TestPanicOnRollbackKilledTxn	ok
 pkg/session/test/txn	TestPanicOnStmtRollbackKilledTxn	ok	
 pkg/session/test/txn	TestTxnLazyInitialize	ok	
 pkg/session/test/txn	TestTxnRetryErrMsg	ok	
-pkg/session/test/variable	TestCoprocessorOOMAction	failed	exit status 1
+pkg/session/test/variable	TestCoprocessorOOMAction	ok	
 pkg/session/test/variable	TestCorrectScopeError	ok	
 pkg/session/test/variable	TestDMLMaxExecutionTime	ok	
 pkg/session/test/variable	TestForbidSettingBothTSVariable	ok	
 pkg/session/test/variable	TestGeneralLogBinaryText	ok	
 pkg/session/test/variable	TestGeneralLogNonzeroTxnStartTS	ok	
 pkg/session/test/variable	TestIsolationRead	ok	
-pkg/session/test/variable	TestLastQueryInfo	failed	exit status 1
+pkg/session/test/variable	TestLastQueryInfo	ok	
 pkg/session/test/variable	TestMaxExecutionTime	ok	
+pkg/session/test/variable	TestMockZapCore	ok	no functions reached beyond package init
 pkg/session/test/variable	TestReadDMLBatchSize	ok	
-pkg/session/test/variable	TestReplicaRead	failed	exit status 1
+pkg/session/test/variable	TestReplicaRead	ok	
 pkg/session/test/variable	TestSetEnableRateLimitAction	ok	
 pkg/session/test/vars	TestGlobalVarAccessor	ok	
 pkg/session/test/vars	TestIndexJoinBuildV2SysVarCompatibility	ok	
@@ -4130,7 +4273,7 @@ pkg/session/test/vars	TestTiKVSystemVars	ok
 pkg/session/test/vars	TestTimeZone	ok	
 pkg/session/test/vars	TestUpgradeSysvars	ok	
 pkg/sessionctx	TestBasicCtxTypeToString	ok	
-pkg/sessionctx/sessionstates	TestCertExpire	failed	exit status 1
+pkg/sessionctx/sessionstates	TestCertExpire	ok	
 pkg/sessionctx/sessionstates	TestGrammar	ok	
 pkg/sessionctx/sessionstates	TestInvalidSysVar	ok	
 pkg/sessionctx/sessionstates	TestInvisibleVars	ok	
@@ -4143,10 +4286,11 @@ pkg/sessionctx/sessionstates	TestSessionCtx	ok
 pkg/sessionctx/sessionstates	TestSetCertAndKey	ok	
 pkg/sessionctx/sessionstates	TestShowStateFail	ok	
 pkg/sessionctx/sessionstates	TestSignAlgo	ok	
+pkg/sessionctx/sessionstates	TestStarterSessionTokenLifetime	skipped	session_token_test.go:165: starter deploy mode is only available for nextgen TiDB
 pkg/sessionctx/sessionstates	TestStatementCtx	ok	
 pkg/sessionctx/sessionstates	TestSystemVars	ok	
 pkg/sessionctx/sessionstates	TestUserVars	ok	
-pkg/sessionctx/sessionstates	TestVerifyToken	failed	exit status 1
+pkg/sessionctx/sessionstates	TestVerifyToken	ok	
 pkg/sessionctx/stmtctx	TestApproxRuntimeInfo	ok	
 pkg/sessionctx/stmtctx	TestCopTasksDetails	ok	
 pkg/sessionctx/stmtctx	TestErrCtx	ok	
@@ -4221,6 +4365,7 @@ pkg/sessionctx/variable	TestTiDBBatchPendingTiFlashCount	ok
 pkg/sessionctx/variable	TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	ok	
 pkg/sessionctx/variable	TestTiDBCommitterConcurrency	ok	
 pkg/sessionctx/variable	TestTiDBDDLFlashbackConcurrency	ok	
+pkg/sessionctx/variable	TestTiDBDMLTypeInNextGen	skipped	not compiled in (build tags)
 pkg/sessionctx/variable	TestTiDBEnableFullOuterJoin	ok	
 pkg/sessionctx/variable	TestTiDBEnableResourceControl	ok	
 pkg/sessionctx/variable	TestTiDBEnableRowLevelChecksum	ok	
@@ -4236,12 +4381,14 @@ pkg/sessionctx/variable	TestTiDBMultiStatementMode	ok
 pkg/sessionctx/variable	TestTiDBOptOn	ok	
 pkg/sessionctx/variable	TestTiDBOptSelectivityFactor	ok	
 pkg/sessionctx/variable	TestTiDBOptTxnAutoRetry	ok	
+pkg/sessionctx/variable	TestTiDBPessimisticTransactionFairLocking	skipped	not compiled in (build tags)
 pkg/sessionctx/variable	TestTiDBQueryLogMaxLen	ok	
 pkg/sessionctx/variable	TestTiDBReplicaRead	ok	
+pkg/sessionctx/variable	TestTiDBReplicaReadInNextGen	skipped	not compiled in (build tags)
 pkg/sessionctx/variable	TestTiDBResourceControlStrictMode	ok	
 pkg/sessionctx/variable	TestTiDBSchemaCacheSize	ok	
 pkg/sessionctx/variable	TestTiDBServerMemoryLimit	ok	
-pkg/sessionctx/variable	TestTiDBServerMemoryLimit2	failed	exit status 1
+pkg/sessionctx/variable	TestTiDBServerMemoryLimit2	ok	
 pkg/sessionctx/variable	TestTiDBServerMemoryLimitGCTrigger	ok	
 pkg/sessionctx/variable	TestTiDBServerMemoryLimitSessMinSize	ok	
 pkg/sessionctx/variable	TestTiDBTTLJobEnableSetGlobalUpdatesLocalWithoutExternalWorkload	ok	
@@ -4275,6 +4422,7 @@ pkg/sessionctx/variable/tests	TestInstanceScope	ok
 pkg/sessionctx/variable/tests	TestIntValidation	ok	
 pkg/sessionctx/variable/tests	TestIsNoop	ok	
 pkg/sessionctx/variable/tests	TestIsolationRead	ok	
+pkg/sessionctx/variable/tests	TestLimitBetweenVariable	ok	
 pkg/sessionctx/variable/tests	TestNonPreparedPlanCacheStmt	ok	
 pkg/sessionctx/variable/tests	TestOrderByDependency	ok	
 pkg/sessionctx/variable/tests	TestPerformanceSchemaSessionConnectAttrsSizeGlobalSQL	ok	
@@ -4312,36 +4460,39 @@ pkg/sessionctx/variable/tests/slowlog	TestMatchUintExecDetailFieldsAfterParse	ok
 pkg/sessionctx/variable/tests/slowlog	TestParseGlobalSlowLogRules	ok	
 pkg/sessionctx/variable/tests/slowlog	TestParseSessionSlowLogRules	ok	
 pkg/sessionctx/variable/tests/slowlog	TestParseSingleSlowLogField	ok	
-pkg/sessiontxn	TestConflictErrorsUseRcWriteCheckTs	failed	exit status 1
+pkg/sessionctx/variable/tests/slowlog	TestSlowLogFieldAccessor	ok	no functions reached beyond package init
+pkg/sessiontxn	TestConflictErrorsUseRcWriteCheckTs	ok	
 pkg/sessiontxn	TestEnterNewTxn	ok	
 pkg/sessiontxn	TestGetSnapshot	ok	
-pkg/sessiontxn	TestOptimisticTxnRetryInPessimisticMode	failed	exit status 1
-pkg/sessiontxn	TestRcTSOCmdCountForTextSQLExecuteExtra	failed	exit status 1
-pkg/sessiontxn	TestRcTSOCmdCountForTextSQLExecuteNormal	failed	exit status 1
+pkg/sessiontxn	TestOptimisticTxnRetryInPessimisticMode	ok	
+pkg/sessiontxn	TestRcTSOCmdCountForPrepareExecuteExtra	ok	
+pkg/sessiontxn	TestRcTSOCmdCountForPrepareExecuteNormal	ok	
+pkg/sessiontxn	TestRcTSOCmdCountForTextSQLExecuteExtra	ok	
+pkg/sessiontxn	TestRcTSOCmdCountForTextSQLExecuteNormal	ok	
 pkg/sessiontxn	TestRcWaitTSInSlowLog	ok	
 pkg/sessiontxn	TestSnapshotInterceptor	ok	
 pkg/sessiontxn	TestStaleReadInPrepare	ok	
 pkg/sessiontxn	TestStaleReadTxnWithAutocommitOff	ok	
-pkg/sessiontxn	TestStillWriteConflictAfterRetry	failed	exit status 1
-pkg/sessiontxn	TestTSOCmdCountForPrepareExecute	failed	exit status 1
-pkg/sessiontxn	TestTSOCmdCountForTextSql	failed	exit status 1
-pkg/sessiontxn	TestTxnContextBeginInUnfinishedTxn	failed	exit status 1
-pkg/sessiontxn	TestTxnContextForHistoricalRead	failed	exit status 1
-pkg/sessiontxn	TestTxnContextForPrepareExecute	failed	exit status 1
-pkg/sessiontxn	TestTxnContextForSimpleCases	failed	exit status 1
-pkg/sessiontxn	TestTxnContextForStaleRead	failed	exit status 1
-pkg/sessiontxn	TestTxnContextForStaleReadInPrepare	failed	exit status 1
-pkg/sessiontxn	TestTxnContextInExplicitTxn	failed	exit status 1
-pkg/sessiontxn	TestTxnContextInPessimisticKeyConflict	failed	exit status 1
-pkg/sessiontxn	TestTxnContextInRC	failed	exit status 1
-pkg/sessiontxn	TestTxnContextPreparedStmtWithForUpdate	failed	exit status 1
-pkg/sessiontxn	TestTxnContextWithAutocommitFalse	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorInDeleteInRR	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorInInsertInRR	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorInOtherQueryContainingPointGet	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorInPointGetForUpdateInRR	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorInUpdateInRR	failed	exit status 1
-pkg/sessiontxn/isolation	TestConflictErrorsInRC	failed	exit status 1
+pkg/sessiontxn	TestStillWriteConflictAfterRetry	ok	
+pkg/sessiontxn	TestTSOCmdCountForPrepareExecute	ok	
+pkg/sessiontxn	TestTSOCmdCountForTextSql	ok	
+pkg/sessiontxn	TestTxnContextBeginInUnfinishedTxn	ok	
+pkg/sessiontxn	TestTxnContextForHistoricalRead	ok	
+pkg/sessiontxn	TestTxnContextForPrepareExecute	ok	
+pkg/sessiontxn	TestTxnContextForSimpleCases	ok	
+pkg/sessiontxn	TestTxnContextForStaleRead	ok	
+pkg/sessiontxn	TestTxnContextForStaleReadInPrepare	ok	
+pkg/sessiontxn	TestTxnContextInExplicitTxn	ok	
+pkg/sessiontxn	TestTxnContextInPessimisticKeyConflict	ok	
+pkg/sessiontxn	TestTxnContextInRC	ok	
+pkg/sessiontxn	TestTxnContextPreparedStmtWithForUpdate	ok	
+pkg/sessiontxn	TestTxnContextWithAutocommitFalse	ok	
+pkg/sessiontxn/isolation	TestConflictErrorInDeleteInRR	ok	
+pkg/sessiontxn/isolation	TestConflictErrorInInsertInRR	ok	
+pkg/sessiontxn/isolation	TestConflictErrorInOtherQueryContainingPointGet	ok	
+pkg/sessiontxn/isolation	TestConflictErrorInPointGetForUpdateInRR	ok	
+pkg/sessiontxn/isolation	TestConflictErrorInUpdateInRR	ok	
+pkg/sessiontxn/isolation	TestConflictErrorsInRC	ok	
 pkg/sessiontxn/isolation	TestFailedDMLConsistency1	ok	
 pkg/sessiontxn/isolation	TestFailedDMLConsistency2	ok	
 pkg/sessiontxn/isolation	TestIssue41194	ok	
@@ -4355,11 +4506,11 @@ pkg/sessiontxn/isolation	TestPessimisticRCTxnContextProviderTS	ok
 pkg/sessiontxn/isolation	TestPessimisticRRErrorHandle	ok	
 pkg/sessiontxn/isolation	TestPessimisticSerializableTxnContextProviderLockError	ok	
 pkg/sessiontxn/isolation	TestPessimisticSerializableTxnProviderTS	ok	
-pkg/sessiontxn/isolation	TestRCProviderInitialize	failed	exit status 1
+pkg/sessiontxn/isolation	TestRCProviderInitialize	ok	
 pkg/sessiontxn/isolation	TestRRWaitTSTimeInSlowLog	ok	
-pkg/sessiontxn/isolation	TestRepeatableReadProviderInitialize	failed	exit status 1
+pkg/sessiontxn/isolation	TestRepeatableReadProviderInitialize	ok	
 pkg/sessiontxn/isolation	TestRepeatableReadProviderTS	ok	
-pkg/sessiontxn/isolation	TestSerializableInitialize	failed	exit status 1
+pkg/sessiontxn/isolation	TestSerializableInitialize	ok	
 pkg/sessiontxn/isolation	TestTidbSnapshotVarInOptimisticTxn	ok	
 pkg/sessiontxn/isolation	TestTidbSnapshotVarInPessimisticRepeatableRead	ok	
 pkg/sessiontxn/isolation	TestTidbSnapshotVarInRC	ok	
@@ -4377,6 +4528,7 @@ pkg/sessiontxn/staleread	TestStaleReadReplicaReadScope	ok
 pkg/sessiontxn/staleread	TestStaleReadSupportDateTimeAndTSO	ok	
 pkg/sessiontxn/staleread	TestStaleReadTxnScope	ok	
 pkg/statistics	TestAnalyzeSnapshot	ok	
+pkg/statistics	TestBenchDaily	ok	
 pkg/statistics	TestBuildHistAndTopNUsesAnalyzeDefaultGlobals	ok	
 pkg/statistics	TestBuildSampleFullNDV	ok	
 pkg/statistics	TestBuildStatsOnRowSample	ok	
@@ -4394,7 +4546,7 @@ pkg/statistics	TestDecodeColumnTopNValuePreservesStringComparisonBytes	ok
 pkg/statistics	TestDistributedWeightedSampling	ok	
 pkg/statistics	TestEnumRangeValues	ok	
 pkg/statistics	TestEstimateNDVByGEE	ok	
-pkg/statistics	TestExpBackoffEstimation	failed	exit status 1
+pkg/statistics	TestExpBackoffEstimation	ok	
 pkg/statistics	TestGlobalIndexWithHistoricalStats	ok	
 pkg/statistics	TestIndexQueryBytes	ok	
 pkg/statistics	TestIssue44369	ok	
@@ -4444,9 +4596,9 @@ pkg/statistics/handle/autoanalyze	TestAutoAnalyzeOnEmptyTable	ok
 pkg/statistics/handle/autoanalyze	TestAutoAnalyzeOutOfSpecifiedTime	ok	
 pkg/statistics/handle/autoanalyze	TestAutoAnalyzeSkipColumnTypes	ok	
 pkg/statistics/handle/autoanalyze	TestAutoAnalyzeWithPredicateColumns	ok	
-pkg/statistics/handle/autoanalyze	TestAutoAnalyzeWithVectorIndex	failed	exit status 2
-pkg/statistics/handle/autoanalyze	TestCleanupCorruptedAnalyzeJobsOnCurrentInstance	failed	exit status 1
-pkg/statistics/handle/autoanalyze	TestCleanupCorruptedAnalyzeJobsOnDeadInstances	failed	exit status 1
+pkg/statistics/handle/autoanalyze	TestAutoAnalyzeWithVectorIndex	ok	
+pkg/statistics/handle/autoanalyze	TestCleanupCorruptedAnalyzeJobsOnCurrentInstance	ok	
+pkg/statistics/handle/autoanalyze	TestCleanupCorruptedAnalyzeJobsOnDeadInstances	ok	
 pkg/statistics/handle/autoanalyze	TestDisableAutoAnalyze	ok	
 pkg/statistics/handle/autoanalyze	TestDisableAutoAnalyzeWithAnalyzeAllColumnsOptions	ok	
 pkg/statistics/handle/autoanalyze	TestEnableAutoAnalyzePriorityQueue	ok	
@@ -4495,7 +4647,7 @@ pkg/statistics/handle/autoanalyze/priorityqueue	TestGetLastFailedAnalysisDuratio
 pkg/statistics/handle/autoanalyze/priorityqueue	TestGetLastFailedAnalysisDurationNegativeRecord	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestGetSpecialEvent	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestGetTableLastAnalyzeDuration	ok	
-pkg/statistics/handle/autoanalyze/priorityqueue	TestHandleDDLEventsWithRunningJobs	failed	exit status 1
+pkg/statistics/handle/autoanalyze/priorityqueue	TestHandleDDLEventsWithRunningJobs	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestHeapEmptyPop	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestHeap_AddOrUpdate	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestHeap_Delete	ok	
@@ -4533,7 +4685,7 @@ pkg/statistics/handle/autoanalyze/priorityqueue	TestTurnOffAutoAnalyzeAfterQueue
 pkg/statistics/handle/autoanalyze/priorityqueue	TestTurnOffAutoAnalyzeBeforeQueueInit	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestValidateAndPrepareForDynamicPartitionedTable	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue	TestValidateAndPrepareWhenOnlyHasFailedAnalysisRecords	ok	
-pkg/statistics/handle/autoanalyze/priorityqueue	TestVectorIndexTriggerAutoAnalyze	failed	exit status 2
+pkg/statistics/handle/autoanalyze/priorityqueue	TestVectorIndexTriggerAutoAnalyze	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue/calculatoranalysis	TestPriorityCalculatorWithGeneratedData	ok	
 pkg/statistics/handle/autoanalyze/priorityqueue/intervaltimezone	TestLastFailedAnalysisDurationUseCorrectTimezone	ok	
 pkg/statistics/handle/autoanalyze/refresher	TestAnalyzeHighestPriorityTables	ok	
@@ -4548,6 +4700,7 @@ pkg/statistics/handle/autoanalyze/refresher	TestQueueInitializesOutsideTimeWindo
 pkg/statistics/handle/autoanalyze/refresher	TestSkipAnalyzeTableWhenAutoAnalyzeRatioIsZero	ok	
 pkg/statistics/handle/autoanalyze/refresher	TestTurnOffAndOnAutoAnalyze	ok	
 pkg/statistics/handle/autoanalyze/refresher	TestWorker	ok	
+pkg/statistics/handle/cache	TestBenchDaily	ok	
 pkg/statistics/handle/cache	TestCacheOfBatchUpdate	ok	
 pkg/statistics/handle/cache	TestUpdateStatsHealthyMetrics	ok	
 pkg/statistics/handle/cache/internal/lfu	TestCacheLen	ok	
@@ -4617,8 +4770,9 @@ pkg/statistics/handle/handletest	TestCorrelation	ok
 pkg/statistics/handle/handletest	TestDuplicateFMSketch	ok	
 pkg/statistics/handle/handletest	TestDurationToTS	ok	
 pkg/statistics/handle/handletest	TestEmptyTable	ok	
+pkg/statistics/handle/handletest	TestEvictedColumnLoadedStatus	skipped	handle_test.go:721: skip this test because it is useless
 pkg/statistics/handle/handletest	TestFlushPendingStatsDeltaBeforeAnalyze	ok	
-pkg/statistics/handle/handletest	TestIncrementalModifyCountUpdate	failed	exit status 1
+pkg/statistics/handle/handletest	TestIncrementalModifyCountUpdate	ok	
 pkg/statistics/handle/handletest	TestIndexFMSketch	ok	
 pkg/statistics/handle/handletest	TestInitStatsLite	ok	
 pkg/statistics/handle/handletest	TestInitStatsLiteRecordsSynthesizedColumnStats	ok	
@@ -4638,7 +4792,7 @@ pkg/statistics/handle/handletest	TestStaticPartitionPruneMode	ok
 pkg/statistics/handle/handletest	TestStatsCacheShouldNotCacheSystemTable	ok	
 pkg/statistics/handle/handletest	TestStatsCacheShouldNotCacheTemporaryTable	ok	
 pkg/statistics/handle/handletest	TestStatsCacheUpdateSkip	ok	
-pkg/statistics/handle/handletest	TestStatsCacheUpdateTimeout	failed	exit status 1
+pkg/statistics/handle/handletest	TestStatsCacheUpdateTimeout	ok	
 pkg/statistics/handle/handletest	TestUninitializedStatsStatus	ok	
 pkg/statistics/handle/handletest	TestVersion	ok	
 pkg/statistics/handle/handletest/analyze	TestAnalyzeGlobalStatsWithOpts1	ok	
@@ -4686,7 +4840,7 @@ pkg/statistics/handle/handletest/statstest	TestInitStatsMemTraceWithConcurrentLi
 pkg/statistics/handle/handletest/statstest	TestInitStatsMemTraceWithLite	ok	
 pkg/statistics/handle/handletest/statstest	TestInitStatsMemTraceWithoutConcurrentLite	ok	
 pkg/statistics/handle/handletest/statstest	TestInitStatsMemTraceWithoutLite	ok	
-pkg/statistics/handle/handletest/statstest	TestInitStatsMemoryFullBlocksBucketsButKeepsTopN	failed	exit status 1
+pkg/statistics/handle/handletest/statstest	TestInitStatsMemoryFullBlocksBucketsButKeepsTopN	ok	
 pkg/statistics/handle/handletest/statstest	TestInitStatsVer2	ok	
 pkg/statistics/handle/handletest/statstest	TestInitStatsWithoutHandlingDDLEvent	ok	
 pkg/statistics/handle/handletest/statstest	TestStatsCache	ok	
@@ -4702,10 +4856,10 @@ pkg/statistics/handle/lockstats	TestGetStatsDeltaFromTableLocked	ok
 pkg/statistics/handle/lockstats	TestGetTablesLockedStatuses	ok	
 pkg/statistics/handle/lockstats	TestInsertIntoStatsTableLocked	ok	
 pkg/statistics/handle/lockstats	TestQueryLockedTables	ok	
-pkg/statistics/handle/lockstats	TestRemoveLockedPartitions	failed	exit status 1
+pkg/statistics/handle/lockstats	TestRemoveLockedPartitions	ok	
 pkg/statistics/handle/lockstats	TestRemoveLockedPartitionsFailedIfTheWholeTableIsLocked	ok	
-pkg/statistics/handle/lockstats	TestRemoveLockedTables	failed	exit status 1
-pkg/statistics/handle/lockstats	TestUpdateStatsAndUnlockTable	failed	exit status 1
+pkg/statistics/handle/lockstats	TestRemoveLockedTables	ok	
+pkg/statistics/handle/lockstats	TestUpdateStatsAndUnlockTable	ok	
 pkg/statistics/handle/storage	TestColumnStatsIsInvalidSkipsInternalColumnID	ok	
 pkg/statistics/handle/storage	TestConversion	ok	
 pkg/statistics/handle/storage	TestDeleteAnalyzeJobs	ok	
@@ -4715,7 +4869,7 @@ pkg/statistics/handle/storage	TestDumpPartitions	ok
 pkg/statistics/handle/storage	TestDumpPseudoColumns	ok	
 pkg/statistics/handle/storage	TestDumpVer2Stats	ok	
 pkg/statistics/handle/storage	TestExtremCaseOfGC	ok	
-pkg/statistics/handle/storage	TestFailedToHandleSlowStatsSaving	failed	exit status 1
+pkg/statistics/handle/storage	TestFailedToHandleSlowStatsSaving	ok	
 pkg/statistics/handle/storage	TestGCColumnStatsUsage	ok	
 pkg/statistics/handle/storage	TestGCPartition	ok	
 pkg/statistics/handle/storage	TestGCStats	ok	
@@ -4727,19 +4881,19 @@ pkg/statistics/handle/storage	TestLoadNonExistentIndexStats	ok
 pkg/statistics/handle/storage	TestLoadPartitionStats	ok	
 pkg/statistics/handle/storage	TestLoadPartitionStatsErrPanic	ok	
 pkg/statistics/handle/storage	TestLoadPredicateColumns	ok	
-pkg/statistics/handle/storage	TestLoadStats	failed	exit status 1
-pkg/statistics/handle/storage	TestLoadStatsFMSketchConcurrentAnalyze	failed	exit status 1
+pkg/statistics/handle/storage	TestLoadStats	ok	
+pkg/statistics/handle/storage	TestLoadStatsFMSketchConcurrentAnalyze	ok	
 pkg/statistics/handle/storage	TestLoadStatsForNewCollation	ok	
 pkg/statistics/handle/storage	TestLoadStatsFromOldVersion	ok	
 pkg/statistics/handle/storage	TestPersistStats	ok	
-pkg/statistics/handle/storage	TestReadColumnDistributionStatsUsesOneSnapshot	failed	exit status 1
-pkg/statistics/handle/storage	TestSlowStatsSaving	failed	exit status 1
-pkg/statistics/handle/storage	TestSlowStatsSavingForPartitionedTable	failed	exit status 1
+pkg/statistics/handle/storage	TestReadColumnDistributionStatsUsesOneSnapshot	ok	
+pkg/statistics/handle/storage	TestSlowStatsSaving	ok	
+pkg/statistics/handle/storage	TestSlowStatsSavingForPartitionedTable	ok	
 pkg/statistics/handle/storage	TestUpdateStatsMetaVersionForGC	ok	
 pkg/statistics/handle/syncload	TestConcurrentLoadHist	ok	
 pkg/statistics/handle/syncload	TestConcurrentLoadHistTimeout	ok	
-pkg/statistics/handle/syncload	TestConcurrentLoadHistWithPanicAndFail	failed	exit status 1
-pkg/statistics/handle/syncload	TestRetry	failed	exit status 1
+pkg/statistics/handle/syncload	TestConcurrentLoadHistWithPanicAndFail	ok	
+pkg/statistics/handle/syncload	TestRetry	ok	
 pkg/statistics/handle/syncload	TestSendLoadRequestsWaitTooLong	ok	
 pkg/statistics/handle/syncload	TestSyncLoadOnObjectWhichCanNotFoundInStorage	ok	
 pkg/statistics/handle/syncload	TestSyncWaitStatsLoadWithFailedResultBeforeTimer	ok	
@@ -4773,6 +4927,7 @@ pkg/statistics/handle/usage	TestAnalyzeTableWithTiDBPersistAnalyzeOptionsDisable
 pkg/statistics/handle/usage	TestAnalyzeTableWithTiDBPersistAnalyzeOptionsEnabled	ok	
 pkg/statistics/handle/usage	TestAnalyzeWithNoPredicateColumnsAndNoIndexes	ok	
 pkg/statistics/handle/usage	TestCleanupPredicateColumns	ok	
+pkg/statistics/handle/usage	TestDumpColStatsUsageWriter_ConcurrentMultiTables	skipped	session_stats_collect_test.go:168: Skipping concurrent stats test - run manually if needed
 pkg/statistics/handle/usage	TestDumpStatsDeltaMergeKeepsEarliestInitTime	ok	
 pkg/statistics/handle/usage	TestDumpStatsDeltaPersistsInitTime	ok	
 pkg/statistics/handle/usage	TestGCIndexUsage	ok	
@@ -4791,7 +4946,7 @@ pkg/statistics/handle/util	TestCallWithSCtxSyncsStmtCtxTimeZone	ok
 pkg/statistics/handle/util	TestIsSpecialGlobalIndex	ok	
 pkg/statistics/handle/util	TestTableItemByIDForInitStatsAvoidsV1PartitionScan	ok	
 pkg/store/copr	TestAdmission	ok	
-pkg/store/copr	TestAliveStoreSkipCheck	failed	exit status 1
+pkg/store/copr	TestAliveStoreSkipCheck	ok	
 pkg/store/copr	TestBalanceBatchCopTaskWithContinuity	ok	
 pkg/store/copr	TestBalanceBatchCopTaskWithEmptyTaskSet	ok	
 pkg/store/copr	TestBasicSmallTaskConc	ok	
@@ -4806,7 +4961,7 @@ pkg/store/copr	TestBuildTasks	ok
 pkg/store/copr	TestCacheValueLen	ok	
 pkg/store/copr	TestCalculateRemain	ok	
 pkg/store/copr	TestCalculateRetry	ok	
-pkg/store/copr	TestCheckAliveStore	failed	exit status 1
+pkg/store/copr	TestCheckAliveStore	ok	
 pkg/store/copr	TestConsistentHash	ok	
 pkg/store/copr	TestCopRangeSplit	ok	
 pkg/store/copr	TestCopRanges	ok	
@@ -4827,7 +4982,7 @@ pkg/store/copr	TestMPPFailedStoreProbeGoroutineTask	ok
 pkg/store/copr	TestMppServerInfoManager	ok	
 pkg/store/copr	TestOverlappingRangesCanProduceOutOfOrderRangesAfterSplit	ok	
 pkg/store/copr	TestPagingResponseReadBytes	ok	
-pkg/store/copr	TestPanicInSplitKeyRangesByBuckets	failed	exit status 1
+pkg/store/copr	TestPanicInSplitKeyRangesByBuckets	ok	
 pkg/store/copr	TestRUEMAConcurrentObserveAndPredict	ok	
 pkg/store/copr	TestRUEMALargeGapCollapsesWeight	ok	
 pkg/store/copr	TestRUEMANonMonotonicTime	ok	
@@ -4840,14 +4995,14 @@ pkg/store/copr	TestSplitKeyRangesByLocationsWithoutBuckets	ok
 pkg/store/copr	TestStoreBatchTasksPreserveChildBucketsVersion	ok	
 pkg/store/copr	TestTopoFetcherBackoff	ok	
 pkg/store/copr	TestValidateLocationCoverage	ok	
-pkg/store/copr/copr_test	TestBuildCopIteratorWithBatchStoreCopr	failed	exit status 2
+pkg/store/copr/copr_test	TestBuildCopIteratorWithBatchStoreCopr	ok	
 pkg/store/copr/copr_test	TestBuildCopIteratorWithRowCountHint	ok	
 pkg/store/copr/copr_test	TestBuildCopIteratorWithRunawayChecker	ok	
 pkg/store/copr/copr_test	TestBuildCopIteratorWithSharedRequestLimiter	ok	
-pkg/store/copr/copr_test	TestDMLWithLiteCopWorker	failed	exit status 1
-pkg/store/copr/copr_test	TestQueryCopStoreLimiterLimitsSameStoreCoprRequests	failed	exit status 1
+pkg/store/copr/copr_test	TestDMLWithLiteCopWorker	ok	
+pkg/store/copr/copr_test	TestQueryCopStoreLimiterLimitsSameStoreCoprRequests	ok	
 pkg/store/copr/copr_test	TestQueryWithConcurrentSmallCop	ok	
-pkg/store/copr/copr_test	TestRequestLocalCoprLimiterLimitsConcurrentRequests	failed	exit status 1
+pkg/store/copr/copr_test	TestRequestLocalCoprLimiterLimitsConcurrentRequests	ok	
 pkg/table	TestCastValue	ok	
 pkg/table	TestCastValueStrict	ok	
 pkg/table	TestCheck	ok	
@@ -4888,7 +5043,7 @@ pkg/table/tables	TestPartialIndexDML	ok
 pkg/table/tables	TestPartialIndexDMLDuringDDL	ok	
 pkg/table/tables	TestPartialIndexDMLUniqueness	ok	
 pkg/table/tables	TestRenewLease	ok	
-pkg/table/tables	TestRenewLeaseABAFailPoint	failed	exit status 2
+pkg/table/tables	TestRenewLeaseABAFailPoint	ok	
 pkg/table/tables	TestRowKeyCodec	ok	
 pkg/table/tables	TestSetAssertion	ok	
 pkg/table/tables	TestSingleColumnCommonHandle	ok	
@@ -4898,7 +5053,7 @@ pkg/table/tables	TestTableCacheLeaseVariable	ok
 pkg/table/tables	TestTableFromMeta	ok	
 pkg/table/tables	TestTableFromMetaWithCollateUsesFixedMode	ok	
 pkg/table/tables	TestTableOperationsInDDLDropIndexWriteOnly	ok	
-pkg/table/tables	TestTxnAssertion	failed	exit status 1
+pkg/table/tables	TestTxnAssertion	ok	
 pkg/table/tables	TestTypes	ok	
 pkg/table/tables	TestUniqueIndexMultipleNullEntries	ok	
 pkg/table/tables	TestUnsignedPK	ok	
@@ -5180,6 +5335,7 @@ pkg/types	TestWeekday	ok
 pkg/types	TestWithNewFlags	ok	
 pkg/types	TestYear	ok	
 pkg/types	TestZeroVector	ok	
+pkg/types/parser_driver	TestAcceptInPlaceHonorsSkipChildren	ok	no functions reached beyond package init
 pkg/types/parser_driver	TestValueExprFormat	ok	
 pkg/types/parser_driver	TestValueExprRestore	ok	
 pkg/util/chunk	TestActionBlocked	ok	
@@ -5249,8 +5405,8 @@ pkg/util/chunk	TestNewSortedRowContainer	ok
 pkg/util/chunk	TestNoDuplicateColumnReuse	ok	
 pkg/util/chunk	TestNull	ok	
 pkg/util/chunk	TestNullsColumn	ok	
-pkg/util/chunk	TestPanicDuringSortedRowContainerSpill	failed	exit status 1
-pkg/util/chunk	TestPanicWhenSpillToDisk	failed	exit status 1
+pkg/util/chunk	TestPanicDuringSortedRowContainerSpill	ok	
+pkg/util/chunk	TestPanicWhenSpillToDisk	ok	
 pkg/util/chunk	TestPoolGetChunk	ok	
 pkg/util/chunk	TestPoolPutChunk	ok	
 pkg/util/chunk	TestPreAllocDecimal	ok	
@@ -5297,6 +5453,7 @@ pkg/util/codec	TestDecodeOneToChunk	ok
 pkg/util/codec	TestDecodeRange	ok	
 pkg/util/codec	TestDuration	ok	
 pkg/util/codec	TestEncoderNewCollationEnabled	ok	
+pkg/util/codec	TestFastSlowFastReverse	ok	no functions reached beyond package init
 pkg/util/codec	TestFloatCodec	ok	
 pkg/util/codec	TestFrac	ok	
 pkg/util/codec	TestHashChunkColumns	ok	

@@ -48,7 +48,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ddl/partition.go` | 115 | 4 | 0.2 |
 | `pkg/ddl/placement/bundle.go` | 16 | 3 | 0.2 |
 | `pkg/ddl/create_table.go` | 49 | 1 | 0.1 |
-| `pkg/ddl/notifier/events.go` | 36 | 1 | 0.7 |
+| `pkg/ddl/notifier/events.go` | 37 | 1 | 0.7 |
 | `pkg/ddl/owner_mgr.go` | 7 | 1 | 0.1 |
 | `pkg/ddl/schemaver/syncer.go` | 13 | 1 | 0.1 |
 | `pkg/ddl/add_column.go` | 40 | 0 | 0 |
@@ -57,14 +57,14 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ddl/backfilling.go` | 27 | 0 | 0 |
 | `pkg/ddl/backfilling_txn_executor.go` | 13 | 0 | 0 |
 | `pkg/ddl/bdr/bdr.go` | 3 | 0 | 0 |
-| `pkg/ddl/cluster.go` | 2 | 0 | 0 |
+| `pkg/ddl/cluster.go` | 16 | 0 | 0 |
 | `pkg/ddl/column.go` | 58 | 0 | 0 |
 | `pkg/ddl/constraint.go` | 7 | 0 | 0 |
-| `pkg/ddl/ddl.go` | 71 | 0 | 0 |
+| `pkg/ddl/ddl.go` | 74 | 0 | 0 |
 | `pkg/ddl/ddl_algorithm.go` | 2 | 0 | 0 |
 | `pkg/ddl/ddl_history.go` | 8 | 0 | 0 |
 | `pkg/ddl/ddl_running_jobs.go` | 13 | 0 | 0 |
-| `pkg/ddl/ddl_tiflash_api.go` | 10 | 0 | 0 |
+| `pkg/ddl/ddl_tiflash_api.go` | 5 | 0 | 0 |
 | `pkg/ddl/ddl_workerpool.go` | 6 | 0 | 0 |
 | `pkg/ddl/delete_range.go` | 20 | 0 | 0 |
 | `pkg/ddl/delete_range_util.go` | 2 | 0 | 0 |
@@ -72,18 +72,21 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ddl/executor.go` | 178 | 0 | 0 |
 | `pkg/ddl/foreign_key.go` | 27 | 0 | 0 |
 | `pkg/ddl/generated_column.go` | 19 | 0 | 0 |
-| `pkg/ddl/index.go` | 90 | 0 | 0 |
+| `pkg/ddl/index.go` | 91 | 0 | 0 |
 | `pkg/ddl/index_auto_presplit.go` | 1 | 0 | 0 |
+| `pkg/ddl/index_cop.go` | 1 | 0 | 0 |
 | `pkg/ddl/index_presplit.go` | 2 | 0 | 0 |
 | `pkg/ddl/ingest/collector.go` | 2 | 0 | 0 |
 | `pkg/ddl/ingest/disk_root.go` | 5 | 0 | 0 |
 | `pkg/ddl/ingest/env.go` | 3 | 0 | 0 |
 | `pkg/ddl/ingest/mem_root.go` | 1 | 0 | 0 |
+| `pkg/ddl/ingest/util.go` | 1 | 0 | 0 |
 | `pkg/ddl/job_scheduler.go` | 24 | 0 | 0 |
 | `pkg/ddl/job_submitter.go` | 9 | 0 | 0 |
 | `pkg/ddl/job_worker.go` | 41 | 0 | 0 |
 | `pkg/ddl/jobsubmit/submit.go` | 15 | 0 | 0 |
-| `pkg/ddl/label/rule.go` | 3 | 0 | 0 |
+| `pkg/ddl/label/attributes.go` | 2 | 0 | 0 |
+| `pkg/ddl/label/rule.go` | 4 | 0 | 0 |
 | `pkg/ddl/logutil/logutil.go` | 4 | 0 | 0 |
 | `pkg/ddl/masking_policy.go` | 9 | 0 | 0 |
 | `pkg/ddl/materialized_view.go` | 36 | 0 | 0 |
@@ -106,10 +109,10 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ddl/reorg_util.go` | 1 | 0 | 0 |
 | `pkg/ddl/resource_group.go` | 8 | 0 | 0 |
 | `pkg/ddl/resourcegroup/group.go` | 1 | 0 | 0 |
-| `pkg/ddl/rollingback.go` | 6 | 0 | 0 |
+| `pkg/ddl/rollingback.go` | 7 | 0 | 0 |
 | `pkg/ddl/sanity_check.go` | 6 | 0 | 0 |
 | `pkg/ddl/schema.go` | 9 | 0 | 0 |
-| `pkg/ddl/schema_version.go` | 19 | 0 | 0 |
+| `pkg/ddl/schema_version.go` | 20 | 0 | 0 |
 | `pkg/ddl/schematracker/checker.go` | 23 | 0 | 0 |
 | `pkg/ddl/schematracker/dm_tracker.go` | 11 | 0 | 0 |
 | `pkg/ddl/schematracker/info_store.go` | 12 | 0 | 0 |
@@ -130,7 +133,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ddl/testutil/testutil.go` | 1 | 0 | 0 |
 | `pkg/ddl/ttl.go` | 13 | 0 | 0 |
 | `pkg/ddl/util/dead_table_lock_checker.go` | 1 | 0 | 0 |
-| `pkg/ddl/util/util.go` | 19 | 0 | 0 |
+| `pkg/ddl/util/util.go` | 21 | 0 | 0 |
 | `pkg/ddl/util/watcher.go` | 3 | 0 | 0 |
 
 ## `pkg/distsql`
@@ -138,7 +141,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/distsql/request_builder.go` | 57 | 30 | 10.4 |
-| `pkg/distsql/select_result.go` | 44 | 14 | 2.5 |
+| `pkg/distsql/select_result.go` | 44 | 15 | 2.6 |
 | `pkg/distsql/distsql.go` | 12 | 3 | 0.2 |
 | `pkg/distsql/context/context.go` | 2 | 1 | 0.1 |
 
@@ -146,13 +149,13 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/domain/domain.go` | 116 | 26 | 1.7 |
-| `pkg/domain/infosync/info.go` | 53 | 4 | 0.3 |
+| `pkg/domain/domain.go` | 118 | 26 | 1.7 |
+| `pkg/domain/infosync/info.go` | 52 | 4 | 0.3 |
 | `pkg/domain/serverinfo/syncer.go` | 25 | 1 | 0.1 |
 | `pkg/domain/affinity/interface.go` | 6 | 0 | 0 |
 | `pkg/domain/affinity/manager.go` | 8 | 0 | 0 |
 | `pkg/domain/crossks/cross_ks.go` | 2 | 0 | 0 |
-| `pkg/domain/domain_sysvars.go` | 9 | 0 | 0 |
+| `pkg/domain/domain_sysvars.go` | 10 | 0 | 0 |
 | `pkg/domain/domainctx.go` | 1 | 0 | 0 |
 | `pkg/domain/extract.go` | 19 | 0 | 0 |
 | `pkg/domain/globalconfigsync/globalconfig.go` | 3 | 0 | 0 |
@@ -163,10 +166,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/domain/infosync/placement_manager.go` | 5 | 0 | 0 |
 | `pkg/domain/infosync/region.go` | 6 | 0 | 0 |
 | `pkg/domain/infosync/resource_manager_client.go` | 6 | 0 | 0 |
-| `pkg/domain/infosync/tiflash_manager.go` | 23 | 0 | 0 |
+| `pkg/domain/infosync/schedule_manager.go` | 2 | 0 | 0 |
+| `pkg/domain/infosync/tiflash_manager.go` | 15 | 0 | 0 |
 | `pkg/domain/optimize_trace.go` | 1 | 0 | 0 |
-| `pkg/domain/plan_replayer.go` | 17 | 0 | 0 |
-| `pkg/domain/plan_replayer_dump.go` | 32 | 0 | 0 |
+| `pkg/domain/plan_replayer.go` | 22 | 0 | 0 |
+| `pkg/domain/plan_replayer_dump.go` | 33 | 0 | 0 |
 | `pkg/domain/resource_group_controller_options.go` | 1 | 0 | 0 |
 | `pkg/domain/ru_stats.go` | 1 | 0 | 0 |
 | `pkg/domain/runaway.go` | 1 | 0 | 0 |
@@ -181,8 +185,8 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/dumpformat/parquetfile/parser.go` | 23 | 2 | 0.5 |
-| `pkg/dumpformat/parquetfile/reader_wrapper.go` | 11 | 2 | 0.2 |
+| `pkg/dumpformat/parquetfile/parser.go` | 23 | 1 | 0.4 |
+| `pkg/dumpformat/parquetfile/reader_wrapper.go` | 11 | 1 | 0.2 |
 | `pkg/dumpformat/testutils/parquet_writer.go` | 7 | 1 | 0.1 |
 | `pkg/dumpformat/parquetfile/type_converter.go` | 1 | 0 | 0 |
 
@@ -190,7 +194,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/dxf/framework/handle/handle.go` | 4 | 1 | 0.1 |
+| `pkg/dxf/framework/handle/handle.go` | 5 | 1 | 0.1 |
 | `pkg/dxf/framework/proto/step.go` | 3 | 1 | 0.2 |
 | `pkg/dxf/importinto/job.go` | 7 | 1 | 0.4 |
 | `pkg/dxf/framework/dxfmetric/collector.go` | 3 | 0 | 0 |
@@ -204,9 +208,9 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/dxf/framework/scheduler/scheduler_manager.go` | 19 | 0 | 0 |
 | `pkg/dxf/framework/scheduler/slots.go` | 2 | 0 | 0 |
 | `pkg/dxf/framework/storage/nodes.go` | 9 | 0 | 0 |
-| `pkg/dxf/framework/storage/task_table.go` | 12 | 0 | 0 |
+| `pkg/dxf/framework/storage/task_table.go` | 13 | 0 | 0 |
 | `pkg/dxf/framework/taskexecutor/execute/interface.go` | 2 | 0 | 0 |
-| `pkg/dxf/framework/taskexecutor/manager.go` | 9 | 0 | 0 |
+| `pkg/dxf/framework/taskexecutor/manager.go` | 8 | 0 | 0 |
 | `pkg/dxf/framework/taskexecutor/register.go` | 1 | 0 | 0 |
 | `pkg/dxf/framework/taskexecutor/slot.go` | 2 | 0 | 0 |
 | `pkg/dxf/framework/testutil/table_util.go` | 3 | 0 | 0 |
@@ -229,49 +233,49 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/executor/join/row_table_builder.go` | 21 | 57 | 5.6 |
-| `pkg/executor/join/base_join_probe.go` | 25 | 46 | 3.5 |
-| `pkg/executor/importer/import.go` | 59 | 36 | 11.2 |
-| `pkg/executor/internal/exec/executor.go` | 38 | 33 | 3.2 |
+| `pkg/executor/join/row_table_builder.go` | 21 | 56 | 5.5 |
+| `pkg/executor/join/base_join_probe.go` | 25 | 43 | 3.4 |
+| `pkg/executor/importer/import.go` | 59 | 36 | 11.3 |
+| `pkg/executor/internal/exec/executor.go` | 38 | 35 | 3.3 |
 | `pkg/executor/aggfuncs/spill_deserialize_helper.go` | 56 | 32 | 5.7 |
 | `pkg/executor/aggfuncs/spill_serialize_helper.go` | 55 | 32 | 4.1 |
-| `pkg/executor/join/join_row_table.go` | 19 | 29 | 3.1 |
 | `pkg/executor/mviewdeltamergeagg/exec.go` | 26 | 29 | 7.4 |
+| `pkg/executor/join/join_row_table.go` | 19 | 28 | 3.0 |
 | `pkg/executor/mviewdeltamergeagg/merge.go` | 9 | 26 | 4.2 |
 | `pkg/executor/aggfuncs/builder.go` | 35 | 23 | 2.5 |
-| `pkg/executor/join/hash_join_v2.go` | 75 | 23 | 3.6 |
+| `pkg/executor/join/hash_join_v2.go` | 76 | 23 | 3.6 |
 | `pkg/executor/join/hash_table_v2.go` | 20 | 19 | 1.9 |
-| `pkg/executor/join/hash_join_spill_helper.go` | 40 | 14 | 1.9 |
 | `pkg/executor/join/join_table_meta.go` | 13 | 14 | 2.3 |
 | `pkg/executor/join/outer_join_probe.go` | 14 | 14 | 1.0 |
-| `pkg/executor/load_data.go` | 27 | 14 | 1.7 |
-| `pkg/executor/slow_query.go` | 48 | 14 | 8.6 |
+| `pkg/executor/load_data.go` | 27 | 14 | 1.8 |
+| `pkg/executor/slow_query.go` | 48 | 14 | 8.4 |
 | `pkg/executor/statement_ru_plan_walk.go` | 35 | 14 | 1.6 |
+| `pkg/executor/join/hash_join_spill_helper.go` | 40 | 13 | 1.8 |
 | `pkg/executor/mviewdeltamergeagg/merge_count.go` | 3 | 13 | 0.9 |
 | `pkg/executor/join/left_outer_semi_join_probe.go` | 11 | 12 | 0.9 |
 | `pkg/executor/internal/exec/adaptive_limit_controller.go` | 38 | 11 | 10.0 |
+| `pkg/executor/internal/testutil/testutil.go` | 12 | 11 | 1.0 |
 | `pkg/executor/mviewdeltamergeagg/merge_minmax.go` | 9 | 11 | 1.6 |
-| `pkg/executor/aggfuncs/func_varpop.go` | 19 | 10 | 2.7 |
-| `pkg/executor/builder.go` | 170 | 10 | 1.1 |
-| `pkg/executor/statement_ru_reporting.go` | 10 | 10 | 2.4 |
+| `pkg/executor/aggfuncs/func_varpop.go` | 19 | 10 | 2.8 |
+| `pkg/executor/builder.go` | 173 | 10 | 1.1 |
+| `pkg/executor/join/hash_join_test_util.go` | 12 | 10 | 0.6 |
+| `pkg/executor/statement_ru_reporting.go` | 10 | 10 | 2.3 |
 | `pkg/executor/statement_ru_result.go` | 15 | 10 | 1.3 |
-| `pkg/executor/internal/testutil/testutil.go` | 12 | 9 | 0.8 |
-| `pkg/executor/join/hash_join_test_util.go` | 12 | 9 | 0.5 |
-| `pkg/executor/mlog_purge.go` | 39 | 9 | 7.0 |
+| `pkg/executor/mlog_purge.go` | 42 | 9 | 7.0 |
 | `pkg/executor/distsql.go` | 77 | 8 | 3.3 |
 | `pkg/executor/mviewdeltamergeagg/merge_sum.go` | 10 | 8 | 0.8 |
 | `pkg/executor/sortexec/multi_way_merge.go` | 16 | 8 | 0.5 |
 | `pkg/executor/adapter_slow_log.go` | 10 | 7 | 0.9 |
 | `pkg/executor/aggfuncs/func_count_distinct.go` | 79 | 7 | 2.5 |
 | `pkg/executor/aggfuncs/func_max_min.go` | 108 | 7 | 3.3 |
-| `pkg/executor/importer/table_import.go` | 36 | 7 | 3.9 |
+| `pkg/executor/brie.go` | 15 | 7 | 1.9 |
+| `pkg/executor/importer/table_import.go` | 35 | 7 | 3.9 |
 | `pkg/executor/join/anti_semi_join_probe.go` | 15 | 7 | 0.7 |
 | `pkg/executor/sortexec/sort.go` | 35 | 7 | 0.7 |
-| `pkg/executor/adapter.go` | 86 | 6 | 2.3 |
+| `pkg/executor/adapter.go` | 87 | 6 | 2.3 |
 | `pkg/executor/aggfuncs/func_max_min_count.go` | 57 | 6 | 2.2 |
 | `pkg/executor/aggfuncs/func_percentile.go` | 64 | 6 | 1.2 |
 | `pkg/executor/aggfuncs/func_sum_int.go` | 26 | 6 | 1.6 |
-| `pkg/executor/brie.go` | 14 | 6 | 1.8 |
 | `pkg/executor/internal/mpp/local_mpp_coordinator.go` | 29 | 6 | 2.9 |
 | `pkg/executor/join/semi_join_probe.go` | 16 | 6 | 0.6 |
 | `pkg/executor/join/tagged_ptr.go` | 5 | 6 | 3.1 |
@@ -285,10 +289,10 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/executor/aggfuncs/func_json_objectagg.go` | 7 | 4 | 0.3 |
 | `pkg/executor/aggfuncs/func_rank.go` | 6 | 4 | 0.5 |
 | `pkg/executor/aggfuncs/func_value.go` | 31 | 4 | 0.7 |
-| `pkg/executor/aggregate/agg_spill.go` | 21 | 4 | 0.3 |
-| `pkg/executor/infoschema_reader.go` | 73 | 4 | 0.9 |
-| `pkg/executor/internal/vecgroupchecker/vec_group_checker.go` | 8 | 4 | 1.4 |
-| `pkg/executor/join/joiner.go` | 44 | 4 | 0.6 |
+| `pkg/executor/aggregate/agg_spill.go` | 22 | 4 | 0.3 |
+| `pkg/executor/infoschema_reader.go` | 76 | 4 | 0.9 |
+| `pkg/executor/internal/vecgroupchecker/vec_group_checker.go` | 8 | 4 | 1.3 |
+| `pkg/executor/join/joiner.go` | 47 | 4 | 0.6 |
 | `pkg/executor/join/joinversion/join_version.go` | 2 | 4 | 0.2 |
 | `pkg/executor/show.go` | 59 | 4 | 2.0 |
 | `pkg/executor/sortexec/parallel_sort_spill_helper.go` | 14 | 4 | 0.4 |
@@ -319,14 +323,14 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/executor/internal/util/touched_rows.go` | 1 | 2 | 0.4 |
 | `pkg/executor/lockstats/lock_stats_executor.go` | 7 | 2 | 0.3 |
 | `pkg/executor/mview_complete_delta_apply.go` | 2 | 2 | 0.6 |
-| `pkg/executor/mview_task.go` | 12 | 2 | 1.1 |
+| `pkg/executor/mview_task.go` | 15 | 2 | 1.1 |
 | `pkg/executor/select.go` | 33 | 2 | 0.3 |
-| `pkg/executor/unionexec/union.go` | 7 | 2 | 0.3 |
+| `pkg/executor/unionexec/union.go` | 7 | 2 | 0.4 |
 | `pkg/executor/aggfuncs/func_cume_dist.go` | 4 | 1 | 0.2 |
 | `pkg/executor/aggfuncs/func_ntile.go` | 4 | 1 | 0.2 |
 | `pkg/executor/aggfuncs/func_percent_rank.go` | 4 | 1 | 0.2 |
 | `pkg/executor/aggfuncs/row_number.go` | 5 | 1 | 0.1 |
-| `pkg/executor/aggregate/agg_util.go` | 18 | 1 | 1.0 |
+| `pkg/executor/aggregate/agg_util.go` | 19 | 1 | 1.0 |
 | `pkg/executor/analyze_utils.go` | 11 | 1 | 1.0 |
 | `pkg/executor/brie_utils.go` | 7 | 1 | 0.4 |
 | `pkg/executor/check_table_index.go` | 26 | 1 | 0.1 |
@@ -335,19 +339,20 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/executor/importer/chunk_process.go` | 18 | 1 | 1.0 |
 | `pkg/executor/importer/kv_encode.go` | 8 | 1 | 0.1 |
 | `pkg/executor/insert_common.go` | 42 | 1 | 0.7 |
-| `pkg/executor/inspection_result.go` | 33 | 1 | 1.0 |
+| `pkg/executor/inspection_result.go` | 40 | 1 | 1.0 |
 | `pkg/executor/internal/mpp/executor_with_retry.go` | 9 | 1 | 1.0 |
 | `pkg/executor/internal/pdhelper/pd.go` | 3 | 1 | 1.0 |
+| `pkg/executor/internal/util/util.go` | 3 | 1 | 0.1 |
 | `pkg/executor/join/hash_join_stats.go` | 10 | 1 | 0.9 |
 | `pkg/executor/join/hash_join_v1.go` | 35 | 1 | 0.1 |
 | `pkg/executor/join/index_lookup_join.go` | 26 | 1 | 0.9 |
 | `pkg/executor/join/merge_join.go` | 11 | 1 | 0.1 |
-| `pkg/executor/mppcoordmanager/mpp_coordinator_manager.go` | 5 | 1 | 0.8 |
+| `pkg/executor/mppcoordmanager/mpp_coordinator_manager.go` | 6 | 1 | 0.8 |
 | `pkg/executor/select_into.go` | 7 | 1 | 0.9 |
 | `pkg/executor/set.go` | 9 | 1 | 0.6 |
 | `pkg/executor/set_config.go` | 5 | 1 | 0.1 |
 | `pkg/executor/show_placement.go` | 22 | 1 | 0.3 |
-| `pkg/executor/shuffle.go` | 14 | 1 | 0.2 |
+| `pkg/executor/shuffle.go` | 15 | 1 | 0.2 |
 | `pkg/executor/simple.go` | 74 | 1 | 0.1 |
 | `pkg/executor/sortexec/sort_spill.go` | 8 | 1 | 0.1 |
 | `pkg/executor/staticrecordset/recordset.go` | 6 | 1 | 0.1 |
@@ -381,32 +386,32 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/executor/import_into.go` | 7 | 0 | 0 |
 | `pkg/executor/importer/engine_process.go` | 2 | 0 | 0 |
 | `pkg/executor/importer/precheck.go` | 8 | 0 | 0 |
-| `pkg/executor/index_merge_reader.go` | 47 | 0 | 0 |
+| `pkg/executor/index_merge_reader.go` | 48 | 0 | 0 |
 | `pkg/executor/insert.go` | 17 | 0 | 0 |
 | `pkg/executor/inspection_summary.go` | 1 | 0 | 0 |
 | `pkg/executor/internal/builder/builder_utils.go` | 4 | 0 | 0 |
-| `pkg/executor/internal/calibrateresource/calibrate_resource.go` | 6 | 0 | 0 |
+| `pkg/executor/internal/calibrateresource/calibrate_resource.go` | 25 | 0 | 0 |
 | `pkg/executor/internal/exec/indexusage.go` | 8 | 0 | 0 |
-| `pkg/executor/internal/mpp/recovery_handler.go` | 7 | 0 | 0 |
+| `pkg/executor/internal/mpp/recovery_handler.go` | 14 | 0 | 0 |
 | `pkg/executor/internal/querywatch/query_watch.go` | 4 | 0 | 0 |
 | `pkg/executor/internal/testutil/sort.go` | 1 | 0 | 0 |
 | `pkg/executor/internal/util/partition_table.go` | 1 | 0 | 0 |
-| `pkg/executor/internal/util/util.go` | 3 | 0 | 0 |
 | `pkg/executor/join/base_semi_join.go` | 6 | 0 | 0 |
 | `pkg/executor/join/hash_join_base.go` | 9 | 0 | 0 |
 | `pkg/executor/join/hash_join_spill.go` | 6 | 0 | 0 |
 | `pkg/executor/join/index_lookup_hash_join.go` | 27 | 0 | 0 |
 | `pkg/executor/join/inner_join_probe.go` | 2 | 0 | 0 |
+| `pkg/executor/load_stats.go` | 4 | 0 | 0 |
 | `pkg/executor/lockstats/unlock_stats_executor.go` | 4 | 0 | 0 |
 | `pkg/executor/mem_reader.go` | 35 | 0 | 0 |
-| `pkg/executor/memtable_reader.go` | 27 | 0 | 0 |
-| `pkg/executor/metrics_reader.go` | 3 | 0 | 0 |
+| `pkg/executor/memtable_reader.go` | 32 | 0 | 0 |
+| `pkg/executor/metrics_reader.go` | 5 | 0 | 0 |
 | `pkg/executor/mpp_gather.go` | 8 | 0 | 0 |
 | `pkg/executor/mviewdeltamergeagg/writer.go` | 1 | 0 | 0 |
 | `pkg/executor/operate_ddl_jobs.go` | 2 | 0 | 0 |
 | `pkg/executor/opt_rule_blacklist.go` | 2 | 0 | 0 |
 | `pkg/executor/parallel_apply.go` | 14 | 0 | 0 |
-| `pkg/executor/plan_replayer.go` | 22 | 0 | 0 |
+| `pkg/executor/plan_replayer.go` | 24 | 0 | 0 |
 | `pkg/executor/point_get.go` | 26 | 0 | 0 |
 | `pkg/executor/prepared.go` | 4 | 0 | 0 |
 | `pkg/executor/projection.go` | 14 | 0 | 0 |
@@ -436,22 +441,22 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/expression/builtin_cast.go` | 149 | 172 | 16.8 |
-| `pkg/expression/sessionexpr/sessionctx.go` | 58 | 168 | 12.0 |
-| `pkg/expression/builtin.go` | 41 | 121 | 9.8 |
-| `pkg/expression/constant.go` | 49 | 98 | 8.9 |
-| `pkg/expression/scalar_function.go` | 57 | 76 | 6.0 |
+| `pkg/expression/sessionexpr/sessionctx.go` | 59 | 167 | 11.9 |
+| `pkg/expression/builtin.go` | 41 | 123 | 9.9 |
+| `pkg/expression/constant.go` | 49 | 97 | 8.8 |
+| `pkg/expression/scalar_function.go` | 57 | 75 | 5.9 |
 | `pkg/expression/builtin_string.go` | 201 | 71 | 10.9 |
 | `pkg/expression/column.go` | 77 | 68 | 10.2 |
 | `pkg/expression/builtin_time.go` | 348 | 66 | 10.7 |
-| `pkg/expression/collation.go` | 22 | 55 | 4.5 |
+| `pkg/expression/collation.go` | 22 | 54 | 4.5 |
 | `pkg/expression/builtin_math.go` | 125 | 38 | 5.5 |
-| `pkg/expression/builtin_compare.go` | 196 | 36 | 5.5 |
+| `pkg/expression/builtin_compare.go` | 197 | 36 | 5.5 |
 | `pkg/expression/builtin_json.go` | 104 | 29 | 4.1 |
 | `pkg/expression/builtin_miscellaneous.go` | 98 | 29 | 5.1 |
 | `pkg/expression/aggregation/base_func.go` | 29 | 28 | 2.5 |
+| `pkg/expression/builtin_op.go` | 71 | 25 | 4.0 |
 | `pkg/expression/builtin_arithmetic.go` | 59 | 24 | 4.0 |
-| `pkg/expression/builtin_op.go` | 71 | 24 | 4.0 |
-| `pkg/expression/builtin_info.go` | 90 | 21 | 4.7 |
+| `pkg/expression/builtin_info.go` | 93 | 21 | 4.7 |
 | `pkg/expression/builtin_encryption.go` | 50 | 18 | 3.1 |
 | `pkg/expression/builtin_convert_charset.go` | 14 | 17 | 2.0 |
 | `pkg/expression/util.go` | 100 | 17 | 2.6 |
@@ -462,14 +467,14 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/expression/builtin_regexp.go` | 39 | 12 | 3.3 |
 | `pkg/expression/errors.go` | 3 | 10 | 0.8 |
 | `pkg/expression/exprstatic/exprctx.go` | 38 | 10 | 2.2 |
-| `pkg/expression/infer_pushdown.go` | 20 | 10 | 1.5 |
 | `pkg/expression/builtin_func_param.go` | 7 | 9 | 0.8 |
 | `pkg/expression/exprctx/optional.go` | 8 | 9 | 3.4 |
+| `pkg/expression/infer_pushdown.go` | 20 | 9 | 1.5 |
 | `pkg/expression/expression.go` | 43 | 8 | 0.6 |
+| `pkg/expression/expr_to_pb.go` | 13 | 7 | 0.8 |
 | `pkg/expression/grouping_sets.go` | 25 | 7 | 4.3 |
 | `pkg/expression/aggregation/descriptor.go` | 14 | 6 | 0.4 |
 | `pkg/expression/builtin_time_vec.go` | 138 | 6 | 1.1 |
-| `pkg/expression/expr_to_pb.go` | 13 | 6 | 0.8 |
 | `pkg/expression/aggregation/util.go` | 3 | 5 | 0.4 |
 | `pkg/expression/builtin_cast_vec.go` | 98 | 5 | 1.0 |
 | `pkg/expression/builtin_string_vec.go` | 127 | 5 | 1.6 |
@@ -478,7 +483,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/expression/fts_to_like.go` | 9 | 5 | 3.9 |
 | `pkg/expression/builtin_miscellaneous_vec.go` | 58 | 4 | 0.9 |
 | `pkg/expression/builtin_regexp_util.go` | 5 | 4 | 0.3 |
-| `pkg/expression/aggregation/aggregation.go` | 11 | 3 | 0.4 |
+| `pkg/expression/aggregation/aggregation.go` | 12 | 3 | 0.4 |
 | `pkg/expression/builtin_compare_vec.go` | 47 | 3 | 0.7 |
 | `pkg/expression/builtin_grouping.go` | 14 | 3 | 1.0 |
 | `pkg/expression/builtin_ilike.go` | 4 | 3 | 0.2 |
@@ -519,7 +524,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/expression/builtin_like.go` | 3 | 1 | 0.1 |
 | `pkg/expression/builtin_registry.go` | 1 | 1 | 1.0 |
 | `pkg/expression/builtin_vec.go` | 22 | 1 | 0.2 |
-| `pkg/expression/builtin_vec_vec.go` | 16 | 1 | 0.2 |
+| `pkg/expression/builtin_vec_vec.go` | 16 | 1 | 0.3 |
 | `pkg/expression/constant_propagation.go` | 40 | 1 | 0.1 |
 | `pkg/expression/evaluator.go` | 7 | 1 | 0.1 |
 | `pkg/expression/expropt/ddlowner.go` | 3 | 1 | 0.1 |
@@ -533,7 +538,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/expression/aggregation/sum_int.go` | 2 | 0 | 0 |
 | `pkg/expression/aggregation/window_func.go` | 4 | 0 | 0 |
 | `pkg/expression/builtin_like_vec.go` | 2 | 0 | 0 |
-| `pkg/expression/builtin_threadsafe_generated.go` | 74 | 0 | 0 |
+| `pkg/expression/builtin_threadsafe_generated.go` | 76 | 0 | 0 |
 | `pkg/expression/builtin_threadunsafe_generated.go` | 1 | 0 | 0 |
 | `pkg/expression/context.go` | 8 | 0 | 0 |
 | `pkg/expression/explain.go` | 20 | 0 | 0 |
@@ -559,7 +564,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/extworkload/util.go` | 5 | 0 | 0 |
+| `pkg/extworkload/util.go` | 6 | 0 | 0 |
 
 ## `pkg/format`
 
@@ -589,14 +594,14 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | --- | ---: | ---: | ---: |
 | `pkg/infoschema/infoschema.go` | 79 | 58 | 13.2 |
 | `pkg/infoschema/infoschema_v2.go` | 87 | 32 | 4.9 |
-| `pkg/infoschema/internal/testkit.go` | 22 | 17 | 2.1 |
+| `pkg/infoschema/internal/testkit.go` | 22 | 17 | 2.2 |
 | `pkg/infoschema/sieve.go` | 20 | 16 | 6.9 |
-| `pkg/infoschema/builder.go` | 44 | 13 | 1.1 |
+| `pkg/infoschema/builder.go` | 45 | 13 | 1.1 |
 | `pkg/infoschema/cache.go` | 15 | 8 | 3.3 |
 | `pkg/infoschema/tables.go` | 36 | 6 | 5.1 |
 | `pkg/infoschema/metrics.go` | 6 | 3 | 0.4 |
 | `pkg/infoschema/issyncer/loader.go` | 19 | 2 | 0.9 |
-| `pkg/infoschema/issyncer/syncer.go` | 16 | 2 | 0.5 |
+| `pkg/infoschema/issyncer/syncer.go` | 15 | 2 | 0.5 |
 | `pkg/infoschema/builder_misc.go` | 7 | 1 | 0.1 |
 | `pkg/infoschema/cluster.go` | 4 | 1 | 1.0 |
 | `pkg/infoschema/internal/sizer.go` | 2 | 1 | 1.0 |
@@ -612,12 +617,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/ingestor/ingestctrl/engine.go` | 41 | 1 | 0.1 |
-| `pkg/ingestor/ingestctrl/local.go` | 25 | 1 | 0.1 |
+| `pkg/ingestor/ingestctrl/engine.go` | 37 | 1 | 0.1 |
+| `pkg/ingestor/ingestctrl/local.go` | 12 | 1 | 0.1 |
 | `pkg/ingestor/ingestctrl/checksum.go` | 1 | 0 | 0 |
-| `pkg/ingestor/ingestctrl/engine_mgr.go` | 13 | 0 | 0 |
-| `pkg/ingestor/ingestctrl/iterator.go` | 2 | 0 | 0 |
-| `pkg/ingestor/ingestctrl/localhelper.go` | 3 | 0 | 0 |
+| `pkg/ingestor/ingestctrl/engine_mgr.go` | 12 | 0 | 0 |
+| `pkg/ingestor/ingestctrl/localhelper.go` | 1 | 0 | 0 |
 | `pkg/ingestor/ingestctrl/rate_limiter_param.go` | 2 | 0 | 0 |
 
 ## `pkg/keyspace`
@@ -638,7 +642,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/kv/error.go` | 3 | 4 | 1.4 |
 | `pkg/kv/utils.go` | 4 | 4 | 0.9 |
 | `pkg/kv/fault_injection.go` | 10 | 3 | 1.7 |
-| `pkg/kv/txn.go` | 9 | 3 | 1.9 |
+| `pkg/kv/txn.go` | 9 | 3 | 2.0 |
 | `pkg/kv/keyflags.go` | 8 | 2 | 0.3 |
 | `pkg/kv/variables.go` | 1 | 2 | 0.1 |
 | `pkg/kv/version.go` | 2 | 2 | 1.2 |
@@ -663,14 +667,13 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/lightning/mydump/router.go` | 4 | 2 | 0.2 |
 | `pkg/lightning/common/storage_unix.go` | 1 | 1 | 0.1 |
 | `pkg/lightning/config/bytesize.go` | 2 | 1 | 0.1 |
-| `pkg/lightning/backend/backend.go` | 11 | 0 | 0 |
+| `pkg/lightning/backend/backend.go` | 10 | 0 | 0 |
 | `pkg/lightning/backend/kv/allocator.go` | 4 | 0 | 0 |
 | `pkg/lightning/backend/kv/sql2kv.go` | 5 | 0 | 0 |
 | `pkg/lightning/common/common.go` | 2 | 0 | 0 |
-| `pkg/lightning/common/conn.go` | 7 | 0 | 0 |
 | `pkg/lightning/common/key_adapter.go` | 4 | 0 | 0 |
 | `pkg/lightning/common/once_error.go` | 2 | 0 | 0 |
-| `pkg/lightning/common/retry.go` | 2 | 0 | 0 |
+| `pkg/lightning/common/retry.go` | 3 | 0 | 0 |
 | `pkg/lightning/common/util.go` | 12 | 0 | 0 |
 | `pkg/lightning/log/log.go` | 10 | 0 | 0 |
 | `pkg/lightning/manual/manual.go` | 2 | 0 | 0 |
@@ -681,7 +684,6 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/lightning/mydump/parser_generated.go` | 1 | 0 | 0 |
 | `pkg/lightning/mydump/reader.go` | 6 | 0 | 0 |
 | `pkg/lightning/mydump/region.go` | 5 | 0 | 0 |
-| `pkg/lightning/tikv/tikv.go` | 2 | 0 | 0 |
 | `pkg/lightning/verification/checksum.go` | 23 | 0 | 0 |
 
 ## `pkg/lock`
@@ -694,11 +696,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/meta/model/job.go` | 66 | 63 | 23.5 |
+| `pkg/meta/model/job.go` | 67 | 63 | 23.5 |
 | `pkg/meta/model/job_args.go` | 158 | 49 | 37.4 |
-| `pkg/meta/meta.go` | 133 | 22 | 4.7 |
-| `pkg/meta/model/table.go` | 62 | 18 | 7.2 |
-| `pkg/meta/autoid/autoid.go` | 48 | 12 | 3.0 |
+| `pkg/meta/meta.go` | 141 | 27 | 9.8 |
+| `pkg/meta/model/table.go` | 62 | 17 | 7.2 |
+| `pkg/meta/autoid/autoid.go` | 50 | 12 | 3.0 |
 | `pkg/meta/model/column.go` | 35 | 12 | 3.1 |
 | `pkg/meta/autoid/autoid_service.go` | 31 | 7 | 6.8 |
 | `pkg/meta/model/index.go` | 26 | 4 | 1.0 |
@@ -740,7 +742,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/objstore/parse.go` | 8 | 13 | 1.4 |
+| `pkg/objstore/parse.go` | 8 | 13 | 1.5 |
 | `pkg/objstore/local.go` | 16 | 6 | 1.4 |
 | `pkg/objstore/s3like/store.go` | 7 | 4 | 0.3 |
 | `pkg/objstore/compress.go` | 9 | 3 | 0.2 |
@@ -775,23 +777,23 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/parser/types/field_type.go` | 50 | 322 | 43.8 |
-| `pkg/parser/lexer.go` | 59 | 288 | 56.0 |
+| `pkg/parser/types/field_type.go` | 50 | 325 | 44.2 |
+| `pkg/parser/lexer.go` | 59 | 287 | 55.9 |
 | `pkg/parser/yy_parser.go` | 38 | 233 | 27.6 |
-| `pkg/parser/ast/visitor_inplace_generated.go` | 211 | 165 | 22.9 |
-| `pkg/parser/test_driver/test_driver_datum.go` | 30 | 140 | 22.0 |
+| `pkg/parser/ast/visitor_inplace_generated.go` | 211 | 163 | 22.8 |
+| `pkg/parser/test_driver/test_driver_datum.go` | 30 | 140 | 22.1 |
 | `pkg/parser/format/format.go` | 39 | 135 | 15.1 |
-| `pkg/parser/test_driver/test_driver_helper.go` | 7 | 93 | 7.8 |
+| `pkg/parser/test_driver/test_driver_helper.go` | 7 | 93 | 7.9 |
 | `pkg/parser/mysql/const.go` | 24 | 92 | 12.5 |
-| `pkg/parser/test_driver/test_driver.go` | 10 | 87 | 7.0 |
+| `pkg/parser/test_driver/test_driver.go` | 10 | 89 | 7.1 |
 | `pkg/parser/ast/model.go` | 18 | 60 | 6.1 |
 | `pkg/parser/ast/ddl.go` | 109 | 54 | 12.3 |
-| `pkg/parser/ast/dml.go` | 86 | 48 | 7.2 |
-| `pkg/parser/ast/misc.go` | 105 | 30 | 7.7 |
+| `pkg/parser/ast/dml.go` | 87 | 48 | 7.2 |
+| `pkg/parser/ast/misc.go` | 105 | 31 | 7.8 |
 | `pkg/parser/ast/expressions.go` | 73 | 27 | 3.4 |
 | `pkg/parser/charset/charset.go` | 12 | 23 | 7.6 |
 | `pkg/parser/charset/encoding_base.go` | 9 | 19 | 3.0 |
-| `pkg/parser/terror/terror.go` | 12 | 17 | 7.4 |
+| `pkg/parser/terror/terror.go` | 13 | 17 | 7.4 |
 | `pkg/parser/ast/visitor_codegen/generator.go` | 55 | 15 | 15.0 |
 | `pkg/parser/digester.go` | 39 | 15 | 5.3 |
 | `pkg/parser/ast/base.go` | 18 | 14 | 3.0 |
@@ -838,30 +840,33 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/planner/util/coretestsdk/mock.go` | 14 | 54 | 4.2 |
+| `pkg/planner/cascades/base/hash_equaler.go` | 13 | 49 | 18.7 |
 | `pkg/planner/core/logical_plan_builder.go` | 171 | 41 | 3.3 |
-| `pkg/planner/cascades/base/hash_equaler.go` | 13 | 37 | 17.2 |
 | `pkg/planner/memo/group.go` | 15 | 37 | 7.0 |
-| `pkg/planner/core/operator/logicalop/hash64_equals_generated.go` | 37 | 22 | 2.7 |
-| `pkg/planner/core/planbuilder.go` | 184 | 18 | 5.0 |
-| `pkg/planner/core/operator/logicalop/logical_schema_producer.go` | 9 | 17 | 1.4 |
-| `pkg/planner/cascades/pattern/pattern.go` | 7 | 13 | 4.9 |
+| `pkg/planner/core/operator/logicalop/hash64_equals_generated.go` | 37 | 33 | 3.5 |
+| `pkg/planner/cascades/pattern/pattern.go` | 7 | 21 | 5.3 |
+| `pkg/planner/cascades/memo/group.go` | 22 | 18 | 3.1 |
+| `pkg/planner/core/planbuilder.go` | 188 | 18 | 5.0 |
+| `pkg/planner/cascades/memo/group_expr.go` | 14 | 17 | 1.9 |
+| `pkg/planner/core/operator/logicalop/logical_schema_producer.go` | 9 | 17 | 1.3 |
+| `pkg/planner/cascades/memo/memo.go` | 18 | 14 | 2.3 |
 | `pkg/planner/core/rule/rule_partition_processor.go` | 70 | 13 | 4.3 |
 | `pkg/planner/core/operator/physicalop/base_physical_plan.go` | 30 | 12 | 2.0 |
 | `pkg/planner/memo/group_expr.go` | 6 | 11 | 2.2 |
 | `pkg/planner/cascades/old/transformation_rules.go` | 73 | 9 | 0.7 |
 | `pkg/planner/funcdep/fd_graph.go` | 33 | 9 | 3.5 |
+| `pkg/planner/cascades/rule/binder.go` | 8 | 8 | 1.0 |
 | `pkg/planner/core/expression_rewriter.go` | 71 | 8 | 1.2 |
 | `pkg/planner/memo/expr_iterator.go` | 7 | 8 | 0.7 |
 | `pkg/planner/util/coretestsdk/testkit.go` | 8 | 7 | 0.4 |
-| `pkg/planner/cascades/memo/group.go` | 21 | 6 | 1.4 |
 | `pkg/planner/indexadvisor/utils.go` | 22 | 6 | 1.8 |
 | `pkg/planner/property/physical_property.go` | 36 | 6 | 1.3 |
-| `pkg/planner/cascades/memo/group_expr.go` | 13 | 5 | 0.5 |
 | `pkg/planner/core/operator/baseimpl/plan.go` | 17 | 5 | 0.4 |
+| `pkg/planner/core/operator/logicalop/base_logical_plan.go` | 40 | 5 | 0.5 |
 | `pkg/planner/core/operator/logicalop/logical_limit.go` | 10 | 5 | 0.7 |
 | `pkg/planner/core/operator/logicalop/logical_window.go` | 25 | 5 | 1.8 |
 | `pkg/planner/cardinality/row_count_column.go` | 5 | 4 | 0.2 |
-| `pkg/planner/core/operator/logicalop/base_logical_plan.go` | 38 | 4 | 0.5 |
+| `pkg/planner/cascades/util/string_writer.go` | 3 | 4 | 0.5 |
 | `pkg/planner/core/rule_join_reorder.go` | 12 | 4 | 0.4 |
 | `pkg/planner/extstore/extstore.go` | 7 | 4 | 2.1 |
 | `pkg/planner/planctx/context.go` | 7 | 4 | 0.3 |
@@ -869,11 +874,10 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/common_plans.go` | 31 | 3 | 0.7 |
 | `pkg/planner/core/memtable_infoschema_extractor.go` | 54 | 3 | 1.5 |
 | `pkg/planner/core/operator/physicalop/fragment.go` | 22 | 3 | 1.5 |
-| `pkg/planner/core/plan_cost_ver1.go` | 34 | 3 | 0.2 |
+| `pkg/planner/core/plan_cost_ver1.go` | 35 | 3 | 0.2 |
 | `pkg/planner/indexadvisor/model.go` | 9 | 3 | 0.2 |
 | `pkg/planner/util/byitem.go` | 7 | 3 | 0.4 |
 | `pkg/planner/cardinality/selectivity.go` | 18 | 2 | 1.1 |
-| `pkg/planner/cascades/memo/memo.go` | 13 | 2 | 0.2 |
 | `pkg/planner/cascades/old/enforcer_rules.go` | 2 | 2 | 1.0 |
 | `pkg/planner/cascades/old/optimize.go` | 10 | 2 | 0.1 |
 | `pkg/planner/core/index_join_path.go` | 23 | 2 | 0.1 |
@@ -900,7 +904,6 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/cascades/old/implementation_rules.go` | 11 | 1 | 0.1 |
 | `pkg/planner/cascades/pattern/engine.go` | 1 | 1 | 1.0 |
 | `pkg/planner/cascades/task/task_scheduler.go` | 4 | 1 | 0.4 |
-| `pkg/planner/cascades/util/string_writer.go` | 3 | 1 | 0.3 |
 | `pkg/planner/core/base/plan_base.go` | 7 | 1 | 0.1 |
 | `pkg/planner/core/exhaust_physical_plans.go` | 56 | 1 | 0.1 |
 | `pkg/planner/core/expression_codec_fn.go` | 10 | 1 | 1.0 |
@@ -908,8 +911,8 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/generator/hash64_equals/hash64_equals_generator.go` | 8 | 1 | 0.9 |
 | `pkg/planner/core/generator/plan_cache/plan_clone_generator.go` | 6 | 1 | 1.0 |
 | `pkg/planner/core/generator/shallow_ref/shallow_ref_generator.go` | 7 | 1 | 0.9 |
-| `pkg/planner/core/joinorder/join_order.go` | 22 | 1 | 1.0 |
-| `pkg/planner/core/memtable_predicate_extractor.go` | 61 | 1 | 0.1 |
+| `pkg/planner/core/joinorder/join_order.go` | 26 | 1 | 1.0 |
+| `pkg/planner/core/memtable_predicate_extractor.go` | 60 | 1 | 0.1 |
 | `pkg/planner/core/operator/logicalop/logical_aggregation.go` | 34 | 1 | 0.1 |
 | `pkg/planner/core/operator/logicalop/logical_cte.go` | 8 | 1 | 0.3 |
 | `pkg/planner/core/operator/logicalop/logical_datasource.go` | 30 | 1 | 0.6 |
@@ -921,6 +924,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/operator/physicalop/physical_index_join.go` | 16 | 1 | 0.1 |
 | `pkg/planner/core/operator/physicalop/physical_indexlookup.go` | 8 | 1 | 0.2 |
 | `pkg/planner/core/operator/physicalop/physical_indexlookup_reader.go` | 15 | 1 | 0.1 |
+| `pkg/planner/core/operator/physicalop/physical_merge_join.go` | 23 | 1 | 0.1 |
 | `pkg/planner/core/operator/physicalop/physical_table_scan.go` | 32 | 1 | 0.1 |
 | `pkg/planner/core/operator/physicalop/physical_window.go` | 11 | 1 | 0.3 |
 | `pkg/planner/core/operator/physicalop/plan_clone_generated.go` | 25 | 1 | 0.2 |
@@ -958,7 +962,8 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/indexmerge_path.go` | 28 | 0 | 0 |
 | `pkg/planner/core/indexmerge_unfinished_path.go` | 8 | 0 | 0 |
 | `pkg/planner/core/initialize.go` | 4 | 0 | 0 |
-| `pkg/planner/core/joinorder/conflict_detector.go` | 32 | 0 | 0 |
+| `pkg/planner/core/joinorder/conflict_detector.go` | 33 | 0 | 0 |
+| `pkg/planner/core/joinorder/ordered_leading.go` | 15 | 0 | 0 |
 | `pkg/planner/core/joinorder/util.go` | 9 | 0 | 0 |
 | `pkg/planner/core/metrics/metrics.go` | 8 | 0 | 0 |
 | `pkg/planner/core/operator/logicalop/expression_util.go` | 2 | 0 | 0 |
@@ -991,7 +996,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/operator/physicalop/physical_batch_point_get.go` | 45 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_common_plans.go` | 18 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_cte_table.go` | 4 | 0 | 0 |
-| `pkg/planner/core/operator/physicalop/physical_exchange_receiver.go` | 7 | 0 | 0 |
+| `pkg/planner/core/operator/physicalop/physical_exchange_receiver.go` | 8 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_expand.go` | 9 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_hash_join.go` | 20 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_index_hash_join.go` | 7 | 0 | 0 |
@@ -1003,7 +1008,6 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/operator/physicalop/physical_lock.go` | 6 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_max_one_row.go` | 4 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_mem_table.go` | 6 | 0 | 0 |
-| `pkg/planner/core/operator/physicalop/physical_merge_join.go` | 23 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_projection.go` | 12 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_selection.go` | 12 | 0 | 0 |
 | `pkg/planner/core/operator/physicalop/physical_sequence.go` | 6 | 0 | 0 |
@@ -1022,7 +1026,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/plan_cache.go` | 10 | 0 | 0 |
 | `pkg/planner/core/plan_cache_rebuild.go` | 9 | 0 | 0 |
 | `pkg/planner/core/plan_cacheable_checker.go` | 21 | 0 | 0 |
-| `pkg/planner/core/plan_clone_utils.go` | 4 | 0 | 0 |
+| `pkg/planner/core/plan_clone_utils.go` | 11 | 0 | 0 |
 | `pkg/planner/core/plan_cost_ver2.go` | 45 | 0 | 0 |
 | `pkg/planner/core/point_get_plan.go` | 31 | 0 | 0 |
 | `pkg/planner/core/preprocess.go` | 71 | 0 | 0 |
@@ -1038,7 +1042,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/planner/core/rule/rule_constant_propagation.go` | 3 | 0 | 0 |
 | `pkg/planner/core/rule/rule_join_key_type_cast.go` | 6 | 0 | 0 |
 | `pkg/planner/core/rule/rule_max_min_eliminate.go` | 8 | 0 | 0 |
-| `pkg/planner/core/rule/rule_order_aware_join_reorder.go` | 5 | 0 | 0 |
+| `pkg/planner/core/rule/rule_order_aware_join_reorder.go` | 7 | 0 | 0 |
 | `pkg/planner/core/rule/rule_outer_join_to_semi_join.go` | 11 | 0 | 0 |
 | `pkg/planner/core/rule/rule_predicate_simplification.go` | 22 | 0 | 0 |
 | `pkg/planner/core/rule_aggregation_elimination.go` | 11 | 0 | 0 |
@@ -1129,7 +1133,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | --- | ---: | ---: | ---: |
 | `pkg/server/internal/util/util.go` | 9 | 14 | 5.4 |
 | `pkg/server/internal/packetio/packetio.go` | 22 | 9 | 7.9 |
-| `pkg/server/internal/advertisedstatus/checker.go` | 3 | 8 | 4.8 |
+| `pkg/server/internal/advertisedstatus/checker.go` | 3 | 8 | 4.7 |
 | `pkg/server/internal/parse/parse.go` | 8 | 8 | 6.2 |
 | `pkg/server/internal/util/buffered_read_conn.go` | 4 | 7 | 3.2 |
 | `pkg/server/internal/dump/dump.go` | 7 | 6 | 2.8 |
@@ -1140,11 +1144,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/server/internal/util/conn_alive_unix.go` | 2 | 3 | 1.2 |
 | `pkg/server/server.go` | 62 | 3 | 2.5 |
 | `pkg/server/handler/tikvhandler/dxf.go` | 3 | 2 | 1.4 |
-| `pkg/server/handler/tikvhandler/tikv_handler.go` | 52 | 2 | 0.3 |
+| `pkg/server/handler/tikvhandler/tikv_handler.go` | 58 | 2 | 0.3 |
 | `pkg/server/handler/auto_id_owner_handler.go` | 2 | 1 | 0.8 |
 | `pkg/server/http_status.go` | 16 | 1 | 0.3 |
 | `pkg/server/internal/column/convert.go` | 1 | 1 | 0.2 |
-| `pkg/server/conn.go` | 74 | 0 | 0 |
+| `pkg/server/conn.go` | 75 | 0 | 0 |
 | `pkg/server/conn_stmt.go` | 16 | 0 | 0 |
 | `pkg/server/driver_tidb.go` | 29 | 0 | 0 |
 | `pkg/server/extension.go` | 4 | 0 | 0 |
@@ -1152,15 +1156,15 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/server/handler/extractorhandler/extractor.go` | 5 | 0 | 0 |
 | `pkg/server/handler/optimizor/optimize_trace.go` | 1 | 0 | 0 |
 | `pkg/server/handler/optimizor/plan_replayer.go` | 3 | 0 | 0 |
-| `pkg/server/handler/optimizor/statistics_handler.go` | 3 | 0 | 0 |
-| `pkg/server/handler/tikv_handler.go` | 11 | 0 | 0 |
+| `pkg/server/handler/optimizor/statistics_handler.go` | 8 | 0 | 0 |
+| `pkg/server/handler/tikv_handler.go` | 12 | 0 | 0 |
 | `pkg/server/handler/tikvhandler/flash_replica.go` | 3 | 0 | 0 |
 | `pkg/server/handler/ttlhandler/ttl.go` | 2 | 0 | 0 |
 | `pkg/server/handler/upgrade_handler.go` | 5 | 0 | 0 |
 | `pkg/server/http_handler.go` | 3 | 0 | 0 |
 | `pkg/server/internal/resultset/cursor.go` | 15 | 0 | 0 |
 | `pkg/server/internal/resultset/resultset.go` | 15 | 0 | 0 |
-| `pkg/server/internal/testserverclient/server_client.go` | 65 | 0 | 0 |
+| `pkg/server/internal/testserverclient/server_client.go` | 69 | 0 | 0 |
 | `pkg/server/metrics/metrics.go` | 1 | 0 | 0 |
 | `pkg/server/mock_conn.go` | 10 | 0 | 0 |
 | `pkg/server/rpc_server.go` | 4 | 0 | 0 |
@@ -1172,12 +1176,12 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/session/upgrade_def.go` | 188 | 27 | 2.2 |
-| `pkg/session/syssession/session.go` | 36 | 18 | 15.5 |
+| `pkg/session/upgrade_def.go` | 188 | 28 | 2.2 |
+| `pkg/session/syssession/session.go` | 36 | 18 | 15.4 |
 | `pkg/session/cursor/tracker.go` | 8 | 5 | 5.0 |
 | `pkg/session/syssession/pool.go` | 8 | 5 | 1.6 |
 | `pkg/session/syssession/session_test_util.go` | 3 | 5 | 0.8 |
-| `pkg/session/session.go` | 211 | 4 | 1.7 |
+| `pkg/session/session.go` | 212 | 4 | 1.7 |
 | `pkg/session/starter_bootstrap_file.go` | 28 | 4 | 3.8 |
 | `pkg/session/bootstrap.go` | 16 | 2 | 1.1 |
 | `pkg/session/tidb.go` | 17 | 2 | 1.2 |
@@ -1189,7 +1193,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/session/nontransactional.go` | 18 | 0 | 0 |
 | `pkg/session/sync_upgrade.go` | 5 | 0 | 0 |
 | `pkg/session/testutil.go` | 6 | 0 | 0 |
-| `pkg/session/txn.go` | 42 | 0 | 0 |
+| `pkg/session/txn.go` | 43 | 0 | 0 |
 | `pkg/session/txninfo/summary.go` | 9 | 0 | 0 |
 | `pkg/session/txninfo/txn_info.go` | 3 | 0 | 0 |
 | `pkg/session/txnmanager.go` | 29 | 0 | 0 |
@@ -1200,7 +1204,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/sessionctx/variable/session.go` | 213 | 151 | 17.9 |
-| `pkg/sessionctx/stmtctx/stmtctx.go` | 128 | 133 | 20.7 |
+| `pkg/sessionctx/stmtctx/stmtctx.go` | 128 | 134 | 20.8 |
 | `pkg/sessionctx/variable/variable.go` | 33 | 114 | 21.5 |
 | `pkg/sessionctx/variable/varsutil.go` | 30 | 76 | 8.8 |
 | `pkg/sessionctx/variable/mock_globalaccessor.go` | 6 | 39 | 5.9 |
@@ -1220,14 +1224,16 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
+| `pkg/sessiontxn/failpoint.go` | 8 | 0 | 0 |
 | `pkg/sessiontxn/future.go` | 1 | 0 | 0 |
 | `pkg/sessiontxn/interface.go` | 6 | 0 | 0 |
 | `pkg/sessiontxn/internal/txn.go` | 3 | 0 | 0 |
 | `pkg/sessiontxn/isolation/base.go` | 38 | 0 | 0 |
 | `pkg/sessiontxn/isolation/optimistic.go` | 6 | 0 | 0 |
-| `pkg/sessiontxn/isolation/readcommitted.go` | 16 | 0 | 0 |
+| `pkg/sessiontxn/isolation/readcommitted.go` | 17 | 0 | 0 |
 | `pkg/sessiontxn/isolation/repeatable_read.go` | 9 | 0 | 0 |
 | `pkg/sessiontxn/isolation/serializable.go` | 2 | 0 | 0 |
+| `pkg/sessiontxn/staleread/failpoint.go` | 1 | 0 | 0 |
 | `pkg/sessiontxn/staleread/processor.go` | 19 | 0 | 0 |
 | `pkg/sessiontxn/staleread/provider.go` | 14 | 0 | 0 |
 | `pkg/sessiontxn/staleread/util.go` | 6 | 0 | 0 |
@@ -1245,27 +1251,27 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/statistics/index.go` | 15 | 8 | 1.2 |
 | `pkg/statistics/builder.go` | 13 | 7 | 2.5 |
 | `pkg/statistics/fmsketch.go` | 16 | 7 | 0.7 |
-| `pkg/statistics/handle/autoanalyze/priorityqueue/analysis_job_factory.go` | 17 | 7 | 3.9 |
+| `pkg/statistics/handle/autoanalyze/priorityqueue/analysis_job_factory.go` | 17 | 7 | 3.8 |
 | `pkg/statistics/handle/autoanalyze/priorityqueue/non_partitioned_table_analysis_job.go` | 18 | 6 | 3.2 |
 | `pkg/statistics/handle/usage/collector/collector.go` | 7 | 6 | 3.8 |
 | `pkg/statistics/handle/bootstrap.go` | 37 | 5 | 3.9 |
 | `pkg/statistics/handle/lockstats/lock_stats.go` | 13 | 5 | 2.3 |
 | `pkg/statistics/handle/lockstats/unlock_stats.go` | 6 | 5 | 0.6 |
 | `pkg/statistics/handle/usage/indexusage/collector.go` | 18 | 4 | 3.2 |
-| `pkg/statistics/handle/util/util.go` | 14 | 4 | 1.2 |
 | `pkg/statistics/estimate.go` | 2 | 3 | 0.5 |
 | `pkg/statistics/handle/autoanalyze/autoanalyze.go` | 23 | 3 | 0.7 |
 | `pkg/statistics/handle/autoanalyze/priorityqueue/calculator.go` | 3 | 3 | 1.6 |
 | `pkg/statistics/handle/autoanalyze/priorityqueue/static_partitioned_table_analysis_job.go` | 16 | 3 | 2.1 |
 | `pkg/statistics/handle/cache/internal/testutil/testutil.go` | 1 | 3 | 0.2 |
 | `pkg/statistics/handle/lockstats/query_lock.go` | 2 | 3 | 1.1 |
+| `pkg/statistics/handle/util/util.go` | 14 | 3 | 1.1 |
 | `pkg/statistics/scalar.go` | 8 | 3 | 0.3 |
 | `pkg/statistics/cmsketch_util.go` | 2 | 2 | 1.0 |
 | `pkg/statistics/handle/autoanalyze/priorityqueue/dynamic_partitioned_table_analysis_job.go` | 16 | 2 | 0.7 |
 | `pkg/statistics/handle/cache/internal/lfu/key_set.go` | 6 | 2 | 0.2 |
 | `pkg/statistics/handle/cache/internal/lfu/key_set_shard.go` | 7 | 2 | 0.2 |
 | `pkg/statistics/handle/cache/statscache.go` | 24 | 2 | 1.4 |
-| `pkg/statistics/handle/util/test/ctx_matcher.go` | 2 | 2 | 0.2 |
+| `pkg/statistics/handle/util/test/ctx_matcher.go` | 1 | 2 | 0.1 |
 | `pkg/statistics/row_sampler.go` | 24 | 2 | 0.9 |
 | `pkg/statistics/handle/autoanalyze/priorityqueue/job.go` | 3 | 1 | 0.8 |
 | `pkg/statistics/handle/cache/statscacheinner.go` | 14 | 1 | 0.1 |
@@ -1284,7 +1290,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/statistics/handle/autoanalyze/refresher/refresher.go` | 12 | 0 | 0 |
 | `pkg/statistics/handle/autoanalyze/refresher/worker.go` | 8 | 0 | 0 |
 | `pkg/statistics/handle/cache/internal/mapcache/map_cache.go` | 6 | 0 | 0 |
-| `pkg/statistics/handle/ddl/testutil/util.go` | 3 | 0 | 0 |
+| `pkg/statistics/handle/ddl/testutil/util.go` | 4 | 0 | 0 |
 | `pkg/statistics/handle/globalstats/global_stats.go` | 11 | 0 | 0 |
 | `pkg/statistics/handle/globalstats/global_stats_async.go` | 19 | 0 | 0 |
 | `pkg/statistics/handle/handle.go` | 11 | 0 | 0 |
@@ -1292,15 +1298,15 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/statistics/handle/initstats/load_stats.go` | 1 | 0 | 0 |
 | `pkg/statistics/handle/initstats/load_stats_page.go` | 6 | 0 | 0 |
 | `pkg/statistics/handle/internal/testutil.go` | 1 | 0 | 0 |
-| `pkg/statistics/handle/logutil/logutil.go` | 2 | 0 | 0 |
-| `pkg/statistics/handle/storage/gc.go` | 11 | 0 | 0 |
+| `pkg/statistics/handle/logutil/logutil.go` | 4 | 0 | 0 |
+| `pkg/statistics/handle/storage/gc.go` | 13 | 0 | 0 |
 | `pkg/statistics/handle/storage/json.go` | 7 | 0 | 0 |
 | `pkg/statistics/handle/storage/read.go` | 26 | 0 | 0 |
 | `pkg/statistics/handle/storage/save.go` | 8 | 0 | 0 |
 | `pkg/statistics/handle/storage/stats_read_writer.go` | 23 | 0 | 0 |
 | `pkg/statistics/handle/storage/table_size_stats.go` | 8 | 0 | 0 |
 | `pkg/statistics/handle/storage/update.go` | 4 | 0 | 0 |
-| `pkg/statistics/handle/syncload/stats_syncload.go` | 14 | 0 | 0 |
+| `pkg/statistics/handle/syncload/stats_syncload.go` | 15 | 0 | 0 |
 | `pkg/statistics/handle/usage/index_usage.go` | 5 | 0 | 0 |
 | `pkg/statistics/handle/usage/predicate_column.go` | 3 | 0 | 0 |
 | `pkg/statistics/handle/usage/predicatecolumn/predicate_column.go` | 6 | 0 | 0 |
@@ -1309,28 +1315,28 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/statistics/handle/util/lease_getter.go` | 3 | 0 | 0 |
 | `pkg/statistics/handle/util/pool.go` | 4 | 0 | 0 |
 | `pkg/statistics/handle/util/table_info.go` | 7 | 0 | 0 |
-| `pkg/statistics/util/json_objects.go` | 3 | 0 | 0 |
+| `pkg/statistics/util/json_objects.go` | 4 | 0 | 0 |
 
 ## `pkg/store`
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/store/mockstore/unistore/tikv/mock_region.go` | 47 | 41 | 3.8 |
-| `pkg/store/mockstore/unistore/lockstore/lockstore.go` | 27 | 27 | 1.8 |
-| `pkg/store/copr/coprocessor.go` | 99 | 26 | 9.8 |
-| `pkg/store/mockstore/unistore/tikv/mvcc.go` | 59 | 25 | 1.7 |
-| `pkg/store/copr/key_ranges.go` | 10 | 21 | 5.3 |
-| `pkg/store/copr/region_cache.go` | 18 | 18 | 5.5 |
+| `pkg/store/mockstore/unistore/lockstore/lockstore.go` | 27 | 28 | 1.9 |
+| `pkg/store/copr/coprocessor.go` | 100 | 26 | 9.6 |
+| `pkg/store/mockstore/unistore/tikv/mvcc.go` | 60 | 25 | 1.7 |
+| `pkg/store/copr/key_ranges.go` | 11 | 20 | 5.1 |
+| `pkg/store/copr/region_cache.go` | 21 | 18 | 5.9 |
 | `pkg/store/mockstore/unistore/tikv/region.go` | 22 | 13 | 0.8 |
-| `pkg/store/driver/backoff/backoff.go` | 9 | 12 | 1.6 |
+| `pkg/store/driver/backoff/backoff.go` | 9 | 10 | 1.5 |
 | `pkg/store/driver/txn/union_iter.go` | 9 | 10 | 1.1 |
-| `pkg/store/mockstore/unistore/tikv/write.go` | 18 | 8 | 0.5 |
-| `pkg/store/copr/batch_coprocessor.go` | 39 | 7 | 5.8 |
+| `pkg/store/copr/batch_coprocessor.go` | 40 | 7 | 4.6 |
+| `pkg/store/mockstore/unistore/tikv/write.go` | 18 | 7 | 0.4 |
 | `pkg/store/copr/coprocessor_cache.go` | 7 | 6 | 5.0 |
 | `pkg/store/copr/ema.go` | 3 | 6 | 4.7 |
 | `pkg/store/copr/mpp_probe.go` | 13 | 5 | 3.6 |
-| `pkg/store/helper/helper.go` | 31 | 4 | 1.6 |
-| `pkg/store/mockstore/unistore/tikv/server.go` | 42 | 4 | 0.2 |
+| `pkg/store/helper/helper.go` | 29 | 4 | 1.6 |
+| `pkg/store/mockstore/unistore/tikv/server.go` | 43 | 4 | 0.2 |
 | `pkg/store/mockstore/mockstore.go` | 16 | 3 | 0.2 |
 | `pkg/store/mockstore/unistore/lockstore/arena.go` | 11 | 2 | 0.1 |
 | `pkg/store/driver/error/error.go` | 1 | 1 | 0.1 |
@@ -1348,6 +1354,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/store/driver/txn/scanner.go` | 2 | 0 | 0 |
 | `pkg/store/driver/txn/snapshot.go` | 9 | 0 | 0 |
 | `pkg/store/etcd.go` | 3 | 0 | 0 |
+| `pkg/store/gcworker/gc_worker.go` | 2 | 0 | 0 |
 | `pkg/store/mockstore/mockcopr/aggregate.go` | 10 | 0 | 0 |
 | `pkg/store/mockstore/mockcopr/cop_handler_dag.go` | 25 | 0 | 0 |
 | `pkg/store/mockstore/mockcopr/executor.go` | 24 | 0 | 0 |
@@ -1362,7 +1369,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/store/mockstore/unistore/cophandler/closure_exec.go` | 11 | 0 | 0 |
 | `pkg/store/mockstore/unistore/cophandler/cop_handler.go` | 27 | 0 | 0 |
 | `pkg/store/mockstore/unistore/cophandler/mpp.go` | 20 | 0 | 0 |
-| `pkg/store/mockstore/unistore/cophandler/mpp_exec.go` | 56 | 0 | 0 |
+| `pkg/store/mockstore/unistore/cophandler/mpp_exec.go` | 57 | 0 | 0 |
 | `pkg/store/mockstore/unistore/cophandler/topn.go` | 7 | 0 | 0 |
 | `pkg/store/mockstore/unistore/lockstore/iterator.go` | 8 | 0 | 0 |
 | `pkg/store/mockstore/unistore/mock.go` | 1 | 0 | 0 |
@@ -1375,7 +1382,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/store/mockstore/unistore/tikv/detector.go` | 8 | 0 | 0 |
 | `pkg/store/mockstore/unistore/tikv/inner_server.go` | 4 | 0 | 0 |
 | `pkg/store/mockstore/unistore/tikv/kverrors/errors.go` | 3 | 0 | 0 |
-| `pkg/store/mockstore/unistore/tikv/mvcc/mvcc.go` | 8 | 0 | 0 |
+| `pkg/store/mockstore/unistore/tikv/mvcc/mvcc.go` | 9 | 0 | 0 |
 | `pkg/store/mockstore/unistore/tikv/util.go` | 5 | 0 | 0 |
 | `pkg/store/mockstore/unistore/util/lockwaiter/lockwaiter.go` | 9 | 0 | 0 |
 
@@ -1393,7 +1400,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
 | `pkg/table/tables/partition.go` | 85 | 48 | 3.9 |
-| `pkg/table/tables/tables.go` | 78 | 28 | 3.1 |
+| `pkg/table/tables/tables.go` | 79 | 28 | 3.1 |
 | `pkg/table/temptable/interceptor.go` | 14 | 13 | 4.8 |
 | `pkg/table/column.go` | 36 | 9 | 1.9 |
 | `pkg/table/tblctx/buffers.go` | 12 | 5 | 1.9 |
@@ -1416,7 +1423,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/tablecodec/tablecodec.go` | 91 | 44 | 9.7 |
+| `pkg/tablecodec/tablecodec.go` | 92 | 43 | 9.6 |
 | `pkg/tablecodec/rowindexcodec/rowindexcodec.go` | 1 | 1 | 1.0 |
 
 ## `pkg/telemetry`
@@ -1436,14 +1443,14 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/testkit/dbtestkit.go` | 8 | 0 | 0 |
 | `pkg/testkit/ddlhelper/helper.go` | 1 | 0 | 0 |
 | `pkg/testkit/external/util.go` | 1 | 0 | 0 |
-| `pkg/testkit/mocksessionmanager.go` | 9 | 0 | 0 |
+| `pkg/testkit/mocksessionmanager.go` | 12 | 0 | 0 |
 | `pkg/testkit/mockstore.go` | 11 | 0 | 0 |
 | `pkg/testkit/result.go` | 13 | 0 | 0 |
-| `pkg/testkit/stepped.go` | 13 | 0 | 0 |
+| `pkg/testkit/stepped.go` | 18 | 0 | 0 |
 | `pkg/testkit/testdata/testdata.go` | 6 | 0 | 0 |
 | `pkg/testkit/testenv/testenv.go` | 1 | 0 | 0 |
-| `pkg/testkit/testfork/fork.go` | 9 | 0 | 0 |
-| `pkg/testkit/testkit.go` | 46 | 0 | 0 |
+| `pkg/testkit/testfork/fork.go` | 7 | 0 | 0 |
+| `pkg/testkit/testkit.go` | 47 | 0 | 0 |
 | `pkg/testkit/testutil/handle.go` | 2 | 0 | 0 |
 | `pkg/testkit/testutil/loghook.go` | 8 | 0 | 0 |
 
@@ -1483,7 +1490,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/ttl/ttlworker/job_manager.go` | 36 | 0 | 0 |
 | `pkg/ttl/ttlworker/scan.go` | 12 | 0 | 0 |
 | `pkg/ttl/ttlworker/session.go` | 6 | 0 | 0 |
-| `pkg/ttl/ttlworker/task_manager.go` | 20 | 0 | 0 |
+| `pkg/ttl/ttlworker/task_manager.go` | 19 | 0 | 0 |
 | `pkg/ttl/ttlworker/timer.go` | 9 | 0 | 0 |
 | `pkg/ttl/ttlworker/timer_sync.go` | 13 | 0 | 0 |
 | `pkg/ttl/ttlworker/worker.go` | 7 | 0 | 0 |
@@ -1492,19 +1499,19 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/types/datum.go` | 139 | 328 | 56.1 |
+| `pkg/types/datum.go` | 139 | 327 | 56.1 |
 | `pkg/types/mydecimal.go` | 59 | 175 | 45.6 |
 | `pkg/types/time.go` | 147 | 161 | 44.2 |
 | `pkg/types/context.go` | 25 | 142 | 20.5 |
-| `pkg/types/field_type_builder.go` | 12 | 119 | 24.6 |
+| `pkg/types/field_type_builder.go` | 12 | 119 | 24.7 |
 | `pkg/types/json_binary.go` | 49 | 105 | 30.6 |
 | `pkg/types/core_time.go` | 49 | 102 | 42.0 |
-| `pkg/types/field_type.go` | 22 | 99 | 10.0 |
-| `pkg/types/json_binary_functions.go` | 46 | 52 | 9.6 |
+| `pkg/types/field_type.go` | 22 | 99 | 10.1 |
+| `pkg/types/json_binary_functions.go` | 46 | 52 | 9.7 |
 | `pkg/types/helper.go` | 12 | 38 | 11.4 |
 | `pkg/types/json_path_expr.go` | 37 | 27 | 11.8 |
 | `pkg/types/etc.go` | 22 | 22 | 6.5 |
-| `pkg/types/convert.go` | 28 | 16 | 4.3 |
+| `pkg/types/convert.go` | 28 | 17 | 4.3 |
 | `pkg/types/binary_literal.go` | 13 | 14 | 2.0 |
 | `pkg/types/overflow.go` | 15 | 12 | 4.7 |
 | `pkg/types/vector.go` | 17 | 11 | 6.8 |
@@ -1523,47 +1530,47 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 
 | feature (file) | functions | tests | weight sum |
 | --- | ---: | ---: | ---: |
-| `pkg/util/chunk/column.go` | 93 | 308 | 47.8 |
+| `pkg/util/chunk/column.go` | 93 | 307 | 47.7 |
 | `pkg/util/chunk/chunk.go` | 66 | 119 | 9.4 |
-| `pkg/util/mock/context.go` | 39 | 111 | 12.1 |
-| `pkg/util/context/plancache.go` | 14 | 98 | 9.8 |
+| `pkg/util/mock/context.go` | 39 | 114 | 12.3 |
+| `pkg/util/context/plancache.go` | 14 | 98 | 9.9 |
 | `pkg/util/mathutil/rand.go` | 7 | 89 | 9.0 |
 | `pkg/util/context/warn.go` | 18 | 83 | 7.1 |
-| `pkg/util/codec/codec.go` | 48 | 64 | 10.5 |
+| `pkg/util/codec/codec.go` | 48 | 63 | 10.5 |
 | `pkg/util/codec/number.go` | 18 | 57 | 12.5 |
-| `pkg/util/memory/tracker.go` | 66 | 53 | 3.6 |
+| `pkg/util/memory/tracker.go` | 66 | 54 | 3.6 |
 | `pkg/util/context/context.go` | 1 | 51 | 2.9 |
-| `pkg/util/intest/assert_common.go` | 6 | 48 | 4.2 |
+| `pkg/util/gctuner/memory_limit_tuner.go` | 7 | 50 | 10.7 |
+| `pkg/util/intest/assert_common.go` | 6 | 49 | 4.2 |
 | `pkg/util/intest/assert.go` | 3 | 46 | 3.0 |
-| `pkg/util/gctuner/memory_limit_tuner.go` | 7 | 45 | 7.8 |
 | `pkg/util/parser/parser.go` | 10 | 43 | 5.6 |
-| `pkg/util/checksum/checksum.go` | 8 | 30 | 2.8 |
-| `pkg/util/chunk/chunk_in_disk.go` | 24 | 30 | 3.6 |
+| `pkg/util/gctuner/finalizer.go` | 2 | 35 | 5.1 |
 | `pkg/util/serialization/deserialization_util.go` | 22 | 30 | 8.5 |
 | `pkg/util/serialization/serialization_util.go` | 20 | 30 | 6.3 |
-| `pkg/util/gctuner/finalizer.go` | 2 | 28 | 3.6 |
-| `pkg/util/chunk/list.go` | 15 | 27 | 2.3 |
-| `pkg/util/chunk/row.go` | 27 | 26 | 1.7 |
-| `pkg/util/chunk/row_in_disk.go` | 21 | 26 | 5.6 |
+| `pkg/util/chunk/chunk_in_disk.go` | 24 | 29 | 3.6 |
+| `pkg/util/checksum/checksum.go` | 8 | 28 | 2.6 |
+| `pkg/util/chunk/list.go` | 15 | 27 | 2.4 |
+| `pkg/util/chunk/row.go` | 27 | 25 | 1.6 |
+| `pkg/util/chunk/row_in_disk.go` | 21 | 24 | 5.3 |
 | `pkg/util/chunk/mutrow.go` | 21 | 23 | 2.2 |
 | `pkg/util/collate/collate.go` | 27 | 23 | 2.3 |
-| `pkg/util/chunk/chunk_util.go` | 16 | 21 | 2.8 |
-| `pkg/util/chunk/row_container.go` | 44 | 21 | 4.6 |
+| `pkg/util/chunk/row_container.go` | 44 | 21 | 4.9 |
+| `pkg/util/chunk/chunk_util.go` | 16 | 20 | 2.7 |
 | `pkg/util/set/set_with_memory_usage.go` | 10 | 17 | 1.4 |
-| `pkg/util/intset/fast_int_set.go` | 24 | 16 | 6.1 |
-| `pkg/util/misc.go` | 19 | 16 | 3.3 |
+| `pkg/util/benchdaily/bench_daily.go` | 1 | 16 | 15.4 |
+| `pkg/util/intset/fast_int_set.go` | 25 | 16 | 6.1 |
+| `pkg/util/misc.go` | 19 | 16 | 3.4 |
 | `pkg/util/hack/map_abi.go` | 15 | 15 | 2.5 |
-| `pkg/util/benchdaily/bench_daily.go` | 1 | 14 | 13.7 |
-| `pkg/util/stringutil/string_util.go` | 28 | 14 | 1.6 |
-| `pkg/util/chunk/codec.go` | 18 | 13 | 2.7 |
+| `pkg/util/chunk/codec.go` | 18 | 13 | 2.6 |
 | `pkg/util/chunk/compare.go` | 18 | 13 | 1.2 |
 | `pkg/util/codec/bytes.go` | 12 | 13 | 3.9 |
 | `pkg/util/execdetails/util.go` | 20 | 13 | 2.2 |
+| `pkg/util/stringutil/string_util.go` | 28 | 13 | 1.6 |
+| `pkg/util/execdetails/runtime_stats.go` | 68 | 12 | 1.9 |
 | `pkg/util/sqlexec/mock/restricted_sql_executor_mock.go` | 4 | 12 | 2.8 |
-| `pkg/util/execdetails/runtime_stats.go` | 68 | 11 | 1.8 |
 | `pkg/util/logutil/log.go` | 17 | 11 | 1.3 |
-| `pkg/util/sqlkiller/sqlkiller.go` | 16 | 11 | 2.7 |
-| `pkg/util/chunk/alloc.go` | 22 | 10 | 2.7 |
+| `pkg/util/sqlkiller/sqlkiller.go` | 16 | 11 | 2.6 |
+| `pkg/util/chunk/alloc.go` | 22 | 10 | 2.6 |
 | `pkg/util/execdetails/ruv2_metrics.go` | 11 | 10 | 1.3 |
 | `pkg/util/chunk/pool.go` | 5 | 9 | 1.8 |
 | `pkg/util/collate/unicode_0400_ci_impl.go` | 6 | 9 | 1.1 |
@@ -1574,22 +1581,22 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/execdetails/tiflash_execution_units.go` | 4 | 7 | 1.8 |
 | `pkg/util/hack/hack.go` | 3 | 7 | 0.5 |
 | `pkg/util/kvcache/simple_lru.go` | 10 | 7 | 0.8 |
+| `pkg/util/redact/redact.go` | 7 | 7 | 1.1 |
 | `pkg/util/tracing/util.go` | 8 | 7 | 0.4 |
 | `pkg/util/generic/bounded_min_heap.go` | 8 | 6 | 0.7 |
 | `pkg/util/mock/client.go` | 1 | 6 | 0.4 |
 | `pkg/util/mock/fortest.go` | 1 | 6 | 0.3 |
 | `pkg/util/queue/queue.go` | 6 | 6 | 0.3 |
-| `pkg/util/redact/redact.go` | 7 | 6 | 1.0 |
 | `pkg/util/codec/decimal.go` | 3 | 5 | 0.4 |
-| `pkg/util/codec/float.go` | 6 | 5 | 1.0 |
+| `pkg/util/codec/float.go` | 6 | 5 | 1.1 |
 | `pkg/util/collate/bin.go` | 19 | 5 | 0.3 |
 | `pkg/util/encrypt/aes_layer.go` | 11 | 5 | 1.0 |
 | `pkg/util/execdetails/execdetails.go` | 23 | 5 | 1.8 |
 | `pkg/util/mock/iter.go` | 11 | 5 | 2.7 |
 | `pkg/util/mvmap/mvmap.go` | 7 | 5 | 0.8 |
 | `pkg/util/topsql/state/state.go` | 8 | 5 | 0.8 |
-| `pkg/util/topsql/topsql.go` | 9 | 5 | 0.5 |
-| `pkg/util/traceevent/traceevent.go` | 7 | 5 | 0.6 |
+| `pkg/util/topsql/topsql.go` | 10 | 5 | 0.5 |
+| `pkg/util/traceevent/traceevent.go` | 7 | 5 | 0.5 |
 | `pkg/util/util.go` | 8 | 5 | 0.4 |
 | `pkg/util/chunk/row_container_reader.go` | 8 | 4 | 0.5 |
 | `pkg/util/encrypt/aes.go` | 21 | 4 | 1.0 |
@@ -1611,21 +1618,23 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/generatedexpr/generated_expr.go` | 6 | 2 | 0.2 |
 | `pkg/util/memory/arbitrator.go` | 98 | 2 | 0.2 |
 | `pkg/util/partialjson/extract.go` | 5 | 2 | 0.8 |
-| `pkg/util/printer/printer.go` | 2 | 2 | 0.6 |
+| `pkg/util/printer/printer.go` | 2 | 2 | 0.5 |
 | `pkg/util/ranger/ranger.go` | 26 | 2 | 0.1 |
 | `pkg/util/rowcodec/decoder.go` | 14 | 2 | 0.1 |
 | `pkg/util/rowcodec/row.go` | 13 | 2 | 0.2 |
-| `pkg/util/security.go` | 5 | 2 | 0.7 |
+| `pkg/util/security.go` | 5 | 2 | 0.8 |
 | `pkg/util/set/string_set.go` | 6 | 2 | 2.0 |
 | `pkg/util/slice/slice.go` | 2 | 2 | 0.9 |
 | `pkg/util/split.go` | 4 | 2 | 0.4 |
 | `pkg/util/sqlescape/utils.go` | 11 | 2 | 0.5 |
 | `pkg/util/stmtsummary/v2/column.go` | 7 | 2 | 0.2 |
 | `pkg/util/stmtsummary/v2/reader.go` | 37 | 2 | 0.5 |
+| `pkg/util/tiflash/tiflash_replica_read.go` | 4 | 2 | 1.0 |
 | `pkg/util/timeutil/time_zone.go` | 12 | 2 | 0.5 |
 | `pkg/util/topsql/reporter/datamodel.go` | 3 | 2 | 0.1 |
 | `pkg/util/cteutil/storage.go` | 24 | 1 | 0.1 |
 | `pkg/util/disjointset/set.go` | 6 | 1 | 0.1 |
+| `pkg/util/execdetails/tiflash_stats.go` | 1 | 1 | 0.1 |
 | `pkg/util/fastrand/random.go` | 5 | 1 | 0.1 |
 | `pkg/util/gctuner/tuner.go` | 10 | 1 | 0.1 |
 | `pkg/util/hint/hint.go` | 42 | 1 | 1.0 |
@@ -1640,12 +1649,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/resourcegrouptag/resource_group_tag.go` | 3 | 1 | 0.6 |
 | `pkg/util/rlimit_other.go` | 1 | 1 | 0.5 |
 | `pkg/util/selection/selection.go` | 8 | 1 | 0.8 |
-| `pkg/util/set/float64_set.go` | 3 | 1 | 0.1 |
+| `pkg/util/table-filter/compat.go` | 3 | 1 | 0.1 |
 | `pkg/util/table-filter/parser.go` | 4 | 1 | 0.1 |
 | `pkg/util/table-filter/table_filter.go` | 3 | 1 | 0.1 |
 | `pkg/util/topsql/collector/mock/mock.go` | 13 | 1 | 0.2 |
 | `pkg/util/topsql/reporter/reporter.go` | 2 | 1 | 0.1 |
-| `pkg/util/traceevent/adapter.go` | 3 | 1 | 0.1 |
 | `pkg/util/vitess/vitess_hash.go` | 1 | 1 | 0.1 |
 | `pkg/util/admin/admin.go` | 5 | 0 | 0 |
 | `pkg/util/arena/arena.go` | 4 | 0 | 0 |
@@ -1667,10 +1675,9 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/disk/tempDir.go` | 3 | 0 | 0 |
 | `pkg/util/disttask/idservice.go` | 3 | 0 | 0 |
 | `pkg/util/domainutil/repair_vars.go` | 1 | 0 | 0 |
-| `pkg/util/engine/engine.go` | 3 | 0 | 0 |
+| `pkg/util/engine/engine.go` | 1 | 0 | 0 |
 | `pkg/util/errmsg/errmsg.go` | 1 | 0 | 0 |
 | `pkg/util/etcd.go` | 3 | 0 | 0 |
-| `pkg/util/execdetails/tiflash_stats.go` | 1 | 0 | 0 |
 | `pkg/util/expensivequery/expensivequery.go` | 5 | 0 | 0 |
 | `pkg/util/filter/schema.go` | 1 | 0 | 0 |
 | `pkg/util/format/format.go` | 1 | 0 | 0 |
@@ -1700,6 +1707,8 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/plancodec/codec.go` | 20 | 0 | 0 |
 | `pkg/util/plancodec/id.go` | 2 | 0 | 0 |
 | `pkg/util/prefix_helper.go` | 2 | 0 | 0 |
+| `pkg/util/profile/flamegraph.go` | 8 | 0 | 0 |
+| `pkg/util/profile/profile.go` | 4 | 0 | 0 |
 | `pkg/util/promutil/factory.go` | 4 | 0 | 0 |
 | `pkg/util/ranger/checker.go` | 6 | 0 | 0 |
 | `pkg/util/ranger/context/context.go` | 1 | 0 | 0 |
@@ -1714,10 +1723,11 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/sem/v2/sem.go` | 18 | 0 | 0 |
 | `pkg/util/sem/v2/testhelper.go` | 1 | 0 | 0 |
 | `pkg/util/servermemorylimit/servermemorylimit.go` | 7 | 0 | 0 |
-| `pkg/util/session_pool.go` | 4 | 0 | 0 |
+| `pkg/util/session_pool.go` | 5 | 0 | 0 |
+| `pkg/util/set/float64_set.go` | 3 | 0 | 0 |
 | `pkg/util/set/int_set.go` | 5 | 0 | 0 |
 | `pkg/util/skip/skip.go` | 1 | 0 | 0 |
-| `pkg/util/sli/sli.go` | 8 | 0 | 0 |
+| `pkg/util/sli/sli.go` | 9 | 0 | 0 |
 | `pkg/util/sqlexec/restricted_sql_executor.go` | 8 | 0 | 0 |
 | `pkg/util/sqlexec/simple_record_set.go` | 4 | 0 | 0 |
 | `pkg/util/stmtsummary/evicted.go` | 10 | 0 | 0 |
@@ -1727,7 +1737,6 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/sys/linux/sys_other.go` | 1 | 0 | 0 |
 | `pkg/util/table-filter/matchers.go` | 2 | 0 | 0 |
 | `pkg/util/texttree/texttree.go` | 2 | 0 | 0 |
-| `pkg/util/tiflash/tiflash_replica_read.go` | 3 | 0 | 0 |
 | `pkg/util/tiflashcompute/dispatch_policy.go` | 2 | 0 | 0 |
 | `pkg/util/tiflashcompute/topo_fetcher.go` | 10 | 0 | 0 |
 | `pkg/util/timeutil/time.go` | 1 | 0 | 0 |
@@ -1738,6 +1747,7 @@ Features v0 are Go source files. A test links to a file with a weight: the file'
 | `pkg/util/topsql/reporter/report_ticker.go` | 1 | 0 | 0 |
 | `pkg/util/topsql/stmtstats/aggregator.go` | 15 | 0 | 0 |
 | `pkg/util/topsql/stmtstats/kv_exec_count.go` | 3 | 0 | 0 |
+| `pkg/util/traceevent/adapter.go` | 3 | 0 | 0 |
 | `pkg/util/traceevent/flightrecorder.go` | 4 | 0 | 0 |
 | `pkg/util/trxevents/trx_events.go` | 2 | 0 | 0 |
 | `pkg/util/wait_group_wrapper.go` | 12 | 0 | 0 |
