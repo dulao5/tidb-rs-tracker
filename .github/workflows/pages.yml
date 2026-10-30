@@ -24,6 +24,7 @@ jobs:
           python3 scripts/tracker.py build -o _site/tracker.db
           cp datasette/metadata.json _site/metadata.json
           sed "s/__COMMIT__/${GITHUB_SHA}/" site/index.html > _site/index.html
+          cp -r site/lite _site/lite
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

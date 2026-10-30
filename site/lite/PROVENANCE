@@ -1,0 +1,2 @@
+Vendored from https://github.com/simonw/datasette-lite @779b2d4 (Apache-2.0, see LICENSE).
+Local change: webworker.js shims os.geteuid for platformdirs >= 4.14 under Pyodide.

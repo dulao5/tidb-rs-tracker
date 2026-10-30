@@ -30,7 +30,7 @@
 <p class="muted">Built from <code>data/</code> at commit <a id="commit" href="#"></a>.</p>
 <script>
   const base = new URL(".", location.href).href;
-  const lite = (path) => "https://lite.datasette.io/?url=" + encodeURIComponent(base + "tracker.db") +
+  const lite = (path) => base + "lite/?url=" + encodeURIComponent(base + "tracker.db") +
     "&metadata=" + encodeURIComponent(base + "metadata.json") + (path ? "#" + path : "");
   document.getElementById("lite").href = lite("");
   document.getElementById("q-feature").href = lite("/tracker/tests_for_feature");
