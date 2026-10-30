@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tidb-rs tracker</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 3rem auto; padding: 0 1rem; color: #1f2328; }
+  a { color: #0969da; }
+  code { background: #f6f8fa; padding: 0 .25rem; border-radius: 4px; }
+  li { margin: .3rem 0; }
+  .muted { color: #59636e; font-size: .9rem; }
+</style>
+</head>
+<body>
+<h1>tidb-rs tracker</h1>
+<p>TiDB's tests, the Go code each test exercises, and how far <a href="https://github.com/dulao5/tidb-rs">tidb-rs</a> gets on them.</p>
+<h2>Browse the data</h2>
+<ul>
+  <li><a id="lite" href="#">Open the database in Datasette Lite</a>: filter, facet and run SQL in the browser. The database (about 16 MB) loads once per visit.</li>
+  <li>Saved queries: <a id="q-feature" href="#">tests for a feature</a>, <a id="q-test" href="#">features of a test</a>, <a id="q-incomplete" href="#">failed and skipped tests</a>.</li>
+  <li><a href="tracker.db">Download tracker.db</a> (SQLite).</li>
+</ul>
+<h2>Reports</h2>
+<ul>
+  <li><a href="https://github.com/dulao5/tidb-rs-tracker/blob/main/reports/summary.md">Summary</a></li>
+  <li><a href="https://github.com/dulao5/tidb-rs-tracker/blob/main/reports/features.md">Features</a></li>
+  <li><a href="https://github.com/dulao5/tidb-rs-tracker">Repository and README</a></li>
+</ul>
+<p class="muted">Built from <code>data/</code> at commit <a id="commit" href="#"></a>.</p>
+<script>
+  const base = new URL(".", location.href).href;
+  const lite = (path) => "https://lite.datasette.io/?url=" + encodeURIComponent(base + "tracker.db") +
+    "&metadata=" + encodeURIComponent(base + "metadata.json") + (path ? "#" + path : "");
+  document.getElementById("lite").href = lite("");
+  document.getElementById("q-feature").href = lite("/tracker/tests_for_feature");
+  document.getElementById("q-test").href = lite("/tracker/features_of_test");
+  document.getElementById("q-incomplete").href = lite("/tracker/incomplete_mappings");
+  const sha = "__COMMIT__";
+  const c = document.getElementById("commit");
+  c.textContent = sha.slice(0, 7);
+  c.href = "https://github.com/dulao5/tidb-rs-tracker/commit/" + sha;
+</script>
+</body>
+</html>

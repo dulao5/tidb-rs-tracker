@@ -111,7 +111,7 @@ Every phase records its data-quality numbers (mapping rate, failure rate, spot-c
 | --- | --- | --- |
 | R1 | Collect tidb-rs results per Go test / integration file (pass, fail, unsupported) from tidb-rs CI into `data/`. | todo |
 | R2 | Progress reports per feature and area: share of weighted tests that pass. | todo |
-| R3 | Publish a browsable site (Datasette Lite on GitHub Pages). | todo |
+| R3 | Publish a browsable site (Datasette Lite on GitHub Pages): https://dulao5.github.io/tidb-rs-tracker/ | done |
 
 Tasks and milestones themselves live in tidb-rs GitHub Issues; this repo holds the test-level data they are measured against.
 
