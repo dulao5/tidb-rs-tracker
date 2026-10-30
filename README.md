@@ -125,7 +125,7 @@ Every phase records its data-quality numbers (mapping rate, failure rate, spot-c
 
 | phase | content | status |
 | --- | --- | --- |
-| R1 | Collect tidb-rs results per Go test / integration file (pass, fail, unsupported) from tidb-rs CI into `data/`. | integration files: first run imported ([report](reports/integration.md)); Go unit tests: todo |
+| R1 | Collect tidb-rs results per Go test / integration file (pass, fail, unsupported) from tidb-rs CI into `data/`. | integration files: first run imported ([report](reports/integration.md)): 1,059 of 14,173 scored reads match Go TiDB (7.5%), 83 mismatch; Go unit tests: todo |
 | R2 | Progress reports per feature and area: share of weighted tests that pass. | todo |
 | R3 | Publish a browsable site (Datasette Lite on GitHub Pages): https://dulao5.github.io/tidb-rs-tracker/ | done |
 
@@ -133,6 +133,7 @@ Tasks and milestones themselves live in tidb-rs GitHub Issues; this repo holds t
 
 ## Known limits
 
+- R1 runs the integration files of TiDB `master` against Go TiDB v8.5.8: 4,902 statements fail on Go TiDB itself (mostly `EXPLAIN FORMAT='plan_tree'`, new in master) and are not scored. A run over the v8.5.8 tag's files would score more EXPLAIN statements.
 - The data is from TiDB `master` (`4cee7f2084`), while tidb-rs is compared against TiDB v8.5.8 at runtime. Test names and functions mostly overlap; re-extracting at the v8.5.8 tag is cheap once E3/E4 settle the pipeline.
 - `subtests` counts literal `t.Run` calls only; table-driven loops make it a lower bound.
 - Six test names exist in both a package and its external `_test` package. `go test -run` runs both, so their coverage is merged under one (pkg, name).

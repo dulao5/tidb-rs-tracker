@@ -1,1 +1,420 @@
 class	outcome	reason	statements	files
+explain	a_error	1146: Table ? doesn't exist	2	2
+explain	a_error	1356: View ? references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them	1	1
+explain	a_error	1791: Unknown EXPLAIN format name: ?	3984	113
+explain	match	-	2	1
+explain	skipped	directive	4	2
+explain	skipped	in transaction	71	9
+explain	skipped	local temporary table	1	1
+explain	unsupported	B cannot log in as the test's user (no privilege system)	9	2
+explain	unsupported	ExplainStmt#N statements (read-only prototype)	617	67
+select	a_error	1054: Unknown column ? in ?	27	1
+select	a_error	1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use	14	2
+select	a_error	1105: Can't find column Column#N in schema Column: [planner__core__expression_rewriter.t_or_case_collation_b.travel_type] Uniq	2	1
+select	a_error	1105: Retrieving cancelled internally with error: context deadline exceeded	2	1
+select	a_error	1105: UnknownType: *ast.MatchAgainst	24	1
+select	a_error	1105: cannot convert datum from unsigned bigint to type timestamp	1	1
+select	a_error	1105: interface conversion: expression.Expression is *expression.ScalarFunction, not *expression.Column	1	1
+select	a_error	1105: other error: Column ID -N of table tiflash_replica not found\ngithub.com/pingcap/tidb/pkg/planner/core.(*PBPlanBuilder).	2	1
+select	a_error	1105: runtime error: index out of range [-N]	1	1
+select	a_error	1105: runtime error: index out of range [N] with length N	1	1
+select	a_error	1105: runtime error: slice bounds out of range [:-N]	1	1
+select	a_error	1115: Unknown character set: ?	22	1
+select	a_error	1146: Table ? doesn't exist	64	4
+select	a_error	1176: Key ? doesn't exist in table ?	48	9
+select	a_error	1193: Unknown system variable ?	19	4
+select	a_error	1292: Incorrect datetime value: ?	30	1
+select	a_error	1292: Incorrect time value: ?	2	1
+select	a_error	1305: FUNCTION expression__uuid.uuid_timestamp does not exist	8	1
+select	a_error	1305: FUNCTION expression__uuid.uuid_v4 does not exist	2	1
+select	a_error	1305: FUNCTION expression__uuid.uuid_v7 does not exist	2	1
+select	a_error	1305: FUNCTION expression__uuid.uuid_version does not exist	6	1
+select	a_error	1836: Running in read-only mode	3	1
+select	a_error	3809: Invalid use of LATERAL: LEFT JOIN is not supported with LATERAL	30	1
+select	a_error	client: timed out after 60s	2	1
+select	b_error	1054: Unknown column ? in ?	41	10
+select	b_error	1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use	2	1
+select	b_error	1146: Table ? doesn't exist	291	32
+select	b_error	1193: Unknown system variable ?	584	27
+select	b_error	not sent: a LIMIT >= N^N from tidb-rs crashes TiKV	5	1
+select	match	-	1057	83
+select	mismatch	columns	22	3
+select	mismatch	error	16	7
+select	mismatch	metadata	8	5
+select	mismatch	order	4	2
+select	mismatch	rows	26	9
+select	mismatch	warnings	4	2
+select	skipped	depends on a previous statement that ran on A only	598	25
+select	skipped	depends on session history	27	4
+select	skipped	in transaction	557	46
+select	skipped	local temporary table	134	11
+select	unsupported	? in the select list of a table read (only columns and COUNT/SUM/MIN/MAX are supported)	61	10
+select	unsupported	? is a view	101	17
+select	unsupported	?\\N'' in the select list of a table read (only columns and COUNT/SUM/MIN/MAX are supported)	1	1
+select	unsupported	?\\N')' in the select list of a table read (only columns and COUNT/SUM/MIN/MAX are supported)	1	1
+select	unsupported	?a'' in the select list of a table read (only columns and COUNT/SUM/MIN/MAX are supported)	1	1
+select	unsupported	AS OF TIMESTAMP (stale reads)	4	3
+select	unsupported	B cannot log in as the test's user (no privilege system)	76	9
+select	unsupported	BETWEEN other than on the integer primary key with constant bounds	9	2
+select	unsupported	COUNT(*) on a table without a NOT NULL column	61	9
+select	unsupported	DISTINCT in aggregate functions	56	12
+select	unsupported	DISTINCT together with GROUP BY	4	2
+select	unsupported	ExecuteStmt#N statements (read-only prototype)	679	27
+select	unsupported	GROUP BY ... ASC/DESC	6	1
+select	unsupported	GROUP BY ... WITH ROLLUP	17	1
+select	unsupported	GROUP BY items other than columns	1	1
+select	unsupported	HAVING	77	21
+select	unsupported	IN	514	50
+select	unsupported	IS NULL	83	28
+select	unsupported	LIKE	164	29
+select	unsupported	NOT BETWEEN	6	3
+select	unsupported	OR	254	31
+select	unsupported	ORDER BY a column that is neither selected nor grouped by	6	3
+select	unsupported	ORDER BY items other than columns or positions	4	2
+select	unsupported	PARTITION selection	311	18
+select	unsupported	SQL_CALC_FOUND_ROWS	3	1
+select	unsupported	SUM over the non-numeric column ?	2	1
+select	unsupported	TABLE/VALUES statements	9	2
+select	unsupported	TABLESAMPLE	29	1
+select	unsupported	UNION/EXCEPT/INTERSECT	116	16
+select	unsupported	WHERE conditions other than comparisons of the integer primary key with constants	70	12
+select	unsupported	WHERE/GROUP BY/ORDER BY in a SELECT without FROM	2	1
+select	unsupported	WINDOW	14	6
+select	unsupported	WITH (common table expressions)	196	14
+select	unsupported	aggregate function approx_count_distinct	20	5
+select	unsupported	aggregate function approx_percentile	7	3
+select	unsupported	aggregate function avg	36	12
+select	unsupported	aggregate function bit_and	8	2
+select	unsupported	aggregate function bit_or	8	2
+select	unsupported	aggregate function bit_xor	9	3
+select	unsupported	aggregate function group_concat	79	9
+select	unsupported	aggregate function json_arrayagg	9	1
+select	unsupported	aggregate function json_objectagg	10	1
+select	unsupported	aggregate function stddev_pop	24	1
+select	unsupported	aggregate function var_pop	4	1
+select	unsupported	aggregate function var_samp	1	1
+select	unsupported	conditions on column ? (only the integer primary key handle can be filtered)	677	48
+select	unsupported	derived tables (subqueries in FROM)	95	26
+select	unsupported	function 'tidb`.(dateliteral	22	2
+select	unsupported	function 'tidb`.(timeliteral	13	2
+select	unsupported	function 'tidb`.(timestampliteral	55	4
+select	unsupported	function ABS	9	1
+select	unsupported	function ADDDATE	3	2
+select	unsupported	function AES_DECRYPT	10	1
+select	unsupported	function COALESCE	4	2
+select	unsupported	function COERCIBILITY	1	1
+select	unsupported	function CONCAT	3	1
+select	unsupported	function CONV	9	1
+select	unsupported	function CURRENT_TIME	2	1
+select	unsupported	function CURRENT_TIMESTAMP	2	1
+select	unsupported	function CURTIME	2	1
+select	unsupported	function DATE	1	1
+select	unsupported	function DATE_ADD	182	4
+select	unsupported	function DATE_FORMAT	1	1
+select	unsupported	function DATE_SUB	16	3
+select	unsupported	function DAYOFMONTH	2	1
+select	unsupported	function DAYOFWEEK	2	1
+select	unsupported	function DAYOFYEAR	2	1
+select	unsupported	function EXTRACT	10	1
+select	unsupported	function FIND_IN_SET	8	1
+select	unsupported	function FORMAT	7	1
+select	unsupported	function FROM_UNIXTIME	14	2
+select	unsupported	function GET_FORMAT	2	1
+select	unsupported	function GET_LOCK	2	1
+select	unsupported	function HEX	21	4
+select	unsupported	function IF	3	2
+select	unsupported	function IFNULL	8	3
+select	unsupported	function INET6_NTOA	4	1
+select	unsupported	function INET_ATON	1	1
+select	unsupported	function INET_NTOA	1	1
+select	unsupported	function INSTR	16	1
+select	unsupported	function ISNULL	1	1
+select	unsupported	function IS_FREE_LOCK	2	1
+select	unsupported	function IS_IPV4	3	2
+select	unsupported	function IS_IPV4_COMPAT	4	2
+select	unsupported	function IS_IPV4_MAPPED	3	1
+select	unsupported	function IS_IPV6	2	2
+select	unsupported	function IS_USED_LOCK	2	1
+select	unsupported	function IS_UUID	4	3
+select	unsupported	function JSON_ARRAY_APPEND	2	1
+select	unsupported	function JSON_ARRAY_INSERT	1	1
+select	unsupported	function JSON_CONTAINS	3	1
+select	unsupported	function JSON_CONTAINS_PATH	5	2
+select	unsupported	function JSON_EXTRACT	4	3
+select	unsupported	function JSON_KEYS	8	1
+select	unsupported	function JSON_MERGE	1	1
+select	unsupported	function JSON_MERGE_PATCH	2	1
+select	unsupported	function JSON_MERGE_PRESERVE	2	1
+select	unsupported	function JSON_OBJECT	1	1
+select	unsupported	function JSON_OVERLAPS	3	1
+select	unsupported	function JSON_PRETTY	4	1
+select	unsupported	function JSON_QUOTE	4	1
+select	unsupported	function JSON_REMOVE	2	1
+select	unsupported	function JSON_SCHEMA_VALID	24	1
+select	unsupported	function JSON_SEARCH	4	2
+select	unsupported	function JSON_SET	1	1
+select	unsupported	function JSON_TYPE	6	1
+select	unsupported	function JSON_extract	1	1
+select	unsupported	function LEFT	2	2
+select	unsupported	function LENGTH	1	1
+select	unsupported	function LOCALTIME	2	1
+select	unsupported	function LOCALTIMESTAMP	2	1
+select	unsupported	function LOCATE	17	1
+select	unsupported	function LPAD	3	1
+select	unsupported	function MID	2	1
+select	unsupported	function MONTH	2	1
+select	unsupported	function NAME_CONST	2	1
+select	unsupported	function NOW	3	1
+select	unsupported	function POW	5	1
+select	unsupported	function QUARTER	2	1
+select	unsupported	function RANDOM_BYTES	5	1
+select	unsupported	function RELEASE_LOCK	3	1
+select	unsupported	function REPEAT	8	1
+select	unsupported	function ROUND	13	1
+select	unsupported	function RPAD	3	1
+select	unsupported	function SEC_TO_TIME	1	1
+select	unsupported	function SIGN	5	1
+select	unsupported	function SQRT	1	1
+select	unsupported	function STR_TO_DATE	5	1
+select	unsupported	function SYSDATE	2	1
+select	unsupported	function TIMESTAMPADD	2	1
+select	unsupported	function TIMESTAMPDIFF	2	1
+select	unsupported	function TIME_FORMAT	1	1
+select	unsupported	function TO_BASE64	4	1
+select	unsupported	function UNCOMPRESS	4	1
+select	unsupported	function UNCOMPRESSED_LENGTH	6	1
+select	unsupported	function UNHEX	2	1
+select	unsupported	function UNIX_TIMESTAMP	15	2
+select	unsupported	function UTC_TIME	2	1
+select	unsupported	function UTC_TIMESTAMP	2	1
+select	unsupported	function UUID_TIMESTAMP	2	1
+select	unsupported	function UUID_TO_BIN	2	2
+select	unsupported	function UUID_VERSION	2	1
+select	unsupported	function VALIDATE_PASSWORD_STRENGTH	3	1
+select	unsupported	function YEAR	3	2
+select	unsupported	function acos	2	1
+select	unsupported	function addtime	29	1
+select	unsupported	function any_value	4	2
+select	unsupported	function ascii	5	3
+select	unsupported	function asin	2	1
+select	unsupported	function atan	2	1
+select	unsupported	function bin	3	1
+select	unsupported	function bit_count	1	1
+select	unsupported	function bit_length	1	1
+select	unsupported	function ceil	11	1
+select	unsupported	function ceiling	1	1
+select	unsupported	function char_func	13	3
+select	unsupported	function char_length	7	4
+select	unsupported	function character_length	1	1
+select	unsupported	function coalesce	10	2
+select	unsupported	function coercibility	61	4
+select	unsupported	function collation	105	8
+select	unsupported	function compress	2	1
+select	unsupported	function concat	23	6
+select	unsupported	function concat_ws	11	3
+select	unsupported	function conv	1	1
+select	unsupported	function convert	11	2
+select	unsupported	function cos	2	1
+select	unsupported	function cot	3	1
+select	unsupported	function crc32	3	2
+select	unsupported	function date	11	3
+select	unsupported	function date_add	5	3
+select	unsupported	function date_format	20	4
+select	unsupported	function date_sub	2	2
+select	unsupported	function dayname	5	1
+select	unsupported	function decode	2	1
+select	unsupported	function degrees	2	1
+select	unsupported	function elt	9	3
+select	unsupported	function exp	4	1
+select	unsupported	function export_set	7	2
+select	unsupported	function extract	7	2
+select	unsupported	function field	14	2
+select	unsupported	function find_in_set	2	1
+select	unsupported	function floor	20	3
+select	unsupported	function format	3	1
+select	unsupported	function from_base64	7	2
+select	unsupported	function from_unixtime	17	3
+select	unsupported	function greatest	46	3
+select	unsupported	function hex	165	17
+select	unsupported	function hour	2	1
+select	unsupported	function if	38	3
+select	unsupported	function ifnull	19	5
+select	unsupported	function insert_func	5	2
+select	unsupported	function instr	3	1
+select	unsupported	function interval	2	2
+select	unsupported	function is_ipv4_mapped	1	1
+select	unsupported	function json_array	28	2
+select	unsupported	function json_array_append	1	1
+select	unsupported	function json_contains	6	2
+select	unsupported	function json_contains_path	4	1
+select	unsupported	function json_depth	2	1
+select	unsupported	function json_extract	34	6
+select	unsupported	function json_keys	2	1
+select	unsupported	function json_length	5	2
+select	unsupported	function json_memberof	14	2
+select	unsupported	function json_merge	1	1
+select	unsupported	function json_merge_patch	1	1
+select	unsupported	function json_merge_preserve	1	1
+select	unsupported	function json_object	15	3
+select	unsupported	function json_overlaps	8	2
+select	unsupported	function json_quote	26	2
+select	unsupported	function json_search	3	1
+select	unsupported	function json_set	2	1
+select	unsupported	function json_storage_free	5	1
+select	unsupported	function json_storage_size	2	1
+select	unsupported	function json_type	28	4
+select	unsupported	function json_unquote	34	3
+select	unsupported	function json_valid	12	1
+select	unsupported	function lastval	2	1
+select	unsupported	function least	20	3
+select	unsupported	function left	6	2
+select	unsupported	function length	75	8
+select	unsupported	function locate	23	3
+select	unsupported	function log	9	1
+select	unsupported	function log10	5	1
+select	unsupported	function log2	5	1
+select	unsupported	function lower	9	7
+select	unsupported	function make_set	3	2
+select	unsupported	function md5	8	2
+select	unsupported	function microsecond	2	1
+select	unsupported	function monthname	1	1
+select	unsupported	function name_const	9	1
+select	unsupported	function nextval	28	1
+select	unsupported	function nullif	1	1
+select	unsupported	function oct	4	1
+select	unsupported	function octet_length	2	1
+select	unsupported	function ord	5	2
+select	unsupported	function password	5	2
+select	unsupported	function position	1	1
+select	unsupported	function quote	3	2
+select	unsupported	function radians	1	1
+select	unsupported	function rand	4	1
+select	unsupported	function repeat	2	1
+select	unsupported	function replace	5	2
+select	unsupported	function reverse	2	2
+select	unsupported	function right	6	2
+select	unsupported	function round	7	1
+select	unsupported	function sec_to_time	2	1
+select	unsupported	function setval	2	1
+select	unsupported	function sha	4	2
+select	unsupported	function sha1	4	2
+select	unsupported	function sha2	12	2
+select	unsupported	function sin	3	1
+select	unsupported	function sleep	33	8
+select	unsupported	function sm3	4	1
+select	unsupported	function space	3	2
+select	unsupported	function std_samp	1	1
+select	unsupported	function str_to_date	58	4
+select	unsupported	function strcmp	6	1
+select	unsupported	function substr	12	2
+select	unsupported	function substring_index	14	2
+select	unsupported	function subtime	29	1
+select	unsupported	function tan	3	2
+select	unsupported	function tidb_decode_binary_plan	3	1
+select	unsupported	function tidb_decode_plan	5	1
+select	unsupported	function tidb_decode_sql_digests	7	1
+select	unsupported	function tidb_encode_sql_digest	4	1
+select	unsupported	function time	6	1
+select	unsupported	function timediff	5	3
+select	unsupported	function timestamp	1	1
+select	unsupported	function timestampadd	9	3
+select	unsupported	function timestampdiff	1	1
+select	unsupported	function timestampliteral	1	1
+select	unsupported	function to_base64	5	3
+select	unsupported	function translate	11	1
+select	unsupported	function trim	9	3
+select	unsupported	function truncate	20	2
+select	unsupported	function unhex	7	1
+select	unsupported	function unix_timestamp	2	1
+select	unsupported	function upper	13	8
+select	unsupported	function validate_password_strength	12	1
+select	unsupported	function week	1	1
+select	unsupported	function weight_string	2	1
+select	unsupported	function xxx	2	1
+select	unsupported	function year	8	1
+select	unsupported	hexadecimal and bit literals	35	9
+select	unsupported	joins	566	44
+select	unsupported	non-aggregated column ? outside GROUP BY (only_full_group_by)	30	4
+select	unsupported	operator !=	64	16
+select	unsupported	operator %	14	4
+select	unsupported	operator &	16	5
+select	unsupported	operator *	35	9
+select	unsupported	operator +	190	22
+select	unsupported	operator -	79	8
+select	unsupported	operator /	22	8
+select	unsupported	operator <<	4	2
+select	unsupported	operator <=>	36	6
+select	unsupported	operator >>	1	1
+select	unsupported	operator DIV	15	3
+select	unsupported	operator XOR	1	1
+select	unsupported	operator ^	4	2
+select	unsupported	operator |	4	2
+select	unsupported	optimizer hints	1022	51
+select	unsupported	origin default "N-N-N N:N:N" of column c3 (type N)	1	1
+select	unsupported	origin default "N-N-N" of column da1 (type N)	1	1
+select	unsupported	ranges on an UNSIGNED integer primary key	4	2
+select	unsupported	reading column ? of type N (TIMESTAMP/ENUM/SET/BIT/JSON/... are not supported yet)	185	22
+select	unsupported	reading the virtual generated column ?	113	16
+select	unsupported	subqueries	302	37
+select	unsupported	table ? has a clustered non-integer primary key (common handle)	267	23
+select	unsupported	table ? is a temporary table	3	2
+select	unsupported	table ? is partitioned; partitioned tables are not supported	844	44
+select	unsupported	this expression	543	33
+select	unsupported	this expression in a SELECT without FROM	24	9
+select	unsupported	this unary operator	124	12
+select	unsupported	user variables	33	8
+session	a_error	1105: UnknownType: *ast.MatchAgainst	3	1
+session	a_error	1193: Unknown system variable ?	28	5
+session	a_error	1273: Unsupported collation when new collation is enabled: ?	1	1
+session	a_error	8111: Prepared statement not found	3	1
+session	write	session	3496	180
+show	a_error	1146: Table ? doesn't exist	11	5
+show	a_error	1356: View ? references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them	1	1
+show	mismatch	rows	3	1
+show	skipped	depends on a previous statement that ran on A only	511	59
+show	skipped	in transaction	15	5
+show	skipped	local temporary table	52	8
+show	unsupported	B cannot log in as the test's user (no privilege system)	31	8
+show	unsupported	SHOW statements other than SHOW WARNINGS/ERRORS	711	63
+show	unsupported	ShowStmt#N statements (read-only prototype)	12	3
+write	a_error	1051: Unknown table ?	17	4
+write	a_error	1054: Unknown column ? in ?	2	2
+write	a_error	1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use	112	9
+write	a_error	1091: Can't DROP ?; check that column/key exists	5	2
+write	a_error	1091: index a_b doesn't exist	1	1
+write	a_error	1091: index b doesn't exist	1	1
+write	a_error	1091: index bb doesn't exist	2	1
+write	a_error	1091: index dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd doesn't exist	1	1
+write	a_error	1091: index expr_idx_c doesn't exist	1	1
+write	a_error	1091: index expr_idx_e doesn't exist	1	1
+write	a_error	1091: index idx_a doesn't exist	1	1
+write	a_error	1091: index idx_c doesn't exist	1	1
+write	a_error	1091: index idx_e doesn't exist	1	1
+write	a_error	1105: Non-transactional DML, shard column a is not indexed	3	1
+write	a_error	1105: line N column N near "0x"	1	1
+write	a_error	1105: open outfile_line_prefix.txt: file exists	1	1
+write	a_error	1105: secondary index ? is not found in table ?	1	1
+write	a_error	1105: user [semuser1] depends on the resource group to drop	2	1
+write	a_error	1115: Unknown character set: ?	10	1
+write	a_error	1136: Column count doesn't match value count at row N	1	1
+write	a_error	1146: Table ? doesn't exist	61	4
+write	a_error	1176: Key ? doesn't exist in table ?	2	1
+write	a_error	1193: Unknown system variable ?	9	2
+write	a_error	1286: Unknown storage engine ?	3	1
+write	a_error	1292: Incorrect time value: ?	1	1
+write	a_error	1356: View ? references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them	1	1
+write	a_error	1396: Operation CREATE USER failed for ?@?	2	1
+write	a_error	1690: constant N overflows int	1	1
+write	a_error	1791: Unknown EXPLAIN format name: ?	10	1
+write	a_error	3819: Check constraint ? is violated.	1	1
+write	a_error	3929: Dynamic privilege ? is not registered with the server.	3	1
+write	a_error	8109: Index ? in field list does not exist in table ?	5	2
+write	a_error	8111: Prepared statement not found	7	1
+write	a_error	8151: Set TTL for temporary table is not allowed	1	1
+write	a_error	8200: Unsupported create an index that is both a global index and a clustered index	1	1
+write	a_error	8248: Resource group ? already exists	2	1
+write	a_error	8256: Check ingest environment failed: no enough space in /tmp/tidb/tmp_ddl-N	217	53
+write	a_error	client: Driver error: `LOCAL INFILE error: Can't handle local infile request. Handler is not specified.'	61	12
+write	a_error	client: timed out after 60s	1	1
+write	skipped	would disable DDL on the shared cluster (tidb-rs counts as a TiDB server)	2	1
+write	write	-	27159	256

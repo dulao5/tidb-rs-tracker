@@ -1,1 +1,84 @@
 file	line	conn	class	kind	b_rejected	detail	sql
+collation_misc	55	default	select	rows	0	1 row(s) only in A, e.g. ("utf8"); 1 row(s) only in B, e.g. ("utf8mb4")	select @@character_set_database
+collation_misc	56	default	select	rows	0	1 row(s) only in A, e.g. ("utf8_bin"); 1 row(s) only in B, e.g. ("utf8mb4_bin")	select @@collation_database
+collation_misc	59	default	select	rows	0	1 row(s) only in A, e.g. ("utf8"); 1 row(s) only in B, e.g. ("utf8mb4")	select @@character_set_database
+collation_misc	60	default	select	rows	0	1 row(s) only in A, e.g. ("utf8_bin"); 1 row(s) only in B, e.g. ("utf8mb4_bin")	select @@collation_database
+ddl/column_type_change	2054	default	select	rows	0	1 row(s) only in A, e.g. ("0000"); 1 row(s) only in B, e.g. ("0")	select a from t
+ddl/multi_schema_change	165	default	select	error	0	A 1176: Key 'i1' doesn't exist in table 't' vs B 3 cols, 1 rows	select * from t use index(i1)
+ddl/multi_schema_change	167	default	select	error	0	A 1176: Key 'i2' doesn't exist in table 't' vs B 3 cols, 1 rows	select * from t use index(i2)
+ddl/multi_schema_change	170	default	select	error	0	A 1176: Key 'primary' doesn't exist in table 't' vs B 3 cols, 1 rows	select * from t use index(primary)
+ddl/multi_schema_change	172	default	select	error	0	A 1176: Key 'i3' doesn't exist in table 't' vs B 3 cols, 1 rows	select * from t use index(i3)
+ddl/multi_schema_change	178	default	select	error	0	A 1176: Key 't' doesn't exist in table 't' vs B 2 cols, 1 rows	select * from t force index(t)
+executor/autoid	195	default	select	order	0	first differing row #0: A="1" B="9223372036854775808"; same rows in a different order	select * from t9 order by a
+executor/autoid	292	default	select	order	0	first differing row #0: A="1" B="9223372036854775808"; same rows in a different order	select * from t9 order by a
+executor/autoid	98	default	select	order	0	first differing row #0: A="1" B="9223372036854775808"; same rows in a different order	select * from t9 order by a
+executor/charset	10	default	select	rows	1	1 row(s) only in A, e.g. ("gbk_chinese_ci"); 1 row(s) only in B, e.g. ("utf8mb4_bin")	select @@collation_connection
+executor/charset	12	default	select	error	1	A 1115: Unsupported character introducer: 'gbk' vs B 1064: Unsupported character introducer: 'gbk'	select _gbk 'a'
+executor/charset	3	default	select	rows	1	col[0].charset: A=28 B=46(utf8mb4_bin); 1 row(s) only in A, e.g. ("gbk"); 1 row(s) only in B, e.g. ("utf8mb4")	select @@character_set_connection
+executor/charset	4	default	select	rows	1	col[0].charset: A=28 B=46(utf8mb4_bin); 1 row(s) only in A, e.g. ("gbk_chinese_ci"); 1 row(s) only in B, e.g. ("utf8mb4_general_ci")	select @@collation_connection
+executor/charset	6	default	select	rows	1	col[0].charset: A=28 B=46(utf8mb4_bin); 1 row(s) only in A, e.g. ("gbk"); 1 row(s) only in B, e.g. ("utf8mb4")	select @@character_set_client
+executor/charset	9	default	select	rows	1	1 row(s) only in A, e.g. ("gbk"); 1 row(s) only in B, e.g. ("utf8mb4")	select @@character_set_connection
+executor/delete	131	default	select	warnings	2	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	select * from parent
+executor/delete	141	default	select	warnings	2	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	select * from parent
+executor/delete	142	default	select	warnings	2	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	select * from parent2
+executor/executor	1091	default	select	order	10	first differing row #0: A="1" B="9223372036854775808"; same rows in a different order	select * from t order by id
+executor/executor	1677	default	select	columns	22	col[0].name: A="NULL" B="\\\\N"	select \\N
+executor/executor	1693	default	select	columns	22	col[0].name: A="NULL" B="nUll"	select nUll
+executor/executor	1694	default	select	columns	22	col[0].name: A="NULL" B="(null)"	select (null)
+executor/executor	1702	default	select	columns	22	col[0].name: A="" B="\\n"	select '\\n'
+executor/executor	1704	default	select	columns	22	col[0].name: A="col" B="\\t   col"	select '\\t   col'
+executor/executor	1706	default	select	columns	22	col[0].name: A="Col" B="\\t   Col"	select '\\t   Col'
+executor/executor	1708	default	select	columns	22	col[0].name: A="中文 col" B="\\n\\t   中文 col"; col[0].length: A=60 B=44	select '\\n\\t   中文 col'
+executor/executor	1710	default	select	columns	22	col[0].name: A=".col" B=" \\r\\n  .col"	select ' \\r\\n  .col'
+executor/executor	1712	default	select	columns	22	col[0].name: A="😆col" B="   😆col"; col[0].length: A=40 B=28	select '   😆col'
+executor/executor	1715	default	select	columns	22	col[0].name: A="abc   123   " B="  abc   123   "	select '  abc   123   '
+executor/executor	1717	default	select	columns	22	col[0].name: A="a" B="a string"	select 'a' ' ' 'string'
+executor/executor	1718	default	select	columns	22	col[0].name: A="a" B="a string"	select 'a' " " "string"
+executor/executor	1719	default	select	columns	22	col[0].name: A="string" B="stringstring"	select 'string' 'string'
+executor/executor	1720	default	select	columns	22	col[0].name: A="ss" B="ssa"	select "ss" "a"
+executor/executor	1721	default	select	columns	22	col[0].name: A="ss" B="ssab"	select "ss" "a" "b"
+executor/executor	1722	default	select	columns	22	col[0].name: A="ss" B="ssa b"	select "ss" "a" ' ' "b"
+executor/executor	1723	default	select	columns	22	col[0].name: A="ss" B="ssa b d"	select "ss" "a" ' ' "b" ' ' "d"
+executor/executor	2374	default	select	error	32	A 8175: Your query has been cancelled due to exceeding the allowed memory limit for a single SQL query. Please try narrowing your query scope or increase the tidb_mem_quota_query limit and try again.[conn=2816475332] vs B 1 cols, 1 rows	select sum(b) from t group by a
+executor/executor	3	default	select	metadata	0	col[0].length: A=18 B=24	select _utf8"string"
+executor/insert	389	default	select	rows	7	3 row(s) only in A, e.g. ("0000") ("0000") ("0000"); 3 row(s) only in B, e.g. ("0") ("0") ("0")	select * from t1
+executor/insert	393	default	select	rows	7	1 row(s) only in A, e.g. ("0000"); 1 row(s) only in B, e.g. ("0")	select * from t
+executor/insert	395	default	select	rows	7	2 row(s) only in A, e.g. ("0000") ("0000"); 2 row(s) only in B, e.g. ("0") ("0")	select * from t
+executor/insert	947	default	select	rows	22	col[0].length: A=66 B=86; 1 row(s) only in A, e.g. ("99999999999999999999999999999999999999999999999999999999999999999"); 1 row(s) only in B, e.g. ("888888888888888888888888888888888888888888888888888888888888888888888888888888888888")	select 888888888888888888888888888888888888888888888888888888888888888888888888888888888888
+executor/set	110	default	select	error	6	A 8136: option 'tidb_slow_log_masking' is no longer supported. Reason: use tidb_redact_log instead vs B 1193: Unknown system variable 'tidb_slow_log_masking'	SELECT @@tidb_slow_log_masking
+executor/set	112	default	select	error	6	A 8136: option 'tidb_enable_global_temporary_table' is no longer supported. Reason: temporary table support is now always enabled vs B 1193: Unknown system variable 'tidb_enable_global_temporary_table'	SELECT @@tidb_enable_global_temporary_table
+expression/builtin	1001	default	select	columns	6	col[0].name: A="1" B="+1"; col[1].name: A="0" B="+0"; col[4].name: A="0.999" B="+0.999"; col[5].name: A="NULL" B="+null"	select +1, +0, +(-9), +(-0.001), +0.999, +null, +"aaa"
+expression/builtin	520	default	select	metadata	1	col[0].length: A=21 B=22	select -9223372036854775809
+expression/builtin	521	default	select	metadata	1	col[0].length: A=22 B=21	select --9223372036854775809
+expression/builtin	639	default	select	error	1	A 1115: Unknown character set: 'tidb' vs B 1064: Unknown character set: 'tidb'	select char(97, null, 100, 256, 89 using tidb)
+expression/builtin	948	default	select	error	3	A 1115: Unknown character set: '866' vs B 1064: Unknown character set: '866'	select convert("123" using "866")
+expression/issues	1932	default	select	rows	47	col[0].length: A=67 B=94; col[0].decimals: A=30 B=89; 1 row(s) only in A, e.g. ("0.000000000000000000000000000000000000000000000000000000000000000000000000"); 1 row(s) only in B, e.g. ("0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")	select 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+expression/issues	1933	default	select	rows	47	col[0].length: A=67 B=78; col[0].decimals: A=30 B=73; 1 row(s) only in A, e.g. ("0.000000000000000000000000000000000000000000000000000000000000000000000001"); 1 row(s) only in B, e.g. ("0.0000000000000000000000000000000000000000000000000000000000000000000000012")	select 0.0000000000000000000000000000000000000000000000000000000000000000000000012
+expression/issues	1934	default	select	metadata	47	col[0].length: A=67 B=77; col[0].decimals: A=30 B=72	select 0.000000000000000000000000000000000000000000000000000000000000000000000001
+expression/issues	73	default	select	error	0	A 1115: Unknown character set: 'a' vs B 1064: Unknown character set: 'a'	select convert(a using a) from t
+new_character_set	10	default	select	rows	0	1 row(s) only in A, e.g. (x'd2bbb6fec8fdcbc4d2bb'); 1 row(s) only in B, e.g. ("一二三四一")	select a from t
+new_character_set	126	default	select	metadata	9	col[1].charset: A=46(utf8mb4_bin) B=28; col[2].charset: A=46(utf8mb4_bin) B=28; col[3].charset: A=46(utf8mb4_bin) B=28	SELECT * FROM t_fffd ORDER BY id
+new_character_set	141	default	select	metadata	9	col[1].charset: A=46(utf8mb4_bin) B=28; col[2].charset: A=46(utf8mb4_bin) B=28; col[3].charset: A=46(utf8mb4_bin) B=28	SELECT * FROM t_fffd ORDER BY id
+new_character_set	144	default	select	warnings	9	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	SELECT COUNT(*) FROM t_fffd
+new_character_set	148	default	select	metadata	9	col[1].charset: A=46(utf8mb4_bin) B=28; col[2].charset: A=46(utf8mb4_bin) B=28; col[3].charset: A=46(utf8mb4_bin) B=28	SELECT * FROM t_fffd ORDER BY id
+new_character_set	22	default	select	rows	0	1 row(s) only in A, e.g. ("һ", "一", "一"); 1 row(s) only in B, e.g. ("一", "一", "一")	select * from t
+new_character_set	24	default	select	rows	0	1 row(s) only in A, e.g. ("һ", "一", "一"); 1 row(s) only in B, e.g. ("一", "一", "一")	select * from t
+new_character_set	26	default	select	rows	0	1 row(s) only in A, e.g. ("һ", "一", "一"); 1 row(s) only in B, e.g. ("一", "一", "一")	select * from t
+new_character_set	57	default	select	rows	3	col[1].charset: A=28 B=46(utf8mb4_bin); 2 row(s) only in A, e.g. ("a", x'b0a1') ("a", "һ"); 2 row(s) only in B, e.g. ("a", "啊") ("a", "一")	select * from t
+planner/core/integration	645	default	select	rows	10	row count A=1 B=3; 2 row(s) only in B, e.g. ("1") ("2")	select * from t order by a
+planner/core/integration	693	default	select	rows	20	row count A=1 B=3; 2 row(s) only in B, e.g. ("2") ("2")	select * from b
+select	103	default	select	columns	6	col[0].name: A="1" B="+\\t(\\t+\\t1\\t)"	select +\t(\t+\t1\t)
+select	92	default	select	metadata	6	col[1].length: A=3 B=1; col[2].length: A=3 B=1	select + - 1, --1, +-+-+1, + "123"
+select	93	default	select	columns	6	col[0].length: A=21 B=1; col[1].name: A="1" B="++++++++++++++++++++1"	select --------------------1, ++++++++++++++++++++1
+select	94	default	select	columns	6	col[0].name: A="1" B="+(+(1))"; col[2].name: A="1" B="((+1))"; col[3].name: A="1.23" B="+1.23"; col[4].name: A="1e23" B="+1e23"; col[4].length: A=24 B=22; col[5].name: A="1E23" B="+1E23"; col[5].length: A=24 B=22; col[6].name: A="NULL" B="+null"; col[7].name: A="TRUE" B="+true"; col[8].name: A="FALS	select +(+(1)), (-+1), ((+1)), +1.23, +1e23, +1E23, +null, +true, +false, + ( ( 1 ) )
+select	95	default	select	columns	6	col[0].name: A="1" B="+\\n(\\n+\\n(\\n1\\n)\\n)"	select +\n(\n+\n(\n1\n)\n)
+session/session	138	default	show	rows	4	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	show warnings
+session/session	141	default	show	rows	4	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	show warnings
+session/session	144	default	show	rows	4	col[0].schema: A="INFORMATION_SCHEMA" B=""; col[0].table: A="WARNINGS" B=""; col[0].length: A=256 B=28; col[1].schema: A="INFORMATION_SCHEMA" B=""; col[1].table: A="WARNINGS" B=""; col[1].length: A=19 B=4; col[1].flags: A=0x0020[UNSIGNED] B=0x0080[BINARY]; col[2].schema: A="INFORMATION_SCHEMA" B="";	show warnings
+session/vars	133	default	select	error	6	A 1238: Variable 'warning_count' is a SESSION variable vs B 1193: Unknown system variable 'warning_count'	select @@global.warning_count
+session/vars	137	default	select	error	6	A 1238: Variable 'max_connections' is a GLOBAL variable vs B 1193: Unknown system variable 'max_connections'	select @@session.max_connections
+session/vars	139	default	select	error	6	A 1238: Variable 'max_connections' is a GLOBAL variable vs B 1193: Unknown system variable 'max_connections'	select @@local.max_connections
+session/vars	146	default	select	error	6	A 1238: Variable 'last_insert_id' is a SESSION variable vs B 1193: Unknown system variable 'last_insert_id'	select @@global.last_insert_id
+sessiontxn/externals	22	default	select	rows	1	row count A=4 B=5; 1 row(s) only in B, e.g. ("4", "100")	select * from t
+sessiontxn/externals	35	default	select	rows	3	row count A=0 B=1; 1 row(s) only in B, e.g. ("0")	select * from t
+types/const	202	default	select	rows	0	col[0].name: A="\\\\\\\\" B="\\\\"; col[0].length: A=8 B=4; 1 row(s) only in A, e.g. ("\\\\\\\\"); 1 row(s) only in B, e.g. ("\\\\")	SELECT '\\\\'
