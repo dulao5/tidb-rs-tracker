@@ -159,6 +159,23 @@ The pipeline was re-run unchanged at the v8.5.8 tag (2026-11-01..02, same machin
 - v8.5.8-only in partly scoped areas, not added: `pkg/util/replayer`, `pkg/util/servicescope`.
 - 12 scope packages have no tests at v8.5.8 (e.g. `pkg/statistics/handle`, `pkg/planner/core/rule`); they stay in scope and have nothing to run.
 
+## Porting blocks
+
+tidb-rs ports Go TiDB v8.5.8 block by block (rules: tidb-rs `CONSTITUTION.md`; plan: tidb-rs `specs/ROADMAP.md`).
+The split is maintained here:
+
+- `scripts/blocks/rules.py`: block definitions (domain, title, phase) and ordered matching rules on Go file path + function symbol. Large hub files are split per function, and a logical rule's methods on every operator belong to the rule's block.
+- `data/blocks.tsv`, `data/func_blocks.tsv` (every `go_funcs.tsv` row → block), `data/block_edges.tsv` (block → block reference counts from the reference graph).
+
+Regenerate after changing the rules (needs `work/go_refs.tsv` from `scripts/refgraph.sh`):
+
+```sh
+python3 scripts/blocks/assign.py          # blocks.tsv, func_blocks.tsv; prints sizes
+python3 scripts/blocks/deps.py            # block_edges.tsv
+python3 scripts/blocks/layers.py 10       # per-phase dependency layers
+python3 scripts/blocks/roadmap_tables.py  # the phase tables of specs/ROADMAP.md
+```
+
 ## Plan
 
 ### Extraction (E)
