@@ -8,7 +8,7 @@ It answers three questions:
 2. **What does each test exercise?** A per-test coverage map from tests to Go functions, grouped into features.
 3. **How far is tidb-rs?** Which of those tests and features tidb-rs passes. R1: per-statement results of TiDB's integration tests run against tidb-rs ([report](reports/integration.md)).
 
-The data covers TiDB `master` at the commit in [`data/source.tsv`](data/source.tsv).
+The data covers TiDB **v8.5.8** (tag `v8.5.8`, `8b857efa20`), the commit in [`data/source.tsv`](data/source.tsv): the release tidb-rs is compared against. It was first extracted at `master` `4cee7f2084` (E1–E3); see [Re-extraction at v8.5.8](#re-extraction-at-v858).
 
 ## Reports
 
@@ -35,7 +35,7 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `reports/` | Markdown generated from `data/`. Do not edit. |
 | `sql/tracker.sql` | Schema of `tracker.db` built from `data/`. |
 | `sql/extract.sql`, `sql/derive_features.sql` | Schema and feature derivation of the extraction DB. |
-| `cmd/inventory` | Go AST scan of a TiDB checkout: unit tests and integration test files. |
+| `cmd/inventory` | Go AST scan of a TiDB checkout: unit tests and integration test files; with `-funcs`, every function declared under `pkg/`. |
 | `cmd/covmap` | Per-test coverage for one Go package. |
 | `scripts/` | `tracker.py` (export / build / report / check) and the extraction shell scripts. |
 | `datasette/` | Datasette table descriptions and canned queries. |
@@ -48,6 +48,7 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `scope.tsv` | pkg | Packages in scope for a tidb-rs phase (`P1` = prototype). Maintained by hand. |
 | `tests.tsv` | kind, pkg, name, path | Unit tests (`TestXxx`) and integration test files, with flags: SQL-level (`uses_store`), failpoints (`uses_fp`). |
 | `features.tsv` | feature | v0 features: one per Go source file, with the functions in it that some test reaches. |
+| `go_funcs.tsv` | pkg, file, symbol, start_line | Every function and method in the non-test `.go` files under `pkg/`, reached by a test or not: `kind` (func / method), `start_line`, `end_line`, `lines`, `generated` (1 = `// Code generated ... DO NOT EDIT.` file, or `pkg/parser/parser.go`). `symbol` is named like `features.tsv` symbols (`Func`, `Recv.Method`): join `file` = `feature`. Several `init` in one file give duplicate symbols, hence `start_line` in the key. |
 | `cov_status.tsv` | pkg, test | Outcome of each test's coverage run: `ok` (mapping complete), `failed` (mapping incomplete, a lower bound) or `skipped` (`t.Skip` or not compiled in; no mapping), with the reason in `detail`. |
 | `test_feature.tsv` | pkg, test, feature | Which features a test exercises, with a weight (see below). |
 | `rs_run.tsv` | key | R1 run: tidb-rs commit, Go TiDB version, TiDB commit of the test files, date, runner, duration. |
@@ -59,14 +60,14 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 
 A re-extraction must be reviewable. With sorted TSV, `git diff` shows exactly which tests appeared or disappeared and which mappings moved; a SQLite file (even through Git LFS) cannot be diffed or merged. SQLite is a local cache, rebuilt in about a second.
 
-The raw coverage (17M test→function rows, 1.9 GB) is too large for git. It is published as release assets named in `source.tsv` with their sha256; `scripts/fetch-raw.sh` downloads and verifies them:
+The raw coverage (13.5M test→function rows, 1.4 GB at v8.5.8) is too large for git. It is published as release assets named in `source.tsv` with their sha256; `scripts/fetch-raw.sh` downloads and verifies them:
 
-- `raw_asset` (71 MB, zstd): `covmap/<pkg>.tsv`, the full run of every P1 package.
-- `raw_fp_asset` (8.5 MB): `covmap-fp/<pkg>.tsv` and `covmap-fp/status/<pkg>.tsv`, the re-run with failpoints enabled of every test that failed or produced no coverage in the full run (E3). `load-raw.sh` replaces those tests' coverage and outcome with the re-run's.
+- `raw_asset` (54 MB, zstd): `covmap/<pkg>.tsv` and `covmap/status/<pkg>.tsv`, the full run of every P1 package.
+- `raw_fp_asset` (5.4 MB): `covmap-fp/<pkg>.tsv` and `covmap-fp/status/<pkg>.tsv`, the re-run with failpoints enabled of every test that failed or produced no coverage in the full run (E3). `load-raw.sh` replaces those tests' coverage and outcome with the re-run's.
 
 ### Feature weights
 
-A test reaches thousands of functions, most of them shared plumbing (session setup, bootstrap, planner entry). Each function gets a specificity `idf = ln(N / n)`, where `N` is the number of mapped tests and `n` the number that reach the function. Plumbing reached by almost every test scores near zero. A test's weight for a feature is that feature's share of the test's total specificity. `test_feature.tsv` keeps links with weight ≥ 0.01 (about 51k of 2.1M); every mapped test keeps at least one.
+A test reaches thousands of functions, most of them shared plumbing (session setup, bootstrap, planner entry). Each function gets a specificity `idf = ln(N / n)`, where `N` is the number of mapped tests and `n` the number that reach the function. Plumbing reached by almost every test scores near zero. A test's weight for a feature is that feature's share of the test's total specificity. `test_feature.tsv` keeps links with weight ≥ 0.01 (about 47k of 1.6M at v8.5.8); every mapped test keeps at least one.
 
 ## tidb-rs integration results (R1)
 
@@ -90,20 +91,52 @@ python3 scripts/tracker.py export work/extract.db      # -> data/*.tsv
 python3 scripts/tracker.py report                      # -> reports/*.md
 ```
 
-Then review `git diff data/` and commit. A new raw coverage set goes to a new release `raw-<tidb commit>`, and `source.tsv` is updated to point at it.
+`load-raw.sh` also runs `cmd/inventory -funcs` for `go_funcs.tsv`. Then review `git diff data/` and commit. A new raw coverage set goes to a new release `raw-<tidb commit>`, and `source.tsv` is updated to point at it.
 
 `<tidb>` for `load-raw.sh` is a clean checkout at `tidb_commit` (it is only scanned for tests).
+
+Packages that embed etcd do not build with plain `go test` at v8.5.8 (see below); build them with the patched go.mod:
+
+```sh
+scripts/patched-modfile.sh <tidb>                      # -> work/modfile/go.mod (+ work/patched/)
+MODFILE=$PWD/work/modfile/go.mod scripts/run_covmap.sh <tidb> pkg/a ...
+```
+
+`covmap -modfile` applies it to the root module only (`pkg/parser` is a nested module with its own go.mod).
 
 Notes for macOS: Homebrew clang may fail to build cgo against the current SDK; `run_covmap.sh` uses `/usr/bin/clang`. It also sets `TMPDIR=/tmp`: tests that listen on a unix socket in `t.TempDir()` fail (and some then hang to the timeout) under the default `/var/folders/...` path, which exceeds the 104-byte socket path limit. TiDB's testkit requires `-tags=intest`; covmap uses `intest,deadlock`.
 
 Failpoint re-runs need a separate TiDB worktree, because `make failpoint-enable` rewrites sources in place:
 
 ```sh
-git -C <tidb> worktree add --detach ../tidb-fp <tidb_commit> && make -C ../tidb-fp failpoint-enable
-OUT=covmap-fp TESTS=work/rerun.tsv scripts/run_covmap.sh ../tidb-fp pkg/a pkg/b ...   # rerun.tsv: pkg<TAB>test
+git -C <tidb> worktree add --detach ../tidb-v858-fp v8.5.8 && make -C ../tidb-v858-fp failpoint-enable
+OUT=covmap-fp TESTS=work/rerun.tsv MODFILE=$PWD/work/modfile/go.mod scripts/run_covmap.sh ../tidb-v858-fp pkg/a pkg/b ...   # rerun.tsv: pkg<TAB>test
 ```
 
-The rewrite keeps every function's file and name (checked for all 341 rewritten files at `4cee7f2084`), so the mapping by file + function is unchanged; the generated `binding__failpoint_binding__.go` files are dropped by `load-raw.sh`.
+The rewrite keeps every function's file and name (checked with `cmd/inventory -funcs` on both worktrees: same symbols in every file under `pkg/` at v8.5.8, and for all 341 rewritten files at `4cee7f2084`), so the mapping by file + function is unchanged; the generated `binding__failpoint_binding__.go` files are dropped by `load-raw.sh`.
+
+## Re-extraction at v8.5.8
+
+The pipeline was re-run unchanged at the v8.5.8 tag (2026-11-01..02, same machine, tags `intest,deadlock`). Differences from `master` that matter:
+
+- **Go**: v8.5.8's go.mod needs go 1.25.12; with `GOTOOLCHAIN=auto` the go command downloads it.
+- **etcd**: go.mod selects otelgrpc v0.61.0, which no longer has `otelgrpc.UnaryServerInterceptor` used by `go.etcd.io/etcd/server/v3` v3.5.15. TiDB's Bazel build patches etcd (`build/patches/io_etcd_go_etcd_server_v3.patch`); plain `go test` fails to build every package that embeds etcd. In P1 that is `pkg/executor/importer` and `pkg/server/handler/tests`; they (and the whole failpoint re-run) were built with `scripts/patched-modfile.sh`, which applies the same patch through `go -modfile` without touching the TiDB checkout.
+- **Build tags**: v8.5.8 has no `nextgen` tag and no kernel-type switch, so no test is skipped as next-gen-only (master: 54 skipped, v8.5.8: 21). `intest` and `deadlock` are used the same way.
+- **Layout**: `lightning` code is mostly under `pkg/lightning`; fewer test packages overall (7,976 unit tests vs 10,165).
+- **Shared state in `/tmp`**: testkit caches a bootstrapped mock store in `/tmp/tidb-unistore-bootstraped-image` (made by this run) and spill tests check that TiDB's temp dir `/tmp/<uid>_tidb/.../tmp-storage` holds no spill files. A failing spill test leaves its files there and makes the next spill test fail (`util.go:47: Should be false`); `TestIssue59377` and `TestUnparallelSortSpillDisk` failed that way in the re-run and passed after the leftovers were removed and they were run again.
+- `pkg/executor` temporary-table tests skip when testkit randomly enables infoschema v2 (`select @@tidb_schema_cache_size > 0`), so which of them are skipped varies between runs.
+
+### Scope at v8.5.8
+
+`scope.tsv` (213 packages) = the 250 master P1 packages that exist at v8.5.8 (204) + 9 v8.5.8 packages. Not widened otherwise: the 9 are in areas where master's P1 already had every test package.
+
+- Missing at v8.5.8 with an equivalent already in scope (tests matched by name): `executor/join/test/{indexjoin,mergejoin}` → `pkg/executor/join`; `executor/test/analyzetest/{columns,options}` → `pkg/executor/test/analyzetest`; `executor/test/{infoschema,recovertest}`, `executor/windows` → `pkg/executor`; `executor/test/{plancache,planreplayer}` → partly `pkg/executor/test/executor`; `expression/test/constantpropagation` → `pkg/expression`; `planner/cascades/old` → `pkg/planner/cascades`; `planner/core/casetest/ch` → `.../casetest/tpch`; `planner/core/casetest/{indexmerge,plancache,tpcds}`, `planner/core/tests/pointget` → `pkg/planner/core`; `planner/core/generator/shallow_ref` → `.../generator/hash64_equals`; `session/test/bootstraptest2` → `pkg/session`; `sessionctx/variable/tests{,/slowlog}`, `sessionctx/vardef` → `pkg/sessionctx/variable`.
+- Missing, equivalent added to scope: `planner/cascades/pattern` → `pkg/planner/pattern`; `server/internal/packetio` → `pkg/server/internal`; `session/test/{bootstraptest,clusteredindextest,nontransactionaltest,resourcegrouptest,schematest,temporarytabletest}` → `pkg/session/<same name>`.
+- Missing, equivalent outside the P1 areas, not added: `infoschema/isvalidator` (→ `pkg/domain`), `session/sessmgr` (→ `pkg/util`, processinfo).
+- Missing, master-only features: `executor/mviewdeltamergeagg`, `executor/test/materializedviewlog`, `metaservice`, `parser/ast/visitor_codegen`, `parser/util`, `planner/cascades/rule/apply/decorrelateapply`, `planner/core/casetest/{cascades,fulljoin,logicalplan,schema}`, `planner/core/tests/rewriter`, `planner/extstore`, `server/internal/advertisedstatus`, `server/tests/standby`, `session/syssession`.
+- v8.5.8-only, added: `pkg/parser/model` (`CIStr` etc.; at master in `pkg/parser/ast/model.go`).
+- v8.5.8-only in partly scoped areas, not added: `pkg/util/replayer`, `pkg/util/servicescope`.
+- 12 scope packages have no tests at v8.5.8 (e.g. `pkg/statistics/handle`, `pkg/planner/core/rule`); they stay in scope and have nothing to run.
 
 ## Plan
 
@@ -111,10 +144,10 @@ The rewrite keeps every function's file and name (checked for all 341 rewritten 
 
 | phase | content | done when | status |
 | --- | --- | --- | --- |
-| E1 | Test inventory: unit tests and integration test files. | All of `pkg`, `br`, `lightning`, `dumpling`, `cmd` scanned. | done: 10,165 unit tests, 263 integration files |
-| E2 | Per-test coverage for the 250 P1 packages. | Every P1 test has a coverage outcome. | done: all 5,501 have an outcome (after E3) |
-| E3 | Re-run the 306 incomplete tests with failpoints enabled; explain the 157 with no coverage. | Incomplete < 1% of P1, each remaining one has a reason. | done: ok 5,446 (42 of them reach nothing beyond package init), failed 1 (0.02%), skipped 54 (0.98%; next-gen-only, build-tag-gated or disabled upstream), no outcome 0. Was ok 5,038 / failed 306 / no output 157. |
-| E4 | Coverage for all remaining unit tests (about 4,800). | Same criteria as E2/E3 for all packages. | todo |
+| E1 | Test inventory: unit tests and integration test files. | All of `pkg`, `br`, `lightning`, `dumpling`, `cmd` scanned. | done at v8.5.8: 7,976 unit tests, 246 integration files (master: 10,165 / 263) |
+| E2 | Per-test coverage for the P1 packages. | Every P1 test has a coverage outcome. | done at v8.5.8: all 4,607 tests of the 213 packages have an outcome (after E3); full run ok 4,325 / failed 261 / skipped 21. Master: 5,501 tests in 250 packages. |
+| E3 | Re-run the incomplete tests with failpoints enabled; explain the ones with no coverage. | Incomplete < 1% of P1, each remaining one has a reason. | done at v8.5.8: re-ran 308 (261 failed, 26 ok without coverage, 21 skipped) → ok 4,585 (25 reach nothing beyond package init), failed 1 (0.02%: `TestSlowLogMaxPerSec`, fails the same way at master and under plain `go test`), skipped 21 (0.46%; `t.Skip` upstream: unstable/slow/disabled, infoschema v2, one `reserved_words_test` tag), no outcome 0. Master: ok 5,446 / failed 1 / skipped 54. |
+| E4 | Coverage for all remaining unit tests (about 3,400 at v8.5.8). | Same criteria as E2/E3 for all packages. | todo |
 | E5 | Integration tests: run each `.test` file against a coverage-instrumented `tidb-server`. | Every integration file has a mapping. | todo |
 | E6 | Better features: cluster functions by co-coverage instead of one file per feature; spot-check samples by hand. | Spot-check precision measured and recorded. | todo |
 | E7 | Upstream tracking: for new TiDB commits, list affected tests and features. | Runs in CI on a schedule and opens an issue per relevant change. | todo |
@@ -133,7 +166,7 @@ Tasks and milestones themselves live in tidb-rs GitHub Issues; this repo holds t
 
 ## Known limits
 
-- R1 runs the integration files of TiDB `master` against Go TiDB v8.5.8: 4,902 statements fail on Go TiDB itself (mostly `EXPLAIN FORMAT='plan_tree'`, new in master) and are not scored. A run over the v8.5.8 tag's files would score more EXPLAIN statements.
-- The data is from TiDB `master` (`4cee7f2084`), while tidb-rs is compared against TiDB v8.5.8 at runtime. Test names and functions mostly overlap; re-extracting at the v8.5.8 tag is cheap once E3/E4 settle the pipeline.
+- The extraction (tests, coverage, features, `go_funcs`) is at the v8.5.8 tag, but R1 (`rs_*`) ran the integration files of TiDB `master` (`4cee7f2084`, `rs_run.tsv` `tests_commit`) against Go TiDB v8.5.8: 4,902 statements fail on Go TiDB itself (mostly `EXPLAIN FORMAT='plan_tree'`, new in master) and are not scored, and 18 of its files do not exist at v8.5.8 (`tracker.py check` only matches R1 files against `tests.tsv` when the commits agree). The next R1 run should use the v8.5.8 tag's files.
+- `go_funcs.tsv` lists declarations only: functions in files excluded by build tags (e.g. `_windows.go`) are listed too, and closures / function literals are part of their enclosing function.
 - `subtests` counts literal `t.Run` calls only; table-driven loops make it a lower bound.
 - Six test names exist in both a package and its external `_test` package. `go test -run` runs both, so their coverage is merged under one (pkg, name).

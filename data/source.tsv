@@ -1,8 +1,8 @@
 key	value
-note	extracted 2026-10-22..23 on macOS (Mac mini), Go 1.25.6, tags intest,deadlock; failpoint re-runs (raw_fp_asset) 2026-10-30, same machine and tags, TMPDIR=/tmp
-raw_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-4cee7f2084/covmap-4cee7f2084.tar.zst
-raw_fp_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-4cee7f2084/covmap-fp-4cee7f2084.tar.zst
-raw_fp_sha256	222fc2c0befa34ae8868780d35d90a254c4746ae9c86e031de13b5eeaf32fd77
-raw_sha256	065571957dc87af494d74af63e69da77760410b1e11386dea87f1e53da97ba78
-tidb_commit	4cee7f20849923b9ee1ca71b01e6811d0537cadd
+note	extracted 2026-11-01..02 on macOS (Mac mini), Go 1.25.12 (go.mod toolchain), tags intest,deadlock, TMPDIR=/tmp; pkg/executor/importer and pkg/server/handler/tests (full run) and the failpoint re-runs (raw_fp_asset) built with scripts/patched-modfile.sh: go.etcd.io/etcd/server/v3 patched as by Bazel (build/patches/io_etcd_go_etcd_server_v3.patch)
+raw_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-8b857efa20/covmap-8b857efa20.tar.zst
+raw_fp_asset	https://github.com/dulao5/tidb-rs-tracker/releases/download/raw-8b857efa20/covmap-fp-8b857efa20.tar.zst
+raw_fp_sha256	814b58d247ae57cb8ce3565be03f65a81aa4fc70d73d997573e8dacdc77f17cb
+raw_sha256	fd04df16dbee69fa0328b0a2ca97c78f77eb91b33390972f804a25954a4e4668
+tidb_commit	8b857efa20363d50a8fa2ea7dd9809a85a61b115
 tidb_repo	https://github.com/pingcap/tidb

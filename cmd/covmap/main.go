@@ -15,7 +15,7 @@
 // failed (the test failed, panicked or timed out; its mapping is a lower
 // bound) or skipped (t.Skip, or not compiled in with these build tags).
 //
-// Usage: covmap -repo <tidb root> -pkg pkg/tablecodec [-coverpkg ./pkg/...] [-tests A,B] [-status f]
+// Usage: covmap -repo <tidb root> -pkg pkg/tablecodec [-coverpkg ./pkg/...] [-tests A,B] [-status f] [-modfile f]
 package main
 
 import (
@@ -51,6 +51,7 @@ func main() {
 	tags := flag.String("tags", "intest,deadlock", "build tags (TiDB testkit requires intest)")
 	timeout := flag.Duration("timeout", 5*time.Minute, "per-test timeout")
 	statusPath := flag.String("status", "", "write each test's run outcome to this TSV file")
+	modfile := flag.String("modfile", "", "alternate go.mod for the root module (go -modfile); not used for nested modules")
 	flag.Parse()
 	if *repo == "" || *pkg == "" {
 		log.Fatal("-repo and -pkg are required")
@@ -71,8 +72,11 @@ func main() {
 		rel, _ := filepath.Rel(sub, *pkg)
 		target, cover = "./"+rel, "./..."
 	}
-	build := exec.Command("go", "test", "-c", "-o", bin, "-tags="+*tags, "-cover", "-covermode=set",
-		"-coverpkg="+cover, target)
+	args := []string{"test", "-c", "-o", bin, "-tags=" + *tags, "-cover", "-covermode=set", "-coverpkg=" + cover}
+	if *modfile != "" && modDir == *repo {
+		args = append(args, "-modfile="+*modfile)
+	}
+	build := exec.Command("go", append(args, target)...)
 	build.Dir = modDir
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -121,6 +125,9 @@ func main() {
 			log.Printf("%s: %v", t, err)
 		}
 		status, detail := outcome(t, out, blocks != nil, err)
+		if status == "skipped" {
+			detail = clean(skipComment(pkgDir, detail))
+		}
 		funcs := map[string]struct{}{}
 		for b := range blocks {
 			if _, ok := baseline[b]; ok {
@@ -264,6 +271,38 @@ func outcome(test string, out []byte, haveProfile bool, runErr error) (status, d
 		return "ok", clean("test passed; process " + exit + " after it")
 	}
 	return "ok", ""
+}
+
+var bareSkipRE = regexp.MustCompile(`^(\S+\.go):(\d+):$`)
+
+// skipComment adds the source comment above a t.Skip() that printed no
+// message ("x_test.go:82:"), so the skip still has a reason.
+func skipComment(dir, msg string) string {
+	m := bareSkipRE.FindStringSubmatch(msg)
+	if m == nil {
+		return msg
+	}
+	src, err := os.ReadFile(filepath.Join(dir, m[1]))
+	if err != nil {
+		return msg
+	}
+	lines := strings.Split(string(src), "\n")
+	n, _ := strconv.Atoi(m[2])
+	var comment []string
+	for i := n - 2; i >= 0 && i >= n-6; i-- {
+		l := strings.TrimSpace(lines[i])
+		if !strings.HasPrefix(l, "//") {
+			if len(comment) > 0 || !strings.HasPrefix(l, "if ") {
+				break
+			}
+			continue // the condition guarding the skip
+		}
+		comment = append([]string{strings.TrimSpace(strings.TrimPrefix(l, "//"))}, comment...)
+	}
+	if len(comment) == 0 {
+		return msg
+	}
+	return msg + " (t.Skip() without message; comment: " + strings.Join(comment, " ") + ")"
 }
 
 var logLineRE = regexp.MustCompile(`^\s+\S+\.go:\d+: `)

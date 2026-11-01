@@ -6,6 +6,9 @@
 #   OUT    output dir under work/ (default covmap; failpoint re-runs use covmap-fp)
 #   TESTS  TSV of <pkg> <test>: run only the listed tests of each package
 #   TIMEOUT per-test timeout (covmap -timeout, default 5m)
+#   MODFILE alternate go.mod for building TiDB's tests (covmap -modfile; root
+#           module only), e.g. one that replaces a dependency with the patched
+#           copy TiDB's Bazel build uses
 set -u
 repo=$1; shift
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -28,7 +31,7 @@ for p in "$@"; do
   # A short TMPDIR: tests put unix sockets in t.TempDir(), and macOS's default
   # /var/folders/... path exceeds the 104-byte socket path limit.
   (cd /tmp && TMPDIR=/tmp CC=/usr/bin/clang CXX=/usr/bin/clang++ "$root/work/bin/covmap" -repo "$repo" -pkg "$p" \
-     -tests "$only" -timeout "${TIMEOUT:-5m}" -status "$out_dir/status/$b.tsv.$$.tmp" \
+     -tests "$only" -modfile "${MODFILE:-}" -timeout "${TIMEOUT:-5m}" -status "$out_dir/status/$b.tsv.$$.tmp" \
      > "$out.$$.tmp" 2> "$out_dir/logs/$b.log") &&
     mv "$out.$$.tmp" "$out" && mv "$out_dir/status/$b.tsv.$$.tmp" "$out_dir/status/$b.tsv" ||
     { echo "FAILED $p"; rm -f "$out.$$.tmp" "$out_dir/status/$b.tsv.$$.tmp"; }

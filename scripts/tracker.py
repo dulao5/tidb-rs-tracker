@@ -30,7 +30,7 @@ SCHEMA = os.path.join(ROOT, "sql", "tracker.sql")
 
 # Links below this share of a test's specificity mass are dropped from
 # test_feature.tsv. Every mapped test keeps at least one link at 0.01 and it
-# cuts 2.1M links to about 51k. The full mapping is rebuilt from the raw
+# cuts 1.6M links to about 47k (v8.5.8). The full mapping is rebuilt from the raw
 # coverage release asset.
 MIN_WEIGHT = 0.01
 
@@ -330,6 +330,12 @@ def check_integration(data):
     """R1 tables: counts add up, files are known integration tests, reasons match files."""
     errors = []
     integ = {r[3] for r in data["tests.tsv"][1] if r[0] == "integration"}
+    # The run's test files may come from another TiDB commit than tests.tsv
+    # (R1 ran master's files; tests.tsv is from v8.5.8): then file names
+    # cannot be checked against tests.tsv.
+    run = dict(data["rs_run.tsv"][1])
+    source = dict(data["source.tsv"][1])
+    same_commit = run.get("tests_commit", source.get("tidb_commit")) == source.get("tidb_commit")
     cols, rows = data["rs_integration.tsv"]
     totals = collections.Counter()
     for r in rows:
@@ -339,7 +345,7 @@ def check_integration(data):
         except ValueError:
             errors.append(f"rs_integration.tsv: non-integer count in {v['file']}")
             continue
-        if f"tests/integrationtest/t/{v['file']}.test" not in integ:
+        if same_commit and f"tests/integrationtest/t/{v['file']}.test" not in integ:
             errors.append(f"rs_integration.tsv: {v['file']} is not an integration test in tests.tsv")
         if n["statements"] != sum(n[o] for o in RS_OUTCOMES):
             errors.append(f"rs_integration.tsv: {v['file']}: statements != sum of outcomes")

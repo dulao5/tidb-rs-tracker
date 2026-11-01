@@ -10,6 +10,9 @@
         "features": {
           "description": "v0 features: one per Go source file; symbols = functions in it reached by some test."
         },
+        "go_funcs": {
+          "description": "Every function and method declared in the non-test .go files under pkg/ at tidb_commit, reached by a test or not. symbol uses the naming of features.symbols (Func / Recv.Method); join go_funcs.file = features.feature. lines = end_line - start_line + 1 (func keyword to closing brace). generated = 1 for generated files (Code generated ... DO NOT EDIT., pkg/parser/parser.go)."
+        },
         "test_feature": {
           "description": "Which features a test exercises. weight = the feature's share of the test's specificity mass; links below 0.01 are omitted."
         },
