@@ -50,6 +50,12 @@ TABLES = {
         ["kind", "pkg", "name", "path"],
     ),
     "features.tsv": (["feature", "module", "funcs", "symbols"], ["feature"]),
+    # Every function declared in a non-test .go file under pkg/ (cmd/inventory -funcs).
+    # Duplicate symbols in one file are possible (several init funcs).
+    "go_funcs.tsv": (
+        ["pkg", "file", "symbol", "kind", "start_line", "end_line", "lines", "generated"],
+        ["pkg", "file", "symbol", "start_line"],
+    ),
     "cov_status.tsv": (["pkg", "test", "status", "detail"], ["pkg", "test"]),
     "test_feature.tsv": (["pkg", "test", "feature", "weight"], ["pkg", "test", "feature"]),
     # R1: tidb-rs on TiDB's integration tests (tidb-rs `scripts/integrationtest.sh`).
@@ -130,6 +136,9 @@ def cmd_export(args):
             )
         )
     ]
+    out["go_funcs.tsv"] = q(
+        "SELECT pkg, file, name, kind, start_line, end_line, lines, generated FROM go_func_decl"
+    ).fetchall()
     out["cov_status.tsv"] = q(
         "SELECT t.pkg, t.name, min(c.status), COALESCE(max(c.detail), '') FROM cov_status c"
         " JOIN go_test t ON t.id = c.test_id GROUP BY t.pkg, t.name"
@@ -273,6 +282,7 @@ def cmd_check(args):
     bad = [r for r in data["test_feature.tsv"][1] if r[2] not in feats]
     if bad:
         errors.append(f"test_feature.tsv: {len(bad)} rows name unknown features, e.g. {bad[0][2]}")
+    errors += check_go_funcs(data)
     errors += check_integration(data)
     with tempfile.TemporaryDirectory() as d:
         generated = render_reports(build(os.path.join(d, "t.db")))
@@ -284,6 +294,36 @@ def cmd_check(args):
     if errors:
         die("\n  ".join(["check failed:"] + errors))
     print("check ok")
+
+
+def check_go_funcs(data):
+    """go_funcs.tsv: well-formed rows, and every feature symbol is a declared function."""
+    errors = []
+    cols, rows = data["go_funcs.tsv"]
+    decl = set()
+    for r in rows:
+        v = dict(zip(cols, r))
+        where = f"go_funcs.tsv: {v['file']}:{v['start_line']}"
+        try:
+            start, end, n = int(v["start_line"]), int(v["end_line"]), int(v["lines"])
+        except ValueError:
+            errors.append(f"{where}: non-integer line numbers")
+            continue
+        if v["kind"] not in ("func", "method") or ("." in v["symbol"]) != (v["kind"] == "method"):
+            errors.append(f"{where}: kind {v['kind']} does not fit symbol {v['symbol']}")
+        if v["generated"] not in ("0", "1"):
+            errors.append(f"{where}: generated must be 0 or 1")
+        if not (0 < start <= end and n == end - start + 1):
+            errors.append(f"{where}: lines != end_line - start_line + 1")
+        if not v["file"].endswith(".go") or v["file"].endswith("_test.go") or v["file"].rsplit("/", 1)[0] != v["pkg"]:
+            errors.append(f"{where}: file is not a non-test .go file of pkg {v['pkg']}")
+        decl.add((v["file"], v["symbol"]))
+    if rows:
+        for feat, _, _, syms in data["features.tsv"][1]:
+            missing = [s for s in syms.split() if (feat, s) not in decl]
+            if missing:
+                errors.append(f"features.tsv: {feat}: {len(missing)} symbols not in go_funcs.tsv, e.g. {missing[0]}")
+    return errors[:50]
 
 
 def check_integration(data):

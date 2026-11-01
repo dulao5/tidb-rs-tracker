@@ -29,6 +29,22 @@ CREATE TABLE features (
   symbols TEXT NOT NULL
 );
 
+-- Every function and method declared in the non-test .go files under pkg/,
+-- reached by a test or not (cmd/inventory -funcs). symbol uses the naming of
+-- features.symbols: join on go_funcs.file = features.feature.
+CREATE TABLE go_funcs (
+  pkg        TEXT NOT NULL,     -- package dir
+  file       TEXT NOT NULL,     -- relative to the TiDB repo root
+  symbol     TEXT NOT NULL,     -- Func or Recv.Method (no pointer, no type parameters)
+  kind       TEXT NOT NULL,     -- func / method
+  start_line INTEGER NOT NULL,  -- func keyword (doc comment excluded)
+  end_line   INTEGER NOT NULL,  -- closing brace
+  lines      INTEGER NOT NULL,  -- end_line - start_line + 1
+  generated  INTEGER NOT NULL,  -- 1 = generated file ("Code generated ... DO NOT EDIT.", pkg/parser/parser.go)
+  PRIMARY KEY (pkg, file, symbol, start_line)
+);
+CREATE INDEX go_funcs_by_symbol ON go_funcs(symbol);
+
 -- Outcome of each unit test's coverage run (the failpoint re-run's, if any).
 --   ok       the test passed; its mapping is complete. detail is set if it
 --            reached no function beyond package init, or if the process

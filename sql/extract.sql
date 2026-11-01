@@ -100,3 +100,17 @@ CREATE TABLE IF NOT EXISTS cov_status (
   status  TEXT NOT NULL,               -- ok / failed / skipped
   detail  TEXT
 );
+
+-- Every function and method declared in the non-test .go files under pkg/
+-- (cmd/inventory -funcs), reached by a test or not. name joins go_func.name.
+CREATE TABLE IF NOT EXISTS go_func_decl (
+  pkg        TEXT NOT NULL,            -- package dir relative to repo root
+  file       TEXT NOT NULL,            -- relative to repo root
+  name       TEXT NOT NULL,            -- Func or Recv.Method
+  kind       TEXT NOT NULL,            -- func / method
+  start_line INTEGER NOT NULL,         -- func keyword
+  end_line   INTEGER NOT NULL,         -- closing brace
+  lines      INTEGER NOT NULL,         -- end_line - start_line + 1
+  generated  INTEGER NOT NULL,         -- 1 = generated file (Code generated ... DO NOT EDIT., parser.go)
+  PRIMARY KEY (file, name, start_line)
+);

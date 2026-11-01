@@ -1,7 +1,20 @@
 // Command inventory enumerates Go unit tests and integration test files of a
 // TiDB checkout and writes them as TSV rows for the go_test table.
 //
+// With -funcs it instead lists every function and method declared in the
+// non-test .go files under pkg/ (go_funcs.tsv):
+//
+//	<pkg> <file> <symbol> <func|method> <start_line> <end_line> <lines> <generated>
+//
+// symbol is "Func" or "Recv.Method" (type parameters and pointers dropped),
+// the naming cmd/covmap uses, so it joins with features.tsv symbols. Lines
+// run from the func keyword to the closing brace. generated is 1 for files
+// with a "// Code generated ... DO NOT EDIT." header, and for the goyacc
+// output pkg/parser/parser.go.
+//
 // Usage: inventory -repo <tidb root> -commit <sha> > go_test.tsv
+//
+//	inventory -repo <tidb root> -funcs > go_funcs.tsv
 package main
 
 import (
@@ -30,7 +43,14 @@ type row struct {
 func main() {
 	repo := flag.String("repo", "", "tidb repository root")
 	commit := flag.String("commit", "", "base commit sha")
+	funcs := flag.Bool("funcs", false, "list functions of non-test files under pkg/ instead of tests")
 	flag.Parse()
+	if *repo != "" && *funcs {
+		if err := listFuncs(*repo, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if *repo == "" || *commit == "" {
 		log.Fatal("-repo and -commit are required")
 	}
@@ -193,4 +213,62 @@ func nullable(n int) string {
 		return "" // loaded as NULL by load.sh
 	}
 	return fmt.Sprint(n)
+}
+
+// alwaysGenerated lists generated files without the standard header line.
+var alwaysGenerated = map[string]bool{"pkg/parser/parser.go": true}
+
+// listFuncs writes one row per function declaration (with or without a body)
+// in the non-test .go files under <repo>/pkg.
+func listFuncs(repo string, out *os.File) error {
+	w := bufio.NewWriter(out)
+	defer w.Flush()
+	return filepath.WalkDir(filepath.Join(repo, "pkg"), func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(p, ".go") || strings.HasSuffix(p, "_test.go") {
+			return nil
+		}
+		rel, _ := filepath.Rel(repo, p)
+		rel = filepath.ToSlash(rel)
+		fset := token.NewFileSet()
+		f, err := parser.ParseFile(fset, p, nil, parser.ParseComments|parser.SkipObjectResolution)
+		if err != nil {
+			return fmt.Errorf("parse %s: %w", p, err)
+		}
+		gen := b2i(ast.IsGenerated(f) || alwaysGenerated[rel])
+		for _, decl := range f.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+			sym, kind := fn.Name.Name, "func"
+			if fn.Recv != nil && len(fn.Recv.List) == 1 {
+				sym, kind = recvName(fn.Recv.List[0].Type)+"."+sym, "method"
+			}
+			start, end := fset.Position(fn.Pos()).Line, fset.Position(fn.End()).Line
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\n",
+				filepath.ToSlash(filepath.Dir(rel)), rel, sym, kind, start, end, end-start+1, gen)
+		}
+		return nil
+	})
+}
+
+// recvName is the receiver's type name without pointer or type parameters,
+// as in cmd/covmap.
+func recvName(e ast.Expr) string {
+	switch t := e.(type) {
+	case *ast.StarExpr:
+		return recvName(t.X)
+	case *ast.IndexExpr:
+		return recvName(t.X)
+	case *ast.IndexListExpr:
+		return recvName(t.X)
+	case *ast.ParenExpr:
+		return recvName(t.X)
+	case *ast.Ident:
+		return t.Name
+	}
+	return "?"
 }
