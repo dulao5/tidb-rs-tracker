@@ -13,8 +13,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Go tools build and vet
-        run: go vet ./...
+      - name: Go tools build, vet and test
+        run: go vet ./... && go test ./...
       - name: Validate data and check reports are up to date
         run: python3 scripts/tracker.py check
       - name: Build tracker.db

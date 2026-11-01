@@ -13,6 +13,12 @@
         "go_funcs": {
           "description": "Every function and method declared in the non-test .go files under pkg/ at tidb_commit, reached by a test or not. symbol uses the naming of features.symbols (Func / Recv.Method); join go_funcs.file = features.feature. lines = end_line - start_line + 1 (func keyword to closing brace). generated = 1 for generated files (Code generated ... DO NOT EDIT., pkg/parser/parser.go)."
         },
+        "go_decls": {
+          "description": "Package-level types, vars and consts declared in the non-test .go files under pkg/ at tidb_commit (cmd/refgraph -decls). A spec in a parenthesized group spans its own lines; an ungrouped one starts at the keyword."
+        },
+        "go_file_refs": {
+          "description": "File -> file references under pkg/ (cmd/refgraph): number of distinct (function in from_file, target in to_file) references by kind: funcs (functions, concrete methods), ifaces (interface methods), types, vars_consts. Self edges excluded. Function-level edges: work/go_refs.tsv (scripts/refgraph.sh), not committed."
+        },
         "test_feature": {
           "description": "Which features a test exercises. weight = the feature's share of the test's specificity mass; links below 0.01 are omitted."
         },

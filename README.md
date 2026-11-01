@@ -37,6 +37,7 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `sql/extract.sql`, `sql/derive_features.sql` | Schema and feature derivation of the extraction DB. |
 | `cmd/inventory` | Go AST scan of a TiDB checkout: unit tests and integration test files; with `-funcs`, every function declared under `pkg/`. |
 | `cmd/covmap` | Per-test coverage for one Go package. |
+| `cmd/refgraph` | Reference graph of the code under `pkg/`: type-checks every package and records what each function references; also the package-level declarations table. |
 | `scripts/` | `tracker.py` (export / build / report / check) and the extraction shell scripts. |
 | `datasette/` | Datasette table descriptions and canned queries. |
 
@@ -49,6 +50,8 @@ Datasette opens in the browser with filtering, faceting and SQL, plus canned que
 | `tests.tsv` | kind, pkg, name, path | Unit tests (`TestXxx`) and integration test files, with flags: SQL-level (`uses_store`), failpoints (`uses_fp`). |
 | `features.tsv` | feature | v0 features: one per Go source file, with the functions in it that some test reaches. |
 | `go_funcs.tsv` | pkg, file, symbol, start_line | Every function and method in the non-test `.go` files under `pkg/`, reached by a test or not: `kind` (func / method), `start_line`, `end_line`, `lines`, `generated` (1 = `// Code generated ... DO NOT EDIT.` file, or `pkg/parser/parser.go`). `symbol` is named like `features.tsv` symbols (`Func`, `Recv.Method`): join `file` = `feature`. Several `init` in one file give duplicate symbols, hence `start_line` in the key. |
+| `go_decls.tsv` | pkg, file, name | Every package-level `type`, `var` and `const` in the non-test `.go` files under `pkg/` (`kind`, `start_line`, `end_line`, `lines`). A spec in a `( ... )` group spans its own lines; an ungrouped one starts at the keyword. |
+| `go_file_refs.tsv` | from_file, to_file | Reference graph at file level: how many distinct (function in `from_file`, target in `to_file`) references there are, by kind: `funcs` (functions, concrete methods), `ifaces` (interface methods), `types`, `vars_consts`. Self edges excluded. See [Reference graph](#reference-graph). |
 | `cov_status.tsv` | pkg, test | Outcome of each test's coverage run: `ok` (mapping complete), `failed` (mapping incomplete, a lower bound) or `skipped` (`t.Skip` or not compiled in; no mapping), with the reason in `detail`. |
 | `test_feature.tsv` | pkg, test, feature | Which features a test exercises, with a weight (see below). |
 | `rs_run.tsv` | key | R1 run: tidb-rs commit, Go TiDB version, TiDB commit of the test files, date, runner, duration. |
@@ -68,6 +71,24 @@ The raw coverage (13.5M test→function rows, 1.4 GB at v8.5.8) is too large for
 ### Feature weights
 
 A test reaches thousands of functions, most of them shared plumbing (session setup, bootstrap, planner entry). Each function gets a specificity `idf = ln(N / n)`, where `N` is the number of mapped tests and `n` the number that reach the function. Plumbing reached by almost every test scores near zero. A test's weight for a feature is that feature's share of the test's total specificity. `test_feature.tsv` keeps links with weight ≥ 0.01 (about 47k of 1.6M at v8.5.8); every mapped test keeps at least one.
+
+## Reference graph
+
+`cmd/refgraph` type-checks every non-test package under `pkg/` (including the nested `pkg/parser` module and packages in `testdata` dirs such as `pkg/testkit/testdata`) with `golang.org/x/tools/go/packages`, then walks each function and method declaration (signature and body, closures included) and resolves every identifier through `types.Info.Uses`. A reference is kept if its target is declared in a non-test file under `pkg/`:
+
+| kind | target | `to_symbol` |
+| --- | --- | --- |
+| `func` | a function or concrete method; a generic instance resolves to its generic declaration | `Func`, `Recv.Method` as in `go_funcs.tsv` |
+| `iface` | a method of a package-level interface: a call (or method value) through the interface. The interface type is recorded too, as `type` | `Iface.Method` (the interface that declares it, also when reached through embedding) |
+| `type` / `var` / `const` | a package-level declaration | name, as in `go_decls.tsv` |
+
+```sh
+scripts/refgraph.sh <tidb>     # -> data/go_decls.tsv, data/go_file_refs.tsv, work/go_refs.tsv
+```
+
+`work/go_refs.tsv` (not committed; 180,688 rows, 21 MB at v8.5.8) has one row per distinct (function, target): `from_file, from_symbol, from_start_line, to_file, to_symbol, kind`; `from_start_line` tells apart the several `init` of a file. The script also writes the `go_funcs.tsv` rows not found among the type-checked declarations to `work/go_refs_missing.tsv` (55 of 28,214 at v8.5.8, all in files the build excludes: 23 in `//go:build ignore` generators, 11 Windows-only, 21 for linux, freebsd, wasm, `!cgo`, `intest` or `deadlock`). It builds with the patched go.mod (see below) on the host's GOOS/GOARCH, without build tags (`TAGS=` to set them) and loads dependencies from export data; about 30 s with a warm build cache.
+
+Limits: it is a static graph. Dynamic dispatch shows up as `iface` edges to the interface method, not to its implementations; struct fields, local types and interfaces declared in a function or written inline (`x.(interface{ M() })`) are not targets; references outside functions (var initializers, struct field types, embedded interfaces) are not edges, only `go_decls` rows; files excluded by the build configuration have no edges.
 
 ## tidb-rs integration results (R1)
 
@@ -91,7 +112,7 @@ python3 scripts/tracker.py export work/extract.db      # -> data/*.tsv
 python3 scripts/tracker.py report                      # -> reports/*.md
 ```
 
-`load-raw.sh` also runs `cmd/inventory -funcs` for `go_funcs.tsv`. Then review `git diff data/` and commit. A new raw coverage set goes to a new release `raw-<tidb commit>`, and `source.tsv` is updated to point at it.
+`load-raw.sh` also runs `cmd/inventory -funcs` for `go_funcs.tsv` and `cmd/refgraph -decls` for `go_decls.tsv`; `go_file_refs.tsv` needs a build, see [Reference graph](#reference-graph). Then review `git diff data/` and commit. A new raw coverage set goes to a new release `raw-<tidb commit>`, and `source.tsv` is updated to point at it.
 
 `<tidb>` for `load-raw.sh` is a clean checkout at `tidb_commit` (it is only scanned for tests).
 

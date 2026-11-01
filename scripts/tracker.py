@@ -56,6 +56,14 @@ TABLES = {
         ["pkg", "file", "symbol", "kind", "start_line", "end_line", "lines", "generated"],
         ["pkg", "file", "symbol", "start_line"],
     ),
+    # Package-level types, vars and consts under pkg/ (cmd/refgraph -decls).
+    "go_decls.tsv": (
+        ["pkg", "file", "name", "kind", "start_line", "end_line", "lines"], ["pkg", "file", "name"]
+    ),
+    # File -> file references of the functions under pkg/ (scripts/refgraph.sh).
+    "go_file_refs.tsv": (
+        ["from_file", "to_file", "funcs", "ifaces", "types", "vars_consts"], ["from_file", "to_file"]
+    ),
     "cov_status.tsv": (["pkg", "test", "status", "detail"], ["pkg", "test"]),
     "test_feature.tsv": (["pkg", "test", "feature", "weight"], ["pkg", "test", "feature"]),
     # R1: tidb-rs on TiDB's integration tests (tidb-rs `scripts/integrationtest.sh`).
@@ -139,6 +147,10 @@ def cmd_export(args):
     out["go_funcs.tsv"] = q(
         "SELECT pkg, file, name, kind, start_line, end_line, lines, generated FROM go_func_decl"
     ).fetchall()
+    if q("SELECT 1 FROM sqlite_master WHERE name = 'go_decl'").fetchone():
+        out["go_decls.tsv"] = q(
+            "SELECT pkg, file, name, kind, start_line, end_line, lines FROM go_decl"
+        ).fetchall()
     out["cov_status.tsv"] = q(
         "SELECT t.pkg, t.name, min(c.status), COALESCE(max(c.detail), '') FROM cov_status c"
         " JOIN go_test t ON t.id = c.test_id GROUP BY t.pkg, t.name"
@@ -159,6 +171,7 @@ def cmd_export(args):
         write_tsv(os.path.join(DATA, name), cols, rows)
         print(f"{name}: {len(rows)} rows")
     print("scope.tsv is maintained by hand; not touched")
+    print("go_file_refs.tsv is written by scripts/refgraph.sh; not touched")
 
 
 # ---------------------------------------------------------------- import-integration
@@ -283,6 +296,7 @@ def cmd_check(args):
     if bad:
         errors.append(f"test_feature.tsv: {len(bad)} rows name unknown features, e.g. {bad[0][2]}")
     errors += check_go_funcs(data)
+    errors += check_go_refs(data)
     errors += check_integration(data)
     with tempfile.TemporaryDirectory() as d:
         generated = render_reports(build(os.path.join(d, "t.db")))
@@ -323,6 +337,43 @@ def check_go_funcs(data):
             missing = [s for s in syms.split() if (feat, s) not in decl]
             if missing:
                 errors.append(f"features.tsv: {feat}: {len(missing)} symbols not in go_funcs.tsv, e.g. {missing[0]}")
+    return errors[:50]
+
+
+def check_go_refs(data):
+    """go_decls.tsv and go_file_refs.tsv: well-formed rows; file edges join declared files."""
+    errors = []
+    cols, rows = data["go_decls.tsv"]
+    for r in rows:
+        v = dict(zip(cols, r))
+        where = f"go_decls.tsv: {v['file']}:{v['name']}"
+        try:
+            start, end, n = int(v["start_line"]), int(v["end_line"]), int(v["lines"])
+        except ValueError:
+            errors.append(f"{where}: non-integer line numbers")
+            continue
+        if v["kind"] not in ("type", "var", "const"):
+            errors.append(f"{where}: kind {v['kind']} is not type / var / const")
+        if not (0 < start <= end and n == end - start + 1):
+            errors.append(f"{where}: lines != end_line - start_line + 1")
+        if not v["file"].endswith(".go") or v["file"].endswith("_test.go") or v["file"].rsplit("/", 1)[0] != v["pkg"]:
+            errors.append(f"{where}: file is not a non-test .go file of pkg {v['pkg']}")
+    files = {r[1] for r in rows} | {r[1] for r in data["go_funcs.tsv"][1]}
+    cols, rows = data["go_file_refs.tsv"]
+    for r in rows:
+        v = dict(zip(cols, r))
+        where = f"go_file_refs.tsv: {v['from_file']} -> {v['to_file']}"
+        if v["from_file"] == v["to_file"]:
+            errors.append(f"{where}: self edge")
+        if files and not (v["from_file"] in files and v["to_file"] in files):
+            errors.append(f"{where}: file not in go_funcs.tsv / go_decls.tsv")
+        try:
+            counts = [int(v[c]) for c in cols[2:]]
+        except ValueError:
+            errors.append(f"{where}: non-integer counts")
+            continue
+        if min(counts) < 0 or sum(counts) == 0:
+            errors.append(f"{where}: counts must be >= 0 with a positive sum")
     return errors[:50]
 
 

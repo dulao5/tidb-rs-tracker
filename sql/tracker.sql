@@ -45,6 +45,35 @@ CREATE TABLE go_funcs (
 );
 CREATE INDEX go_funcs_by_symbol ON go_funcs(symbol);
 
+-- Package-level types, vars and consts declared in the non-test .go files
+-- under pkg/ (cmd/refgraph -decls). A spec in a parenthesized group spans its
+-- own lines; an ungrouped one starts at the type/var/const keyword.
+CREATE TABLE go_decls (
+  pkg        TEXT NOT NULL,     -- package dir
+  file       TEXT NOT NULL,     -- relative to the TiDB repo root
+  name       TEXT NOT NULL,
+  kind       TEXT NOT NULL,     -- type / var / const
+  start_line INTEGER NOT NULL,
+  end_line   INTEGER NOT NULL,
+  lines      INTEGER NOT NULL,  -- end_line - start_line + 1
+  PRIMARY KEY (pkg, file, name)
+);
+CREATE INDEX go_decls_by_name ON go_decls(name);
+
+-- File -> file references under pkg/ (cmd/refgraph, scripts/refgraph.sh):
+-- the functions of from_file reference, in to_file, this many distinct
+-- (function, target) pairs by kind. Self edges are excluded.
+CREATE TABLE go_file_refs (
+  from_file   TEXT NOT NULL,
+  to_file     TEXT NOT NULL,
+  funcs       INTEGER NOT NULL,  -- functions and concrete methods
+  ifaces      INTEGER NOT NULL,  -- interface methods (calls through an interface)
+  types       INTEGER NOT NULL,  -- package-level types (incl. the interfaces of ifaces)
+  vars_consts INTEGER NOT NULL,  -- package-level vars and consts
+  PRIMARY KEY (from_file, to_file)
+);
+CREATE INDEX go_file_refs_by_to ON go_file_refs(to_file);
+
 -- Outcome of each unit test's coverage run (the failpoint re-run's, if any).
 --   ok       the test passed; its mapping is complete. detail is set if it
 --            reached no function beyond package init, or if the process

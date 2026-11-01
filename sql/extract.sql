@@ -114,3 +114,16 @@ CREATE TABLE IF NOT EXISTS go_func_decl (
   generated  INTEGER NOT NULL,         -- 1 = generated file (Code generated ... DO NOT EDIT., parser.go)
   PRIMARY KEY (file, name, start_line)
 );
+
+-- Package-level types, vars and consts of the non-test .go files under pkg/
+-- (cmd/refgraph -decls).
+CREATE TABLE IF NOT EXISTS go_decl (
+  pkg        TEXT NOT NULL,
+  file       TEXT NOT NULL,
+  name       TEXT NOT NULL,
+  kind       TEXT NOT NULL,            -- type / var / const
+  start_line INTEGER NOT NULL,
+  end_line   INTEGER NOT NULL,
+  lines      INTEGER NOT NULL,
+  PRIMARY KEY (file, name)
+);
