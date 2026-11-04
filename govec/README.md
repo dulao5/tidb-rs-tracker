@@ -126,7 +126,7 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 
 - `s`、`str`、`err` 必须一致；错误按 `code` 比对，不比对 Go 的错误对象身份。
 - `st`（内部状态）也必须一致：chunk 的线上格式就是 Go `MyDecimal` 的 40 字节内存布局（N5a），所以 `digitsInt` 按字取整之类的细节在 Rust 中也要保持。
-- `err.name = "panic"` 的记录：Go 在这里 panic，执行层 recover 后变成报错。Rust 不 panic（映射规则 `M-PANIC`），必须返回错误；只检查"返回了错误"，不比对错误内容。这些记录同时作为上游 bug 候选登记。
+- `err.name = "panic"` 的记录：Go 在这里因 bug 而 panic（越界等），执行层 recover 后变成报错。Rust 同样 panic（映射规则 `M-PANIC` 只把控制流用途的 panic 改为 `Result`），由 task 边界转换；回放时用 `catch_unwind` 检查"发生了 panic"，不比对内容。这些记录同时作为上游 bug 候选登记。
 - 向量文件超过约 10 MB 时改为 gzip 存储。
 
 ## decimal：生成时发现的 Go 行为（移植时的坑）
