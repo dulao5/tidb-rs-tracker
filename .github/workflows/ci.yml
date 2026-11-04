@@ -23,3 +23,19 @@ jobs:
         with:
           name: tracker-db
           path: tracker.db
+  govec:
+    # Builds govec against TiDB v8.5.8 (module proxy, no local checkout) with
+    # the toolchain pinned in govec/go.mod and checks that the committed
+    # vectors are byte-identical to a fresh run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: govec/go.mod
+          cache-dependency-path: govec/go.sum
+      - name: govec vet and test (header, coverage, oracle, determinism)
+        working-directory: govec
+        run: go vet ./... && go test ./...
+      - name: Committed vectors are up to date
+        run: scripts/govec.sh --check
