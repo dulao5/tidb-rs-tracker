@@ -121,3 +121,10 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 | `mydecimal_benchmark_test.go`：BenchmarkRound、BenchmarkMyDecimalToBin/ToHashKey、BenchmarkToFloat64 的随机输入形状 | round、to_bin、to_hash_key、to_float64（随机部分改为固定种子） |
 
 没有抄的：`TestReset`（检查写入一个用过的 `to` 与写入新 `to` 结果相同，属于内部复用的性质，没有输入输出表；Rust 侧作为单元测试移植）。
+
+## Rust 侧回放的比对规则（decimal）
+
+- `s`、`str`、`err` 必须一致；错误按 `code` 比对，不比对 Go 的错误对象身份。
+- `st`（内部状态）也必须一致：chunk 的线上格式就是 Go `MyDecimal` 的 40 字节内存布局（N5a），所以 `digitsInt` 按字取整之类的细节在 Rust 中也要保持。
+- `err.name = "panic"` 的记录：Go 在这里 panic，执行层 recover 后变成报错。Rust 不 panic（映射规则 `M-PANIC`），必须返回错误；只检查"返回了错误"，不比对错误内容。这些记录同时作为上游 bug 候选登记。
+- 向量文件超过约 10 MB 时改为 gzip 存储。
