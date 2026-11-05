@@ -165,8 +165,6 @@ type Dec struct {
 	S   string    `json:"s"`   // ToString()
 	Str string    `json:"str"` // String(): rounded to resultFrac with HalfUp
 	St  [13]int32 `json:"st"`  // internal state, see decState
-
-	d types.MyDecimal // the value itself, input of a chained op (not encoded)
 }
 
 // Str is the output of op "to_string".
@@ -219,7 +217,7 @@ type FromBinOut struct {
 }
 
 func decOut(d *types.MyDecimal) Dec {
-	return Dec{S: string(d.ToString()), Str: d.String(), St: decState(d), d: *d}
+	return Dec{S: string(d.ToString()), Str: d.String(), St: decState(d)}
 }
 
 // FormatFloat is the float encoding used in args and outputs.
@@ -312,8 +310,9 @@ func decimalChain(p, c string, args []json.RawMessage) (any, error) {
 	if !ok || len(args) < n {
 		panic(fmt.Sprintf("bad chained op %s%s%s", p, chainSep, c))
 	}
-	pout, perr := decimalOp(p, argReader{raw: args[:n]})
-	first := pout.(Dec).d
+	// The intermediate object is not encoded: ToString/String on it could
+	// panic (e.g. after a truncated mul) where the consumer does not.
+	first, perr := decimalProduce(p, argReader{raw: args[:n]})
 	rest := append([]json.RawMessage{json.RawMessage("null")}, args[n:]...)
 	out, err := decimalOp(c, argReader{raw: rest, first: &first})
 	if perr != nil {
@@ -322,16 +321,36 @@ func decimalChain(p, c string, args []json.RawMessage) (any, error) {
 	return out, err
 }
 
+// decimalProduce runs a chain producer op and returns the result object.
+func decimalProduce(op string, a argReader) (types.MyDecimal, error) {
+	var to types.MyDecimal
+	var err error
+	switch op {
+	case "from_int": // NewDecFromInt(v) is new(MyDecimal).FromInt(v)
+		to = *types.NewDecFromInt(a.i64(0))
+	case "from_uint":
+		to = *types.NewDecFromUint(a.u64(0))
+	case "round":
+		err = a.dec(0).Round(&to, a.int(1), a.mode(2))
+	case "add":
+		err = types.DecimalAdd(a.dec(0), a.dec(1), &to)
+	case "mul":
+		err = types.DecimalMul(a.dec(0), a.dec(1), &to)
+	default:
+		panic(fmt.Sprintf("not a chain producer: %q", op))
+	}
+	return to, err
+}
+
 func decimalOp(op string, a argReader) (any, error) {
 	switch op {
+	case "from_int", "from_uint", "round", "add", "mul":
+		d, err := decimalProduce(op, a)
+		return decOut(&d), err
 	case "from_string":
 		var d types.MyDecimal
 		err := d.FromString([]byte(a.str(0)))
 		return decOut(&d), err
-	case "from_int": // NewDecFromInt(v) is new(MyDecimal).FromInt(v)
-		return decOut(types.NewDecFromInt(a.i64(0))), nil
-	case "from_uint":
-		return decOut(types.NewDecFromUint(a.u64(0))), nil
 	case "from_float64":
 		var d types.MyDecimal
 		err := d.FromFloat64(a.f64(0))
@@ -345,11 +364,6 @@ func decimalOp(op string, a argReader) (any, error) {
 	case "to_float64":
 		v, err := a.dec(0).ToFloat64()
 		return FormatFloat(v), err
-	case "round":
-		d := a.dec(0)
-		var to types.MyDecimal
-		err := d.Round(&to, a.int(1), a.mode(2))
-		return decOut(&to), err
 	case "round_inplace":
 		d := a.dec(0)
 		err := d.Round(d, a.int(1), a.mode(2))
@@ -358,18 +372,13 @@ func decimalOp(op string, a argReader) (any, error) {
 		d := a.dec(0)
 		err := d.Shift(a.int(1))
 		return decOut(d), err
-	case "add", "sub", "mul", "mod":
+	case "sub", "mod":
 		x, y := a.dec(0), a.dec(1)
 		var to types.MyDecimal
 		var err error
-		switch op {
-		case "add":
-			err = types.DecimalAdd(x, y, &to)
-		case "sub":
+		if op == "sub" {
 			err = types.DecimalSub(x, y, &to)
-		case "mul":
-			err = types.DecimalMul(x, y, &to)
-		case "mod":
+		} else {
 			err = types.DecimalMod(x, y, &to)
 		}
 		return decOut(&to), err
