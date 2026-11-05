@@ -26,7 +26,9 @@ jobs:
   govec:
     # Builds govec against TiDB v8.5.8 (module proxy, no local checkout) with
     # the toolchain pinned in govec/go.mod and checks that the committed
-    # vectors are byte-identical to a fresh run.
+    # vectors are byte-identical to a fresh run. The committed files are
+    # generated on darwin/arm64; this linux/amd64 run reproducing them (header
+    # goos/goarch excluded) is the cross-platform determinism check.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

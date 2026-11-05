@@ -10,12 +10,16 @@ package vec
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"os"
+	"regexp"
 	"runtime"
 	"sort"
+	"strings"
 
 	"github.com/pingcap/errors"
 )
@@ -31,11 +35,17 @@ const (
 
 // Header is the first line of every vector file.
 type Header struct {
-	Govec   int    `json:"govec"`
-	Domain  string `json:"domain"`
-	TiDB    string `json:"tidb"`
-	Commit  string `json:"commit"`
-	Go      string `json:"go"`
+	Govec  int    `json:"govec"`
+	Domain string `json:"domain"`
+	TiDB   string `json:"tidb"`
+	Commit string `json:"commit"`
+	Go     string `json:"go"`
+	// Platform the file was generated on. Records must not depend on it:
+	// the committed files are generated on darwin/arm64 and CI (linux/amd64)
+	// regenerates them byte-identically except for these two fields, see
+	// SameExceptPlatform.
+	GOOS    string `json:"goos"`
+	GOARCH  string `json:"goarch"`
 	Seed    uint64 `json:"seed"`
 	Records int    `json:"records"`
 }
@@ -74,8 +84,10 @@ type NamedErr struct {
 
 // Coverage describes what an op covers and how many records are required.
 type Coverage struct {
-	Min     int      // minimum number of records the sanity test requires
-	GoFuncs []string // Go functions exercised (for the coverage map)
+	Min int // minimum number of records the sanity test requires
+	// Go functions exercised, in the tracker's symbol format (data/go_funcs.tsv,
+	// data/func_blocks.tsv): "Func" or "Type.Method", no pointer receiver.
+	GoFuncs []string
 }
 
 // Domain is one area of TiDB code covered by vectors.
@@ -84,6 +96,14 @@ type Domain struct {
 	Seed     uint64
 	Errors   []NamedErr
 	Coverage map[string]Coverage
+	// Blocks are the tracker porting blocks (data/func_blocks.tsv) the domain
+	// covers. Every function of these blocks must appear in some op's GoFuncs
+	// or in Exempt (checked by govec_test.go).
+	Blocks []string
+	// Exempt: Go function (tracker format) -> why no op covers it.
+	Exempt map[string]string
+	// Gzip: the committed file is <name>.jsonl.gz (see README, "Storage").
+	Gzip bool
 	// Generate appends calls to g. It must be deterministic given rng.
 	Generate func(g *Gen, rng *rand.Rand)
 	// Exec runs one op. args are the JSON-encoded arguments.
@@ -210,7 +230,7 @@ func (d *Domain) Records() (Header, []Record) {
 	}
 	h := Header{
 		Govec: FormatVersion, Domain: d.Name, TiDB: TiDBVersion, Commit: TiDBCommit,
-		Go: runtime.Version(), Seed: d.Seed, Records: len(recs),
+		Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Seed: d.Seed, Records: len(recs),
 	}
 	return h, recs
 }
@@ -228,6 +248,60 @@ func (d *Domain) WriteAll(w io.Writer) error {
 		}
 	}
 	return bw.Flush()
+}
+
+// FileName is the committed file name of the domain's vectors.
+func (d *Domain) FileName() string {
+	if d.Gzip {
+		return d.Name + ".jsonl.gz"
+	}
+	return d.Name + ".jsonl"
+}
+
+// WriteFile writes the vectors to w in the committed form: plain JSONL, or
+// for Gzip domains a gzip stream with no name, no mtime and fixed level, so
+// that the bytes depend only on the content and the (pinned) Go version.
+func (d *Domain) WriteFile(w io.Writer) error {
+	if !d.Gzip {
+		return d.WriteAll(w)
+	}
+	zw, err := gzip.NewWriterLevel(w, gzip.BestCompression)
+	if err != nil {
+		return err
+	}
+	if err := d.WriteAll(zw); err != nil {
+		return err
+	}
+	return zw.Close()
+}
+
+// ReadFile returns the JSONL content of a committed file, decompressing
+// .gz files.
+func ReadFile(path string) ([]byte, error) {
+	b, err := os.ReadFile(path)
+	if err != nil || !strings.HasSuffix(path, ".gz") {
+		return b, err
+	}
+	zr, err := gzip.NewReader(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(zr)
+}
+
+var platformRe = regexp.MustCompile(`"goos":"[^"]*","goarch":"[^"]*",`)
+
+// SameExceptPlatform reports whether two JSONL vector contents are identical
+// apart from the goos/goarch fields of the header.
+func SameExceptPlatform(a, b []byte) bool {
+	norm := func(x []byte) []byte {
+		i := bytes.IndexByte(x, '\n') + 1 // header line incl. newline (0: whole input)
+		if i == 0 {
+			i = len(x)
+		}
+		return append(platformRe.ReplaceAll(x[:i], nil), x[i:]...)
+	}
+	return bytes.Equal(norm(a), norm(b))
 }
 
 func writeLine(w *bufio.Writer, v any) error {

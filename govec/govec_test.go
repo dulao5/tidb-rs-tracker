@@ -28,6 +28,11 @@ var minedGoTests = map[string][]string{
 	},
 }
 
+// oracleStride: the oracle check replays records 0, s, 2s, ... (about 1 in
+// 37, ~3% of the records). A prime, so the sample does not lock onto the
+// period of a generator loop that emits a fixed number of ops per input.
+const oracleStride = 37
+
 func generate(t *testing.T, d *vec.Domain) []byte {
 	t.Helper()
 	var buf bytes.Buffer
@@ -35,6 +40,72 @@ func generate(t *testing.T, d *vec.Domain) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+// TestBlockCoverage: every function of the domain's porting blocks
+// (tracker data/func_blocks.tsv) is covered by some op's GoFuncs or listed in
+// Exempt with a reason; every GoFuncs/Exempt symbol exists in those blocks.
+func TestBlockCoverage(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "data", "func_blocks.tsv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	blockFuncs := map[string][]string{} // block -> symbols
+	sc := bufio.NewScanner(f)
+	sc.Scan() // header: pkg file symbol start_line block
+	for sc.Scan() {
+		c := strings.Split(sc.Text(), "\t")
+		if len(c) != 5 {
+			t.Fatalf("func_blocks.tsv: bad line %q", sc.Text())
+		}
+		blockFuncs[c[4]] = append(blockFuncs[c[4]], c[2])
+	}
+	for _, name := range vec.Names() {
+		d := vec.Lookup(name)
+		if len(d.Blocks) == 0 {
+			t.Errorf("domain %s: no Blocks", name)
+		}
+		inBlocks := map[string]bool{}
+		for _, b := range d.Blocks {
+			if len(blockFuncs[b]) == 0 {
+				t.Errorf("domain %s: block %s has no functions in func_blocks.tsv", name, b)
+			}
+			for _, fn := range blockFuncs[b] {
+				inBlocks[fn] = true
+			}
+		}
+		covered := map[string]bool{}
+		for op, c := range d.Coverage {
+			for _, fn := range c.GoFuncs {
+				covered[fn] = true
+				if !inBlocks[fn] {
+					t.Errorf("domain %s op %s: GoFuncs %q is not a function of blocks %v", name, op, fn, d.Blocks)
+				}
+			}
+		}
+		for fn, why := range d.Exempt {
+			if !inBlocks[fn] {
+				t.Errorf("domain %s: exempt %q is not a function of blocks %v", name, fn, d.Blocks)
+			}
+			if covered[fn] {
+				t.Errorf("domain %s: %q is both covered and exempt", name, fn)
+			}
+			if why == "" {
+				t.Errorf("domain %s: exempt %q has no reason", name, fn)
+			}
+		}
+		n := 0
+		for fn := range inBlocks {
+			if !covered[fn] && d.Exempt[fn] == "" {
+				t.Errorf("domain %s: %s is neither covered by an op nor exempt", name, fn)
+			}
+			if covered[fn] {
+				n++
+			}
+		}
+		t.Logf("domain %s: %d/%d functions of %v covered, %d exempt", name, n, len(inBlocks), d.Blocks, len(d.Exempt))
+	}
 }
 
 func TestDomains(t *testing.T) {
@@ -93,23 +164,35 @@ func checkDomain(t *testing.T, d *vec.Domain) {
 		}
 	}
 
-	// Oracle mode must reproduce records from (op, args) alone.
+	// Oracle mode must reproduce records from (op, args) alone. Replaying all
+	// records would double the test time, so replay a sparse sample: every
+	// oracleStride-th record plus the first record of each op, so that every
+	// op goes through the oracle path.
 	var in bytes.Buffer
-	for i := 0; i < len(recs); i += 37 {
-		in.Write(vec.MustJSON(vec.Request{Op: recs[i].Op, Args: recs[i].Args}))
-		in.WriteByte('\n')
+	var idx []int
+	seen := map[string]bool{}
+	for i, r := range recs {
+		if i%oracleStride == 0 || !seen[r.Op] {
+			seen[r.Op] = true
+			idx = append(idx, i)
+			in.Write(vec.MustJSON(vec.Request{Op: r.Op, Args: r.Args}))
+			in.WriteByte('\n')
+		}
 	}
 	var out bytes.Buffer
 	if err := d.Oracle(&in, &out); err != nil {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != len(idx) {
+		t.Fatalf("oracle: %d lines for %d requests", len(lines), len(idx))
+	}
 	for j, line := range lines {
 		var got vec.Record
 		if err := json.Unmarshal([]byte(line), &got); err != nil {
 			t.Fatal(err)
 		}
-		want := recs[j*37]
+		want := recs[idx[j]]
 		got.Src = want.Src
 		if g, w := string(vec.MustJSON(got)), string(vec.MustJSON(want)); g != w {
 			t.Fatalf("oracle mismatch:\n got %s\nwant %s", g, w)
@@ -117,9 +200,9 @@ func checkDomain(t *testing.T, d *vec.Domain) {
 	}
 
 	// Committed vectors must match (only with the pinned toolchain, since the
-	// header records the Go version).
-	path := filepath.Join("..", "vectors", vec.TiDBVersion, d.Name+".jsonl")
-	committed, err := os.ReadFile(path)
+	// header records the Go version; goos/goarch are not compared).
+	path := filepath.Join("..", "vectors", vec.TiDBVersion, d.FileName())
+	committed, err := vec.ReadFile(path)
 	if os.IsNotExist(err) {
 		t.Logf("%s not committed yet", path)
 		return
@@ -127,7 +210,54 @@ func checkDomain(t *testing.T, d *vec.Domain) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(committed, out1) {
+	if !vec.SameExceptPlatform(committed, out1) {
 		t.Errorf("%s is stale (go %s); run scripts/govec.sh", path, runtime.Version())
+	}
+}
+
+// TestStorage: the gzip form (README "Storage") is deterministic and reads
+// back to the plain JSONL; the committed-file comparison ignores only the
+// header's goos/goarch.
+func TestStorage(t *testing.T) {
+	d := *vec.Lookup("decimal")
+	plain := generate(t, &d)
+	d.Gzip = true
+	if d.FileName() != "decimal.jsonl.gz" {
+		t.Fatalf("FileName %q", d.FileName())
+	}
+	var z1, z2 bytes.Buffer
+	if err := d.WriteFile(&z1); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.WriteFile(&z2); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(z1.Bytes(), z2.Bytes()) {
+		t.Fatal("gzip output is not deterministic")
+	}
+	path := filepath.Join(t.TempDir(), d.FileName())
+	if err := os.WriteFile(path, z1.Bytes(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	back, err := vec.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(back, plain) {
+		t.Fatal("gzip file does not read back to the JSONL content")
+	}
+
+	other := bytes.Replace(plain, []byte(`"goos":"`+runtime.GOOS+`","goarch":"`+runtime.GOARCH+`"`),
+		[]byte(`"goos":"plan9","goarch":"mips"`), 1)
+	if bytes.Equal(other, plain) || !vec.SameExceptPlatform(other, plain) {
+		t.Fatal("platform fields must be ignored")
+	}
+	recs := bytes.Replace(plain, []byte(`"op":"add"`), []byte(`"op":"sub"`), 1)
+	if vec.SameExceptPlatform(recs, plain) {
+		t.Fatal("record changes must not be ignored")
+	}
+	hdr := bytes.Replace(plain, []byte(`"go":"`), []byte(`"go":"x`), 1)
+	if vec.SameExceptPlatform(hdr, plain) {
+		t.Fatal("other header changes must not be ignored")
 	}
 }

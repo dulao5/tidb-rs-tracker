@@ -3,7 +3,7 @@
 #
 #   scripts/govec.sh                 regenerate all domains into vectors/v8.5.8/
 #   scripts/govec.sh decimal         regenerate one domain
-#   scripts/govec.sh --check [dom]   regenerate into a temp dir and compare bytes
+#   scripts/govec.sh --check [dom]   regenerate and compare with the committed files
 #
 # The Go toolchain is pinned by govec/go.mod (go 1.25.12, as TiDB v8.5.8);
 # with GOTOOLCHAIN=auto (the default) go downloads it if needed.
@@ -30,24 +30,19 @@ if [[ ${#domains[@]} -eq 0 ]]; then
 fi
 
 if [[ $check -eq 1 ]]; then
-  tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' EXIT
+  # govec --check regenerates in memory and compares with the committed file:
+  # decompressed content (for .jsonl.gz), header goos/goarch excluded, so the
+  # files committed from darwin/arm64 must reproduce on linux/amd64 (CI).
   status=0
   for d in "${domains[@]}"; do
-    "$bin" "$d" -o "$tmp/$d.jsonl"
-    if ! cmp -s "$tmp/$d.jsonl" "$outdir/$d.jsonl"; then
-      echo "govec: $outdir/$d.jsonl is stale; run scripts/govec.sh $d" >&2
-      diff <(head -c 2000 "$outdir/$d.jsonl") <(head -c 2000 "$tmp/$d.jsonl") >&2 || true
-      status=1
-    else
-      echo "govec: $d ok ($(wc -l <"$tmp/$d.jsonl") lines)"
-    fi
+    "$bin" "$d" --check "$outdir/$("$bin" "$d" --filename)" || status=1
   done
   exit $status
 fi
 
 mkdir -p "$outdir"
 for d in "${domains[@]}"; do
-  "$bin" "$d" -o "$outdir/$d.jsonl"
-  echo "govec: wrote $outdir/$d.jsonl ($(wc -l <"$outdir/$d.jsonl") lines, $(wc -c <"$outdir/$d.jsonl") bytes)"
+  f="$outdir/$("$bin" "$d" --filename)"
+  "$bin" "$d" -o "$f"
+  echo "govec: wrote $f ($(wc -c <"$f") bytes)"
 done

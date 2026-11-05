@@ -23,6 +23,10 @@ func decimalGenerate(g *vec.Gen, rng *rand.Rand) {
 	decimalMined(g)
 	decimalSystematic(g)
 	decimalRandom(g, rng)
+	// Appended after the original groups so that adding them left the
+	// existing records (and the rng sequence they consume) unchanged.
+	decimalAlias(g, rng)
+	decimalChained(g, rng)
 }
 
 // toBinHex runs ToBin at generation time to build from_bin / peak inputs.
@@ -321,6 +325,106 @@ func decimalMined(g *vec.Gen) {
 		p, f := precFrac(s)
 		g.Add("BenchmarkMyDecimalToBin", "to_bin", s, p, f)
 		g.Add("BenchmarkMyDecimalToHashKey", "to_hash_key", s)
+	}
+}
+
+// ---------------------------------------------------------------- aliasing
+
+// decimalAlias: add/sub/mul/div/mod with `to` aliasing an input (op
+// <name>_alias, last arg 1|2|3, see decimalBaseCoverage).
+func decimalAlias(g *vec.Gen, rng *rand.Rand) {
+	add := func(src, x, y string, aliases ...int) {
+		for _, alias := range aliases {
+			g.Add(src, "add_alias", x, y, alias)
+			g.Add(src, "sub_alias", x, y, alias)
+			g.Add(src, "mul_alias", x, y, alias)
+			g.Add(src, "div_alias", x, y, 4, alias)
+			g.Add(src, "mod_alias", x, y, alias)
+		}
+	}
+	ar := sysArith()
+	for i, x := range ar {
+		add("sys/alias", x, x, 3) // f(x, x, x)
+		// a band of pairs, not the full square: each value meets its neighbours
+		// and a few far ones (zero, huge, many fraction digits).
+		for _, j := range []int{(i + 1) % len(ar), (i + 7) % len(ar), (i + 19) % len(ar)} {
+			add("sys/alias", x, ar[j], 1, 2)
+		}
+	}
+	for i := 0; i < 60; i++ {
+		x := randDecString(rng, 30, 20)
+		add("rand/alias", x, randDecString(rng, 30, 20), 1, 2)
+		if i%4 == 0 {
+			add("rand/alias", x, x, 3)
+		}
+	}
+}
+
+// ---------------------------------------------------------------- chained
+
+// chainInts are FromInt/FromUint inputs around word (9-digit) boundaries.
+var chainInts = []int64{0, 1, -1, 5, -5, 9, 10, 99, 123456789, 999999999, 1000000000, -1000000000,
+	1234567890123, 999999999999999999, 1000000000000000000, -999999999999999999,
+	math.MaxInt64, math.MinInt64, math.MaxInt32, math.MinInt32}
+
+// decimalChained: <producer>_then_<consumer> ops (see chainProducers).
+func decimalChained(g *vec.Gen, rng *rand.Rand) {
+	ar := sysArith()
+	type prod struct {
+		src  string
+		args []any
+	}
+	var prods = map[string][]prod{}
+	for _, v := range chainInts {
+		prods["from_int"] = append(prods["from_int"], prod{"sys/chain", []any{v}})
+		if v >= 0 {
+			prods["from_uint"] = append(prods["from_uint"], prod{"sys/chain", []any{uint64(v)}})
+		}
+	}
+	for _, v := range []uint64{math.MaxUint64, math.MaxUint64 - 1, math.MaxInt64 + 1, 18446744073} {
+		prods["from_uint"] = append(prods["from_uint"], prod{"sys/chain", []any{v}})
+	}
+	for _, s := range []string{"0", "0.5", "-0.5", "1.45", "999999999.5", "-999999999.5", "123456789.123456789",
+		"0.000000000500", "9999999999.99", "12345.678", "-12345.678", "1" + strings.Repeat("0", 18)} {
+		for _, f := range []int{-2, 0, 1, 5} {
+			prods["round"] = append(prods["round"], prod{"sys/chain", []any{s, f, "HalfUp"}})
+		}
+	}
+	for i := 0; i < len(ar); i += 2 {
+		x, y := ar[i], ar[(i+5)%len(ar)]
+		prods["add"] = append(prods["add"], prod{"sys/chain", []any{x, y}})
+		prods["mul"] = append(prods["mul"], prod{"sys/chain", []any{x, y}})
+	}
+	// seeded random producers
+	for i := 0; i < 10; i++ {
+		v := int64(rng.Uint64()) >> rng.IntN(64)
+		prods["from_int"] = append(prods["from_int"], prod{"rand/chain", []any{v}})
+		prods["from_uint"] = append(prods["from_uint"], prod{"rand/chain", []any{rng.Uint64() >> rng.IntN(64)}})
+		prods["round"] = append(prods["round"], prod{"rand/chain",
+			[]any{randDecString(rng, 30, 20), rng.IntN(16) - 4, roundModeNames[rng.IntN(3)]}})
+		prods["add"] = append(prods["add"], prod{"rand/chain", []any{randDecString(rng, 30, 15), randDecString(rng, 30, 15)}})
+		prods["mul"] = append(prods["mul"], prod{"rand/chain", []any{randDecString(rng, 20, 10), randDecString(rng, 20, 10)}})
+	}
+
+	for _, p := range chainProducerNames {
+		for k, pr := range prods[p] {
+			for _, c := range chainConsumers {
+				var rest []any
+				switch c {
+				case "to_bin":
+					rest = []any{[]int{20, 30, 40, 65, 9, 10}[k%6], []int{0, 2, 5, 0, 0, 9}[k%6]}
+				case "round", "round_inplace":
+					rest = []any{[]int{-10, -1, 0, 1, 3, 9, 10}[k%7], roundModeNames[k%3]}
+				case "shift":
+					rest = []any{[]int{-20, -9, -3, -1, 1, 3, 9, 20}[k%8]}
+				case "compare", "add", "mul":
+					rest = []any{ar[(k*3)%len(ar)]}
+				case "div":
+					rest = []any{ar[(k*3+1)%len(ar)], 4}
+				}
+				g.Add(pr.src, p+chainSep+c, append(append([]any{}, pr.args...), rest...)...)
+			}
+		}
 	}
 }
 
