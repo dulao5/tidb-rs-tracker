@@ -74,6 +74,27 @@ CREATE TABLE go_file_refs (
 );
 CREATE INDEX go_file_refs_by_to ON go_file_refs(to_file);
 
+-- Float multiply-add source lines that gc fuses into an FMA instruction on at
+-- least one target (scripts/go_fma_sites.py, compiled with -gcflags=-S).
+-- Per target: 'yes' / 'no'. amd64_v1 (GOAMD64=v1, Go's default) is the amd64
+-- baseline; amd64_v3 is informational. tidb-rs mapping rule M-FMA.
+CREATE TABLE go_fma_sites (
+  pkg      TEXT NOT NULL,
+  file     TEXT NOT NULL,     -- relative to the TiDB repo root
+  line     INTEGER NOT NULL,
+  symbol   TEXT NOT NULL,     -- containing function(s), go_funcs.tsv format
+  amd64_v1 TEXT NOT NULL,
+  amd64_v3 TEXT NOT NULL,
+  arm64    TEXT NOT NULL,
+  ppc64le  TEXT NOT NULL,
+  s390x    TEXT NOT NULL,
+  riscv64  TEXT NOT NULL,
+  loong64  TEXT NOT NULL,
+  instrs   TEXT NOT NULL,     -- target=MNEMONIC[,...] for each fusing target
+  source   TEXT,
+  PRIMARY KEY (pkg, file, line)
+);
+
 -- Outcome of each unit test's coverage run (the failpoint re-run's, if any).
 --   ok       the test passed; its mapping is complete. detail is set if it
 --            reached no function beyond package init, or if the process

@@ -64,6 +64,13 @@ TABLES = {
     "go_file_refs.tsv": (
         ["from_file", "to_file", "funcs", "ifaces", "types", "vars_consts"], ["from_file", "to_file"]
     ),
+    # Float multiply-add lines gc fuses into FMA on some target, per target
+    # (scripts/go_fma_sites.py; mapping rule M-FMA of tidb-rs).
+    "go_fma_sites.tsv": (
+        ["pkg", "file", "line", "symbol", "amd64_v1", "amd64_v3", "arm64", "ppc64le", "s390x", "riscv64",
+         "loong64", "instrs", "source"],
+        ["pkg", "file", "line"],
+    ),
     "cov_status.tsv": (["pkg", "test", "status", "detail"], ["pkg", "test"]),
     "test_feature.tsv": (["pkg", "test", "feature", "weight"], ["pkg", "test", "feature"]),
     # R1: tidb-rs on TiDB's integration tests (tidb-rs `scripts/integrationtest.sh`).

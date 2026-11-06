@@ -1,0 +1,9 @@
+pkg	file	line	symbol	amd64_v1	amd64_v3	arm64	ppc64le	s390x	riscv64	loong64	instrs	source
+pkg/types	pkg/types/mydecimal.go	1118	MyDecimal.ToFloat64	no	no	yes	yes	yes	yes	yes	arm64=FMADDD ppc64le=FMADD s390x=FMADD riscv64=FMADDD loong64=FMADDD	f += float64(x) * pow10off81[(wordsInt-wordIdx)*digitsPerWord+pow10off]
+pkg/types	pkg/types/mydecimal.go	1125	MyDecimal.ToFloat64	no	no	yes	yes	yes	yes	yes	arm64=FMADDD ppc64le=FMADD s390x=FMADD riscv64=FMADDD loong64=FMADDD	f += float64(x) * pow10off81[-digitsPerWord*(wordIdx-fracStart)+pow10off]
+pkg/types	pkg/types/vector_functions.go	100	VectorFloat32.CosineDistance	no	yes	yes	yes	yes	yes	yes	amd64_v3=VFMADD231SS arm64=FMADDS ppc64le=FMADDS s390x=FMADDS riscv64=FMADDS loong64=FMADDF	distance += va[i] * vb[i]
+pkg/types	pkg/types/vector_functions.go	101	VectorFloat32.CosineDistance	no	yes	yes	yes	yes	yes	yes	amd64_v3=VFMADD231SS arm64=FMADDS ppc64le=FMADDS s390x=FMADDS riscv64=FMADDS loong64=FMADDF	norma += va[i] * va[i]
+pkg/types	pkg/types/vector_functions.go	102	VectorFloat32.CosineDistance	no	yes	yes	yes	yes	yes	yes	amd64_v3=VFMADD231SS arm64=FMADDS ppc64le=FMADDS s390x=FMADDS riscv64=FMADDS loong64=FMADDF	normb += vb[i] * vb[i]
+pkg/types	pkg/types/vector_functions.go	152	VectorFloat32.L2Norm	no	yes	yes	yes	yes	yes	yes	amd64_v3=VFMADD231SD arm64=FMADDD ppc64le=FMADD s390x=FMADD riscv64=FMADDD loong64=FMADDD	norm += float64(va[i]) * float64(va[i])
+pkg/types	pkg/types/vector_functions.go	44	VectorFloat32.L2SquaredDistance	no	yes	yes	yes	yes	yes	yes	amd64_v3=VFMADD231SS arm64=FMADDS ppc64le=FMADDS s390x=FMADDS riscv64=FMADDS loong64=FMADDF	distance += diff * diff
+pkg/types	pkg/types/vector_functions.go	71	VectorFloat32.InnerProduct	no	no	yes	yes	yes	yes	yes	arm64=FMADDS ppc64le=FMADDS s390x=FMADDS riscv64=FMADDS loong64=FMADDF	distance += va[i] * vb[i]
