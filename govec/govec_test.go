@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/dulao5/tidb-rs-tracker/govec/domains"
+	"github.com/dulao5/tidb-rs-tracker/govec/domains"
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 )
 
@@ -199,9 +199,10 @@ func checkDomain(t *testing.T, d *vec.Domain) {
 		}
 	}
 
-	// Committed vectors must match (only with the pinned toolchain, since the
-	// header records the Go version; goos/goarch are not compared).
-	path := filepath.Join("..", "vectors", vec.TiDBVersion, d.FileName())
+	// Committed vectors of this target must match (only with the pinned
+	// toolchain, since the header records the Go version; goos is not
+	// compared).
+	path := filepath.Join("..", "vectors", vec.TiDBVersion, d.FilePath(vec.Target()))
 	committed, err := vec.ReadFile(path)
 	if os.IsNotExist(err) {
 		t.Logf("%s not committed yet", path)
@@ -210,20 +211,20 @@ func checkDomain(t *testing.T, d *vec.Domain) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !vec.SameExceptPlatform(committed, out1) {
+	if !vec.SameExceptGOOS(committed, out1) {
 		t.Errorf("%s is stale (go %s); run scripts/govec.sh", path, runtime.Version())
 	}
 }
 
 // TestStorage: the gzip form (README "Storage") is deterministic and reads
 // back to the plain JSONL; the committed-file comparison ignores only the
-// header's goos/goarch.
+// header's goos.
 func TestStorage(t *testing.T) {
 	d := *vec.Lookup("decimal")
 	plain := generate(t, &d)
 	d.Gzip = true
-	if d.FileName() != "decimal.jsonl.gz" {
-		t.Fatalf("FileName %q", d.FileName())
+	if d.FileName() != "decimal.jsonl.gz" || d.FilePath("arm64") != "arm64/decimal.jsonl.gz" {
+		t.Fatalf("FileName %q FilePath %q", d.FileName(), d.FilePath("arm64"))
 	}
 	var z1, z2 bytes.Buffer
 	if err := d.WriteFile(&z1); err != nil {
@@ -247,17 +248,136 @@ func TestStorage(t *testing.T) {
 		t.Fatal("gzip file does not read back to the JSONL content")
 	}
 
-	other := bytes.Replace(plain, []byte(`"goos":"`+runtime.GOOS+`","goarch":"`+runtime.GOARCH+`"`),
-		[]byte(`"goos":"plan9","goarch":"mips"`), 1)
-	if bytes.Equal(other, plain) || !vec.SameExceptPlatform(other, plain) {
-		t.Fatal("platform fields must be ignored")
+	other := bytes.Replace(plain, []byte(`"goos":"`+runtime.GOOS+`"`), []byte(`"goos":"plan9"`), 1)
+	if bytes.Equal(other, plain) || !vec.SameExceptGOOS(other, plain) {
+		t.Fatal("goos must be ignored")
+	}
+	arch := bytes.Replace(plain, []byte(`"goarch":"`+runtime.GOARCH+`"`), []byte(`"goarch":"mips"`), 1)
+	if bytes.Equal(arch, plain) || vec.SameExceptGOOS(arch, plain) {
+		t.Fatal("goarch must not be ignored")
 	}
 	recs := bytes.Replace(plain, []byte(`"op":"add"`), []byte(`"op":"sub"`), 1)
-	if vec.SameExceptPlatform(recs, plain) {
+	if vec.SameExceptGOOS(recs, plain) {
 		t.Fatal("record changes must not be ignored")
 	}
 	hdr := bytes.Replace(plain, []byte(`"go":"`), []byte(`"go":"x`), 1)
-	if vec.SameExceptPlatform(hdr, plain) {
+	if vec.SameExceptGOOS(hdr, plain) {
 		t.Fatal("other header changes must not be ignored")
+	}
+}
+
+// fmaFused reads tracker data/go_fma_sites.tsv: whether gc fuses the
+// multiply-adds of MyDecimal.ToFloat64 (mydecimal.go:1118, 1125) on this
+// target. Both lines must agree (ToFloat64Model fuses both or neither).
+func fmaFused(t *testing.T) bool {
+	t.Helper()
+	col := map[string]string{"amd64": "amd64_v1", "amd64.v3": "amd64_v3"}[vec.Target()]
+	if col == "" {
+		col = vec.Target()
+	}
+	b, err := os.ReadFile(filepath.Join("..", "data", "go_fma_sites.tsv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	hdr := strings.Split(lines[0], "\t")
+	ci := -1
+	for i, h := range hdr {
+		if h == col {
+			ci = i
+		}
+	}
+	if ci < 0 {
+		t.Fatalf("go_fma_sites.tsv has no column for target %s", vec.Target())
+	}
+	vals := map[string]string{}
+	for _, l := range lines[1:] {
+		c := strings.Split(l, "\t")
+		if c[1] == "pkg/types/mydecimal.go" && c[3] == "MyDecimal.ToFloat64" {
+			vals[c[2]] = c[ci]
+		}
+	}
+	if len(vals) != 2 || vals["1118"] != vals["1125"] {
+		t.Fatalf("go_fma_sites.tsv: MyDecimal.ToFloat64 sites %v, want lines 1118 and 1125 alike", vals)
+	}
+	return vals["1118"] == "yes"
+}
+
+// TestFMA: every div_then_to_float64 record equals ToFloat64Model with the
+// fusion go_fma_sites.tsv records for this target, and the FMA group has
+// at least domains.FMADiverging records whose result depends on fusion. This ties
+// the vectors to the assembly scan: if gc changed what it fuses, the model
+// with the registry's answer would disagree with the Go output.
+func TestFMA(t *testing.T) {
+	d := vec.Lookup("decimal")
+	fused := fmaFused(t)
+	sc := bufio.NewScanner(bytes.NewReader(generate(t, d)))
+	sc.Buffer(make([]byte, 1<<20), 64<<20)
+	sc.Scan()
+	n, diverging := 0, 0
+	for sc.Scan() {
+		var r vec.Record
+		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
+			t.Fatal(err)
+		}
+		if r.Op != "div_then_to_float64" {
+			continue
+		}
+		want, ok := domains.DivToFloat64Model(r.Args, fused)
+		if !ok {
+			continue
+		}
+		n++
+		if got := r.Out.(string); got != want {
+			t.Errorf("%s %s: Go %s, model (fused=%v) %s", r.Op, r.Args, got, fused, want)
+		}
+		other, _ := domains.DivToFloat64Model(r.Args, !fused)
+		if other != want {
+			diverging++
+		} else if r.Src == "rand/fma" {
+			t.Errorf("rand/fma record %s does not depend on fusion", r.Args)
+		}
+	}
+	t.Logf("target %s fused=%v: %d div_then_to_float64 records on the <=12-digit path, %d depend on fusion",
+		vec.Target(), fused, n, diverging)
+	if diverging < domains.FMADiverging {
+		t.Errorf("%d records depend on fusion, want >= %d", diverging, domains.FMADiverging)
+	}
+}
+
+// TestTargetsDiffer: the committed amd64 and arm64 files have the same
+// records apart from the outputs that depend on FMA fusion (ops ending in
+// to_float64), and differ in at least domains.FMADiverging of them.
+func TestTargetsDiffer(t *testing.T) {
+	d := vec.Lookup("decimal")
+	read := func(target string) []string {
+		b, err := vec.ReadFile(filepath.Join("..", "vectors", vec.TiDBVersion, d.FilePath(target)))
+		if err != nil {
+			t.Skipf("%s: %v", target, err)
+		}
+		return strings.Split(string(b), "\n")
+	}
+	a, b := read("amd64"), read("arm64")
+	if len(a) != len(b) {
+		t.Fatalf("amd64 %d lines, arm64 %d", len(a), len(b))
+	}
+	diff := 0
+	for i := 1; i < len(a); i++ {
+		if a[i] == b[i] {
+			continue
+		}
+		diff++
+		var ra, rb vec.Record
+		if err := json.Unmarshal([]byte(a[i]), &ra); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.Unmarshal([]byte(b[i]), &rb)
+		if ra.Op != rb.Op || !strings.HasSuffix(ra.Op, "to_float64") {
+			t.Errorf("line %d differs outside to_float64:\n amd64 %s\n arm64 %s", i+1, a[i], b[i])
+		}
+	}
+	t.Logf("amd64 and arm64 differ in %d records", diff)
+	if diff < domains.FMADiverging {
+		t.Errorf("amd64 and arm64 differ in %d records, want >= %d", diff, domains.FMADiverging)
 	}
 }

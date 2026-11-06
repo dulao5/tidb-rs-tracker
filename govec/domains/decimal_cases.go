@@ -28,6 +28,7 @@ func decimalGenerate(g *vec.Gen, rng *rand.Rand) {
 	decimalAlias(g, rng)
 	decimalChained(g, rng)
 	decimalDirty(g, rng)
+	decimalFMA(g, rng)
 }
 
 // toBinHex runs ToBin at generation time to build from_bin / peak inputs.
@@ -410,23 +411,28 @@ func decimalChained(g *vec.Gen, rng *rand.Rand) {
 	for _, p := range chainProducerNames {
 		for k, pr := range prods[p] {
 			for _, c := range chainConsumers {
-				var rest []any
-				switch c {
-				case "to_bin":
-					rest = []any{[]int{20, 30, 40, 65, 9, 10}[k%6], []int{0, 2, 5, 0, 0, 9}[k%6]}
-				case "round", "round_inplace":
-					rest = []any{[]int{-10, -1, 0, 1, 3, 9, 10}[k%7], roundModeNames[k%3]}
-				case "shift":
-					rest = []any{[]int{-20, -9, -3, -1, 1, 3, 9, 20}[k%8]}
-				case "compare", "add", "mul":
-					rest = []any{ar[(k*3)%len(ar)]}
-				case "div":
-					rest = []any{ar[(k*3+1)%len(ar)], 4}
-				}
-				g.Add(pr.src, p+chainSep+c, append(append([]any{}, pr.args...), rest...)...)
+				g.Add(pr.src, p+chainSep+c, append(append([]any{}, pr.args...), chainRest(c, k, ar)...)...)
 			}
 		}
 	}
+}
+
+// chainRest: the consumer's arguments after its first decimal, for the k-th
+// producer.
+func chainRest(c string, k int, ar []string) []any {
+	switch c {
+	case "to_bin":
+		return []any{[]int{20, 30, 40, 65, 9, 10}[k%6], []int{0, 2, 5, 0, 0, 9}[k%6]}
+	case "round", "round_inplace":
+		return []any{[]int{-10, -1, 0, 1, 3, 9, 10}[k%7], roundModeNames[k%3]}
+	case "shift":
+		return []any{[]int{-20, -9, -3, -1, 1, 3, 9, 20}[k%8]}
+	case "compare", "add", "mul":
+		return []any{ar[(k*3)%len(ar)]}
+	case "div":
+		return []any{ar[(k*3+1)%len(ar)], 4}
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------- dirty receivers

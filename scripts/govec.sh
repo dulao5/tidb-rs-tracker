@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 # Regenerate govec vectors, or check that the committed ones are up to date.
 #
-#   scripts/govec.sh                 regenerate all domains into vectors/v8.5.8/
-#   scripts/govec.sh decimal         regenerate one domain
-#   scripts/govec.sh --check [dom]   regenerate and compare with the committed files
+#   scripts/govec.sh                       regenerate all domains, all committed targets
+#   scripts/govec.sh decimal               regenerate one domain
+#   scripts/govec.sh --check [dom]         regenerate on this host's target and compare
+#   scripts/govec.sh --check --all [dom]   ... on every committed target
+#
+# Vectors depend on the code-generation target (gc fuses float x*y+z into FMA
+# on arm64 and not on amd64, see govec/README.md "Targets"), so there is one
+# file per target: vectors/v8.5.8/<target>/<domain>.jsonl.gz, target = amd64
+# (GOAMD64=v1, Go's default) or arm64. The host's target runs natively; the
+# other is cross-compiled (GOOS=linux, CGO_ENABLED=0) and run in a
+# `docker run --platform linux/<arch>` container (Docker Desktop on macOS
+# emulates amd64 with Rosetta or QEMU). Override with GOVEC_RUN_<target>, a
+# command prefix that runs a linux binary, e.g. GOVEC_RUN_amd64="ssh x86box".
 #
 # The Go toolchain is pinned by govec/go.mod (go 1.25.12, as TiDB v8.5.8);
 # with GOTOOLCHAIN=auto (the default) go downloads it if needed.
@@ -14,35 +24,71 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 outdir="$root/vectors/v8.5.8"
+targets=(amd64 arm64) # vec.CommittedTargets
 check=0
-if [[ "${1:-}" == "--check" ]]; then
-  check=1
+all=0
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --check) check=1 ;;
+    --all) all=1 ;;
+    *) echo "govec.sh: unknown flag $1" >&2; exit 2 ;;
+  esac
   shift
-fi
+done
 
-bin="$root/bin/govec"
 mkdir -p "$root/bin"
-(cd "$root/govec" && go build -o "$bin" .)
+native="$root/bin/govec"
+(cd "$root/govec" && GOAMD64=v1 go build -o "$native" .)
+host=$("$native" target)
+
+# runner <target>: builds and prints the govec binary for the target.
+runner() {
+  local t=$1
+  if [[ "$t" == "$host" ]]; then
+    echo "$native"
+    return
+  fi
+  local bin="$root/bin/govec-linux-$t"
+  (cd "$root/govec" && GOOS=linux GOARCH="$t" GOAMD64=v1 CGO_ENABLED=0 go build -o "$bin" .)
+  echo "$bin"
+}
+run() { # run <target> <bin> args...
+  local t=$1 bin=$2
+  shift 2
+  if [[ "$t" == "$host" ]]; then
+    "$bin" "$@"
+  elif [[ -n "$(eval echo "\${GOVEC_RUN_$t:-}")" ]]; then
+    eval "\${GOVEC_RUN_$t}" '"$bin" "$@"'
+  else
+    docker run --rm -i --platform "linux/$t" -v "$root:$root" -w "$root" busybox "$bin" "$@"
+  fi
+}
 
 domains=("$@")
 if [[ ${#domains[@]} -eq 0 ]]; then
-  read -r -a domains <<<"$("$bin" list | tr '\n' ' ')"
+  read -r -a domains <<<"$("$native" list | tr '\n' ' ')"
 fi
 
 if [[ $check -eq 1 ]]; then
-  # govec --check regenerates in memory and compares with the committed file:
-  # decompressed content (for .jsonl.gz), header goos/goarch excluded, so the
-  # files committed from darwin/arm64 must reproduce on linux/amd64 (CI).
+  # govec --check regenerates in memory and compares with the committed file
+  # of the same target: decompressed content, header goos excluded.
+  [[ $all -eq 1 ]] || targets=("$host")
   status=0
-  for d in "${domains[@]}"; do
-    "$bin" "$d" --check "$outdir/$("$bin" "$d" --filename)" || status=1
+  for t in "${targets[@]}"; do
+    bin=$(runner "$t")
+    for d in "${domains[@]}"; do
+      run "$t" "$bin" "$d" --check "$outdir/$t/$("$native" "$d" --filename | cut -d/ -f2)" || status=1
+    done
   done
   exit $status
 fi
 
-mkdir -p "$outdir"
-for d in "${domains[@]}"; do
-  f="$outdir/$("$bin" "$d" --filename)"
-  "$bin" "$d" -o "$f"
-  echo "govec: wrote $f ($(wc -c <"$f") bytes)"
+for t in "${targets[@]}"; do
+  bin=$(runner "$t")
+  mkdir -p "$outdir/$t"
+  for d in "${domains[@]}"; do
+    f="$outdir/$t/$("$native" "$d" --filename | cut -d/ -f2)"
+    run "$t" "$bin" "$d" -o "$f"
+    echo "govec: wrote $f ($(wc -c <"$f") bytes)"
+  done
 done

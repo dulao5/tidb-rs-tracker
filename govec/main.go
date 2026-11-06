@@ -1,10 +1,11 @@
 // Command govec produces input/output test vectors by running Go TiDB code.
 //
 //	govec <domain> [-o file]       write the vector file for a domain (JSONL, or gzip for Gzip domains)
-//	govec <domain> --filename      print the committed file name (<domain>.jsonl or .jsonl.gz)
-//	govec <domain> --check file    regenerate and compare with a committed file (content, platform fields excluded)
+//	govec <domain> --filename      print the committed file of this target (<target>/<domain>.jsonl[.gz])
+//	govec <domain> --check file    regenerate and compare with a committed file (content, header goos excluded)
 //	govec <domain> --oracle        read {"op","args"} lines on stdin, write records on stdout
 //	govec list                     list domains
+//	govec target                   print this binary's target (amd64, amd64.v3, arm64, ...)
 package main
 
 import (
@@ -26,6 +27,10 @@ func main() {
 		usage()
 	}
 	name := os.Args[1]
+	if name == "target" {
+		fmt.Println(vec.Target())
+		return
+	}
 	if name == "list" {
 		for _, n := range vec.Names() {
 			fmt.Println(n)
@@ -45,7 +50,7 @@ func main() {
 	_ = fs.Parse(os.Args[2:])
 
 	if *filename {
-		fmt.Println(d.FileName())
+		fmt.Println(d.FilePath(vec.Target()))
 		return
 	}
 	if *check != "" {
@@ -76,8 +81,9 @@ func main() {
 }
 
 // checkFile regenerates d and compares it with the committed file. The
-// comparison is on the decompressed JSONL with the header's goos/goarch
-// excluded, so a file generated on one platform checks on another.
+// comparison is on the decompressed JSONL with only the header's goos
+// excluded: a file checks against a regeneration on the same target
+// (GOARCH/GOAMD64), on any OS.
 func checkFile(d *vec.Domain, path string) int {
 	committed, err := vec.ReadFile(path)
 	if err != nil {
@@ -90,17 +96,17 @@ func checkFile(d *vec.Domain, path string) int {
 		return 1
 	}
 	head := func(b []byte) string { h, _, _ := bytes.Cut(b, []byte("\n")); return string(h) }
-	if !vec.SameExceptPlatform(committed, fresh.Bytes()) {
+	if !vec.SameExceptGOOS(committed, fresh.Bytes()) {
 		fmt.Fprintf(os.Stderr, "govec: %s is stale; run scripts/govec.sh %s\n  committed: %s\n  fresh:     %s\n",
 			path, d.Name, head(committed), head(fresh.Bytes()))
 		return 1
 	}
-	fmt.Printf("govec: %s ok, %d lines; committed header %s, regenerated on %s/%s\n",
-		d.Name, bytes.Count(committed, []byte("\n")), head(committed), runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("govec: %s ok, %d lines; committed header %s, regenerated on %s/%s (target %s)\n",
+		d.Name, bytes.Count(committed, []byte("\n")), head(committed), runtime.GOOS, runtime.GOARCH, vec.Target())
 	return 0
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: govec <domain> [-o file | --filename | --check file | --oracle] | govec list")
+	fmt.Fprintln(os.Stderr, "usage: govec <domain> [-o file | --filename | --check file | --oracle] | govec list | govec target")
 	os.Exit(2)
 }

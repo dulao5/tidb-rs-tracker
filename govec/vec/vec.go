@@ -40,15 +40,35 @@ type Header struct {
 	TiDB   string `json:"tidb"`
 	Commit string `json:"commit"`
 	Go     string `json:"go"`
-	// Platform the file was generated on. Records must not depend on it:
-	// the committed files are generated on darwin/arm64 and CI (linux/amd64)
-	// regenerates them byte-identically except for these two fields, see
-	// SameExceptPlatform.
+	// Platform the file was generated on. Records may depend on the target
+	// (GOARCH, and GOAMD64 on amd64): gc fuses float x*y+z into FMA on some
+	// targets and not others (README "Targets"), so there is one committed
+	// file per target (Target). GOOS does not change code generation and is
+	// the only field SameExceptGOOS ignores.
 	GOOS    string `json:"goos"`
 	GOARCH  string `json:"goarch"`
+	GOAMD64 string `json:"goamd64,omitempty"` // amd64 only
 	Seed    uint64 `json:"seed"`
 	Records int    `json:"records"`
 }
+
+// CommittedTargets are the targets whose vectors are committed, as Target
+// names: amd64 at GOAMD64=v1 (Go's default, the baseline) and arm64. They are
+// the platforms TiDB v8.5.8 is released for.
+var CommittedTargets = []string{"amd64", "arm64"}
+
+// Target names the code-generation target of this binary: GOARCH, with the
+// GOAMD64 level appended on amd64 unless it is the baseline v1 ("amd64",
+// "amd64.v3", "arm64"). It is the directory of the vector files.
+func Target() string {
+	if runtime.GOARCH == "amd64" && goamd64 != "v1" {
+		return "amd64." + goamd64
+	}
+	return runtime.GOARCH
+}
+
+// GOAMD64 is the GOAMD64 level of this binary ("" off amd64).
+func GOAMD64() string { return goamd64 }
 
 // Err is the stable JSON form of an error returned by the Go code.
 type Err struct {
@@ -230,7 +250,8 @@ func (d *Domain) Records() (Header, []Record) {
 	}
 	h := Header{
 		Govec: FormatVersion, Domain: d.Name, TiDB: TiDBVersion, Commit: TiDBCommit,
-		Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Seed: d.Seed, Records: len(recs),
+		Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, GOAMD64: goamd64,
+		Seed: d.Seed, Records: len(recs),
 	}
 	return h, recs
 }
@@ -257,6 +278,10 @@ func (d *Domain) FileName() string {
 	}
 	return d.Name + ".jsonl"
 }
+
+// FilePath is the committed vector file of the domain for a target, relative
+// to the vectors/<tidb version> directory: <target>/<FileName>.
+func (d *Domain) FilePath(target string) string { return target + "/" + d.FileName() }
 
 // WriteFile writes the vectors to w in the committed form: plain JSONL, or
 // for Gzip domains a gzip stream with no name, no mtime and fixed level, so
@@ -289,17 +314,18 @@ func ReadFile(path string) ([]byte, error) {
 	return io.ReadAll(zr)
 }
 
-var platformRe = regexp.MustCompile(`"goos":"[^"]*","goarch":"[^"]*",`)
+var goosRe = regexp.MustCompile(`"goos":"[^"]*",`)
 
-// SameExceptPlatform reports whether two JSONL vector contents are identical
-// apart from the goos/goarch fields of the header.
-func SameExceptPlatform(a, b []byte) bool {
+// SameExceptGOOS reports whether two JSONL vector contents are identical
+// apart from the goos field of the header. goarch/goamd64 are compared: a
+// file only checks against a regeneration on the same target.
+func SameExceptGOOS(a, b []byte) bool {
 	norm := func(x []byte) []byte {
 		i := bytes.IndexByte(x, '\n') + 1 // header line incl. newline (0: whole input)
 		if i == 0 {
 			i = len(x)
 		}
-		return append(platformRe.ReplaceAll(x[:i], nil), x[i:]...)
+		return append(goosRe.ReplaceAll(x[:i], nil), x[i:]...)
 	}
 	return bytes.Equal(norm(a), norm(b))
 }
