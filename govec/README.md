@@ -13,7 +13,7 @@ govec 用 Go TiDB v8.5.8（commit `8b857efa2`）自己的代码跑一批输入�
 | `govec/domains/<领域>.go` | 每个领域一个文件：op 列表、参数解码、调用 Go 代码 |
 | `govec/domains/<领域>_cases.go` | 输入：从 Go 测试抄来的用例表、边界用例、带种子的随机用例（可与上一个文件合并） |
 | `govec/govec_test.go` | 自检：文件头、每个 op 的最少条数、Go 测试函数都有记录、块内每个 Go 函数都被覆盖或豁免、oracle 与生成结果一致、两次生成逐字节相同、gzip 存储可还原、已提交的向量是最新的 |
-| `vectors/v8.5.8/<领域>.jsonl`（或 `.jsonl.gz`，见"存储"） | 已提交的向量 |
+| `vectors/v8.5.8/<领域>.jsonl.gz`（见"存储"） | 已提交的向量 |
 | `scripts/govec.sh` | 重新生成 / 检查 |
 
 ## 记录格式
@@ -96,10 +96,9 @@ macOS 上若 cgo 报找不到 `stdlib.h`（Homebrew 的 clang 在 PATH 前面）
 
 ## 存储
 
-向量文件按领域选择两种形式之一，由 `vec.Domain.Gzip` 决定，`govec <领域> --filename` 给出文件名：
+向量文件一律以 `vectors/v8.5.8/<领域>.jsonl.gz` 进 git（`vec.Domain.Gzip = true`，`govec <领域> --filename` 给出文件名）。明文 JSONL 每块几 MB（decimal 约 6.7 MB，gzip 后约 0.5 MB），上百个块会让仓库历史膨胀到几百 MB；下游（tidb-rs）也复制 `.gz` 文件，测试用 `flate2` 读。`Gzip = false`（明文 `.jsonl`）只留给调试。
 
-- **不超过约 10 MB**（如 decimal，约 6.7 MB）：`vectors/v8.5.8/<领域>.jsonl`，直接进 git。
-- **超过约 10 MB**：`vectors/v8.5.8/<领域>.jsonl.gz`，同样进 git。由 govec 自己用 Go 的 `compress/gzip` 写出：不写文件名和修改时间、固定 `BestCompression`，所以字节只取决于内容和（已固定的）Go 版本；不要用外部 `gzip` 命令重新压缩。
+`.gz` 由 govec 自己用 Go 的 `compress/gzip` 写出：不写文件名和修改时间、固定 `BestCompression`，所以字节只取决于内容和（已固定的）Go 版本；不要用外部 `gzip` 命令重新压缩。看内容用 `gzip -dc vectors/v8.5.8/decimal.jsonl.gz | head`。
 
 `scripts/govec.sh --check`（即 `govec <领域> --check <文件>`）比对的是解压后的 JSONL 内容（排除 `goos`/`goarch`），不比对压缩字节，因此压缩实现的差异不会导致误报；`TestStorage` 检查 gzip 输出确定、可还原。下游（tidb-rs）复制向量时记录 tracker commit 和所复制文件（`.jsonl` 或 `.jsonl.gz`）的 sha256。单个压缩文件超过 50 MB（GitHub 的警告线）时再改为 release asset + sha256，届时更新本节。
 
@@ -120,11 +119,11 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
    - `Errors`：要命名的哨兵错误；
    - `Coverage`：op → 最少条数和对应的 Go 函数（tracker 符号格式）；
    - `Blocks`：对应的 tracker 块；`Exempt`：块内不覆盖的函数及理由；
-   - `Gzip`：文件超过约 10 MB 时设为 true（见"存储"）；
+   - `Gzip`：设为 true（见"存储"）；
    - `Exec(op, args)`：解码参数、调用 Go、返回可编码的结果（用结构体，不用 map）；需要 warning 时返回 `vec.WithWarnings`；
    - `Generate(g, rng)`：用 `g.Add(src, op, args...)` 加用例。从 Go 测试抄用例表时注明 `// from: pkg/.../xxx_test.go TestXxx`，`src` 写测试函数名。
 2. 在 `govec_test.go` 的 `minedGoTests` 中列出抄过的测试函数。
-3. `scripts/govec.sh <名字>` 生成，提交 `vectors/v8.5.8/<名字>.jsonl`（或 `.jsonl.gz`）。
+3. `scripts/govec.sh <名字>` 生成，提交 `vectors/v8.5.8/<名字>.jsonl.gz`。
 
 ## decimal：抄了哪些 Go 测试
 

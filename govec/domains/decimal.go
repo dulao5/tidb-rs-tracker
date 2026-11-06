@@ -40,6 +40,7 @@ func init() {
 		Coverage: decimalCoverage,
 		Blocks:   []string{"D01.2"},
 		Exempt:   decimalExempt,
+		Gzip:     true,
 		Generate: decimalGenerate,
 		Exec:     decimalExec,
 	})
