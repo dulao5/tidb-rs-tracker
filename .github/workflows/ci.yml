@@ -23,3 +23,31 @@ jobs:
         with:
           name: tracker-db
           path: tracker.db
+  govec:
+    # Builds govec against TiDB v8.5.8 (module proxy, no local checkout) with
+    # the toolchain pinned in govec/go.mod and checks that the committed
+    # vectors of the runner's target are byte-identical to a fresh run (header
+    # goos excluded). Vectors depend on the target (gc fuses float multiply-add
+    # into FMA on arm64, not on amd64 GOAMD64=v1; govec/README.md "Targets"),
+    # so each committed target is checked on its own architecture.
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm] # amd64 (GOAMD64=v1), arm64
+    runs-on: ${{ matrix.runner }}
+    env:
+      GOAMD64: v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: govec/go.mod
+          cache-dependency-path: govec/go.sum
+      - name: govec vet and test (header, coverage, oracle, determinism, FMA model)
+        working-directory: govec
+        run: go vet ./... && go test ./...
+      - name: Committed vectors of this target are up to date
+        run: scripts/govec.sh --check
+      - name: FMA site registry is up to date (cross-compiles every target)
+        if: matrix.runner == 'ubuntu-latest'
+        run: scripts/go_fma_sites.py --check
