@@ -27,6 +27,7 @@ func decimalGenerate(g *vec.Gen, rng *rand.Rand) {
 	// existing records (and the rng sequence they consume) unchanged.
 	decimalAlias(g, rng)
 	decimalChained(g, rng)
+	decimalDirty(g, rng)
 }
 
 // toBinHex runs ToBin at generation time to build from_bin / peak inputs.
@@ -423,6 +424,69 @@ func decimalChained(g *vec.Gen, rng *rand.Rand) {
 					rest = []any{ar[(k*3+1)%len(ar)], 4}
 				}
 				g.Add(pr.src, p+chainSep+c, append(append([]any{}, pr.args...), rest...)...)
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------- dirty receivers
+
+// dirtyReceivers are FromString inputs whose state the next op inherits:
+// negative, fractional (resultFrac > 0), all nine words used, leftover
+// nonzero high words, and FromString's own error states.
+var dirtyReceivers = []string{
+	"-123.456", "-1", "-0.000000001", "1.5", "0.000000000000000000000000000001",
+	"-123456789012345678901234567890.123456789", strings.Repeat("9", 81),
+	"-" + strings.Repeat("9", 72) + "." + strings.Repeat("9", 9), "-1e70", "abc", "-",
+}
+
+// decimalDirty: dirty_<op> ops (see dirtyOps).
+func decimalDirty(g *vec.Gen, rng *rand.Rand) {
+	ar := sysArith()
+	binArgs := [][]any{}
+	for _, c := range []struct {
+		s          string
+		prec, frac int
+	}{{"1.5", 10, 2}, {"-12345.678", 20, 5}, {"0", 5, 0}, {"123456789012345678", 40, 0}, {"-0.000000001", 12, 10}} {
+		if h, ok := toBinHex(c.s, c.prec, c.frac); ok {
+			binArgs = append(binArgs, []any{h, c.prec, c.frac})
+		}
+	}
+	// invalid precision (FromBin returns before writing) and a bad word
+	binArgs = append(binArgs, []any{"80000001", 100, 0}, []any{"7fffffffffff", 10, 0}, []any{"ffffffff", 9, 0})
+	args := map[string][][]any{
+		"from_string": {{"2"}, {"0"}, {"-0"}, {"0.5"}, {"123456789"}, {"1e3"}, {"1e-40"}, {"abc"}, {""},
+			{"99999999999999999999.9"}, {"0.0000000000"}},
+		"from_int":     {{int64(0)}, {int64(5)}, {int64(-5)}, {int64(math.MaxInt64)}, {int64(math.MinInt64)}},
+		"from_uint":    {{uint64(0)}, {uint64(5)}, {uint64(math.MaxUint64)}},
+		"from_float64": {{"0"}, {"1.5"}, {"-2.25"}, {"1e+20"}, {"1e-07"}, {"NaN"}},
+		"from_bin":     binArgs,
+		"unmarshal_json": {{`{"DigitsInt":1,"DigitsFrac":0,"ResultFrac":0,"Negative":false,"WordBuf":[7,0,0,0,0,0,0,0,0]}`},
+			{`{"DigitsInt":1}`}, {`null`}, {`{}`}, {`[1]`}, {`{"WordBuf":[1,2]}`}},
+	}
+	for _, x := range []string{"0", "1.25", "-7.5", "123.456789", "999999999.999999999"} {
+		for _, f := range []int{-1, 0, 2, 10} {
+			args["round"] = append(args["round"], []any{x, f, roundModeNames[(f+3)%3]})
+		}
+	}
+	for i := 0; i < len(ar); i += 3 {
+		x, y := ar[i], ar[(i+4)%len(ar)]
+		for _, op := range []string{"add", "sub", "mul", "mod"} {
+			args[op] = append(args[op], []any{x, y})
+		}
+		args["div"] = append(args["div"], []any{x, y, 4})
+	}
+	for i := 0; i < 5; i++ {
+		x, y := randDecString(rng, 30, 15), randDecString(rng, 30, 15)
+		for _, op := range []string{"add", "sub", "mul", "mod"} {
+			args[op] = append(args[op], []any{x, y})
+		}
+		args["div"] = append(args["div"], []any{x, y, rng.IntN(10)})
+	}
+	for _, op := range dirtyOps {
+		for _, r := range dirtyReceivers {
+			for _, a := range args[op] {
+				g.Add("sys/dirty", dirtyPrefix+op, append([]any{r}, a...)...)
 			}
 		}
 	}

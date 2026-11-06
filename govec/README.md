@@ -21,7 +21,7 @@ govec 用 Go TiDB v8.5.8（commit `8b857efa2`）自己的代码跑一批输入�
 JSONL。第一行是文件头：
 
 ```json
-{"govec":1,"domain":"decimal","tidb":"v8.5.8","commit":"8b857efa2","go":"go1.25.12","goos":"darwin","goarch":"arm64","seed":20260827,"records":31620}
+{"govec":1,"domain":"decimal","tidb":"v8.5.8","commit":"8b857efa2","go":"go1.25.12","goos":"darwin","goarch":"arm64","seed":20260827,"records":33149}
 ```
 
 之后每行一次调用：
@@ -47,11 +47,13 @@ JSONL。第一行是文件头：
 
 `s` 是 `ToString()`，`str` 是 `String()`（按 resultFrac 做 HalfUp 舍入），`st` 是内部状态 `[digitsInt, digitsFrac, resultFrac, negative(0/1), wordBuf[0..8]]`。逐函数移植时内部状态也应一致。
 
-op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`）：`from_string from_int from_uint from_float64 to_int to_uint to_float64 round round_inplace shift add sub mul div mod neg compare to_bin from_bin bin_size peak to_hash_key props max_or_min marshal_json unmarshal_json`，以及下面两类。
+op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`）：`from_string from_int from_uint from_float64 to_int to_uint to_float64 round round_inplace shift add sub mul div mod neg compare to_bin from_bin bin_size peak to_hash_key props max_or_min marshal_json unmarshal_json`，以及下面三类。
 
 **别名调用**（`to` 就是某个输入，Go 允许，`validateArgs` 先复制被别名的输入）：`add_alias sub_alias mul_alias div_alias mod_alias`，参数是原 op 的参数再加一个 `alias`：`1` 为 `f(x, y, x)`，`2` 为 `f(x, y, y)`，`3` 为 `f(x, x, x)`（此时 `b` 与 `a` 相同，只解析 `a`）。输出是调用后的 `to` 对象。`Round` 的原地调用是 `round_inplace`；`Shift` 本身就是原地的。
 
 **链式调用** `<producer>_then_<consumer>`：前一步的结果对象（不经字符串重新解析）直接作为后一步的第一个十进制参数，用来覆盖内部状态与 `FromString` 结果不同的对象（`FromInt`/`FromUint`/`Round`/加法/乘法的 `digitsInt` 按字取整、乘法溢出后的 `-0` 等）。producer 为 `from_int from_uint round add mul`，consumer 为 `to_string to_bin to_hash_key props round round_inplace shift to_int to_float64 compare add mul div`（`to_string` 输出 `{"s","str"}`，只作 consumer 用）。`args` 是 producer 的参数后接 consumer 去掉第一个十进制参数后的参数，如 `{"op":"from_int_then_to_bin","args":[123,20,0]}`；`out` 是 consumer 的输出（中间对象不编码，也不调用它的 `ToString`/`String`：`9…9(81) × 123.456` 截断后的对象，`ToString` 会越界 panic，而 `to_bin`、`props`、`compare` 不会）；`err` 取 producer 的错误，producer 无错时取 consumer 的错误（两步都执行，与忽略 `ErrTruncated` 继续计算的 Go 调用方一致）。
+
+**脏接收者** `dirty_<op>`：op 写入的对象（接收者或 `to`）不是新的 `MyDecimal`，而是先对第一个参数做 `FromString`（错误忽略）留下的对象，如负数、带小数（`resultFrac > 0`）、9 个字都用满的数。`FromString`、`FromInt`、`FromUint`、`FromBin` 等不重置自己不写的字段，所以结果依赖旧状态：接收者是 `-123.456` 时 `FromString("2")` 得 `-2`，`FromUint(5)` 得 `-5`。op 为 `from_string from_int from_uint from_float64 from_bin unmarshal_json round add sub mul div mod`。`args` 是脏值后接原 op 的参数，如 `{"op":"dirty_from_uint","args":["-1",5]}`；`out`、`err` 是原 op 的输出（写入后的接收者 / `to`）和错误。Go 调用方几乎都用 `new(MyDecimal)`，Rust 调用方更可能复用缓冲（chunk 列循环），这类记录防止 Rust 移植"顺手"加上重置。
 
 ### Go 函数覆盖与豁免表
 
@@ -96,7 +98,7 @@ macOS 上若 cgo 报找不到 `stdlib.h`（Homebrew 的 clang 在 PATH 前面）
 
 向量文件按领域选择两种形式之一，由 `vec.Domain.Gzip` 决定，`govec <领域> --filename` 给出文件名：
 
-- **不超过约 10 MB**（如 decimal，约 6 MB）：`vectors/v8.5.8/<领域>.jsonl`，直接进 git。
+- **不超过约 10 MB**（如 decimal，约 6.7 MB）：`vectors/v8.5.8/<领域>.jsonl`，直接进 git。
 - **超过约 10 MB**：`vectors/v8.5.8/<领域>.jsonl.gz`，同样进 git。由 govec 自己用 Go 的 `compress/gzip` 写出：不写文件名和修改时间、固定 `BestCompression`，所以字节只取决于内容和（已固定的）Go 版本；不要用外部 `gzip` 命令重新压缩。
 
 `scripts/govec.sh --check`（即 `govec <领域> --check <文件>`）比对的是解压后的 JSONL 内容（排除 `goos`/`goarch`），不比对压缩字节，因此压缩实现的差异不会导致误报；`TestStorage` 检查 gzip 输出确定、可还原。下游（tidb-rs）复制向量时记录 tracker commit 和所复制文件（`.jsonl` 或 `.jsonl.gz`）的 sha256。单个压缩文件超过 50 MB（GitHub 的警告线）时再改为 release asset + sha256，届时更新本节。
@@ -156,6 +158,7 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 - `st`（内部状态）也必须一致：chunk 的线上格式就是 Go `MyDecimal` 的 40 字节内存布局（N5a），所以 `digitsInt` 按字取整之类的细节在 Rust 中也要保持。
 - 别名记录（`*_alias`、`round_inplace`）：Rust 的借用规则不允许 `&x, &y, &mut x` 同时存在，按映射规则 `M-ALIAS`，调用方先复制被别名的输入（`MyDecimal: Copy`）再调用、或使用原地入口（如 `round_in_place`）；输出必须与 Go 的别名调用一致。
 - 链式记录：Rust 同样把第一步的结果对象直接交给第二步，不经字符串；错误取法同上。
+- 脏接收者记录：Rust 先对同一个对象 `from_string(脏值)`，再在它上面调用 op（或把它作为 `to`），不重置。
 - `err.name = "panic"` 的记录：Go 在这里因 bug 而 panic（越界等），执行层 recover 后变成报错。Rust 同样 panic（映射规则 `M-PANIC` 只把控制流用途的 panic 改为 `Result`），由 task 边界转换；回放时用 `catch_unwind` 检查"发生了 panic"，不比对内容。这些记录同时作为上游 bug 候选登记。
 
 ## decimal：生成时发现的 Go 行为（移植时的坑）

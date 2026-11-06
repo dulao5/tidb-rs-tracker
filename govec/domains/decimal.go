@@ -136,6 +136,19 @@ var (
 
 const chainSep = "_then_"
 
+// Dirty receivers "dirty_<op>": the receiver (or `to`) of op is not a fresh
+// MyDecimal but one that FromString of the first argument left behind (parse
+// error ignored), e.g. a negative or fractional value. FromString, FromInt,
+// FromUint, FromBin etc. do not reset the fields they do not write, so the
+// result depends on the old state. args = [dirty decimal] followed by op's
+// args; out = op's out (the receiver / `to`); err = op's error.
+var dirtyOps = []string{
+	"from_string", "from_int", "from_uint", "from_float64", "from_bin", "unmarshal_json",
+	"round", "add", "sub", "mul", "div", "mod",
+}
+
+const dirtyPrefix = "dirty_"
+
 // decimalCoverage: base ops + chained ops (GoFuncs = union of both steps).
 var decimalCoverage = func() map[string]vec.Coverage {
 	m := map[string]vec.Coverage{
@@ -150,6 +163,10 @@ var decimalCoverage = func() map[string]vec.Coverage {
 			fs := append(append([]string{}, m[p].GoFuncs...), m[c].GoFuncs...)
 			m[p+chainSep+c] = vec.Coverage{Min: 20, GoFuncs: fs}
 		}
+	}
+	for _, op := range dirtyOps {
+		fs := append([]string{"MyDecimal.FromString"}, m[op].GoFuncs...)
+		m[dirtyPrefix+op] = vec.Coverage{Min: 20, GoFuncs: fs}
 	}
 	return m
 }()
@@ -250,6 +267,18 @@ var roundModes = map[string]types.RoundMode{
 type argReader struct {
 	raw   []json.RawMessage
 	first *types.MyDecimal
+	// recv, if set, is the receiver / `to` object of the op (a dirty_ op);
+	// otherwise ops write into a fresh MyDecimal.
+	recv *types.MyDecimal
+}
+
+// to returns the object an op writes into: a copy of recv, or a new MyDecimal.
+func (a argReader) to() *types.MyDecimal {
+	if a.recv != nil {
+		d := *a.recv
+		return &d
+	}
+	return new(types.MyDecimal)
 }
 
 func (a argReader) get(i int, v any) {
@@ -301,6 +330,10 @@ func decimalExec(op string, args []json.RawMessage) (any, error) {
 	if p, c, ok := strings.Cut(op, chainSep); ok {
 		return decimalChain(p, c, args)
 	}
+	if inner, ok := strings.CutPrefix(op, dirtyPrefix); ok {
+		recv := argReader{raw: args}.dec(0)
+		return decimalOp(inner, argReader{raw: args[1:], recv: recv})
+	}
 	return decimalOp(op, argReader{raw: args})
 }
 
@@ -323,23 +356,31 @@ func decimalChain(p, c string, args []json.RawMessage) (any, error) {
 
 // decimalProduce runs a chain producer op and returns the result object.
 func decimalProduce(op string, a argReader) (types.MyDecimal, error) {
-	var to types.MyDecimal
+	to := a.to()
 	var err error
 	switch op {
 	case "from_int": // NewDecFromInt(v) is new(MyDecimal).FromInt(v)
-		to = *types.NewDecFromInt(a.i64(0))
+		if a.recv == nil {
+			to = types.NewDecFromInt(a.i64(0))
+		} else {
+			to.FromInt(a.i64(0))
+		}
 	case "from_uint":
-		to = *types.NewDecFromUint(a.u64(0))
+		if a.recv == nil {
+			to = types.NewDecFromUint(a.u64(0))
+		} else {
+			to.FromUint(a.u64(0))
+		}
 	case "round":
-		err = a.dec(0).Round(&to, a.int(1), a.mode(2))
+		err = a.dec(0).Round(to, a.int(1), a.mode(2))
 	case "add":
-		err = types.DecimalAdd(a.dec(0), a.dec(1), &to)
+		err = types.DecimalAdd(a.dec(0), a.dec(1), to)
 	case "mul":
-		err = types.DecimalMul(a.dec(0), a.dec(1), &to)
+		err = types.DecimalMul(a.dec(0), a.dec(1), to)
 	default:
 		panic(fmt.Sprintf("not a chain producer: %q", op))
 	}
-	return to, err
+	return *to, err
 }
 
 func decimalOp(op string, a argReader) (any, error) {
@@ -348,13 +389,13 @@ func decimalOp(op string, a argReader) (any, error) {
 		d, err := decimalProduce(op, a)
 		return decOut(&d), err
 	case "from_string":
-		var d types.MyDecimal
+		d := a.to()
 		err := d.FromString([]byte(a.str(0)))
-		return decOut(&d), err
+		return decOut(d), err
 	case "from_float64":
-		var d types.MyDecimal
+		d := a.to()
 		err := d.FromFloat64(a.f64(0))
-		return decOut(&d), err
+		return decOut(d), err
 	case "to_int":
 		v, err := a.dec(0).ToInt()
 		return v, err
@@ -374,19 +415,19 @@ func decimalOp(op string, a argReader) (any, error) {
 		return decOut(d), err
 	case "sub", "mod":
 		x, y := a.dec(0), a.dec(1)
-		var to types.MyDecimal
+		to := a.to()
 		var err error
 		if op == "sub" {
-			err = types.DecimalSub(x, y, &to)
+			err = types.DecimalSub(x, y, to)
 		} else {
-			err = types.DecimalMod(x, y, &to)
+			err = types.DecimalMod(x, y, to)
 		}
-		return decOut(&to), err
+		return decOut(to), err
 	case "div":
 		x, y := a.dec(0), a.dec(1)
-		var to types.MyDecimal
-		err := types.DecimalDiv(x, y, &to, a.int(2))
-		return decOut(&to), err
+		to := a.to()
+		err := types.DecimalDiv(x, y, to, a.int(2))
+		return decOut(to), err
 	case "add_alias", "sub_alias", "mul_alias", "mod_alias", "div_alias":
 		f := map[string]func(x, y, to *types.MyDecimal) error{
 			"add_alias": types.DecimalAdd, "sub_alias": types.DecimalSub, "mul_alias": types.DecimalMul,
@@ -423,9 +464,9 @@ func decimalOp(op string, a argReader) (any, error) {
 		b, err := a.dec(0).ToBin(a.int(1), a.int(2))
 		return hexOrNil(b), err
 	case "from_bin":
-		var d types.MyDecimal
+		d := a.to()
 		n, err := d.FromBin(a.hex(0), a.int(1), a.int(2))
-		return FromBinOut{N: n, Dec: decOut(&d)}, err
+		return FromBinOut{N: n, Dec: decOut(d)}, err
 	case "bin_size":
 		return types.DecimalBinSize(a.int(0), a.int(1))
 	case "peak":
@@ -446,9 +487,9 @@ func decimalOp(op string, a argReader) (any, error) {
 		j, err := a.dec(0).MarshalJSON()
 		return string(j), err
 	case "unmarshal_json":
-		var d types.MyDecimal
+		d := a.to()
 		err := d.UnmarshalJSON([]byte(a.str(0)))
-		return decOut(&d), err
+		return decOut(d), err
 	}
 	panic(fmt.Sprintf("unknown op %q", op))
 }
