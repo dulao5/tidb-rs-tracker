@@ -306,6 +306,25 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等，错误按消息比对（都是不带错误码的 `errors.Errorf`），`panic` 记录在 Rust 中也必须 panic。
 
+## collate（块 D01.9：`pkg/util/collate`、`pkg/parser/charset/charset.go`、`pkg/util/stringutil`）
+
+领域 `collate` 覆盖 D01.9 的 collate 包，加上整文件移植的 `pkg/parser/charset/charset.go`（D02.2）和 `pkg/util/stringutil/string_util.go`（D00.3），后两个通过 `vec.Domain.Files` 登记，`TestBlockCoverage` 要求这些文件的每个函数都被覆盖或豁免（`<file>:<Symbol>` 形式）。
+
+**全局状态**：大多数 op 的第一个参数是 `enabled`，回放前先调用 `SetNewCollationEnabledForTest`，所以每条记录都不依赖其他记录（oracle 抽样回放的前提）。
+
+**用例**
+- `key_digest`：对 binary、utf8mb4_bin、utf8mb4_0900_bin、utf8mb4_general_ci、utf8mb4_unicode_ci、utf8mb4_0900_ai_ci、gbk_bin、gbk_chinese_ci，在每 0x1000 个码位的区间上做 `Key`、`KeyWithoutTrimRightSpace` 和与前一个 rune 的 `Compare`，取 SHA-256；调用 panic 时记一个 0xFF 字节；surrogate 按 Go 的 `string(rune)` 变成 U+FFFD。这一类记录对生成的权重表做全码位校验。
+- 字面量：collate、stringutil、charset 的 20 个 Go 测试函数中的字符串（`cmd/minelits`，在 `minedGoTests` 中登记），在全部 13 个排序规则、新排序规则开和关两种状态下做 `key` / `compare` / `pattern`。
+- 随机字符串：从一张"零件表"中拼接，零件包括 ASCII 大小写、空格、Latin-1 与扩展拉丁字母（重音、ß、连字）、大小写折叠的特例（Kelvin K U+212A、Angstrom U+212B、长 s、大写 ß U+1E9E）、希腊文、西里尔文、组合附加符、GBK 内外的汉字、韩文、符号（customGBK 拒绝的 €）、U+FFFD、补充平面（emoji、CJK 扩展 B、0900 表越界的 U+2CEA1）、控制字符（UCA 中权重为零），以及无效 UTF-8（孤立的后续字节、超长编码、截断、surrogate、大于 U+10FFFF）。有 1/5 的概率在末尾加空格（PAD SPACE 与 NO PAD 的区别）。比较用的第二个串多数取第一个的近似变体（大小写翻转、增删一个零件、末尾加空格），使比较常常相等或很晚才分出大小。
+- `pattern`：随机模式（`_`、`%`、转义字符，包括 0、0x80、0xff 这类非 ASCII 的转义字节），同时记录 `CompilePattern` / `CompilePatternBinary` 的结果。
+- 其余：`collator`（Go 的 `%T` 和 Clone）、`collation_id` / `collation_name` / `compatible` / `supported`、`charset` / `charset_by_id` / `charsets`、`gbk_encode`，以及 stringutil 的各函数。
+
+字符串参数一律用 `vec.GoString`（无效 UTF-8 记为十六进制）。名字（排序规则名、字符集名）只用 UTF-8 字面量。
+
+**目标平台**：没有浮点运算，两个目标的记录相同。amd64 的文件取自 tracker CI 的产物。
+
+**Rust 侧比对**：单个 `#[test]` 顺序回放（排序规则开关是全局状态）；`key_digest` 在 Rust 中按同样的算法重算；`collator` 的 `%T` 按类型映射表比对；错误按错误码加消息比对；`panic` 记录在 Rust 中也必须 panic。
+
 ## 两个目标的差异（`TestTargetsDiffer`）
 
 每个领域都比较已提交的 amd64 和 arm64 两个文件。不同的记录必须登记在 `targetdiffs_test.go` 的允许表 `targetDiffs` 中，并写明原因（M-FMA、M-F2I）。
