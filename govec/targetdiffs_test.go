@@ -3,10 +3,13 @@ package main
 // targetDiffs: the records whose output differs between the committed amd64
 // and arm64 files, with the reason (see TestTargetsDiffer). An entry is either
 // one call (Args: the record's args as compact JSON) or every differing record
-// of an op (Args: "*", with N the exact number of them).
+// of an op (Args: "*", with N the exact number of them). An op-wide entry may
+// carry a Kind (see diffKind): it then counts only the differing records of that
+// kind, and the entry without Kind counts the rest.
 type targetDiff struct {
 	Domain, Op string
 	Args       string
+	Kind       string
 	N          int
 	Why        string
 }
@@ -43,6 +46,19 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
 	{Domain: "parser_types", Op: "duration", Args: `["106752d"]`,
 		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
+
+	// The distance functions (vector_functions.go:44, 71, 100-102). M-FMA: the float32
+	// sums are fused on arm64 only (FMADDS), so rounding differs, and an unfused
+	// product that overflows to Inf can make Inf-Inf = NaN on amd64 where the fused
+	// sum stays infinite. Not M-FMA: the hardware NaN rules (see diffKind).
+	{Domain: "vector", Op: "distance", Args: "*", N: 888,
+		Why: "M-FMA: VectorFloat32 distance sums fused on arm64 only (rounding)"},
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-vs-number", N: 295,
+		Why: "M-FMA: unfused product overflows to Inf on amd64 (Inf-Inf = NaN), the fused sum on arm64 does not"},
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-sign", N: 124,
+		Why: "hardware default NaN of an invalid operation: x86 0xFFC00000 (negative), ARM 0x7FC00000"},
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-payload", N: 544,
+		Why: "hardware NaN propagation with two NaN operands: x86 returns the first source, ARM the first SNaN then QNaN (addend, op1, op2)"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far

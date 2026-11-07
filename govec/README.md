@@ -284,6 +284,28 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - 元素可以不是 UTF-8（ENUM 的二进制字面量）：`MarshalJSON` 把每个无效字节写成 `�` 转义，`CompactStr`（`format.OutputFormat` 按 rune 遍历）写成 U+FFFD。
 - `duration`：`ParseDuration`。很大的值经过 `time.Duration(float)` 转换，结果依赖目标平台（M-F2I）。
 
+## vector（块 D01.6：`pkg/types` 的 vector.go、vector_functions.go）
+
+领域 `vector` 覆盖 D01.6 的 31 个函数（`init` 豁免：Go 在 init 中检查小端，Rust 是编译期断言），以及 `ParseVectorFloat32` 用到的 jsoniter（v1.1.12）解析器。
+
+**值的编码**
+- 向量记成序列化字节（`ZeroCopySerialize`）的十六进制。输入向量由 `ZeroCopyDeserializeVectorFloat32` 还原，所以可以含 NaN、±Inf（`CreateVectorFloat32`、`ParseVectorFloat32` 拒绝它们，算术函数不检查输入）。
+- 输出向量是 `{"data", "s": String(), "ts": TruncatedString(), "len", "zero": IsZeroValue(), "size": SerializedSize(), "mem": EstimatedMemUsage()}`。
+- float32 输入和 float64 输出（距离、范数）记成 IEEE 位模式，因为 NaN、±Inf 不是 JSON 数。NaN 的位也要一致：Go 的 `math.NaN()` 是 `0x7FF8000000000001`；`NegativeInnerProduct` 的 `d * -1` 被 gc 改写成取负，NaN 的符号位也会翻转。
+
+**用例**
+- Go 测试中的向量文本：`pkg/types/vector_test.go`、`pkg/expression/integration_test`、`pkg/server/tests/commontest` 中出现的全部向量字面量（`src` 为 `lit/go-tests`）。
+- jsoniter 解析的边界（`sys/edge`）：快路径（不超过 6 位小数时用整数除以 10 的幂，不是精确解析）与慢路径（`strconv.ParseFloat`）的分界、前导 `+`、前导零、`validateFloat` 的各条错误、`null` / `nul`、数组后的多余字节（不检查）、空白、无效 UTF-8、float32 溢出成 Inf（`[1e39]` 被接受）、float64 溢出（报错）、16383/16384 维。
+- 随机向量文本、对文本的随机增删改、快慢路径分界附近的随机数字。
+- 反序列化任意字节：头部长度按 uint32 计算 `elements*4 + 4`，`elements >= 2^30` 时会回绕。回绕后的长度为 0 或 4 时 Go 在 `Len` / `Elements` 中确定地越界 panic（记为 `panic`）；回绕后不小于 8 且不超过输入长度时，Go 得到长度字大于数据的向量，`Elements` 读越界（未定义行为），这类输入不生成。
+- 距离、范数、`Add`/`Sub`/`Mul`、`Compare`：随机维数（多数不超过 64，少量到 300），元素取小整数、[-1,1]、两位小数、任意有限位模式、大跨度指数，部分含 NaN、±Inf、最大值、非规格化数；包括维数不同、零向量、相同向量、前缀向量。
+
+**目标平台**：距离函数的累加 `distance += x * y`（vector_functions.go:44、71、100–102）和 `L2Norm` 的 float64 累加（:152）在 arm64 上被 gc 融合成 FMA，在 amd64（GOAMD64=v1）上不融合（`data/go_fma_sites.tsv`，M-FMA），所以两个目标在许多 `distance` 记录上不同。NaN 的结果另外受硬件规则影响（tidb-rs PR #16 的 Lucky 评审）：x86 SSE 遇到两个 NaN 时返回第一个源操作数（目标寄存器）；ARM 先按操作数顺序（FMADD 为 addend、Rn、Rm）找 SNaN，没有再找 QNaN，且 addend 是 QNaN、乘积是 ∞×0 时给出默认 NaN；无效运算的默认 NaN，x86 是 `0xFFC00000`，ARM 是 `0x7FC00000`。`targetDiffs` 按 `diffKind` 分类登记（共 1,851 条）：数值不同（M-FMA，888 条）、只有一个目标是 NaN（M-FMA：未融合的乘积溢出成 Inf 后 Inf−Inf，295 条）、只差符号位（默认 NaN，124 条）、payload 不同（两个 NaN 操作数的传播规则，544 条）。`L2Norm` 的 float64 累加虽然也被融合，但两个 float32 的乘积在 float64 中是精确的，融合与否结果相同。
+
+**NaN 位型**（Lucky 评审后放大，种子 31337，共 91,762 条）：`vectorBits` 包括带 payload 的 QNaN（`0x7fc12345`、`0xffd00001`）、SNaN（`0x7fbfffff`、`0x7f800abc`、`0x7f800001`）、负的 SNaN（`0xff800001`、`0xffbfffff`、`0xff812345`）、全 1（`0x7fffffff`、`0xffffffff`）、±Inf、最大值等；含特殊值的向量中每个元素有 3/10 的概率取这些位型；随机部分是放大前的 10 倍。
+
+**Rust 侧比对**：`out` 按 JSON 逐项相等，错误按消息比对（都是不带错误码的 `errors.Errorf`），`panic` 记录在 Rust 中也必须 panic。
+
 ## 两个目标的差异（`TestTargetsDiffer`）
 
 每个领域都比较已提交的 amd64 和 arm64 两个文件。不同的记录必须登记在 `targetdiffs_test.go` 的允许表 `targetDiffs` 中，并写明原因（M-FMA、M-F2I）。
@@ -306,3 +328,4 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - config：824 条 `f2i` 和 5 条 `load`。这 5 条都是 `grpc-keepalive-timeout` 的浮点数转无符号整数时溢出或取 `inf`（M-F2I）。
 - time：3 条 `parse_time_float64`，即 NaN、+Inf、1e19（M-F2I）。
 - parser_types：3 条 `duration`（`100000000000d`、`9223372036h`、`106752d`），`time.Duration(float)` 溢出 int64，amd64 得到最小值，arm64 饱和（M-F2I）。
+- vector：130 条 `distance`。92 条是 arm64 上融合的 float32 累加（M-FMA）；38 条结果是 NaN：无效运算（Inf−Inf、0×Inf）产生的默认 NaN 在 amd64 上带符号位（`0xFFF8…`），在 arm64 上不带（`0x7FF8…`）。Rust 在同一硬件上得到同样的 NaN。
