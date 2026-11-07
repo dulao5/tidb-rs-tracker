@@ -181,6 +181,31 @@ func genUnicode() {
 		}
 	}
 	e.p("];\n")
+	// unicode.CaseRanges (exported) for ToUpper / ToLower / ToTitle.
+	e.p("\n/// `unicode.CaseRanges` (Go %s): `(lo, hi, [upper, lower, title] deltas)`; a delta of\n/// `UPPER_LOWER` (`unicode.UpperLower`) alternates upper and lower case.\n", runtime.Version())
+	e.p("pub static CASE_RANGES: &[(u32, u32, [i32; 3])] = &[\n")
+	for _, c := range unicode.CaseRanges {
+		e.p("    (0x%04x, 0x%04x, [%d, %d, %d]),\n", c.Lo, c.Hi, c.Delta[0], c.Delta[1], c.Delta[2])
+		n++
+	}
+	e.p("];\n")
+	// unicode.SimpleFold uses asciiFold and caseOrbit (unexported) before falling
+	// back to ToLower / ToUpper. The table lists every rune whose SimpleFold is not
+	// that fallback (computed by calling SimpleFold on every rune), so the Rust
+	// SimpleFold equals Go's by construction.
+	e.p("\n/// Runes whose `unicode.SimpleFold` is not `ToLower(r)` (or `ToUpper(r)` when `ToLower(r) == r`):\n/// Go's `asciiFold` and `caseOrbit` (Go %s), as `(rune, SimpleFold(rune))`.\n", runtime.Version())
+	e.p("pub static FOLD_ORBIT: &[(u32, u32)] = &[\n")
+	for r := rune(0); r <= unicode.MaxRune; r++ {
+		fallback := unicode.ToLower(r)
+		if fallback == r {
+			fallback = unicode.ToUpper(r)
+		}
+		if f := unicode.SimpleFold(r); f != fallback {
+			e.p("    (0x%04x, 0x%04x),\n", r, f)
+			n++
+		}
+	}
+	e.p("];\n")
 	e.write("gostd/unicode_tables.rs")
 	fmt.Fprintf(os.Stderr, "  %d ranges\n", n)
 }

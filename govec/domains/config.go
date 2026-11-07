@@ -31,6 +31,7 @@ package domains
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -39,6 +40,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	_ "embed"
 
@@ -115,6 +117,16 @@ var configCoverage = map[string]vec.Coverage{
 	"temp_storage": {Min: 8, GoFuncs: []string{"Config.UpdateTempStoragePath", "encodeDefTempStorageDir"}},
 	// args: ["plain", msg] | ["std", code] (dbterror.ClassExecutor.NewStd; codes registered for the class)   out: label
 	"error_label": {Min: 5, GoFuncs: []string{"ExecuteErrorToLabel"}},
+	// Go runtime and standard library used by the config code (gostd in tidb-rs):
+	// args: [float64 bits as decimal string, target type]   out: the conversion T(f) as a
+	// decimal string (mapping rule M-F2I: out-of-range results depend on the target).
+	"f2i": {Min: 2000},
+	// args: []   out: [[r, SimpleFold(r)], ...] for every rune with SimpleFold(r) != r
+	"simple_fold_table": {Min: 1},
+	// args: []   out: [[r, ToUpper(r), ToLower(r)], ...] for every rune changed by either
+	"case_table": {Min: 1},
+	// args: [a, b]   out: strings.EqualFold(a, b)
+	"equal_fold": {Min: 300},
 }
 
 var configExempt = map[string]string{
@@ -513,6 +525,30 @@ func configExec(op string, args []json.RawMessage) (any, error) {
 		}
 		c.UpdateTempStoragePath()
 		return vec.GoString(tempClean(c.TempStoragePath)), nil
+	case "f2i":
+		bits, err := strconv.ParseUint(str(0), 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		return f2i(math.Float64frombits(bits), str(1)), nil
+	case "simple_fold_table":
+		out := [][2]int32{}
+		for r := rune(0); r <= unicode.MaxRune; r++ {
+			if f := unicode.SimpleFold(r); f != r {
+				out = append(out, [2]int32{r, f})
+			}
+		}
+		return out, nil
+	case "case_table":
+		out := [][3]int32{}
+		for r := rune(0); r <= unicode.MaxRune; r++ {
+			if u, l := unicode.ToUpper(r), unicode.ToLower(r); u != r || l != r {
+				out = append(out, [3]int32{r, u, l})
+			}
+		}
+		return out, nil
+	case "equal_fold":
+		return strings.EqualFold(str(0), str(1)), nil
 	case "error_label":
 		var err error
 		switch str(0) {
@@ -525,6 +561,34 @@ func configExec(op string, args []json.RawMessage) (any, error) {
 		return metrics.ExecuteErrorToLabel(err), nil
 	}
 	return nil, fmt.Errorf("unknown op %q", op)
+}
+
+// f2i converts f to the named integer type at run time (a variable, so that gc
+// emits the target's conversion instructions; M-F2I).
+func f2i(f float64, typ string) string {
+	switch typ {
+	case "int64":
+		return strconv.FormatInt(int64(f), 10)
+	case "int":
+		return strconv.FormatInt(int64(int(f)), 10)
+	case "int32":
+		return strconv.FormatInt(int64(int32(f)), 10)
+	case "int16":
+		return strconv.FormatInt(int64(int16(f)), 10)
+	case "int8":
+		return strconv.FormatInt(int64(int8(f)), 10)
+	case "uint64":
+		return strconv.FormatUint(uint64(f), 10)
+	case "uint":
+		return strconv.FormatUint(uint64(uint(f)), 10)
+	case "uint32":
+		return strconv.FormatUint(uint64(uint32(f)), 10)
+	case "uint16":
+		return strconv.FormatUint(uint64(uint16(f)), 10)
+	case "uint8":
+		return strconv.FormatUint(uint64(uint8(f)), 10)
+	}
+	panic("f2i: unknown type " + typ)
 }
 
 func mustText(b *config.AtomicBool) string {

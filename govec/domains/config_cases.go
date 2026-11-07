@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -510,6 +513,7 @@ func configGenerate(g *vec.Gen, rng *rand.Rand) {
 		copy(g, c)
 		add("temp", "temp_storage", g...)
 	}
+	configGostdCases(add, rng)
 	for _, e := range [][2]string{{"plain", "x"}, {"plain", ""}, {"std", "1044"}, {"std", "1213"}, {"std", "8003"}, {"std", "8068"}} {
 		add("label", "error_label", gs(e[0]), gs(e[1]))
 	}
@@ -601,4 +605,77 @@ func loadDeterministic(data string) bool {
 		return false
 	}
 	return true
+}
+
+var f2iTypes = []string{"int64", "int", "int32", "int16", "int8", "uint64", "uint", "uint32", "uint16", "uint8"}
+
+// configGostdCases: float -> integer conversions (M-F2I) and Unicode case folding.
+func configGostdCases(add func(src, op string, args ...any), rng *rand.Rand) {
+	var fs []float64
+	for _, e := range []float64{0, 1, 0.5, 0.999, 1.5, 2.5, 127, 128, 255, 256, 300, 32767, 32768, 65535, 65536,
+		2147483647, 2147483648, 2147483648.5, 4294967295, 4294967296, 1 << 53, 1<<63 - 1024, 1 << 63, 1<<63 + 2048,
+		1 << 64, 1<<64 + 4096, 2147483647.9, 2147483649, 1e30, 1e300, math.MaxFloat64, math.SmallestNonzeroFloat64} {
+		fs = append(fs, e, -e)
+	}
+	fs = append(fs, math.Inf(1), math.Inf(-1), math.NaN(), math.Copysign(0, -1),
+		math.Nextafter(1<<63, 0), math.Nextafter(1<<63, math.Inf(1)), math.Nextafter(-1<<63, 0), math.Nextafter(-1<<63, math.Inf(-1)),
+		math.Nextafter(1<<64, 0), -2147483648.9, -2147483649.0, -2147483648.0)
+	for i := 0; i < 220; i++ {
+		// exponent-uniform magnitudes from 2^-4 to 2^70, both signs
+		m := math.Ldexp(1+rng.Float64(), rng.IntN(75)-4)
+		if rng.IntN(2) == 0 {
+			m = -m
+		}
+		fs = append(fs, m)
+	}
+	for _, f := range fs {
+		for _, t := range f2iTypes {
+			add("f2i", "f2i", vec.GoString(strconv.FormatUint(math.Float64bits(f), 10)), vec.GoString(t))
+		}
+	}
+	add("unicode", "simple_fold_table")
+	add("unicode", "case_table")
+	// EqualFold: fold orbits (k K \u212A, s S \u017F, ß ẞ, σ ς Σ, µ μ Μ, å Å \u212B, İ, ı),
+	// plus random runes with their SimpleFold / ToUpper / ToLower variants.
+	pairs := [][2]string{{"k", "\u212A"}, {"K", "\u212A"}, {"s", "\u017F"}, {"S", "\u017F"}, {"ß", "ẞ"}, {"σ", "ς"},
+		{"Σ", "ς"}, {"µ", "μ"}, {"µ", "Μ"}, {"å", "\u212B"}, {"İ", "i"}, {"İ", "I"}, {"ı", "I"}, {"ı", "i"},
+		{"ǅ", "Ǆ"}, {"ǅ", "ǆ"}, {"ΐ", "\u1FD3"}, {"abc", "ABC"}, {"abc", "ABd"}, {"abc", "ab"}, {"", ""}, {"a", ""},
+		{"log.Level", "LOG.LEVEL"}, {"tidb_enable_ddl", "TiDB_Enable_DDL"}, {"a\u212Ab", "AKB"}, {"Ǳ", "ǳ"}, {"@", "`"}, {"[", "{"}}
+	for _, p := range pairs {
+		add("equal_fold", "equal_fold", vec.GoString(p[0]), vec.GoString(p[1]))
+	}
+	var folded []rune
+	for r := rune(0x80); r <= unicode.MaxRune; r++ {
+		if unicode.SimpleFold(r) != r {
+			folded = append(folded, r)
+		}
+	}
+	for i := 0; i < 300; i++ {
+		var a, b strings.Builder
+		for n := 1 + rng.IntN(4); n > 0; n-- {
+			var r rune
+			if rng.IntN(3) == 0 {
+				r = rune('A' + rng.IntN(58))
+			} else {
+				r = folded[rng.IntN(len(folded))]
+			}
+			a.WriteRune(r)
+			switch rng.IntN(5) {
+			case 0:
+				r = unicode.SimpleFold(r)
+			case 1:
+				r = unicode.ToUpper(r)
+			case 2:
+				r = unicode.ToLower(r)
+			case 3:
+				r = unicode.SimpleFold(unicode.SimpleFold(r))
+			default:
+				if rng.IntN(4) == 0 {
+					r++
+				}
+			}
+			b.WriteRune(r)
+		}
+		add("equal_fold-rand", "equal_fold", vec.GoString(a.String()), vec.GoString(b.String()))
+	}
 }
