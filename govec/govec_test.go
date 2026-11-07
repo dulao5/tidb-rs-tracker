@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -381,8 +382,11 @@ func TestTargetsDiffer(t *testing.T) {
 		if e.Why == "" {
 			t.Errorf("targetDiffs %s %s %s: no reason", e.Domain, e.Op, e.Args)
 		}
+		if e.Kind != "" && e.Args != "*" {
+			t.Errorf("targetDiffs %s %s: Kind is only for op-wide (Args \"*\") entries", e.Domain, e.Op)
+		}
 		if e.Args == "*" {
-			byOp[e.Domain+"\x00"+e.Op] = e
+			byOp[e.Domain+"\x00"+e.Op+"\x00"+e.Kind] = e
 		} else {
 			exact[e.Domain+"\x00"+e.Op+"\x00"+e.Args] = e
 		}
@@ -436,7 +440,9 @@ func TestTargetsDiffer(t *testing.T) {
 			}
 			if e := exact[name+"\x00"+ra.Op+"\x00"+args]; e != nil {
 				hits[e]++
-			} else if e := byOp[name+"\x00"+ra.Op]; e != nil {
+			} else if e := byOp[name+"\x00"+ra.Op+"\x00"+diffKind(a[i], b[i])]; e != nil {
+				hits[e]++
+			} else if e := byOp[name+"\x00"+ra.Op+"\x00"]; e != nil {
 				hits[e]++
 			} else {
 				t.Errorf("%s line %d: differs between the targets and is not in targetDiffs:\n amd64 %s\n arm64 %s",
@@ -458,4 +464,44 @@ func TestTargetsDiffer(t *testing.T) {
 			t.Errorf("targetDiffs %s %s %s: no longer differs between the targets", e.Domain, e.Op, e.Args)
 		}
 	}
+}
+
+// diffKind classifies a record that differs between the targets, so that op-wide
+// targetDiffs entries can separate reasons (targetDiff.Kind). For outputs that are
+// float64 bit patterns (uint64):
+//   - "nan-sign": both NaN with the same payload, only the sign differs: the default
+//     NaN of an invalid operation (Inf-Inf, 0*Inf) is 0xFFC00000 on x86 (sign set)
+//     and 0x7FC00000 on ARM;
+//   - "nan-payload": both NaN, different payloads: with two NaN operands x86 returns
+//     the first source (the destination register), ARM the first SNaN, then the
+//     first QNaN, in the order addend, op1, op2;
+//   - "nan-vs-number": NaN on one target only;
+//   - "" otherwise (finite or infinite values that differ).
+func diffKind(amd64, arm64 string) string {
+	out := func(line string) (uint64, bool) {
+		var r struct {
+			Out json.Number `json:"out"`
+		}
+		d := json.NewDecoder(strings.NewReader(line))
+		d.UseNumber()
+		if d.Decode(&r) != nil {
+			return 0, false
+		}
+		v, err := strconv.ParseUint(r.Out.String(), 10, 64)
+		return v, err == nil
+	}
+	isNaN := func(v uint64) bool { return v>>52&0x7ff == 0x7ff && v&(1<<52-1) != 0 }
+	a, okA := out(amd64)
+	b, okB := out(arm64)
+	switch {
+	case !okA || !okB:
+		return ""
+	case isNaN(a) && isNaN(b) && a^b == 1<<63:
+		return "nan-sign"
+	case isNaN(a) && isNaN(b):
+		return "nan-payload"
+	case isNaN(a) || isNaN(b):
+		return "nan-vs-number"
+	}
+	return ""
 }

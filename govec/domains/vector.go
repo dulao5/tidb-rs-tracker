@@ -32,7 +32,7 @@ import (
 	"github.com/pingcap/tidb/pkg/types"
 )
 
-const vectorSeed = 20261108
+const vectorSeed = 31337
 
 func init() {
 	vec.Register(&vec.Domain{
@@ -241,12 +241,14 @@ var vectorBits = []uint32{
 	0x00800000, 0x80800000, 0x00000001, 0x80000001, 0x007fffff, 0x7f800000, 0xff800000, 0x7fc00000,
 	0xffc00000, 0x7f800001, 0x3eaaaaab, 0x3dcccccd, 0x4b800000, 0x4b800001, 0x5f000000, 0x7e967699,
 	0x1e3ce508, 0x3f7fffff, 0x3f800001, 0x40490fdb,
+	0xff800001, 0x7fc12345, 0xffd00001, 0x7fbfffff, 0xffbfffff, 0x7f800abc, 0xff812345, 0x7fffffff, 0xffffffff,
+	0x7fc00000, 0xffc00000, 0x7f800001, 0x7f800000, 0xff800000, 0x7f7fffff, 0x5f800000, 0xdf800000,
 }
 
 // randF32: a float32 from one of several shapes; finite unless special.
 func randF32(rng *rand.Rand, special bool) float32 {
 	switch k := rng.IntN(10); {
-	case k == 0 && special:
+	case k <= 2 && special:
 		return math.Float32frombits(vectorBits[rng.IntN(len(vectorBits))])
 	case k == 0 || k == 1:
 		return float32(rng.IntN(21) - 10)
@@ -387,10 +389,10 @@ func vectorGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, n := range []int{16382, 16383, 16384} {
 		g.Add("sys/dims", "parse", vec.GoString("["+strings.Repeat("1,", n-1)+"1]"))
 	}
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 20000; i++ {
 		g.Add("rand/text", "parse", vec.GoString(randVecText(rng)))
 	}
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 15000; i++ {
 		base := vectorEdgeTexts[rng.IntN(len(vectorEdgeTexts))]
 		if rng.IntN(2) == 0 {
 			base = randVecText(rng)
@@ -398,7 +400,7 @@ func vectorGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("rand/mutate", "parse", vec.GoString(mutate(rng, base)))
 	}
 	// random digit strings of the fast / slow path boundaries
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 5000; i++ {
 		ip := fmt.Sprint(rng.Uint64() >> rng.IntN(64))
 		s := ip
 		if rng.IntN(2) == 0 {
@@ -513,18 +515,18 @@ func vectorGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("sys", "compare", a, b)
 		g.Add("sys", "l2_norm", a)
 	}
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 30000; i++ {
 		a, b := pair(i)
 		g.Add("rand", "distance", dists[i%len(dists)], a, b)
 	}
 	for i := 0; i < 300; i++ {
 		g.Add("rand", "l2_norm", vecHex(randBits(rng, randDims(rng), i%5 == 0)))
 	}
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 15000; i++ {
 		a, b := pair(i)
 		g.Add("rand", "arith", ariths[i%len(ariths)], a, b)
 	}
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 5000; i++ {
 		a, b := pair(i)
 		if rng.IntN(3) == 0 {
 			// a prefix of a: equal up to the common length
