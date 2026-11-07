@@ -16,7 +16,7 @@ package domains
 //     window_start is that time in a fixed zone (Time.MarshalJSON's range errors).
 //   - "marshal_nan": args [table text, which]: a column's default set to NaN / +Inf /
 //     -Inf; out the marshal error.
-//   - "table": args [table text, probes]: the TableInfo methods (see tableOut).
+//   - "table": args [table text, probes, id]: the TableInfo methods (see tableOut).
 //   - "column", "index", "partition", "placement", "resource", "fk", "misc": the other
 //     methods; see their Exec cases.
 
@@ -174,7 +174,7 @@ func colNames(cols []*model.ColumnInfo) []any {
 	return out
 }
 
-func tableOut(t *model.TableInfo, probes map[string]any) map[string]any {
+func tableOut(t *model.TableInfo, probes map[string]any, id int64) map[string]any {
 	out := map[string]any{}
 	out["sep_auto_inc"] = t.SepAutoInc()
 	out["partition"] = t.GetPartitionInfo() != nil
@@ -202,7 +202,6 @@ func tableOut(t *model.TableInfo, probes map[string]any) map[string]any {
 	}()
 	idx := fmt.Sprint(probes["index"])
 	out["find_index_by_name"] = idOf(t.FindIndexByName(idx), func(i *model.IndexInfo) int64 { return i.ID })
-	id := int64(probes["id"].(float64))
 	out["find_column_by_id"] = idOf(t.FindColumnByID(id), func(c *model.ColumnInfo) int64 { return int64(c.Offset) })
 	out["find_index_by_id"] = idOf(t.FindIndexByID(id), func(i *model.IndexInfo) int64 { return i.ID })
 	func() {
@@ -309,7 +308,7 @@ func modelExec(op string, args []json.RawMessage) (any, error) {
 		t.Columns[0].DefaultValue = f
 		return marshalOut(t), nil
 	case "table":
-		return tableOut(mustTable(arg[vec.GoString](args, 0)), arg[map[string]any](args, 1)), nil
+		return tableOut(mustTable(arg[vec.GoString](args, 0)), arg[map[string]any](args, 1), arg[int64](args, 2)), nil
 	case "column":
 		c := new(model.ColumnInfo)
 		if err := json.Unmarshal([]byte(arg[vec.GoString](args, 0)), c); err != nil {
@@ -959,7 +958,10 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	for i, t := range allTables {
 		tb := mustTable(vec.GoString(t))
-		probe := map[string]any{"index": "primary", "id": float64(1 + i%5), "col": "id", "constraint": "chk_b", "fk": "fk1",
+		// The probe id is an argument of its own: an int64 through float64 would make
+		// the harness itself depend on the target (M-F2I for MaxInt64).
+		id := int64(1 + i%5)
+		probe := map[string]any{"index": "primary", "col": "id", "constraint": "chk_b", "fk": "fk1",
 			"from": float64(rng.IntN(5)), "to": float64(rng.IntN(5))}
 		if len(tb.Indices) > 0 && rng.IntN(2) == 0 {
 			probe["index"] = tb.Indices[rng.IntN(len(tb.Indices))].Name.L
@@ -967,9 +969,9 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 		if len(tb.Columns) > 0 {
 			c := tb.Columns[rng.IntN(len(tb.Columns))]
 			probe["col"] = c.Name.L
-			probe["id"] = float64(c.ID)
+			id = c.ID
 		}
-		g.Add("table", "table", vec.GoString(t), probe)
+		g.Add("table", "table", vec.GoString(t), probe, id)
 		for _, c := range tb.Columns {
 			if rng.IntN(3) == 0 {
 				b, _ := json.Marshal(c)
