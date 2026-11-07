@@ -65,6 +65,4 @@ var targetDiffs = []targetDiff{
 // (the other comes from the CI artifact of the PR that adds the domain), with the
 // reason. TestTargetsDiffer fails for a domain with one target that is not listed
 // here, and for a listed domain that has both targets (remove the entry then).
-var targetsPending = map[string]string{
-	"model": "D06.1 part 1: amd64 from the CI artifact of the PR",
-}
+var targetsPending = map[string]string{}
