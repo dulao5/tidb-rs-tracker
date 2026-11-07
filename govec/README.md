@@ -300,7 +300,9 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - 反序列化任意字节：头部长度按 uint32 计算 `elements*4 + 4`，`elements >= 2^30` 时会回绕。回绕后的长度为 0 或 4 时 Go 在 `Len` / `Elements` 中确定地越界 panic（记为 `panic`）；回绕后不小于 8 且不超过输入长度时，Go 得到长度字大于数据的向量，`Elements` 读越界（未定义行为），这类输入不生成。
 - 距离、范数、`Add`/`Sub`/`Mul`、`Compare`：随机维数（多数不超过 64，少量到 300），元素取小整数、[-1,1]、两位小数、任意有限位模式、大跨度指数，部分含 NaN、±Inf、最大值、非规格化数；包括维数不同、零向量、相同向量、前缀向量。
 
-**目标平台**：距离函数的累加 `distance += x * y`（vector_functions.go:44、71、100–102）和 `L2Norm` 的 float64 累加（:152）在 arm64 上被 gc 融合成 FMA，在 amd64（GOAMD64=v1）上不融合（`data/go_fma_sites.tsv`，M-FMA），所以两个目标的文件在许多 `distance` 记录上不同；另外，无效运算产生的默认 NaN 的符号位随硬件不同（amd64 为负）。按 op 登记在 `targetDiffs` 中（130 条）。`L2Norm` 的 float64 累加虽然也被融合，但两个 float32 的乘积在 float64 中是精确的，融合与否结果相同。
+**目标平台**：距离函数的累加 `distance += x * y`（vector_functions.go:44、71、100–102）和 `L2Norm` 的 float64 累加（:152）在 arm64 上被 gc 融合成 FMA，在 amd64（GOAMD64=v1）上不融合（`data/go_fma_sites.tsv`，M-FMA），所以两个目标在许多 `distance` 记录上不同。NaN 的结果另外受硬件规则影响（tidb-rs PR #16 的 Lucky 评审）：x86 SSE 遇到两个 NaN 时返回第一个源操作数（目标寄存器）；ARM 先按操作数顺序（FMADD 为 addend、Rn、Rm）找 SNaN，没有再找 QNaN，且 addend 是 QNaN、乘积是 ∞×0 时给出默认 NaN；无效运算的默认 NaN，x86 是 `0xFFC00000`，ARM 是 `0x7FC00000`。`targetDiffs` 按 `diffKind` 分类登记（共 1,851 条）：数值不同（M-FMA，888 条）、只有一个目标是 NaN（M-FMA：未融合的乘积溢出成 Inf 后 Inf−Inf，295 条）、只差符号位（默认 NaN，124 条）、payload 不同（两个 NaN 操作数的传播规则，544 条）。`L2Norm` 的 float64 累加虽然也被融合，但两个 float32 的乘积在 float64 中是精确的，融合与否结果相同。
+
+**NaN 位型**（Lucky 评审后放大，种子 31337，共 91,762 条）：`vectorBits` 包括带 payload 的 QNaN（`0x7fc12345`、`0xffd00001`）、SNaN（`0x7fbfffff`、`0x7f800abc`、`0x7f800001`）、负的 SNaN（`0xff800001`、`0xffbfffff`、`0xff812345`）、全 1（`0x7fffffff`、`0xffffffff`）、±Inf、最大值等；含特殊值的向量中每个元素有 3/10 的概率取这些位型；随机部分是放大前的 10 倍。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等，错误按消息比对（都是不带错误码的 `errors.Errorf`），`panic` 记录在 Rust 中也必须 panic。
 

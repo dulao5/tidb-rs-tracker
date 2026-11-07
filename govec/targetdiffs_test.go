@@ -51,13 +51,13 @@ var targetDiffs = []targetDiff{
 	// sums are fused on arm64 only (FMADDS), so rounding differs, and an unfused
 	// product that overflows to Inf can make Inf-Inf = NaN on amd64 where the fused
 	// sum stays infinite. Not M-FMA: the hardware NaN rules (see diffKind).
-	{Domain: "vector", Op: "distance", Args: "*", N: 92,
+	{Domain: "vector", Op: "distance", Args: "*", N: 888,
 		Why: "M-FMA: VectorFloat32 distance sums fused on arm64 only (rounding)"},
-	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-vs-number", N: 19,
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-vs-number", N: 295,
 		Why: "M-FMA: unfused product overflows to Inf on amd64 (Inf-Inf = NaN), the fused sum on arm64 does not"},
-	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-sign", N: 10,
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-sign", N: 124,
 		Why: "hardware default NaN of an invalid operation: x86 0xFFC00000 (negative), ARM 0x7FC00000"},
-	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-payload", N: 9,
+	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-payload", N: 544,
 		Why: "hardware NaN propagation with two NaN operands: x86 returns the first source, ARM the first SNaN then QNaN (addend, op1, op2)"},
 }
 
