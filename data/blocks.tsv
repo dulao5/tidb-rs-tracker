@@ -14,7 +14,8 @@ D01.7	D01 基础类型与编码	Chunk 与列存（内存部分按 A1）	P1
 D01.8	D01 基础类型与编码	编码：util/codec（Q3：复用 TiKV，L3）	P1
 D01.9	D01 基础类型与编码	Collation 与字符集	P1
 D02.1	D02 SQL 解析	AST 节点与 Restore	DONE
-D02.2	D02 SQL 解析	parser 运行时（lexer、语法动作、hint parser、format、auth、model）	DONE
+D02.2	D02 SQL 解析	parser 运行时（lexer、语法动作、hint parser、format）	DONE
+D02.3	D02 SQL 解析	parser model/types/auth/duration 的忠实移植（PoC 中是手写替身）	P1
 D03.1	D03 协议与连接	连接与协议（conn、conn_stmt、server、driver_tidb、internal）	P2
 D03.2	D03 协议与连接	HTTP status 接口与 handler	P5
 D04.1	D04 权限与认证	权限检查与认证	P5

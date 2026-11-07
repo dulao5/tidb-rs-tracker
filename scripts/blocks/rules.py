@@ -25,7 +25,8 @@ BLOCKS = {
     "D01.10": ("D01 基础类型与编码", "落盘容器与磁盘 chunk（按 A1）", "P4"),
     # ---- D02 parser ----
     "D02.1": ("D02 SQL 解析", "AST 节点与 Restore", "DONE"),
-    "D02.2": ("D02 SQL 解析", "parser 运行时（lexer、语法动作、hint parser、format、auth、model）", "DONE"),
+    "D02.2": ("D02 SQL 解析", "parser 运行时（lexer、语法动作、hint parser、format）", "DONE"),
+    "D02.3": ("D02 SQL 解析", "parser model/types/auth/duration 的忠实移植（PoC 中是手写替身）", "P1"),
     # ---- D03 protocol ----
     "D03.1": ("D03 协议与连接", "连接与协议（conn、conn_stmt、server、driver_tidb、internal）", "P2"),
     "D03.2": ("D03 协议与连接", "HTTP status 接口与 handler", "P5"),
@@ -171,6 +172,13 @@ RULES = [
     ("D05.2", r"pkg/sessionctx/variable/", None),
     ("D00.2", r"pkg/(parser/mysql|parser/terror|errno|util/dbterror|config)/", None),
     # --- D02 parser ---
+    # D02.3: D02.2 was marked DONE, but parser/model, parser/types, auth.UserIdentity and
+    # duration only had hand-written PoC stand-ins (no provenance, no Go JSON). meta/model
+    # (D06.1) needs them faithfully; so do the two ast pieces meta/model calls.
+    ("D02.3", r"pkg/parser/(model|types|duration)/", None),
+    ("D02.3", r"pkg/parser/auth/auth\.go$", None),
+    ("D02.3", r"pkg/parser/ast/ddl\.go$", r"^(NormalizeTableAffinityLevel|TableAffinityLevel\w*)$"),
+    ("D02.3", r"pkg/parser/ast/functions\.go$", r"^Vec(L2|Cosine)Distance$"),
     ("D02.1", r"pkg/parser/ast/", None),
     ("D02.2", r"pkg/parser/", None),
     # --- D01 ---
@@ -193,6 +201,14 @@ RULES = [
     ("D05.4", r"pkg/sessiontxn/", None),
     ("D05.3", r"pkg/session/", None),
     # --- D06 ---
+    # DDL jobs (D06.1 scoping, 2026-11-07): tidb-rs is read-only and DDL runs in Go TiDB.
+    # Kept in D06.1: the job/reorg/BDR type and const declarations (the shape that
+    # Job.Decode reads for ADMIN SHOW DDL JOBS / infoschema DDL tables / SchemaDiff) and the
+    # functions reached from read-path blocks (D06.2-D06.5, D12.12, D12.13). The rest is
+    # X: "DDL 写路径，由 Go TiDB 承担". job_args.go: only AutoIDGroup (meta autoid reads).
+    ("X", r"pkg/meta/model/(job|reorg|bdr)\.go$", r"^(?!(?:TSConvert2Time|ActionType\.String|Job\.(Decode|GetRowCount|GetWarnings|MayNeedReorg|String)|JobState\.String|SchemaState\.String|DDLReorgMeta\.Get(BatchSize|Concurrency|MaxWriteSpeed)OrDefault|ReorgType\.String)$)(?:\w+\.\w+|init|GetJobVerInUse|ModifyTypeToString|NewJobW|NewMultiSchemaInfo|SetJobVerInUse|StrToJobState|UpdateJobArgsForTest|marshalArgs)$"),
+    ("D06.1", r"pkg/meta/model/job_args\.go$", r"^AutoIDGroup$"),
+    ("X", r"pkg/meta/model/job_args\.go$", None),
     ("D06.1", r"pkg/meta/model/", None),
     ("D06.2", r"pkg/(meta|structure)/", None),
     ("D06.6", r"pkg/infoschema/(tables|cluster|metrics_schema|perfschema/|metrics)\.?", None),
