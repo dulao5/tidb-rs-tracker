@@ -67,6 +67,7 @@ func init() {
 		Gzip:     true,
 		Generate: collateGenerate,
 		Exec:     collateExec,
+		Fixes:    []vec.Fix{{ID: fix67149, Applied: fix67149Applied}},
 	})
 }
 
@@ -157,6 +158,25 @@ func randEnabled(rng *rand.Rand) int {
 		return 0
 	}
 	return 1
+}
+
+// fix67149: unicode_0900_ai_ci_impl.go checks int(r) > len(MapTable4), so
+// U+2CEA1 (= len) indexes past the table and panics; master has >=
+// (pingcap/tidb#67149, commit dfda1fd3e8). tidb-rs ports the fix; govec links
+// the patched file (govec/fixes).
+const fix67149 = "pingcap/tidb#67149"
+
+func fix67149Applied() (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	prev := collate.NewCollationEnabled()
+	collate.SetNewCollationEnabledForTest(true)
+	defer collate.SetNewCollationEnabledForTest(prev)
+	collate.GetCollator("utf8mb4_0900_ai_ci").Key("\U0002CEA1")
+	return true
 }
 
 func setEnabled(args []json.RawMessage) {
@@ -683,9 +703,10 @@ func collateGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("sys", "compare", 1, "utf8mb4_zh_pinyin_tidb_as_cs", "a", "b")
 	g.Add("sys", "key", 1, "utf8mb4_zh_pinyin_tidb_as_cs", "a")
 	g.Add("sys", "pattern", 1, "utf8mb4_zh_pinyin_tidb_as_cs", "a", '\\', []vec.GoString{"a"})
-	// U+2CEA1 indexes past the 0900 table (Go panics).
-	g.Add("sys", "key", 1, "utf8mb4_0900_ai_ci", "\U0002CEA1")
-	g.Add("sys", "compare", 1, "utf8mb4_0900_ai_ci", "\U0002CEA1", "a")
+	// U+2CEA1 is exactly len(MapTable4): v8.5.8 indexes past the 0900 table and
+	// panics; with the upstream fix it gets the implicit weight.
+	g.Add("fix "+fix67149, "key", 1, "utf8mb4_0900_ai_ci", "\U0002CEA1")
+	g.Add("fix "+fix67149, "compare", 1, "utf8mb4_0900_ai_ci", "\U0002CEA1", "a")
 
 	// GBK encoder: every piece, random strings.
 	for _, p := range collatePieces {

@@ -37,6 +37,9 @@ while [[ "${1:-}" == --* ]]; do
 done
 
 mkdir -p "$root/bin"
+# Upstream fixes applied to the linked TiDB code (govec/fixes/README.md).
+GOFLAGS="${GOFLAGS:+$GOFLAGS }$("$root/scripts/govec-fixes.sh")"
+export GOFLAGS
 native="$root/bin/govec"
 (cd "$root/govec" && GOAMD64=v1 go build -o "$native" .)
 host=$("$native" target)

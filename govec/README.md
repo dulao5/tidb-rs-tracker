@@ -109,6 +109,8 @@ go mod edit -replace github.com/pingcap/tidb=$HOME/src/pingcap/tidb-all-source-c
 
 macOS 上若 cgo 报找不到 `stdlib.h`（Homebrew 的 clang 在 PATH 前面），用 `CC=/usr/bin/clang scripts/govec.sh`。
 
+**上游修复**：v8.5.8 中有个别 bug 在 TiDB master 已修复、但没有回移到 release-8.5，tidb-rs 按宪章第一条第 2 项移植了这些修复。为了让向量记录修复后的行为，govec 链接的是打过这些修复的 TiDB 模块副本：`scripts/govec.sh` 和 CI 会设置 `GOFLAGS="$(scripts/govec-fixes.sh)"`。手动执行 `go build`、`go test`、`go run ./cmd/rsgen` 时也要先设置它。涉及修复的领域在 `vec.Domain.Fixes` 中登记，并带运行时探测；没有打修复的构建在生成时会直接 panic，文件头的 `fixes` 字段列出已应用的修复。清单见 [fixes/README.md](fixes/README.md)，目前只有 pingcap/tidb#67149（collate）。
+
 ## 确定性
 
 - 随机用例用固定种子（文件头 `seed`），PCG 生成器；生成顺序就是代码顺序，不遍历 map。新加的用例组追加在已有组之后，已有记录和它们消耗的随机数序列不变。

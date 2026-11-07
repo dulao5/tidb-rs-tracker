@@ -39,7 +39,10 @@ type Header struct {
 	Domain string `json:"domain"`
 	TiDB   string `json:"tidb"`
 	Commit string `json:"commit"`
-	Go     string `json:"go"`
+	// Fixes are the upstream fixes applied to the linked TiDB code that this
+	// domain's records depend on (govec/fixes, README "Upstream fixes").
+	Fixes []string `json:"fixes,omitempty"`
+	Go    string   `json:"go"`
 	// Platform the file was generated on. Records may depend on the target
 	// (GOARCH, and GOAMD64 on amd64): gc fuses float x*y+z into FMA on some
 	// targets and not others (README "Targets"), so there is one committed
@@ -133,6 +136,19 @@ type Domain struct {
 	Generate func(g *Gen, rng *rand.Rand)
 	// Exec runs one op. args are the JSON-encoded arguments.
 	Exec func(op string, args []json.RawMessage) (out any, err error)
+	// Fixes are upstream fixes (fixed in TiDB master, not backported to the
+	// release) that tidb-rs ports and whose effect this domain's records show.
+	// govec links a copy of the TiDB module with them applied
+	// (scripts/govec-fixes.sh, govec/fixes/README.md).
+	Fixes []Fix
+}
+
+// Fix is one upstream fix. Applied probes the running binary (e.g. calls the
+// fixed function under recover), so a build without the fixes cannot claim
+// it: Records panics instead of writing v8.5.8 behaviour under a fix's name.
+type Fix struct {
+	ID      string // e.g. "pingcap/tidb#67149"
+	Applied func() bool
 }
 
 var registry = map[string]*Domain{}
@@ -260,8 +276,16 @@ func (d *Domain) Records() (Header, []Record) {
 		}
 		recs = append(recs, rec)
 	}
+	var fixes []string
+	for _, f := range d.Fixes {
+		if !f.Applied() {
+			panic(fmt.Sprintf("govec: domain %s needs upstream fix %s, which this binary does not have; "+
+				"build with GOFLAGS=$(scripts/govec-fixes.sh) (govec/fixes/README.md)", d.Name, f.ID))
+		}
+		fixes = append(fixes, f.ID)
+	}
 	h := Header{
-		Govec: FormatVersion, Domain: d.Name, TiDB: TiDBVersion, Commit: TiDBCommit,
+		Govec: FormatVersion, Domain: d.Name, TiDB: TiDBVersion, Commit: TiDBCommit, Fixes: fixes,
 		Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, GOAMD64: goamd64,
 		Seed: d.Seed, Records: len(recs),
 	}

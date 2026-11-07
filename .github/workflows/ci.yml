@@ -43,6 +43,10 @@ jobs:
         with:
           go-version-file: govec/go.mod
           cache-dependency-path: govec/go.sum
+      # Upstream fixes applied to the linked TiDB code (govec/fixes/README.md):
+      # every later go command uses the patched TiDB module.
+      - name: govec modfile (upstream fixes)
+        run: echo "GOFLAGS=$(scripts/govec-fixes.sh)" >> "$GITHUB_ENV"
       - name: govec vet and test (header, coverage, oracle, determinism, FMA model)
         working-directory: govec
         run: go vet ./... && go test ./...
