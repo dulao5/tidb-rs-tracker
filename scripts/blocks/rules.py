@@ -124,6 +124,7 @@ BLOCKS = {
     # ---- D15 resource control ----
     "D15.1": ("D15 资源控制", "内存统计与配额（A1）", "EXC"),
     "D15.2": ("D15 资源控制", "resource group / runaway", "P5"),
+    "D15.3": ("D15 资源控制", "cgroup 内存部分（util/cgroup 的路径探测与内存限额/用量；CPU 部分仍为 X）。tidb-memory 中简化版 cgroup.rs 的正式替换，须在 servermemorylimit（tidb_server_memory_limit 默认值）之前完成", "P1"),
     # ---- scope decisions / not ported ----
     "DEF.MPP": ("D1 范围：TiFlash/MPP", "TiFlash / MPP 计划与执行", "DEFER"),
     "EXC.B": ("例外 B", "废弃或非默认路径：cascades（旧/新）、代价模型 v1、静态分区", "EXC"),
@@ -140,6 +141,11 @@ RULES = [
     ("DEF.MPP", r"pkg/store/copr/(mpp|mpp_probe|batch_coprocessor|batch_request_sender)\.go$", None),
     ("DEF.MPP", r"pkg/util/tiflashcompute/", None),
     # --- X: not ported ---
+    # --- D15.3: memory part of pkg/util/cgroup (D15.1 review: the simplified reader in
+    # tidb-memory misreads cgroup v1 outside containers); the CPU part stays X ---
+    ("D15.3", r"pkg/util/cgroup/cgroup_memory\.go$", None),
+    ("D15.3", r"pkg/util/cgroup/cgroup\.go$", r"^(controllerMatch|detectCgroupVersion|detectControlPath|getCgroupDetails|readFile|readInt64Value|procPath\w*|cgroupV[12]Mem\w*)$"),
+    ("D15.3", r"pkg/util/cgroup/cgroup_cpu_(linux|unsupport)\.go$", r"^(InContainer|inContainer)$"),
     ("X", r"pkg/(ddl|lightning|br|disttask|ttl|timer|objstore|dumpling|owner|autoid_service|telemetry|workloadlearning|store/gcworker|store/mockstore|testkit|util/mock|parser/goyacc|parser/test_driver|executor/importer|executor/internal/testutil|executor/internal/calibrateresource|planner/indexadvisor|util/(dbutil|importer|table-filter|table-rule-selector|column-mapping|filter|schemacmp|extsort|cgroup|memoryusagealarm|collate/ucadata/generator)|expression/generator|planner/core/generator|session/(bootstrap|sync_upgrade|mock_bootstrap)|server/internal/testserverclient|server/tests|statistics/handle/(autoanalyze|storage|lockstats|usage|globalstats|ddl|history|initstats)|executor/lockstats)(/|\.go$)", None),
     ("X", r"pkg/.*(testutil|test_util|mock)[^/]*\.go$", None),
     ("X", r"pkg/.*/testutil/", None),

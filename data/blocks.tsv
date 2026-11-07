@@ -100,6 +100,7 @@ D14.1	D14 可观测性	metrics	DONE
 D14.2	D14 可观测性	slow log、stmt summary、topsql、trace	P5
 D15.1	D15 资源控制	内存统计与配额（A1）	EXC
 D15.2	D15 资源控制	resource group / runaway	P5
+D15.3	D15 资源控制	cgroup 内存部分（util/cgroup 的路径探测与内存限额/用量；CPU 部分仍为 X）。tidb-memory 中简化版 cgroup.rs 的正式替换，须在 servermemorylimit（tidb_server_memory_limit 默认值）之前完成	P1
 DEF.MPP	D1 范围：TiFlash/MPP	TiFlash / MPP 计划与执行	DEFER
 EXC.B	例外 B	废弃或非默认路径：cascades（旧/新）、代价模型 v1、静态分区	EXC
 X	X 不移植	DDL、lightning、BR、disttask、TTL、import、mock store、测试工具等	X
