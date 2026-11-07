@@ -4,13 +4,14 @@ D00.2	D00 接口与上下文	常量、错误码与配置（parser/mysql、terror
 D00.3	D00 接口与上下文	通用工具（util/*）：不单独排期，被已排期的块用到时整文件移植（宪章 4.4）	ON-DEMAND
 D01.1	D01 基础类型与编码	Datum、FieldType 与类型辅助	P1
 D01.10	D01 基础类型与编码	落盘容器与磁盘 chunk（按 A1）	P4
+D01.11	D01 基础类型与编码	表与行编码：tablecodec、rowcodec（N0 评审：从 D01.8 拆出，位于 kv 之上）	P1
 D01.2	D01 基础类型与编码	Decimal（MyDecimal）	P1
 D01.3	D01 基础类型与编码	时间与 Duration	P1
 D01.4	D01 基础类型与编码	类型转换（convert）与溢出、截断	P1
 D01.5	D01 基础类型与编码	JSON 类型（例外 A4）	EXC
 D01.6	D01 基础类型与编码	Vector 类型	P1
 D01.7	D01 基础类型与编码	Chunk 与列存（内存部分按 A1）	P1
-D01.8	D01 基础类型与编码	编码：codec、tablecodec、rowcodec（Q3：复用 TiKV，L3）	P1
+D01.8	D01 基础类型与编码	编码：util/codec（Q3：复用 TiKV，L3）	P1
 D01.9	D01 基础类型与编码	Collation 与字符集	P1
 D02.1	D02 SQL 解析	AST 节点与 Restore	DONE
 D02.2	D02 SQL 解析	parser 运行时（lexer、语法动作、hint parser、format、auth、model）	DONE

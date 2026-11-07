@@ -19,7 +19,8 @@ BLOCKS = {
     "D01.5": ("D01 基础类型与编码", "JSON 类型（例外 A4）", "EXC"),
     "D01.6": ("D01 基础类型与编码", "Vector 类型", "P1"),
     "D01.7": ("D01 基础类型与编码", "Chunk 与列存（内存部分按 A1）", "P1"),
-    "D01.8": ("D01 基础类型与编码", "编码：codec、tablecodec、rowcodec（Q3：复用 TiKV，L3）", "P1"),
+    "D01.8": ("D01 基础类型与编码", "编码：util/codec（Q3：复用 TiKV，L3）", "P1"),
+    "D01.11": ("D01 基础类型与编码", "表与行编码：tablecodec、rowcodec（N0 评审：从 D01.8 拆出，位于 kv 之上）", "P1"),
     "D01.9": ("D01 基础类型与编码", "Collation 与字符集", "P1"),
     "D01.10": ("D01 基础类型与编码", "落盘容器与磁盘 chunk（按 A1）", "P4"),
     # ---- D02 parser ----
@@ -141,9 +142,21 @@ RULES = [
     # --- X: not ported ---
     ("X", r"pkg/(ddl|lightning|br|disttask|ttl|timer|objstore|dumpling|owner|autoid_service|telemetry|workloadlearning|store/gcworker|store/mockstore|testkit|util/mock|parser/goyacc|parser/test_driver|executor/importer|executor/internal/testutil|executor/internal/calibrateresource|planner/indexadvisor|util/(dbutil|importer|table-filter|table-rule-selector|column-mapping|filter|schemacmp|extsort|cgroup|memoryusagealarm|collate/ucadata/generator)|expression/generator|planner/core/generator|session/(bootstrap|sync_upgrade|mock_bootstrap)|server/internal/testserverclient|server/tests|statistics/handle/(autoanalyze|storage|lockstats|usage|globalstats|ddl|history|initstats)|executor/lockstats)(/|\.go$)", None),
     ("X", r"pkg/.*(testutil|test_util|mock)[^/]*\.go$", None),
+    ("X", r"pkg/.*/testutil/", None),
+    # --- N0 (crate layering) review: infrastructure moved down to the layer that uses it ---
+    ("D00.2", r"pkg/kv/kv\.go$", r"^(StoreType|TiKV$|TiFlash$|TiDB$|UnSpecified$)"),
+    ("D06.1", r"pkg/planner/core/resolve/result\.go$", None),
+    ("D14.1", r"pkg/planner/core/metrics/", None),
+    ("D00.1", r"pkg/planner/util/debugtrace/", None),
+    ("D00.1", r"pkg/util/ranger/(types\.go$|context/)", None),
+    ("D00.1", r"pkg/distsql/context/", None),
+    ("D00.1", r"pkg/util/ranger/points\.go$", r"^(FullRange|FullIntRange|FullNotNullRange)$"),
+    ("D05.2", r"pkg/session/cursor/", None),
+    ("D05.4", r"pkg/session/txninfo/", None),
+    ("D09.13", r"pkg/planner/plannersession/", None),
     # --- D00 ---
-    ("D05.3", r"pkg/sessionctx/sessionstates/", None),
-    ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|planner/core/operator/baseimpl/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|planner/plannersession/|planner/util/coreusage/|planner/util/costusage/|sessionctx/stmtctx/)", None),
+    ("D05.2", r"pkg/sessionctx/sessionstates/", None),
+    ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|sessionctx/stmtctx/)", None),
     ("D05.1", r"pkg/sessionctx/variable/(sysvar|tidb_vars|varsutil|variable|statusvar|removed|setvar_affect|sequence_state|mock_globalaccessor|noop)\.go$", None),
     ("D05.2", r"pkg/sessionctx/variable/", None),
     ("D00.2", r"pkg/(parser/mysql|parser/terror|errno|util/dbterror|config)/", None),
@@ -159,7 +172,8 @@ RULES = [
     ("D01.1", r"pkg/types/", None),
     ("D01.10", r"pkg/util/chunk/(row_container|chunk_in_disk|row_in_disk|row_container_reader|disk)", None),
     ("D01.7", r"pkg/util/chunk/", None),
-    ("D01.8", r"pkg/(util/codec|tablecodec|util/rowcodec)/", None),
+    ("D01.8", r"pkg/util/codec/", None),
+    ("D01.11", r"pkg/(tablecodec|util/rowcodec)/", None),
     ("D01.9", r"pkg/util/collate/", None),
     # --- D03 ---
     ("D03.2", r"pkg/server/(http_status|http_handler|rpc_server|handler/)", None),
