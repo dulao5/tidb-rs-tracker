@@ -120,6 +120,11 @@ type Domain struct {
 	// covers. Every function of these blocks must appear in some op's GoFuncs
 	// or in Exempt (checked by govec_test.go).
 	Blocks []string
+	// Files are Go files outside Blocks that tidb-rs ports whole (a D00.3 util
+	// file, a leaf file of another block): every function of these files must
+	// be covered or exempt too. GoFuncs and Exempt name them "<file>:<Symbol>"
+	// (file as in data/func_blocks.tsv).
+	Files []string
 	// Exempt: Go function (tracker format) -> why no op covers it.
 	Exempt map[string]string
 	// Gzip: the committed file is <name>.jsonl.gz (see README, "Storage").

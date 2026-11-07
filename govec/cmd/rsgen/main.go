@@ -37,6 +37,8 @@ import (
 var (
 	out       = flag.String("out", "", "tidb-rs crates/base/src directory")
 	protosOpt = flag.Bool("protos", false, "rewrite internal/protos/protos_list.go (run from govec/)")
+	typesOut  = flag.String("types", "", "tidb-rs crates/types/src directory (collate tables, block D01.9)")
+	parserOut = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
 )
 
 func modDir(mod string) string {
@@ -497,8 +499,17 @@ func main() {
 		writeProtosList(modDir("github.com/pingcap/tidb"))
 		return
 	}
+	if *typesOut != "" {
+		genCollateTables(*typesOut)
+	}
+	if *parserOut != "" {
+		genCharsetTables(*parserOut)
+	}
 	if *out == "" {
-		fmt.Fprintln(os.Stderr, "usage: rsgen -out <tidb-rs>/crates/base/src  |  rsgen -protos")
+		if *typesOut != "" || *parserOut != "" {
+			return
+		}
+		fmt.Fprintln(os.Stderr, "usage: rsgen -out <tidb-rs>/crates/base/src [-types <tidb-rs>/crates/types/src] [-parser <tidb-rs>/crates/parser/src]  |  rsgen -protos")
 		os.Exit(2)
 	}
 	parserDir := modDir("github.com/pingcap/tidb/pkg/parser")
