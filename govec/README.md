@@ -327,6 +327,19 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 
 **Rust 侧比对**：单个 `#[test]` 顺序回放（排序规则开关是全局状态）；`key_digest` 在 Rust 中按同样的算法重算；`collator` 的 `%T` 按类型映射表比对；错误按错误码加消息比对；`panic` 记录在 Rust 中也必须 panic。
 
+## json（块 D01.5：`pkg/types` 的 json_binary.go、json_binary_functions.go、json_path_expr.go；例外 A4）
+
+`types.BinaryJSON` 与 `types.JSONPathExpression`。JSON 参数有两种写法：GoString 文本（用 `ParseBinaryJSONFromString` 解析），或 `{"k": 类型, "v": 值}`，由 `CreateBinaryJSON` 从 Go 值构造。类型有 `int64 uint64 float64(IEEE 位) string nil bool opaque([类型码, hex]) time([CoreTime 位, mysql 类型]) duration([纳秒, fsp]) array object([[键, 值], ...])`。JSON 输出是 `{"tc": 类型码, "hex": Value 的 hex, "s": String()}`。路径参数是 GoString 列表，用 `ParseJSONPathExpr` 解析，解析错误就是该记录的错误。
+
+op：`parse create type unquote unquote_string hash compare is_zero depth keys get_value peek path_parse extract modify array_insert remove merge merge_patch contains overlaps search walk`，参数和覆盖的 Go 函数见 `domains/json.go` 的 `jsonCoverage`。
+
+输入：从 `json_*_test.go` 抽出的全部字符串字面量（`json_cases.go`，作文档和路径各跑一遍）、手写的边界文本（数字边界、转义、非法 UTF-8、孤立代理项、深度 99–10001、键长 65535/65536 以及错误先后顺序）、带种子的随机文档（嵌套、重复键、空白）和它们的随机变异、随机路径。除 `parse` 外，各 op 的文档参数只取 Go 能解析的文本。
+
+生成时看到的 Go 行为（移植时的坑）：
+- `\ud800` 这类孤立代理项经 `JSON_UNQUOTE`（`decodeEscapedUnicode`）或带引号的路径键会 panic：`utf8.RuneLen` 返回 -1，`char[0:-1]` 越界。记录为 panic，Rust 侧同样 panic。
+- 路径 `$."\` 这类以反斜杠结尾的带引号键，`readWhile` 会越过末尾，切片越界 panic。
+- `PeekBytesAsJSON` 对只有类型码的 opaque 输入越界 panic。
+
 ## 两个目标的差异（`TestTargetsDiffer`）
 
 每个领域都比较已提交的 amd64 和 arm64 两个文件。不同的记录必须登记在 `targetdiffs_test.go` 的允许表 `targetDiffs` 中，并写明原因（M-FMA、M-F2I）。
