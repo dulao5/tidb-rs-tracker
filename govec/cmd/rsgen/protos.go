@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -39,7 +40,13 @@ func writeProtosList(tidbDir string) {
 		}
 	}
 	b.WriteString("}\n")
-	if err := os.WriteFile("internal/protos/protos_list.go", b.Bytes(), 0o644); err != nil {
+	// Through go/format, so that the committed file is gofmt-clean (the map keys have
+	// different lengths: gofmt aligns the values).
+	src, err := format.Source(b.Bytes())
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile("internal/protos/protos_list.go", src, 0o644); err != nil {
 		panic(err)
 	}
 	fmt.Fprintln(os.Stderr, "rsgen: wrote internal/protos/protos_list.go")
