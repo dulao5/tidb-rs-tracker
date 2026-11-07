@@ -12,7 +12,7 @@ govec 用 Go TiDB v8.5.8（commit `8b857efa2`）自己的代码跑一批输入�
 | `govec/vec/` | 与领域无关的部分：记录格式、领域注册、生成、oracle |
 | `govec/domains/<领域>.go` | 每个领域一个文件：op 列表、参数解码、调用 Go 代码 |
 | `govec/domains/<领域>_cases.go` | 输入：从 Go 测试抄来的用例表、边界用例、带种子的随机用例（可与上一个文件合并） |
-| `govec/govec_test.go` | 自检：文件头、每个 op 的最少条数、Go 测试函数都有记录、块内每个 Go 函数都被覆盖或豁免、oracle 与生成结果一致、两次生成逐字节相同、gzip 存储可还原、本目标已提交的向量是最新的、FMA 模型与 `data/go_fma_sites.tsv` 一致（`TestFMA`）、两个目标的文件只在依赖 FMA 的记录上不同（`TestTargetsDiffer`） |
+| `govec/govec_test.go` | 自检：文件头、每个 op 的最少条数、Go 测试函数都有记录、块内每个 Go 函数都被覆盖或豁免、oracle 与生成结果一致、两次生成逐字节相同、gzip 存储可还原、本目标已提交的向量是最新的、FMA 模型与 `data/go_fma_sites.tsv` 一致（`TestFMA`）、每个领域两个目标的文件只在允许表 `targetdiffs_test.go` 登记的记录上不同（`TestTargetsDiffer`） |
 | `vectors/v8.5.8/<目标>/<领域>.jsonl.gz`（见"目标平台"、"存储"） | 已提交的向量，每个目标平台一份（`amd64`、`arm64`） |
 | `scripts/govec.sh` | 重新生成 / 检查 |
 
@@ -83,7 +83,7 @@ op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`
 
 - **每个目标一份文件**：`vectors/v8.5.8/amd64/`（GOAMD64=v1，Go 的默认值，也是基线；v8.5.8 的 Makefile 没有设置 GOAMD64）和 `vectors/v8.5.8/arm64/`。文件头写 `goarch` 和（amd64 上）`goamd64`；`govec target` 输出本二进制的目标名（`amd64`、`amd64.v3`、`arm64`），`amd64.v3` 等非基线目标不提交。
 - **触发用例**（追加在最后，`decimalFMA`）：`div` 作为 producer 接所有 consumer；`sys/fma` 是 `50.77/32`、`100.54/64`、`153.81/96`、`193.08/128`（fracIncr 4）接 `to_float64`；`rand/div` 是 300 个随机 `x/j`（x 带 1–3 位小数、整数部分不超过 3 位，j ∈ [2,160)，fracIncr 4，即 `div_precision_increment = 4` 时的 `a/b`）；之后继续抽取同样形状的 `x/j`，只保留结果依赖融合的，直到共有 40 条（`rand/fma`）。"依赖融合"由 `domains.ToFloat64Model` 判断：它按 Go 源码重算 ToFloat64，两处乘加分别用 `math.FMA` 和显式 `float64(...)` 转换（禁止融合）计算，两者不同即依赖融合。判断与生成平台无关，所以两个目标的文件记录相同、只有输出不同。
-- **检查**：`TestFMA` 读 `data/go_fma_sites.tsv` 得到本目标是否融合，要求每条 `div_then_to_float64` 记录的 Go 输出等于对应的模型值（汇编扫描、模型、Go 实际输出三者一致），且至少 40 条依赖融合；`TestTargetsDiffer` 比较已提交的两个文件，要求只在 `*to_float64` 的记录上不同，且至少 40 条不同。当前 33,831 条记录中两个目标有 44 条不同（4 条 `sys/fma` 和 40 条 `rand/fma`）。
+- **检查**：`TestFMA` 读 `data/go_fma_sites.tsv` 得到本目标是否融合，要求每条 `div_then_to_float64` 记录的 Go 输出等于对应的模型值（汇编扫描、模型、Go 实际输出三者一致），且至少 40 条依赖融合；`TestTargetsDiffer` 比较每个领域已提交的两个文件，见下面的"两个目标的差异"。当前 33,831 条记录中两个目标有 44 条不同（4 条 `sys/fma` 和 40 条 `rand/fma`）。
 - **其他平台**：登记表中 ppc64le、s390x、riscv64、loong64 也融合这两处，但没有生成向量。
 
 ## 重新生成
@@ -283,3 +283,26 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - `ft_unmarshal`：`FieldType.UnmarshalJSON` 的 Go 解码规则：先精确、再按 `foldName` 不区分大小写匹配字段（包括 `ſ`→`S`），`null` 不改变字段，数字按字面量解析，溢出或非整数给出 `UnmarshalTypeError`，第一处错误之后的字段照样解码。Rust 侧语法错误只要求报错，文本不比对（`*json.SyntaxError` 的消息未移植）；类型错误比对全文。
 - 元素可以不是 UTF-8（ENUM 的二进制字面量）：`MarshalJSON` 把每个无效字节写成 `�` 转义，`CompactStr`（`format.OutputFormat` 按 rune 遍历）写成 U+FFFD。
 - `duration`：`ParseDuration`。很大的值经过 `time.Duration(float)` 转换，结果依赖目标平台（M-F2I）。
+
+## 两个目标的差异（`TestTargetsDiffer`）
+
+每个领域都比较已提交的 amd64 和 arm64 两个文件。不同的记录必须登记在 `targetdiffs_test.go` 的允许表 `targetDiffs` 中，并写明原因（M-FMA、M-F2I）。
+
+**登记方式有两种**：
+- 精确到一次调用：`(domain, op, args)`，其中 `args` 是记录参数的紧凑 JSON。
+- 按 op 登记：`args` 写 `"*"`，并给出 `N`，即这个 op 有多少条记录不同，必须恰好相等。只用于成批生成的平台相关用例，如 decimal 的 44 条 `div_then_to_float64`、config 的 824 条 `f2i`。
+
+**以下情况测试失败**：
+- 表外的记录出现差异；
+- 两个目标在同一行上的调用（op 或 args）不同；
+- 表里的精确条目不再有差异，或按 op 登记的条目数量不等于 `N`。
+
+后两种情况通常是 Go 的行为或生成器变了，需要更新表和原因。
+
+**只有一个目标的领域**：新领域的 amd64 向量要等 PR 的第一次 CI 产出，在此之前必须登记在 `targetsPending`（领域 → 原因）中，否则测试失败；两个目标都提交后，条目必须删除，否则也失败。这样不会有领域被静默跳过。
+
+当前登记的内容：
+- decimal：44 条（M-FMA）。
+- config：824 条 `f2i` 和 5 条 `load`。这 5 条都是 `grpc-keepalive-timeout` 的浮点数转无符号整数时溢出或取 `inf`（M-F2I）。
+- time：3 条 `parse_time_float64`，即 NaN、+Inf、1e19（M-F2I）。
+- parser_types：3 条 `duration`（`100000000000d`、`9223372036h`、`106752d`），`time.Duration(float)` 溢出 int64，amd64 得到最小值，arm64 饱和（M-F2I）。
