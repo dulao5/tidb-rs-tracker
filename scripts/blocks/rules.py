@@ -162,6 +162,8 @@ RULES = [
     ("D00.2", r"pkg/util/context/warn\.go$", r"^WarnAppender($|\.)"),
     # types.ColumnNeedRestoredData takes *model.IndexColumn / *model.ColumnInfo: belongs with meta/model.
     ("D06.1", r"pkg/types/etc\.go$", r"^ColumnNeedRestoredData$"),
+    # pkg/util/tikvutil is one variable (CommitterConcurrency) read by config.GetTiKVConfig.
+    ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---
     ("D05.2", r"pkg/sessionctx/sessionstates/", None),
     ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|sessionctx/stmtctx/)", None),
