@@ -10,10 +10,12 @@ replace (
 )
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/pingcap/errors v0.11.5-0.20250523034308-74f78ae071ee
 	github.com/pingcap/log v1.1.1-0.20250917021125-19901e015dc9
 	github.com/pingcap/tidb v1.1.0-beta.0.20260827064614-8b857efa2036
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260827064614-8b857efa2036
+	github.com/tikv/client-go/v2 v2.0.8-0.20260803075849-c3b50791b9fb
 	go.uber.org/zap v1.27.1
 )
 
@@ -34,7 +36,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
-	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 // indirect
@@ -207,7 +208,6 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/tiancaiamao/appdash v0.0.0-20181126055449-889f96f722a2 // indirect
 	github.com/tiancaiamao/gp v0.0.0-20221230034425-4025bc8a4d4a // indirect
-	github.com/tikv/client-go/v2 v2.0.8-0.20260803075849-c3b50791b9fb // indirect
 	github.com/tikv/pd/client v0.0.0-20260804033407-85a975a5ca78 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect

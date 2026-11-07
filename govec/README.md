@@ -193,7 +193,7 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 
 ## base（块 D00.2：常量、错误码与错误）
 
-领域 `base` 覆盖 `pkg/parser/mysql`、`pkg/parser/terror`、`pkg/errno`、`pkg/util/dbterror`（含 `exeerrors`、`plannererrors`）和 `kv.StoreType`。`pkg/config` 是 D00.2 的第二部分，单独提交，在豁免表中注明。
+领域 `base` 覆盖 `pkg/parser/mysql`、`pkg/parser/terror`、`pkg/errno`、`pkg/util/dbterror`（含 `exeerrors`、`plannererrors`）和 `kv.StoreType`。`pkg/config` 是 D00.2 的第二部分，在领域 `config` 中（见下）。一个块可以分在几个领域：`TestBlockCoverage` 按块汇总所有列出该块的领域，块内每个函数在某个领域被覆盖或豁免即可。
 
 ### 两类记录
 
@@ -223,3 +223,15 @@ rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来�
 ### 目标平台
 
 本领域没有会被 gc 融合成 FMA 的浮点运算，两个目标的记录相同（只有文件头不同）。amd64 的文件取自 tracker CI 在 `ubuntu-latest` 上的产物（`Fresh vectors of this target` 步骤上传的 artifact），因为作者的 arm64 Mac 不能运行 amd64 程序。
+
+## config（块 D00.2 第二部分：`pkg/config`）
+
+领域 `config` 覆盖 `pkg/config`（`config.go`、`config_util.go`）、它使用的 BurntSushi/toml 解码器，以及归属调整后并入 D00.2 的 `metrics.ExecuteErrorToLabel`。
+
+- **`load`**：把 TOML 文本写入临时文件 `govec-config.toml`，对 `NewConfig()` 的去别名副本（`NewConfig` 浅拷贝 `defaultConf`，Go 中写入默认切片或 map 会改到默认值本身）执行 `Load`，再执行 `Valid`。输出 `Load` 的错误及其 Go 类型、未解码项、`ConflictOptions` / `DeprecatedOptions`（每条记录前清空）、`Valid` 的错误，以及 `Valid` 前后的逐字段转储（`Config.Log.File.FileLogConfig.MaxSize=300`；字符串 `%q`，浮点 `strconv` 的 `'g'`，`nullableBool` 展开成两个字段）。解码出错时只记录错误。
+- **语料**：`testdata/config/config.toml.example`（v8.5.8 的示例配置）、`testdata/config/config_test_toml.json`（`mine.go` 从 `config_test.go` 抽出的 TOML 片段），以及生成的变体：每个字段配各类 TOML 值、大小写折叠的键、未知键、已移除的键、移到 `[instance]` 的键、`Valid` 的每条边界、lexer/parser 边界、随机破坏的片段。
+- **其他 op**：`GetJSONConfig`、`CloneConf`、`MergeConfigItems`、`FlattenConfigItems`、`RemovedVariableCheck`、`ContainHiddenConfig`、`nullableBool` / `AtomicBool` 的文本与 JSON、`ToLogConfig`、`ToTracingConfig`、`GetTiKVConfig`、全局配置函数、`UpdateTempStoragePath`、`ExecuteErrorToLabel`。
+- **Go 的不确定性**：BurntSushi 按 Go map 的随机顺序解码表，`ErrConfigInstanceSection.Error` 和 `Valid` 的存储列表打印 map。结果依赖顺序的用例不入向量，由 `loadDeterministic` 按结构判断：每个叶子单独解码，出错的叶子不超过一个；同一表中没有大小写折叠后相同的键；每节最多一项迁移到 `[instance]`；`Valid` 不在存储名上失败。（多次运行取一致的办法不可靠：小 map 的迭代顺序并不均匀。）
+- **环境**：默认的 `tmp-storage-path` 取决于 `os.TempDir()` 和用户 ID，记录中写成 `<TEMP_STORAGE_DIR>`；`temp_storage` 的结果中写成 `<TMPDIR>`、`<UID>_tidb`。记录与 `TMPDIR` 无关（已在两种 `TMPDIR` 下核对）。
+- **Go 运行时与标准库**（tidb-rs 的 `gostd`）：`f2i` 是浮点到各整数类型的转换（映射规则 M-F2I，越界和 NaN 的结果随目标不同，两个目标的文件在这些记录上不同）；`simple_fold_table`、`case_table` 是全部码位的 `unicode.SimpleFold` / `ToUpper` / `ToLower`；`equal_fold` 是 `strings.EqualFold`（折叠轨道上的字符与随机组合）。rsgen 生成 `CASE_RANGES`（`unicode.CaseRanges`）和 `FOLD_ORBIT`（`SimpleFold` 不等于 ToLower/ToUpper 回退值的码位，即 Go 的 `asciiFold` 与 `caseOrbit`）。
+- **豁免**：`InitializeConfig`（`os.Exit`、`terror.MustNil`）和只被它调用的 `isAllRemovedConfigItems`，由 tidb-rs 的单测覆盖。

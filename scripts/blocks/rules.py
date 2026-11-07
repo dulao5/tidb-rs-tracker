@@ -154,6 +154,16 @@ RULES = [
     ("D05.2", r"pkg/session/cursor/", None),
     ("D05.4", r"pkg/session/txninfo/", None),
     ("D09.13", r"pkg/planner/plannersession/", None),
+    # --- D00.2 part 2 (config) review: same-rank / upward references resolved by moving down ---
+    # metrics.ExecuteErrorToLabel only reads terror.Error.RFCCode: lives with terror in tidb-base.
+    ("D00.2", r"pkg/metrics/server\.go$", r"^ExecuteErrorToLabel$"),
+    # contextutil.WarnAppender is the warning sink of types.Context (D01.1) and errctx (D00.1);
+    # an interface over base's Error with no other dependency: tidb-base (rank 0).
+    ("D00.2", r"pkg/util/context/warn\.go$", r"^WarnAppender($|\.)"),
+    # types.ColumnNeedRestoredData takes *model.IndexColumn / *model.ColumnInfo: belongs with meta/model.
+    ("D06.1", r"pkg/types/etc\.go$", r"^ColumnNeedRestoredData$"),
+    # pkg/util/tikvutil is one variable (CommitterConcurrency) read by config.GetTiKVConfig.
+    ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---
     ("D05.2", r"pkg/sessionctx/sessionstates/", None),
     ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|sessionctx/stmtctx/)", None),

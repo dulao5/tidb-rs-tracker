@@ -42,9 +42,11 @@ func generate(t *testing.T, d *vec.Domain) []byte {
 	return buf.Bytes()
 }
 
-// TestBlockCoverage: every function of the domain's porting blocks
+// TestBlockCoverage: every function of the porting blocks listed by the domains
 // (tracker data/func_blocks.tsv) is covered by some op's GoFuncs or listed in
-// Exempt with a reason; every GoFuncs/Exempt symbol exists in those blocks.
+// Exempt with a reason, in any of the domains that list the block (a block may
+// be split over several domains, e.g. D00.2 over "base" and "config"); every
+// GoFuncs/Exempt symbol exists in the domain's blocks.
 func TestBlockCoverage(t *testing.T) {
 	f, err := os.Open(filepath.Join("..", "data", "func_blocks.tsv"))
 	if err != nil {
@@ -61,6 +63,8 @@ func TestBlockCoverage(t *testing.T) {
 		}
 		blockFuncs[c[4]] = append(blockFuncs[c[4]], c[2])
 	}
+	covered := map[string]map[string]bool{} // block -> symbol -> covered by some domain
+	exempt := map[string]map[string]bool{}  // block -> symbol -> exempt in some domain
 	for _, name := range vec.Names() {
 		d := vec.Lookup(name)
 		if len(d.Blocks) == 0 {
@@ -74,11 +78,14 @@ func TestBlockCoverage(t *testing.T) {
 			for _, fn := range blockFuncs[b] {
 				inBlocks[fn] = true
 			}
+			if covered[b] == nil {
+				covered[b], exempt[b] = map[string]bool{}, map[string]bool{}
+			}
 		}
-		covered := map[string]bool{}
+		domCovered := map[string]bool{}
 		for op, c := range d.Coverage {
 			for _, fn := range c.GoFuncs {
-				covered[fn] = true
+				domCovered[fn] = true
 				if !inBlocks[fn] {
 					t.Errorf("domain %s op %s: GoFuncs %q is not a function of blocks %v", name, op, fn, d.Blocks)
 				}
@@ -88,23 +95,31 @@ func TestBlockCoverage(t *testing.T) {
 			if !inBlocks[fn] {
 				t.Errorf("domain %s: exempt %q is not a function of blocks %v", name, fn, d.Blocks)
 			}
-			if covered[fn] {
+			if domCovered[fn] {
 				t.Errorf("domain %s: %q is both covered and exempt", name, fn)
 			}
 			if why == "" {
 				t.Errorf("domain %s: exempt %q has no reason", name, fn)
 			}
 		}
-		n := 0
-		for fn := range inBlocks {
-			if !covered[fn] && d.Exempt[fn] == "" {
-				t.Errorf("domain %s: %s is neither covered by an op nor exempt", name, fn)
-			}
-			if covered[fn] {
-				n++
+		for _, b := range d.Blocks {
+			for _, fn := range blockFuncs[b] {
+				if domCovered[fn] {
+					covered[b][fn] = true
+				}
+				if d.Exempt[fn] != "" {
+					exempt[b][fn] = true
+				}
 			}
 		}
-		t.Logf("domain %s: %d/%d functions of %v covered, %d exempt", name, n, len(inBlocks), d.Blocks, len(d.Exempt))
+		t.Logf("domain %s: %d functions of %v covered, %d exempt", name, len(domCovered), d.Blocks, len(d.Exempt))
+	}
+	for b, cov := range covered {
+		for _, fn := range blockFuncs[b] {
+			if !cov[fn] && !exempt[b][fn] {
+				t.Errorf("block %s: %s is neither covered by an op nor exempt in any domain", b, fn)
+			}
+		}
 	}
 }
 
