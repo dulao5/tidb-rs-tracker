@@ -111,7 +111,7 @@ func (e *emitter) header(goFiles ...string) {
 	for _, f := range goFiles {
 		e.p("//! go-file: %s\n", f)
 	}
-	e.p("\n")
+	e.p("\n// Generated data keeps Go's identifiers (mapping rule M-GONAME).\n#![allow(non_upper_case_globals)]\n\n")
 }
 
 func (e *emitter) write(rel string) {
@@ -547,10 +547,10 @@ func main() {
 			}},
 		{goFile: "util.go", rs: "mysql/util_gen.rs", uses: mysqlUse,
 			maps: []mapJob{
-				{name: "defaultLengthAndDecimal", kt: "u8", vt: "lengthAndDecimal",
-					sname: "lengthAndDecimal", sfields: []string{"length", "decimal"}, stypes: []string{"i64", "isize"}},
-				{name: "defaultLengthAndDecimalForCast", kt: "u8", vt: "lengthAndDecimal",
-					sname: "lengthAndDecimal", sfields: []string{"length", "decimal"}, stypes: []string{"i64", "isize"}},
+				{name: "defaultLengthAndDecimal", kt: "u8", vt: "LengthAndDecimal",
+					sname: "LengthAndDecimal", sfields: []string{"length", "decimal"}, stypes: []string{"i64", "isize"}},
+				{name: "defaultLengthAndDecimalForCast", kt: "u8", vt: "LengthAndDecimal",
+					sname: "LengthAndDecimal", sfields: []string{"length", "decimal"}, stypes: []string{"i64", "isize"}},
 			}},
 	}
 	for _, j := range mysqlJobs {

@@ -198,7 +198,10 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 ### 两类记录
 
 - **整表**（op `table`）：Go 运行时的整张表，按键排序，如 `mysql.MySQLErrName`、`errno.MySQLErrName`、`mysql.MySQLState`、字符集与排序规则表、SQL mode 表、权限表、错误注册表 `terror.ErrClassToMySQLCodes`、全部 395 个 `dbterror` 错误原型。tidb-rs 中这些表由 `cmd/rsgen` 从 Go 源码生成，这些记录核对生成结果与 Go 运行时的内容一致。
+- **随机格式化**（op `sprintf_rand`，20,049 条）：随机的标志、宽度、精度、`*`、参数下标和动词，类型随机的参数（含非 UTF-8 字符串和字节、float32、特殊浮点、恰好落在两个最短表示正中间的浮点 k/2^n），以及很大的 `*` 宽度和精度（65,535 到 2,000,000，Go 的上限是 1e6）。来自 tidb-rs PR #6 评审中的差分 fuzz。
 - **调用**：`fmt.Sprintf`（两张错误信息表和全部原型的每个模板，配上与动词对应、偶尔不对应的随机参数；各种动词、标志、宽度、精度、参数下标）、`mysql.NewErr/NewErrf`、`terror`/`dbterror` 的 `NewStd` 与 `GenWithStackByArgs`（三种脱敏模式）、`ToSQLError`、`EqualClass`、`ErrorEqual`、SQL mode、权限、字符集、类型默认长度、`FORMAT` 的 en_US 格式化、`errno` 的错误统计、`unicode.IsOneOf(RangeGraph)` 与 `unicode.IsDigit`。
+
+**Go 的 string 是字节串**：`encoding/json` 会把非 UTF-8 的字符串悄悄替换成 U+FFFD。所以记录中的 Go 字符串用 `vec.GoString`：合法 UTF-8 时是 JSON 字符串，否则是 `{"hex": "<字节>"}`；回放方两种形式都要接受。`vec.CheckUTF8` 在生成时检查每条记录（参数、输出、`err.msg`），出现不是 `GoString` 的非 UTF-8 字符串就 panic，对所有领域生效。带类型的字符串参数同理写成 `{"t":"string","hex":…}`。
 
 带类型的参数（`fmt` 和错误 API 的 `...interface{}`）编码为 `{"t": <Go 类型>, "v": <值>}`，t 取 `string int int8 … uint64 float64 float32 bool nil bytes error`（`error` 是 `errors.New(v)`，即 pingcap/errors 的 `*errors.fundamental`，它的 `Format` 方法只对 `%v %s %q` 输出）。
 
@@ -215,7 +218,7 @@ CC=/usr/bin/clang go run ./cmd/rsgen -out <tidb-rs>/crates/base/src
 (cd <tidb-rs> && cargo fmt -p tidb-base)
 ```
 
-rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表。函数都是手工移植的。
+rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表和 `strconv.IsPrint` 的可打印范围表（对每个码位调用 Go 的 `IsPrint` 得到）。生成的文件保留 Go 标识符（映射规则 M-GONAME），文件头带 `#![allow(non_upper_case_globals)]`。函数都是手工移植的。
 
 ### 目标平台
 

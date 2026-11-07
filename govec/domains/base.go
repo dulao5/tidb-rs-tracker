@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/internal/protos"
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -60,6 +61,10 @@ var baseCoverage = map[string]vec.Coverage{
 	"table": {Min: 25, GoFuncs: []string{"Message"}},
 	// args: [format, [typed args]]   out: fmt.Sprintf result
 	"sprintf": {Min: 1500},
+	// args: [format, [typed args]]   out: fmt.Sprintf result; random formats and arguments
+	// (flags, widths, precisions, '*', all verbs, non-UTF-8 strings, float32,
+	// halfway floats, huge widths), see sprintfRand.
+	"sprintf_rand": {Min: 20000},
 	// args: [[typed args]]   out: fmt.Sprint result
 	"sprint": {Min: 20},
 	// args: [code, [typed args], mode]   out: SQLError {code, state, message, error}
@@ -163,13 +168,17 @@ var baseExempt = map[string]string{
 // ---------------------------------------------------------------- typed args
 
 type typedArg struct {
-	T string          `json:"t"`
-	V json.RawMessage `json:"v,omitempty"`
+	T   string          `json:"t"`
+	V   json.RawMessage `json:"v,omitempty"`
+	Hex string          `json:"hex,omitempty"` // string args that are not valid UTF-8
 }
 
 func ta(t string, v any) typedArg {
 	if v == nil {
 		return typedArg{T: t}
+	}
+	if s, ok := v.(string); ok && !utf8.ValidString(s) {
+		return typedArg{T: t, Hex: hex.EncodeToString([]byte(s))}
 	}
 	return typedArg{T: t, V: vec.MustJSON(v)}
 }
@@ -197,6 +206,11 @@ func decodeArg(a typedArg) any {
 	sint := func(bits int) int64 { v, err := strconv.ParseInt(num().String(), 10, bits); must(err); return v }
 	uint_ := func(bits int) uint64 { v, err := strconv.ParseUint(num().String(), 10, bits); must(err); return v }
 	str := func() string {
+		if a.Hex != "" || (a.V == nil && (a.T == "string" || a.T == "error")) {
+			b, err := hex.DecodeString(a.Hex)
+			must(err)
+			return string(b)
+		}
 		var s string
 		must(json.Unmarshal(a.V, &s))
 		return s
@@ -265,12 +279,12 @@ func withRedact(mode string, f func()) {
 // Terr is a *terror.Error: code, RFC code, message template, redaction
 // positions, GetMsg and Error() of the error after GenWithStackByArgs.
 type Terr struct {
-	Code     int    `json:"code"`
-	RFC      string `json:"rfc"`
-	Template string `json:"template"`
-	Redact   []int  `json:"redact"`
-	Msg      string `json:"msg"`
-	Error    string `json:"error"`
+	Code     int          `json:"code"`
+	RFC      string       `json:"rfc"`
+	Template vec.GoString `json:"template"`
+	Redact   []int        `json:"redact"`
+	Msg      vec.GoString `json:"msg"`
+	Error    vec.GoString `json:"error"`
 }
 
 func terrOf(e *errors.Error, gen error) Terr {
@@ -279,20 +293,20 @@ func terrOf(e *errors.Error, gen error) Terr {
 	if r == nil {
 		r = []int{}
 	}
-	return Terr{Code: int(e.Code()), RFC: string(e.RFCCode()), Template: e.MessageTemplate(), Redact: r,
-		Msg: g.GetMsg(), Error: g.Error()}
+	return Terr{Code: int(e.Code()), RFC: string(e.RFCCode()), Template: vec.GoString(e.MessageTemplate()), Redact: r,
+		Msg: vec.GoString(g.GetMsg()), Error: vec.GoString(g.Error())}
 }
 
 // SQLErr is a *mysql.SQLError.
 type SQLErr struct {
-	Code    uint16 `json:"code"`
-	State   string `json:"state"`
-	Message string `json:"message"`
-	Error   string `json:"error"`
+	Code    uint16       `json:"code"`
+	State   string       `json:"state"`
+	Message vec.GoString `json:"message"`
+	Error   vec.GoString `json:"error"`
 }
 
 func sqlErrOf(e *mysql.SQLError) SQLErr {
-	return SQLErr{e.Code, e.State, e.Message, e.Error()}
+	return SQLErr{e.Code, e.State, vec.GoString(e.Message), vec.GoString(e.Error())}
 }
 
 // ---------------------------------------------------------------- tables
@@ -423,10 +437,10 @@ func baseExec(op string, args []json.RawMessage) (out any, err error) {
 			panic("base: unknown table " + name)
 		}
 		return f(), nil
-	case "sprintf":
-		return fmt.Sprintf(arg[string](args, 0), decodeArgs(args[1])...), nil
+	case "sprintf", "sprintf_rand":
+		return vec.GoString(fmt.Sprintf(string(arg[vec.GoString](args, 0)), decodeArgs(args[1])...)), nil
 	case "sprint":
-		return fmt.Sprint(decodeArgs(args[0])...), nil
+		return vec.GoString(fmt.Sprint(decodeArgs(args[0])...)), nil
 	case "new_err":
 		var e *mysql.SQLError
 		withRedact(arg[string](args, 2), func() { e = mysql.NewErr(arg[uint16](args, 0), decodeArgs(args[1])...) })
@@ -457,10 +471,10 @@ func baseExec(op string, args []json.RawMessage) (out any, err error) {
 		withRedact(arg[string](args, 2), func() { t = terrOf(proto, proto.GenWithStackByArgs(decodeArgs(args[1])...)) })
 		return t, nil
 	case "synthesize":
-		e := terror.ErrClass(arg[int](args, 0)).Synthesize(terror.ErrCode(arg[int](args, 1)), arg[string](args, 2))
+		e := terror.ErrClass(arg[int](args, 0)).Synthesize(terror.ErrCode(arg[int](args, 1)), string(arg[vec.GoString](args, 2)))
 		return terrOf(e, e), nil
 	case "to_sql_error":
-		e := terror.ErrClass(arg[int](args, 0)).Synthesize(terror.ErrCode(arg[int](args, 1)), arg[string](args, 2))
+		e := terror.ErrClass(arg[int](args, 0)).Synthesize(terror.ErrCode(arg[int](args, 1)), string(arg[vec.GoString](args, 2)))
 		return sqlErrOf(terror.ToSQLError(e)), nil
 	case "err_class":
 		class := terror.ErrClass(arg[int](args, 0))
@@ -531,7 +545,8 @@ func baseExec(op string, args []json.RawMessage) (out any, err error) {
 		return mysql.IsAuthPluginClearText(arg[string](args, 0)), nil
 	case "format_locale":
 		f := mysql.GetLocaleFormatFunction(arg[string](args, 0))
-		return f(arg[string](args, 1), arg[string](args, 2))
+		out, err := f(string(arg[vec.GoString](args, 1)), string(arg[vec.GoString](args, 2)))
+		return vec.GoString(out), err
 	case "errno_stats":
 		errno.FlushStats()
 		for _, step := range arg[[][]any](args, 0) {

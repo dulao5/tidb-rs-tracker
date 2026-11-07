@@ -3,6 +3,7 @@ package domains
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"regexp"
 	"sort"
@@ -23,6 +24,8 @@ var redactModes = []string{"OFF", "ON", "MARKER"}
 var sampleStrings = []string{
 	"", "t1", "Duplicate", "a'b\"c\\d", strings.Repeat("x", 300), "日本語テーブル名", "‹marker›", "100%", "tab\tnl\n",
 	strings.Repeat("é", 70), "\x7f\x01", "emoji😀",
+	// not UTF-8 (Go strings are bytes: CAST(0xFF41 AS SIGNED) passes them to messages)
+	"\xffA", "ab\xdd$", "\xe4\xb8", strings.Repeat("\xc3", 200), "\xef\xbb\xbf\u2028\ufeff",
 }
 
 func randStr(rng *rand.Rand) string {
@@ -32,9 +35,11 @@ func randStr(rng *rand.Rand) string {
 	n := rng.IntN(40)
 	var b strings.Builder
 	for i := 0; i < n; i++ {
-		switch rng.IntN(6) {
+		switch rng.IntN(7) {
 		case 0:
 			b.WriteRune(rune(0x4e00 + rng.IntN(500)))
+		case 1:
+			b.WriteByte(byte(0x80 + rng.IntN(0x80))) // possibly invalid UTF-8
 		default:
 			b.WriteByte(byte('a' + rng.IntN(26)))
 		}
@@ -188,6 +193,7 @@ func baseGenerate(g *vec.Gen, rng *rand.Rand) {
 			g.Add("sys/verbs", "sprintf", "<"+v+">", a)
 		}
 	}
+	sprintfRand(g, rng)
 	for i := 0; i < 30; i++ {
 		n := rng.IntN(5)
 		a := []typedArg{}
@@ -260,7 +266,7 @@ func baseGenerate(g *vec.Gen, rng *rand.Rand) {
 		} else {
 			class, code = rng.IntN(30)-1, rng.IntN(10000)
 		}
-		g.Add("rand/to_sql_error", "to_sql_error", class, code, "boom "+randStr(rng))
+		g.Add("rand/to_sql_error", "to_sql_error", class, code, vec.GoString("boom "+randStr(rng)))
 	}
 	descs := []string{"ddl", "planner", "evaluator", "perfschema", "nope", "", "types", "kv"}
 	for i := 0; i < 60; i++ {
@@ -409,5 +415,144 @@ func baseGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	for _, t := range []int{0, 1, 2, 3, 254, 255} {
 		g.Add("sys/store_type", "store_type", t)
+	}
+}
+
+// ---------------------------------------------------------------- random fmt
+
+// sprintfRand: random formats and arguments for fmt.Sprintf (after the fuzz in
+// the review of tidb-rs PR #6): random flags, widths, precisions, '*' and
+// verbs; arguments of every type including non-UTF-8 strings, float32,
+// special floats and floats exactly halfway between two shortest
+// representations (k/2^n); a few huge '*' widths and precisions (Go allows
+// up to 1e6, beyond that %!(BADWIDTH)).
+func sprintfRand(g *vec.Gen, rng *rand.Rand) {
+	pick := func(xs []string) string { return xs[rng.IntN(len(xs))] }
+	randFloat := func() float64 {
+		switch rng.IntN(12) {
+		case 0:
+			return []float64{0, math.Copysign(0, -1), math.Inf(1), math.Inf(-1), math.NaN(), math.MaxFloat64,
+				math.SmallestNonzeroFloat64, 1e21, 1e20, 1e-5, 1e-4, 0.1, 0.5, 1.5, 2.5, 123456789, 1e100}[rng.IntN(17)]
+		case 1, 2:
+			return math.Float64frombits(rng.Uint64())
+		case 3, 4:
+			return float64(rng.IntN(2000000)-1000000) / math.Pow10(rng.IntN(12))
+		case 5, 6, 7:
+			// halfway: k/2^n (exact binary fractions)
+			k := float64(rng.Int64N(1 << 53))
+			if rng.IntN(2) == 0 {
+				k = float64(rng.Int64N(1 << 24))
+			}
+			f := k / math.Pow(2, float64(rng.IntN(12)))
+			if rng.IntN(2) == 0 {
+				f = -f
+			}
+			return f
+		default:
+			return (rng.Float64() - 0.5) * math.Pow10(rng.IntN(60)-30)
+		}
+	}
+	randStr := func() string {
+		n := rng.IntN(12)
+		var b strings.Builder
+		for i := 0; i < n; i++ {
+			switch rng.IntN(20) {
+			case 0:
+				b.WriteByte(byte(0x80 + rng.IntN(0x80))) // invalid or partial UTF-8
+			case 1:
+				b.WriteByte(0xff)
+			default:
+				b.WriteRune([]rune{'a', 'Z', ' ', '\'', '"', '\\', '\n', '\t', 0, 'é', '中', '🙂', '‹', 0x7f, 0x85,
+					0x2028, 0xfeff, '%', 0x200b, 0xad, 0xe000, 0x10ffff}[rng.IntN(22)])
+			}
+		}
+		return b.String()
+	}
+	randArg := func() typedArg {
+		switch rng.IntN(10) {
+		case 0, 1:
+			return ta("string", randStr())
+		case 2:
+			v := int64(rng.Uint64()>>1) >> uint(rng.IntN(63))
+			if rng.IntN(2) == 0 {
+				v = -v
+			}
+			return ta("int", v)
+		case 3:
+			return ta("int8", int64(int8(rng.IntN(256)-128)))
+		case 4:
+			return ta("uint64", rng.Uint64()>>uint(rng.IntN(64)))
+		case 5:
+			return ta("float64", strconv.FormatFloat(randFloat(), 'g', -1, 64))
+		case 6:
+			return ta("float32", strconv.FormatFloat(float64(float32(randFloat())), 'g', -1, 32))
+		case 7:
+			return ta("bool", rng.IntN(2) == 0)
+		case 8:
+			return ta("nil", nil)
+		}
+		bs := make([]byte, rng.IntN(6))
+		for i := range bs {
+			bs[i] = byte(rng.IntN(256))
+		}
+		if rng.IntN(2) == 0 && len(bs) >= 2 {
+			copy(bs, "ab")
+		}
+		return ta("bytes", hex.EncodeToString(bs))
+	}
+	randSpec := func() string {
+		s := "%"
+		for _, f := range []string{"-", "+", "#", " ", "0"} {
+			if rng.IntN(6) == 0 {
+				s += f
+			}
+		}
+		switch rng.IntN(5) {
+		case 0:
+			s += strconv.Itoa(rng.IntN(25))
+		case 1:
+			s += "*"
+		}
+		switch rng.IntN(4) {
+		case 0:
+			s += "." + strconv.Itoa(rng.IntN(20))
+		case 1:
+			s += "."
+		case 2:
+			if rng.IntN(3) == 0 {
+				s += ".*"
+			}
+		}
+		if rng.IntN(40) == 0 {
+			s += "[" + strconv.Itoa(rng.IntN(4)) + "]"
+		}
+		verbs := []rune("vvvvsssdddqxXtTcbofeEgGFOU!z")
+		return s + string(verbs[rng.IntN(len(verbs))])
+	}
+	for i := 0; i < 20000; i++ {
+		format := ""
+		for k := rng.IntN(3) + 1; k > 0; k-- {
+			format += pick([]string{"", "x", "'", "[", " "}) + randSpec()
+		}
+		args := []typedArg{}
+		for k := rng.IntN(4); k >= 0; k-- {
+			if rng.IntN(4) == 0 { // a small int for '*'
+				args = append(args, ta("int", int64(rng.IntN(30)-5)))
+				continue
+			}
+			args = append(args, randArg())
+		}
+		g.Add("rand/sprintf", "sprintf_rand", format, args)
+	}
+	// Huge widths and precisions through '*' (Rust's format! panics above 65535).
+	for _, w := range []int64{65535, 65536, 70000, 1000000, 1000001, -70000, 2000000} {
+		for _, f := range []string{"%*d", "%-*s|", "%.*f", "%*.*e", "%.*s", "%0*x", "%*v"} {
+			args := []typedArg{ta("int", w)}
+			if strings.Count(f, "*") == 2 {
+				args = append(args, ta("int", w))
+			}
+			args = append(args, randArg())
+			g.Add("sys/huge_width", "sprintf_rand", f, args)
+		}
 	}
 }

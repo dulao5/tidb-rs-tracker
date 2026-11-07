@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -164,6 +165,22 @@ func genUnicode() {
 		}
 		e.p("    ],\n    latin_offset: %d,\n};\n", t.LatinOffset)
 	}
+	// strconv.IsPrint as ranges of printable runes (strconv's own tables are
+	// unexported; the ranges are computed by calling IsPrint on every rune).
+	e.p("\n/// Runes for which Go's `strconv.IsPrint` is true, as inclusive ranges (Go %s).\n", runtime.Version())
+	e.p("pub static IS_PRINT: &[(u32, u32)] = &[\n")
+	start := -1
+	for r := 0; r <= unicode.MaxRune+1; r++ {
+		p := r <= unicode.MaxRune && strconv.IsPrint(rune(r))
+		if p && start < 0 {
+			start = r
+		} else if !p && start >= 0 {
+			e.p("    (0x%x, 0x%x),\n", start, r-1)
+			n++
+			start = -1
+		}
+	}
+	e.p("];\n")
 	e.write("gostd/unicode_tables.rs")
 	fmt.Fprintf(os.Stderr, "  %d ranges\n", n)
 }
