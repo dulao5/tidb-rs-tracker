@@ -13657,7 +13657,7 @@ pkg/metrics	pkg/metrics/metrics.go	init	73	D14.1
 pkg/metrics	pkg/metrics/owner.go	InitOwnerMetrics	38	D14.1
 pkg/metrics	pkg/metrics/resource_group.go	InitResourceGroupMetrics	37	D14.1
 pkg/metrics	pkg/metrics/resourcemanager.go	InitResourceManagerMetrics	28	D14.1
-pkg/metrics	pkg/metrics/server.go	ExecuteErrorToLabel	408	D14.1
+pkg/metrics	pkg/metrics/server.go	ExecuteErrorToLabel	408	D00.2
 pkg/metrics	pkg/metrics/server.go	InitServerMetrics	79	D14.1
 pkg/metrics	pkg/metrics/session.go	InitSessionMetrics	46	D14.1
 pkg/metrics	pkg/metrics/sli.go	InitSliMetrics	29	D14.1
@@ -24551,7 +24551,7 @@ pkg/types	pkg/types/enum.go	Enum.ToNumber	46	D01.1
 pkg/types	pkg/types/enum.go	ParseEnum	51	D01.1
 pkg/types	pkg/types/enum.go	ParseEnumName	64	D01.1
 pkg/types	pkg/types/enum.go	ParseEnumValue	76	D01.1
-pkg/types	pkg/types/etc.go	ColumnNeedRestoredData	124	D01.1
+pkg/types	pkg/types/etc.go	ColumnNeedRestoredData	124	D06.1
 pkg/types	pkg/types/etc.go	EOFAsNil	194	D01.1
 pkg/types	pkg/types/etc.go	InvOp2	202	D01.1
 pkg/types	pkg/types/etc.go	IsBinaryStr	110	D01.1
