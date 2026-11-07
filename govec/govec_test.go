@@ -26,6 +26,11 @@ var minedGoTests = map[string][]string{
 		"TestShiftMyDecimal", "TestFromStringMyDecimal", "TestMarshalMyDecimal",
 		"BenchmarkMyDecimalToBin", "BenchmarkMyDecimalToHashKey",
 	},
+	"memory": {
+		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
+		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
+		"TestGlobalTracker", "TestOOMActionPriority", "TestFormatBytesWithPrune",
+	},
 }
 
 // oracleStride: the oracle check replays records 0, s, 2s, ... (about 1 in

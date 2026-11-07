@@ -55,6 +55,15 @@ op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`
 
 **脏接收者** `dirty_<op>`：op 写入的对象（接收者或 `to`）不是新的 `MyDecimal`，而是先对第一个参数做 `FromString`（错误忽略）留下的对象，如负数、带小数（`resultFrac > 0`）、9 个字都用满的数。`FromString`、`FromInt`、`FromUint`、`FromBin` 等不重置自己不写的字段，所以结果依赖旧状态：接收者是 `-123.456` 时 `FromString("2")` 得 `-2`，`FromUint(5)` 得 `-5`。op 为 `from_string from_int from_uint from_float64 from_bin unmarshal_json round add sub mul div mod`。`args` 是脏值后接原 op 的参数，如 `{"op":"dirty_from_uint","args":["-1",5]}`；`out`、`err` 是原 op 的输出（写入后的接收者 / `to`）和错误。Go 调用方几乎都用 `new(MyDecimal)`，Rust 调用方更可能复用缓冲（chunk 列循环），这类记录防止 Rust 移植"顺手"加上重置。
 
+### memory 领域
+
+块 D15.1（`pkg/util/memory`；tracker 用到的 `pkg/util/sqlkiller`）。op：
+
+- `script`：`args[0]` 是步骤表，作用于用整数编号的 tracker、动作和 killer。`out` 每步一项 `{"r": 结果, "fired": [...]}`，`fired` 按顺序列出这一步中执行的动作（`mock:<aid>:<label>`、`log:<aid>:<conn>`、`panic:<aid>:<conn>`）。Go 在某一步 panic 时记为 `{"panic": {code,msg}}`（`panic(err)`）或 `{"panic": "消息"}`，脚本到此结束。Rust 侧 `Consume` 的 `panic(err)` 对应 `Err`。步骤一览见 `domains/memory.go` 文件头。动作链是链表，同一个动作绑进两条链会成环，随机脚本每次绑定都用新动作。
+- `format_bytes`、`bytes_to_string`：`args [n]`。
+
+每个脚本开始时把 `MemUsageTop1Tracker` 置空，`ServerMemoryLimitSessMinSize` 恢复默认，`EnableGCAwareMemoryTrack` 关闭：GC-aware 的释放依赖 Go 的 GC 何时运行 finalizer，结果不确定，Rust 移植中立即释放（D15.1 plan §4）。顺序依赖 map 的结果（子节点列表、`SearchTrackerConsumedMoreThanNBytes`、`CountAllChildrenMemUse`）都排序后记录。meminfo / memstats 读的是机器的内存和 Go runtime 的堆统计，列入豁免表，由 Rust 单元测试覆盖。
+
 ### Go 函数覆盖与豁免表
 
 `Coverage.GoFuncs` 使用 tracker 的符号格式（与 `data/go_funcs.tsv`、`data/func_blocks.tsv` 一致）：`MyDecimal.FromString`、`DecimalAdd`，不写指针接收者。未导出的辅助函数列在实际调用到它们的 op 下（如 `add` 列出 `validateArgs doAdd doSub add sub`）。每个领域声明自己对应的块（decimal 为 `D01.2`），`TestBlockCoverage` 检查：块内每个函数要么出现在某个 op 的 `GoFuncs` 中，要么在豁免表 `Exempt` 里写明理由；`GoFuncs` 和豁免表中的每个符号都必须是块内的函数（防止拼错或过期）。D01.2 的 58 个函数中 56 个被覆盖（用 `go test -coverpkg` 核对过，这 56 个都确实被执行到），豁免表：
