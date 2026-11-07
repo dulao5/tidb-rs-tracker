@@ -5,7 +5,8 @@ package domains
 // resource_group.go, flags.go). Records:
 //
 //   - "roundtrip": args [type, json text]: v := new(type); err := json.Unmarshal(text, v);
-//     out {"json": json.Marshal(v), "merr": marshal error}. The err is Unmarshal's.
+//     out {"json": json.Marshal(v), "merr": marshal error}. The err is Unmarshal's. When v
+//     holds a nil element of a []*T, out also has "known_deviation": "nil-ptr-elem".
 //     Texts: meta exported from a v8.5.8 cluster (testdata/model_cluster.jsonl.gz, made
 //     by testdata/model_cluster_ddl.sql through the status port /schema/{db}/{table}),
 //     random values of every type, and mutations of both (keys dropped, duplicated,
@@ -42,7 +43,7 @@ import (
 	ptypes "github.com/pingcap/tidb/pkg/parser/types"
 )
 
-const modelSeed = 20261125
+const modelSeed = 1618
 
 //go:embed testdata/model_cluster.jsonl.gz
 var modelClusterGz []byte
@@ -145,6 +146,50 @@ func marshalOut(v any) map[string]any {
 		return map[string]any{"json": nil, "merr": err.Error()}
 	}
 	return map[string]any{"json": vec.GoString(b), "merr": ""}
+}
+
+// knownNilPtrElem marks a record whose decoded value holds a nil element in a []*T
+// slice (a JSON null element): the Rust port holds the elements by value and decodes
+// null as the zero value (tidb-rs specs/D06.1-model §4.1). The replay counts such
+// records as a known deviation, and fails if one no longer differs.
+const knownNilPtrElem = "nil-ptr-elem"
+
+func markDeviation(v any, out map[string]any) map[string]any {
+	if hasNilPtrElem(reflect.ValueOf(v)) {
+		out["known_deviation"] = knownNilPtrElem
+	}
+	return out
+}
+
+func hasNilPtrElem(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Pointer:
+		return !v.IsNil() && hasNilPtrElem(v.Elem())
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).IsExported() && hasNilPtrElem(v.Field(i)) {
+				return true
+			}
+		}
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			e := v.Index(i)
+			if e.Kind() == reflect.Pointer && e.IsNil() {
+				return true
+			}
+			if hasNilPtrElem(e) {
+				return true
+			}
+		}
+	case reflect.Map:
+		it := v.MapRange()
+		for it.Next() {
+			if hasNilPtrElem(it.Value()) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func mustTable(text vec.GoString) *model.TableInfo {
@@ -290,14 +335,14 @@ func modelExec(op string, args []json.RawMessage) (any, error) {
 	case "roundtrip":
 		v := modelTypes[arg[string](args, 0)]()
 		err := json.Unmarshal([]byte(arg[vec.GoString](args, 1)), v)
-		return marshalOut(v), err
+		return markDeviation(v, marshalOut(v)), err
 	case "into":
 		v := modelTypes[arg[string](args, 0)]()
 		if err := json.Unmarshal([]byte(arg[vec.GoString](args, 1)), v); err != nil {
 			panic("bad base: " + err.Error())
 		}
 		err := json.Unmarshal([]byte(arg[vec.GoString](args, 2)), v)
-		return marshalOut(v), err
+		return markDeviation(v, marshalOut(v)), err
 	case "marshal_time":
 		so := &model.StatsOptions{StatsWindowSettings: &model.StatsWindowSettings{
 			WindowStart: time.Unix(arg[int64](args, 0), arg[int64](args, 1)).In(time.FixedZone("", int(arg[int64](args, 2))))}}
@@ -907,7 +952,7 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	sort.Strings(names)
 	var randTexts [][2]string
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 15000; i++ {
 		name := names[i%len(names)]
 		v := modelTypes[name]()
 		r.fill(reflect.ValueOf(v).Elem(), 0)
@@ -919,7 +964,7 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 		randTexts = append(randTexts, [2]string{name, string(b)})
 	}
 	// Mutations of the cluster and random texts.
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 15000; i++ {
 		var name, text string
 		if i%2 == 0 {
 			c := cluster[rng.IntN(len(cluster))]
@@ -930,8 +975,19 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("mut/"+name, "roundtrip", name, vec.GoString(mutateJSON(text, rng)))
 	}
+	for i := 0; i < 20000; i++ {
+		var name, text string
+		if i%2 == 0 {
+			c := cluster[rng.IntN(len(cluster))]
+			name, text = c.Type, c.JSON
+		} else {
+			t := randTexts[rng.IntN(len(randTexts))]
+			name, text = t[0], t[1]
+		}
+		g.Add("lucky/"+name, "roundtrip", name, vec.GoString(luckyMutate(text, rng)))
+	}
 	// Decoding into an existing value.
-	for i := 0; i < 300; i++ {
+	for i := 0; i < 3000; i++ {
 		t := randTexts[rng.IntN(len(randTexts))]
 		var other string
 		for _, u := range randTexts {
@@ -1154,4 +1210,172 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 		{1700000000, 0, 23*3600 + 59*60}, {1700000000, 0, 24 * 3600}} {
 		g.Add("sys/time", "marshal_time", c[0], c[1], c[2])
 	}
+	decodeSiteCases(g)
+}
+
+// decodeSiteCases: one "into" record per error / early-return site of encoding/json's
+// decoder (Go 1.25 decode.go), on a base value with every field set, so that the record
+// shows what Go writes, what it keeps and whether it goes on decoding: literalStore
+// (null, bool, string, []byte base64, number into interface / int / uint / float and into
+// wrong kinds), array (into non-slices, element errors, an UnmarshalJSON error in an
+// element, shorter and longer arrays), object (into non-structs, maps: int keys, value
+// errors before key errors), struct fields (unknown and duplicate keys, folded keys, an
+// UnmarshalJSON error after a saved error, embedded pointers allocated for a promoted
+// field), and the UnmarshalJSON methods (CIStr, FieldType, time.Time).
+func decodeSiteCases(g *vec.Gen) {
+	ft := ptypes.NewFieldType(mysql.TypeLong)
+	ft.SetFlen(11)
+	ct := ptypes.NewFieldType(mysql.TypeVarchar)
+	col := &model.ColumnInfo{ID: 1, Name: pmodel.NewCIStr("Col"), Offset: 2, OriginDefaultValue: "x",
+		OriginDefaultValueBit: []byte{1, 2}, DefaultValue: "CURRENT_TIMESTAMP", DefaultValueBit: []byte{1, 2},
+		Dependences: map[string]struct{}{"a": {}}, FieldType: *ft, ChangingFieldType: ct, State: model.StatePublic,
+		Comment: "cm", Hidden: true, ChangeStateInfo: &model.ChangeStateInfo{DependencyColumnOffset: 3}, Version: 2}
+	cb, _ := json.Marshal(col)
+	pi := &model.PartitionInfo{Type: pmodel.PartitionTypeRange, Expr: "a", Columns: []pmodel.CIStr{pmodel.NewCIStr("a"), pmodel.NewCIStr("b")},
+		Enable: false, Definitions: []model.PartitionDefinition{{ID: 1, Name: pmodel.NewCIStr("p0"), LessThan: []string{"10"}},
+			{ID: 2, Name: pmodel.NewCIStr("p1"), LessThan: []string{"MAXVALUE"}}},
+		NewPartitionIDs: []int64{1, 2, 3}, DDLChangedIndex: map[int64]bool{1: true}}
+	pb, _ := json.Marshal(pi)
+	sd := &model.SchemaDiff{Version: 1, SubActionTypes: []model.ActionType{1, 2}}
+	sb, _ := json.Marshal(sd)
+	pol := &model.PolicyInfo{ID: 1, Name: pmodel.NewCIStr("p"), State: model.StatePublic}
+	polb, _ := json.Marshal(pol)
+	so := &model.StatsOptions{StatsWindowSettings: &model.StatsWindowSettings{
+		WindowStart: time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC), WindowEnd: time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC)}, SampleNum: 7}
+	sob, _ := json.Marshal(so)
+	tb := &model.TableInfo{ID: 9, Name: pmodel.NewCIStr("t"), Columns: []*model.ColumnInfo{col}, Partition: pi, Comment: "tc"}
+	tbb, _ := json.Marshal(tb)
+	tbn := &model.TableInfo{ID: 9, Name: pmodel.NewCIStr("t")}
+	tbnb, _ := json.Marshal(tbn)
+	cases := []struct{ site, ty, base, text string }{
+		// literalStore: null.
+		{"null/primitives", "ColumnInfo", string(cb), `{"id":null,"offset":null,"comment":null,"hidden":null,"state":null,"version":null}`},
+		{"null/interface", "ColumnInfo", string(cb), `{"default":null}`},
+		{"null/pointer", "ColumnInfo", string(cb), `{"changing_type":null,"change_state_info":null}`},
+		{"null/map", "ColumnInfo", string(cb), `{"dependences":null}`},
+		{"null/bytes", "ColumnInfo", string(cb), `{"default_bit":null}`},
+		{"null/unmarshaler", "ColumnInfo", string(cb), `{"name":null,"type":null}`},
+		{"null/slice", "PartitionInfo", string(pb), `{"new_partition_ids":null,"definitions":null}`},
+		// literalStore: bool.
+		{"bool/wrong-kinds", "ColumnInfo", string(cb), `{"id":true,"comment":false,"dependences":true,"default_bit":true,"change_state_info":true,"version":7}`},
+		{"bool/interface", "ColumnInfo", string(cb), `{"default":true,"origin_default":false}`},
+		{"bool/unmarshaler", "ColumnInfo", string(cb), `{"comment":"new","name":true,"hidden":false}`},
+		// literalStore: string.
+		{"string/wrong-kinds", "ColumnInfo", string(cb), `{"id":"5","hidden":"true","dependences":"x","change_state_info":"x","version":"1"}`},
+		{"string/slice", "PartitionInfo", string(pb), `{"new_partition_ids":"AQI=","enable":true}`},
+		{"string/base64-bad", "ColumnInfo", string(cb), `{"default_bit":"!!","comment":"after"}`},
+		{"string/base64-short", "ColumnInfo", string(cb), `{"default_bit":"AQ"}`},
+		{"string/base64-newline", "ColumnInfo", string(cb), `{"default_bit":"AQ\n==","origin_default_bit":"A\rQI="}`},
+		{"string/base64-empty", "ColumnInfo", string(cb), `{"default_bit":""}`},
+		{"string/interface", "ColumnInfo", string(cb), `{"default":"s","origin_default":""}`},
+		{"string/named-bytes", "SchemaDiff", string(sb), `{"sub_action_types":"AwQ="}`},
+		// literalStore: number.
+		{"number/interface-range", "ColumnInfo", string(cb), `{"default":1e400,"origin_default":-1e999,"comment":"after"}`},
+		{"number/interface-nested", "ColumnInfo", string(cb), `{"default":[1,1e400,{"a":-1e999}],"origin_default":{"x":1e309}}`},
+		{"number/interface-underflow", "ColumnInfo", string(cb), `{"default":1e-400,"origin_default":-0}`},
+		{"number/wrong-kinds", "ColumnInfo", string(cb), `{"comment":5,"hidden":0,"dependences":5,"default_bit":5,"change_state_info":5}`},
+		{"number/int-range", "ColumnInfo", string(cb), `{"offset":9223372036854775808,"state":256,"version":-1,"id":1.5}`},
+		{"number/int-forms", "ColumnInfo", string(cb), `{"offset":1e2,"state":-0,"version":0.0,"id":-9223372036854775808}`},
+		{"number/float", "StatsOptions", string(sob), `{"sample_rate":1e400,"sample_num":"x"}`},
+		{"number/float-ok", "StatsOptions", string(sob), `{"sample_rate":5e-324}`},
+		{"number/named-bytes", "SchemaDiff", string(sb), `{"sub_action_types":[3,300,4]}`},
+		// array.
+		{"array/wrong-kinds", "ColumnInfo", string(cb), `{"id":[1],"comment":[],"dependences":[],"change_state_info":[1],"default":[1,"a",null]}`},
+		{"array/shorter", "PartitionInfo", string(pb), `{"new_partition_ids":[9]}`},
+		{"array/longer", "PartitionInfo", string(pb), `{"new_partition_ids":[1,2,3,4,5]}`},
+		{"array/empty", "PartitionInfo", string(pb), `{"new_partition_ids":[],"columns":[]}`},
+		{"array/element-error", "PartitionInfo", string(pb), `{"new_partition_ids":[7,"x",8]}`},
+		{"array/element-unmarshaler-error", "PartitionInfo", string(pb), `{"columns":[{"O":"n","L":"n"},5,{"O":"z"}],"enable":true}`},
+		{"array/element-merge", "PartitionInfo", string(pb), `{"definitions":[{"comment":"c"}]}`},
+		{"array/element-null-struct", "PartitionInfo", string(pb), `{"definitions":[null,{"id":5}]}`},
+		{"array/pointer-elements", "TableInfo", string(tbb), `{"cols":[{"comment":"merged"}]}`},
+		// object.
+		{"object/wrong-kinds", "ColumnInfo", string(cb), `{"id":{},"comment":{"a":1},"default_bit":{},"default":{"k":[1]}}`},
+		{"object/map-merge", "ColumnInfo", string(cb), `{"dependences":{"b":{},"a":{}}}`},
+		{"object/map-value-error", "ColumnInfo", string(cb), `{"dependences":{"b":1,"c":{}}}`},
+		{"object/map-int-keys", "PartitionInfo", string(pb), `{"ddl_changed_index":{"2":false,"x":true,"+3":true,"-0":true,"9223372036854775808":true,"007":true}}`},
+		{"object/map-value-then-key", "PartitionInfo", string(pb), `{"ddl_changed_index":{"x":"s","4":"s"}}`},
+		{"object/map-into-nil", "PartitionInfo", `{}`, `{"ddl_changed_index":{}}`},
+		{"object/map-from-array", "PartitionInfo", string(pb), `{"ddl_changed_index":[1]}`},
+		{"object/pointer-wrong-kind-existing", "TableInfo", string(tbb), `{"partition":"x","comment":"after"}`},
+		{"object/pointer-wrong-kind-nil", "TableInfo", string(tbnb), `{"partition":"x","view":5}`},
+		// struct fields.
+		{"field/unknown", "ColumnInfo", string(cb), `{"nope":{"deep":[1,{"x":1e400}]},"comment":"after"}`},
+		{"field/duplicate", "ColumnInfo", string(cb), `{"comment":"a","comment":"b","default":"x","default":1e400}`},
+		{"field/fold", "ColumnInfo", string(cb), `{"COMMENT":"u","Comment":"v","ſtate":3}`},
+		{"field/saved-then-fatal", "ColumnInfo", string(cb), `{"id":"x","name":5,"comment":"never"}`},
+		{"field/embedded-pointer-null", "PolicyInfo", string(polb), `{"primary_region":null}`},
+		{"field/embedded-pointer-error", "PolicyInfo", string(polb), `{"followers":"x","id":4}`},
+		{"field/embedded-pointer-time", "StatsOptions", `{}`, `{"window_start":null}`},
+		// UnmarshalJSON methods.
+		{"unmarshaler/cistr-partial", "ColumnInfo", string(cb), `{"name":{"L":"zz","O":5}}`},
+		{"unmarshaler/cistr-string", "ColumnInfo", string(cb), `{"name":"AbC"}`},
+		{"unmarshaler/fieldtype-error", "ColumnInfo", string(cb), `{"type":{"Tp":"x"},"comment":"never"}`},
+		{"unmarshaler/fieldtype-null", "ColumnInfo", string(cb), `{"changing_type":{"Tp":"x"}}`},
+		{"unmarshaler/time-parse-error", "StatsOptions", string(sob), `{"window_start":"bad","sample_num":9}`},
+		{"unmarshaler/time-not-string", "StatsOptions", string(sob), `{"window_end":5}`},
+		{"unmarshaler/time-null", "StatsOptions", string(sob), `{"window_start":null}`},
+		{"unmarshaler/time-saved-then-fatal", "StatsOptions", string(sob), `{"sample_num":"x","window_end":"bad","window_start":"2020-01-01T00:00:00Z"}`},
+		{"unmarshaler/time-duplicate", "StatsOptions", string(sob), `{"window_start":"2222-06-23T01:50:06-09:00","window_start":"AAEC"}`},
+	}
+	for _, c := range cases {
+		g.Add("site/"+c.site, "into", c.ty, vec.GoString(c.base), vec.GoString(c.text))
+	}
+}
+
+var jLucky = []string{`1e21`, `1e20`, `999999999999999999999`, `1e-7`, `0.000001`, `1e-6`, `9007199254740993`, `-0`, `-0.0`, `1.0`, `1E+2`, `0.1`,
+	`123456789.123456789`, `5e-324`, `1.7976931348623157e308`, `-1e21`, `100`, `"<a href='x'>&amp;</a>"`, `"line sep x"`, `"\ud800"`,
+	`"😀"`, `"\^@"`, `"café"`, `"a\"b\\c/"`, `null`, `{}`, `[]`, `[null]`, `[null,{}]`, `true`, `"2026-11-07T1:2:3+24:00"`,
+	`"2006-01-02T15:04:05.999999999+08:00"`, `"0001-01-01T00:00:00Z"`, `18446744073709551615`, `-9223372036854775808`, `"K"`, `""`, `"1e21"`}
+
+var luckyIfaceKeys = map[string]bool{"default": true, "origin_default": true, "origin_default_bit": true, "default_bit": true}
+
+func luckyMutate(text string, rng *rand.Rand) string {
+	dec := json.NewDecoder(strings.NewReader(text))
+	dec.UseNumber()
+	root := parseJ(dec)
+	var all []*jnode
+	var walk func(n *jnode)
+	walk = func(n *jnode) {
+		all = append(all, n)
+		for _, k := range n.kids {
+			walk(k)
+		}
+	}
+	walk(root)
+	for m := 1 + rng.IntN(3); m > 0; m-- {
+		n := all[rng.IntN(len(all))]
+		switch k := rng.IntN(5); {
+		case k <= 1 && (n.kind == "obj" || n.kind == "arr") && len(n.kids) > 0:
+			i := rng.IntN(len(n.kids))
+			n.kids[i] = &jnode{kind: "lit", lit: jLucky[rng.IntN(len(jLucky))]}
+		case k == 2 && n.kind == "obj":
+			// interface{} fields: numbers / strings only
+			for i, key := range n.keys {
+				if luckyIfaceKeys[key] {
+					n.kids[i] = &jnode{kind: "lit", lit: jLucky[rng.IntN(17)]}
+				}
+			}
+			if len(n.keys) > 0 && rng.IntN(2) == 0 {
+				n.keys = append(n.keys, "default")
+				n.kids = append(n.kids, &jnode{kind: "lit", lit: jLucky[rng.IntN(len(jLucky))]})
+			}
+		case k == 3 && n.kind == "obj" && len(n.keys) > 0:
+			i := rng.IntN(len(n.keys))
+			key := []byte(n.keys[i])
+			for j := range key {
+				if rng.IntN(2) == 0 && key[j] >= 'a' && key[j] <= 'z' {
+					key[j] -= 32
+				}
+			}
+			n.keys[i] = strings.NewReplacer("k", "K", "s", "ſ").Replace(string(key))
+		case n.kind == "obj" && len(n.keys) > 0:
+			i := rng.IntN(len(n.keys))
+			n.keys = append(n.keys, n.keys[i])
+			n.kids = append(n.kids, &jnode{kind: "lit", lit: jLucky[rng.IntN(len(jLucky))]})
+		}
+	}
+	var b bytes.Buffer
+	root.write(&b)
+	return b.String()
 }

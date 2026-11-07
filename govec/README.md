@@ -335,7 +335,9 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 
 - **集群语料**：`domains/testdata/model_cluster.jsonl.gz`，从一个 v8.5.8 集群（tiup playground）的 status 端口 `/schema/{db}/{table}` 原样导出的 meta（857 张表、9 个库），建表语句是同目录的 `model_cluster_ddl.sql`：全部列类型与默认值、生成列、各种分区、placement、TTL、视图、序列、外键、check 约束、资源组。表的 JSON 是集群返回的原始字节（不经过 Python 重编码，数字文本不变）。
 - **随机值**：每个结构体按反射填充（字段边界值、HTML 字符、U+2028、非 UTF-8 字节、interface 中的浮点与嵌套值、带时区的时间），`[]*T` 不含 nil 元素（tidb-rs 按值持有元素）。
-- **变异**：对语料和随机值删键、重复键、改大小写、加未知键、换成错误类型或越界数字、`null`。
+- **变异**：对语料和随机值删键、重复键、改大小写、加未知键、换成错误类型或越界数字、`null`（`mutateJSON`，只在对象这一层）；Lucky 的 `luckyMutate`（评审 tidb-rs #20）在任意节点（包括数组元素）换成边界字面量，专门变异 ColumnInfo 的 interface{} 字段，做部分大写与 K/ſ 折叠的键、追加重复键，每条 1 到 3 次。种子 1618，随机值和 `mutateJSON` 各 15,000 条，`luckyMutate` 20,000 条，`into` 3,000 条。
+- **出错路径**（`site/...`，61 条 `into`）：Go 1.25 `encoding/json` decode.go 中每个 `saveError` 和提前返回的位置各一条，基值的每个字段都有值，记录 Go 写了什么、保留了什么、是否继续解码（literalStore 的 null / bool / string / base64 / 数字进 interface、整数、浮点与错误类型；array 进非切片、元素错误、元素的 UnmarshalJSON 错误、长短数组；object 进非结构体、map 的整数键与值错误的先后；字段的未知键、重复键、折叠键、先存错误再遇 UnmarshalJSON 错误、为提升字段分配嵌入指针；CIStr、FieldType、time.Time 的 UnmarshalJSON）。
+- **已知偏离**：解码后的值在某个 `[]*T` 中有 nil 元素（JSON 的 `null` 元素）时，`out` 多一个 `"known_deviation": "nil-ptr-elem"`。tidb-rs 按值持有元素，把 null 解码成零值（tidb-rs specs/D06.1-model §4.1）；回放把这类记录单独计数，并且在它们不再不同时报错。
 - `into`：解码到已有值（缺字段保持原值、切片重填、map 合并）。
 - `sys/time`：`Time.UnmarshalJSON`（Go 1.25 的 `parseStrictRFC3339` 在快速路径失败时就是 `time.Parse(RFC3339)`，严格复查被禁用）与 `marshal_time`（`Time.MarshalJSON` 的年份、时区范围错误）。时间串不含 JSON 转义：Go 解析引号间的原始字节（go.dev/issue/47353），tidb-rs 用解码后的字符串。
 - 方法 op：`table`、`column`、`column_set`、`index`、`partition`、`placement`、`resource`、`fk`、`misc`。
