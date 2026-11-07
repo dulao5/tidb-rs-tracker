@@ -788,7 +788,7 @@ func (n *jnode) objects(out *[]*jnode) {
 var jWrong = []string{`"s"`, `1`, `-1`, `1.5`, `1e2`, `-0`, `true`, `null`, `[]`, `{}`, `[1]`, `{"O":"x"}`, `18446744073709551616`,
 	`9223372036854775808`, `256`, `65536`, `"AAEC"`, `"!!"`, `[1,2,300]`, `1e400`, `"2006-01-02T15:04:05Z"`}
 
-func mutate(text string, rng *rand.Rand) string {
+func mutateJSON(text string, rng *rand.Rand) string {
 	dec := json.NewDecoder(strings.NewReader(text))
 	dec.UseNumber()
 	root := parseJ(dec)
@@ -929,7 +929,7 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 			t := randTexts[rng.IntN(len(randTexts))]
 			name, text = t[0], t[1]
 		}
-		g.Add("mut/"+name, "roundtrip", name, vec.GoString(mutate(text, rng)))
+		g.Add("mut/"+name, "roundtrip", name, vec.GoString(mutateJSON(text, rng)))
 	}
 	// Decoding into an existing value.
 	for i := 0; i < 300; i++ {
@@ -942,7 +942,7 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 			}
 		}
 		if other == "" {
-			other = mutate(t[1], rng)
+			other = mutateJSON(t[1], rng)
 		}
 		g.Add("into/"+t[0], "into", t[0], vec.GoString(t[1]), vec.GoString(other))
 	}
