@@ -190,3 +190,36 @@ echo '{"op":"add","args":["1.5","2.25"]}' | bin/govec decimal --oracle
 - **非 `FromString` 来源的对象，后续结果会不同**（链式记录与"把第一步结果转成字符串再解析"相比，2,184 条中约 350 条不同）：`props` 的 `digits_int` 是 9 而不是实际位数；`round_inplace`、`mul` 等结果的 `st` 继承了按字取整的 `digitsInt`（`FromInt(1)` 再乘 1，`wordBuf[1]` 残留 1）；乘法溢出（`ErrOverflow`）后结果是 `digitsInt=81` 的 `-0`，它再 `to_float64` 得 `-0`、与 0 比较得 −1、`to_hash_key` 得 `8000`；乘法截断（`ErrTruncated`，`digitsFrac=31`）后 `to_hash_key` 只得 `1f`。这些都是 Go 的实际行为，Rust 移植须保持。
 - **`ToFloat64` 的结果与平台有关**（FMA，见"目标平台"）：只影响 `resultFrac < digitsFrac` 且 digitsInt + digitsFrac ≤ 12 的对象，即除法结果（及以它为输入的加减）。SQL 中 `CAST(a/b AS DOUBLE)`、对除法结果做浮点运算会走到这里。
 - **`DecimalDiv` 的 int8 回绕**：`resultFrac = min(from1.resultFrac + int8(fracIncr), 30)`，`fracIncr` 大时会回绕。
+
+## base（块 D00.2：常量、错误码与错误）
+
+领域 `base` 覆盖 `pkg/parser/mysql`、`pkg/parser/terror`、`pkg/errno`、`pkg/util/dbterror`（含 `exeerrors`、`plannererrors`）和 `kv.StoreType`。`pkg/config` 是 D00.2 的第二部分，单独提交，在豁免表中注明。
+
+### 两类记录
+
+- **整表**（op `table`）：Go 运行时的整张表，按键排序，如 `mysql.MySQLErrName`、`errno.MySQLErrName`、`mysql.MySQLState`、字符集与排序规则表、SQL mode 表、权限表、错误注册表 `terror.ErrClassToMySQLCodes`、全部 395 个 `dbterror` 错误原型。tidb-rs 中这些表由 `cmd/rsgen` 从 Go 源码生成，这些记录核对生成结果与 Go 运行时的内容一致。
+- **随机格式化**（op `sprintf_rand`，20,049 条）：随机的标志、宽度、精度、`*`、参数下标和动词，类型随机的参数（含非 UTF-8 字符串和字节、float32、特殊浮点、恰好落在两个最短表示正中间的浮点 k/2^n），以及很大的 `*` 宽度和精度（65,535 到 2,000,000，Go 的上限是 1e6）。来自 tidb-rs PR #6 评审中的差分 fuzz。
+- **调用**：`fmt.Sprintf`（两张错误信息表和全部原型的每个模板，配上与动词对应、偶尔不对应的随机参数；各种动词、标志、宽度、精度、参数下标）、`mysql.NewErr/NewErrf`、`terror`/`dbterror` 的 `NewStd` 与 `GenWithStackByArgs`（三种脱敏模式）、`ToSQLError`、`EqualClass`、`ErrorEqual`、SQL mode、权限、字符集、类型默认长度、`FORMAT` 的 en_US 格式化、`errno` 的错误统计、`unicode.IsOneOf(RangeGraph)` 与 `unicode.IsDigit`。
+
+**Go 的 string 是字节串**：`encoding/json` 会把非 UTF-8 的字符串悄悄替换成 U+FFFD。所以记录中的 Go 字符串用 `vec.GoString`：合法 UTF-8 时是 JSON 字符串，否则是 `{"hex": "<字节>"}`；回放方两种形式都要接受。`vec.CheckUTF8` 在生成时检查每条记录（参数、输出、`err.msg`），出现不是 `GoString` 的非 UTF-8 字符串就 panic，对所有领域生效。带类型的字符串参数同理写成 `{"t":"string","hex":…}`。
+
+带类型的参数（`fmt` 和错误 API 的 `...interface{}`）编码为 `{"t": <Go 类型>, "v": <值>}`，t 取 `string int int8 … uint64 float64 float32 bool nil bytes error`（`error` 是 `errors.New(v)`，即 pingcap/errors 的 `*errors.fundamental`，它的 `Format` 方法只对 `%v %s %q` 输出）。
+
+### 错误注册表
+
+Go 在各个包初始化时注册错误类和错误码（`terror.ErrClass.initError`），tidb-server 调用 `terror.RegisterFinish` 冻结，此后注册会 panic。所以注册表由链接进来的包决定。`internal/protos` 空导入 `cmd/tidb-server` 的包集合（session、server、executor、ddl 等），govec 进程中的注册表与 tidb-server 相同（656 个错误码）。这使 govec 需要 cgo：macOS 上 `CC=/usr/bin/clang`；交叉编译 `CGO_ENABLED=0` 也能构建。
+
+### 生成 Rust 表（cmd/rsgen）
+
+```sh
+cd govec
+CC=/usr/bin/clang go run ./cmd/rsgen -protos     # 重写 internal/protos/protos_list.go（dbterror 原型按名字）
+CC=/usr/bin/clang go run ./cmd/rsgen -out <tidb-rs>/crates/base/src
+(cd <tidb-rs> && cargo fmt -p tidb-base)
+```
+
+rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表和 `strconv.IsPrint` 的可打印范围表（对每个码位调用 Go 的 `IsPrint` 得到）。生成的文件保留 Go 标识符（映射规则 M-GONAME），文件头带 `#![allow(non_upper_case_globals)]`。函数都是手工移植的。
+
+### 目标平台
+
+本领域没有会被 gc 融合成 FMA 的浮点运算，两个目标的记录相同（只有文件头不同）。amd64 的文件取自 tracker CI 在 `ubuntu-latest` 上的产物（`Fresh vectors of this target` 步骤上传的 artifact），因为作者的 arm64 Mac 不能运行 amd64 程序。

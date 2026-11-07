@@ -72,9 +72,9 @@ func GOAMD64() string { return goamd64 }
 
 // Err is the stable JSON form of an error returned by the Go code.
 type Err struct {
-	Name string `json:"name"`           // e.g. "ErrTruncated"; "panic" for a recovered panic; "other" if unknown
-	Code int    `json:"code,omitempty"` // MySQL error code when the error is a *terror.Error
-	Msg  string `json:"msg"`            // err.Error()
+	Name string   `json:"name"`           // e.g. "ErrTruncated"; "panic" for a recovered panic; "other" if unknown
+	Code int      `json:"code,omitempty"` // MySQL error code when the error is a *terror.Error
+	Msg  GoString `json:"msg"`            // err.Error() (bytes; see GoString)
 }
 
 // Record is one call: inputs, output value and error. Out is kept even when
@@ -170,6 +170,9 @@ type Gen struct {
 func (g *Gen) Add(src, op string, args ...any) {
 	raw := make([]json.RawMessage, len(args))
 	for i, a := range args {
+		if err := CheckUTF8(a); err != nil {
+			panic(fmt.Sprintf("%s %s arg %d: %v", src, op, i, err))
+		}
 		raw[i] = MustJSON(a)
 	}
 	g.Calls = append(g.Calls, Call{Op: op, Args: raw, Src: src})
@@ -195,7 +198,7 @@ func (d *Domain) Run(op string, args []json.RawMessage, src string) (rec Record)
 	defer func() {
 		if r := recover(); r != nil {
 			rec.Out = nil
-			rec.Err = &Err{Name: "panic", Msg: fmt.Sprint(r)}
+			rec.Err = &Err{Name: "panic", Msg: GoString(fmt.Sprint(r))}
 		}
 	}()
 	out, err := d.Exec(op, args)
@@ -214,7 +217,7 @@ func (d *Domain) errOf(err error) *Err {
 	if err == nil {
 		return nil
 	}
-	e := &Err{Name: "other", Msg: err.Error()}
+	e := &Err{Name: "other", Msg: GoString(err.Error())}
 	cause := errors.Cause(err)
 	te, isTerr := cause.(*errors.Error)
 	// Identity first (sentinels returned as-is), then same class+code
@@ -246,7 +249,11 @@ func (d *Domain) Records() (Header, []Record) {
 	d.Generate(g, rng)
 	recs := make([]Record, 0, len(g.Calls))
 	for _, c := range g.Calls {
-		recs = append(recs, d.Run(c.Op, c.Args, c.Src))
+		rec := d.Run(c.Op, c.Args, c.Src)
+		if err := CheckUTF8(rec); err != nil {
+			panic(fmt.Sprintf("%s %s: %v", c.Src, c.Op, err))
+		}
+		recs = append(recs, rec)
 	}
 	h := Header{
 		Govec: FormatVersion, Domain: d.Name, TiDB: TiDBVersion, Commit: TiDBCommit,
@@ -358,7 +365,7 @@ func (d *Domain) Oracle(r io.Reader, w io.Writer) error {
 		var req Request
 		var rec Record
 		if err := json.Unmarshal(line, &req); err != nil {
-			rec = Record{Args: []json.RawMessage{}, Err: &Err{Name: "bad_request", Msg: err.Error()}}
+			rec = Record{Args: []json.RawMessage{}, Err: &Err{Name: "bad_request", Msg: GoString(err.Error())}}
 		} else {
 			rec = d.Run(req.Op, req.Args, "")
 		}
