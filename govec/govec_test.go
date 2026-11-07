@@ -33,6 +33,7 @@ var minedGoTests = map[string][]string{
 		"TestGlobalTracker", "TestOOMActionPriority", "TestFormatBytesWithPrune",
 	},
 	"parser_types": {"TestFieldType", "TestUnmarshalCIStr", "TestParseDuration", "TestStrToType"},
+	"model":        {"TestDefaultValue", "TestPlacementSettingsString"},
 	// The literals of time_test.go, core_time_test.go and fsp_test.go (cmd/minelits).
 	"time": domains.TimeMinedTests(),
 }
