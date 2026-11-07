@@ -88,21 +88,21 @@ var memoryCoverage = map[string]vec.Coverage{
 }
 
 var memoryExempt = map[string]string{
-	"Tracker.recordRelease":  "GC-aware release (EnableGCAwareMemoryTrack): the released bytes stay until Go's GC runs a finalizer; nondeterministic in Go, released at once in Rust (D15.1 plan §4); Rust unit test",
-	"Tracker.release":        "GC-aware release, see Tracker.recordRelease",
-	"GetMemTotalIgnoreErr":   "reads the machine's memory: environment-dependent; Rust unit tests",
-	"InitMemoryHook":         "reads the machine's cgroup and memory: environment-dependent; Rust unit tests",
-	"InstanceMemUsed":        "Go runtime heap statistics (jemalloc in Rust, A1 3.2): no common value",
-	"MemTotalCGroup":         "reads the machine's cgroup: environment-dependent",
-	"MemTotalNormal":         "reads the machine's memory: environment-dependent; Rust unit tests",
-	"MemUsedCGroup":          "reads the machine's cgroup: environment-dependent",
-	"MemUsedNormal":          "reads the machine's memory: environment-dependent; Rust unit tests",
-	"init":                   "package init: chooses the meminfo hooks (environment-dependent)",
-	"memInfoCache.get":       "meminfo cache (time-based); Rust unit tests",
-	"memInfoCache.set":       "meminfo cache (time-based); Rust unit tests",
-	"memTotalNormal":         "reads the machine's memory: environment-dependent",
-	"ReadMemStats":           "Go runtime.ReadMemStats (jemalloc in Rust, A1 3.2): no common value",
-	"ForceReadMemStats":      "Go runtime.ReadMemStats (jemalloc in Rust, A1 3.2): no common value",
+	"Tracker.recordRelease": "GC-aware release (EnableGCAwareMemoryTrack): the released bytes stay until Go's GC runs a finalizer; nondeterministic in Go, released at once in Rust (D15.1 plan §4); Rust unit test",
+	"Tracker.release":       "GC-aware release, see Tracker.recordRelease",
+	"GetMemTotalIgnoreErr":  "reads the machine's memory: environment-dependent; Rust unit tests",
+	"InitMemoryHook":        "reads the machine's cgroup and memory: environment-dependent; Rust unit tests",
+	"InstanceMemUsed":       "Go runtime heap statistics (jemalloc in Rust, A1 3.2): no common value",
+	"MemTotalCGroup":        "reads the machine's cgroup: environment-dependent",
+	"MemTotalNormal":        "reads the machine's memory: environment-dependent; Rust unit tests",
+	"MemUsedCGroup":         "reads the machine's cgroup: environment-dependent",
+	"MemUsedNormal":         "reads the machine's memory: environment-dependent; Rust unit tests",
+	"init":                  "package init: chooses the meminfo hooks (environment-dependent)",
+	"memInfoCache.get":      "meminfo cache (time-based); Rust unit tests",
+	"memInfoCache.set":      "meminfo cache (time-based); Rust unit tests",
+	"memTotalNormal":        "reads the machine's memory: environment-dependent",
+	"ReadMemStats":          "Go runtime.ReadMemStats (jemalloc in Rust, A1 3.2): no common value",
+	"ForceReadMemStats":     "Go runtime.ReadMemStats (jemalloc in Rust, A1 3.2): no common value",
 }
 
 // memMock is tracker_test.go's mockAction with a log: the first trigger marks
