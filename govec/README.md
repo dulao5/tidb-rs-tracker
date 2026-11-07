@@ -274,3 +274,12 @@ rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来�
 **目标平台**：`ParseTimeFromFloat64` 中的 `int64(f)`、`uint32(...)` 按 M-F2I 依平台而定（NaN、±Inf、越界），所以 amd64 和 arm64 的文件在这几条记录上不同。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等；错误和 warning 按错误码和消息比对。`Time.UnmarshalJSON` 的 JSON 语法错误文本没有移植（与 MyDecimal 相同），只要求同样是不带错误码的错误；类型错误（`json: cannot unmarshal ...`）的文本要一致。
+
+## parser_types（块 D02.3：`pkg/parser` 的 model、types、auth、duration）
+
+D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、`duration` 在 tidb-rs 中只有 PoC 手写替身；D02.3 是它们的忠实移植，meta/model（D06.1）依赖它。op 和参数见 `domains/parsertypes.go` 文件头。
+
+- `ft`：用 setter 构造的 FieldType（类型、flag、flen、decimal、charset/collation、元素、二进制字面量标志、array 的组合），记录所有只读方法：`CompactStr`、`InfoSchemaStr`、`String`、`Restore`、`RestoreAsCastType`、`EvalType`、`MarshalJSON` 等。`strict` 参数切换 `TiDBStrictIntegerDisplayWidth`。
+- `ft_unmarshal`：`FieldType.UnmarshalJSON` 的 Go 解码规则：先精确、再按 `foldName` 不区分大小写匹配字段（包括 `ſ`→`S`），`null` 不改变字段，数字按字面量解析，溢出或非整数给出 `UnmarshalTypeError`，第一处错误之后的字段照样解码。Rust 侧语法错误只要求报错，文本不比对（`*json.SyntaxError` 的消息未移植）；类型错误比对全文。
+- 元素可以不是 UTF-8（ENUM 的二进制字面量）：`MarshalJSON` 把每个无效字节写成 `�` 转义，`CompactStr`（`format.OutputFormat` 按 rune 遍历）写成 U+FFFD。
+- `duration`：`ParseDuration`。很大的值经过 `time.Duration(float)` 转换，结果依赖目标平台（M-F2I）。
