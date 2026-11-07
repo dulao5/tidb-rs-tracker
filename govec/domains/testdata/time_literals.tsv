@@ -1,0 +1,1354 @@
+TestTimeEncoding	i	2019
+TestTimeEncoding	i	9
+TestTimeEncoding	i	16
+TestTimeEncoding	i	0
+TestTimeEncoding	i	2273860414984945664
+TestTimeEncoding	i	12
+TestTimeEncoding	i	31
+TestTimeEncoding	i	23
+TestTimeEncoding	i	59
+TestTimeEncoding	i	999999
+TestTimeEncoding	i	3
+TestTimeEncoding	i	2274106151470900215
+TestTimeEncoding	i	2020
+TestTimeEncoding	i	1
+TestTimeEncoding	i	5
+TestTimeEncoding	i	2274399175682555918
+TestTimeEncoding	s	"%d failed."
+TestTimeEncoding	s	"%d core time failed."
+TestTimeEncoding	s	"%d type failed."
+TestTimeEncoding	s	"%d fsp failed."
+TestTimeEncoding	s	"%d year failed."
+TestTimeEncoding	s	"%d month failed."
+TestTimeEncoding	s	"%d day failed."
+TestTimeEncoding	s	"%d hour failed."
+TestTimeEncoding	s	"%d minute failed."
+TestTimeEncoding	s	"%d second failed."
+TestTimeEncoding	s	"%d microsecond failed."
+TestDateTime	s	"2012-12-31 11:30:45"
+TestDateTime	s	"0000-00-00 00:00:00"
+TestDateTime	s	"0001-01-01 00:00:00"
+TestDateTime	s	"00-12-31 11:30:45"
+TestDateTime	s	"2000-12-31 11:30:45"
+TestDateTime	s	"12-12-31 11:30:45"
+TestDateTime	s	"2012-12-31"
+TestDateTime	s	"2012-12-31 00:00:00"
+TestDateTime	s	"20121231"
+TestDateTime	s	"121231"
+TestDateTime	s	"2012^12^31 11+30+45"
+TestDateTime	s	"2012^12^31T11+30+45"
+TestDateTime	s	"2012-2-1 11:30:45"
+TestDateTime	s	"2012-02-01 11:30:45"
+TestDateTime	s	"12-2-1 11:30:45"
+TestDateTime	s	"20121231113045"
+TestDateTime	s	"121231113045"
+TestDateTime	s	"2012-02-29"
+TestDateTime	s	"2012-02-29 00:00:00"
+TestDateTime	s	"00-00-00"
+TestDateTime	s	"00-00-00 00:00:00.123"
+TestDateTime	s	"2000-00-00 00:00:00.123"
+TestDateTime	s	"11111111111"
+TestDateTime	s	"2011-11-11 11:11:01"
+TestDateTime	s	"1701020301."
+TestDateTime	s	"2017-01-02 03:01:00"
+TestDateTime	s	"1701020304.1"
+TestDateTime	s	"2017-01-02 03:04:01.0"
+TestDateTime	s	"1701020302.11"
+TestDateTime	s	"2017-01-02 03:02:11.00"
+TestDateTime	s	"170102036"
+TestDateTime	s	"2017-01-02 03:06:00"
+TestDateTime	s	"170102039."
+TestDateTime	s	"2017-01-02 03:09:00"
+TestDateTime	s	"170102037.11"
+TestDateTime	s	"2017-01-02 03:07:11.00"
+TestDateTime	s	"2018-01-01 18"
+TestDateTime	s	"2018-01-01 18:00:00"
+TestDateTime	s	"18-01-01 18"
+TestDateTime	s	"2018.01.01"
+TestDateTime	s	"2018-01-01 00:00:00.00"
+TestDateTime	s	"2020.10.10 10.10.10"
+TestDateTime	s	"2020-10-10 10:10:10.00"
+TestDateTime	s	"2020-10-10 10-10.10"
+TestDateTime	s	"2020-10-10 10.10"
+TestDateTime	s	"2020-10-10 10:10:00.00"
+TestDateTime	s	"2018.01.01 00:00:00"
+TestDateTime	s	"2018-01-01 00:00:00"
+TestDateTime	s	"2018/01/01-00:00:00"
+TestDateTime	s	"4710072"
+TestDateTime	s	"2047-10-07 02:00:00"
+TestDateTime	s	"2016-06-01 00:00:00 00:00:00"
+TestDateTime	s	"2016-06-01 00:00:00"
+TestDateTime	s	"2020-06-01 00:00:00ads!,?*da;dsx"
+TestDateTime	s	"2020-06-01 00:00:00"
+TestDateTime	s	"2020-05-28 23:59:59 00:00:00"
+TestDateTime	s	"2020-05-28 23:59:59"
+TestDateTime	s	"2020-05-28 23:59:59-00:00:00"
+TestDateTime	s	"2020-05-28 23:59:59T T00:00:00"
+TestDateTime	s	"2020-10-22 10:31-10:12"
+TestDateTime	s	"2020-10-22 10:31:10"
+TestDateTime	s	"2018.01.01 01:00:00"
+TestDateTime	s	"2018-01-01 01:00:00"
+TestDateTime	s	"2020-01-01 12:00:00.123456+05:00"
+TestDateTime	s	"2020-01-01 07:00:00.123456"
+TestDateTime	s	"2020-01-01 12:00:00.123456-05:00"
+TestDateTime	s	"2020-01-01 17:00:00.123456"
+TestDateTime	s	"20170118.123"
+TestDateTime	i	6
+TestDateTime	s	"2017-01-18 12:03:00.000000"
+TestDateTime	s	"121231113045.123345"
+TestDateTime	s	"2012-12-31 11:30:45.123345"
+TestDateTime	s	"20121231113045.123345"
+TestDateTime	s	"121231113045.9999999"
+TestDateTime	s	"2012-12-31 11:30:46.000000"
+TestDateTime	s	"170105084059.575601"
+TestDateTime	i	0
+TestDateTime	s	"2017-01-05 08:41:00"
+TestDateTime	s	"2017-01-05 23:59:59.575601"
+TestDateTime	s	"2017-01-06 00:00:00"
+TestDateTime	s	"2017-01-31 23:59:59.575601"
+TestDateTime	s	"2017-02-01 00:00:00"
+TestDateTime	s	"2017-00-05 23:59:58.575601"
+TestDateTime	i	3
+TestDateTime	s	"2017-00-05 23:59:58.576"
+TestDateTime	s	"2017.00.05 23:59:58.575601"
+TestDateTime	s	"2017/00/05 23:59:58.575601"
+TestDateTime	s	"2017/00/05-23:59:58.575601"
+TestDateTime	s	"1710-10:00"
+TestDateTime	s	"1710-10-00 00:00:00"
+TestDateTime	s	"1710.10+00"
+TestDateTime	s	"2020-10:15"
+TestDateTime	s	"2020-10-15 00:00:00"
+TestDateTime	s	"2020.09-10:15"
+TestDateTime	s	"2020-09-10 15:00:00"
+TestDateTime	s	"2.0.8 hotfix"
+TestDateTime	s	"2002-00-08 00:00:00.000000"
+TestDateTime	i	46
+TestDateTime	s	"1000-01-01 00:00:70"
+TestDateTime	s	"1000-13-00 00:00:00"
+TestDateTime	s	"1201012736.0000"
+TestDateTime	s	"1201012736"
+TestDateTime	s	"10000-01-01 00:00:00"
+TestDateTime	s	"1000-09-31 00:00:00"
+TestDateTime	s	"1001-02-29 00:00:00"
+TestDateTime	s	"20170118.999"
+TestDateTime	s	"2018-01"
+TestDateTime	s	"2018.01"
+TestDateTime	s	"20170118-12:34"
+TestDateTime	s	"20170118-1234"
+TestDateTime	s	"170118-1234"
+TestDateTime	s	"170118-12"
+TestDateTime	s	"1710-10"
+TestDateTime	s	"1710-1000"
+TestTimestamp	s	"2012-12-31 11:30:45"
+TestTimestamp	s	"2048-12-31 11:30:45"
+TestTimestamp	s	"1969-12-31 11:30:45"
+TestDate	s	"0001-12-13"
+TestDate	s	"2011-12-13"
+TestDate	s	"2011-12-13 10:10:10"
+TestDate	s	"2015-06-01 12:12:12"
+TestDate	s	"2015-06-01"
+TestDate	s	"0001-01-01 00:00:00"
+TestDate	s	"0001-01-01"
+TestDate	s	"00-12-31"
+TestDate	s	"2000-12-31"
+TestDate	s	"2011\"12\"13"
+TestDate	s	"2011#12#13"
+TestDate	s	"2011$12$13"
+TestDate	s	"2011%12%13"
+TestDate	s	"2011&12&13"
+TestDate	s	"2011'12'13"
+TestDate	s	"2011(12(13"
+TestDate	s	"2011)12)13"
+TestDate	s	"2011*12*13"
+TestDate	s	"2011+12+13"
+TestDate	s	"2011,12,13"
+TestDate	s	"2011.12.13"
+TestDate	s	"2011/12/13"
+TestDate	s	"2011:12:13"
+TestDate	s	"2011;12;13"
+TestDate	s	"2011<12<13"
+TestDate	s	"2011=12=13"
+TestDate	s	"2011>12>13"
+TestDate	s	"2011?12?13"
+TestDate	s	"2011@12@13"
+TestDate	s	"2011[12[13"
+TestDate	s	"2011\\12\\13"
+TestDate	s	"2011]12]13"
+TestDate	s	"2011^12^13"
+TestDate	s	"2011_12_13"
+TestDate	s	"2011`12`13"
+TestDate	s	"2011{12{13"
+TestDate	s	"2011|12|13"
+TestDate	s	"2011}12}13"
+TestDate	s	"2011~12~13"
+TestDate	s	"2011~12~13 12~12~12"
+TestDate	s	"2011~12~13T12~12~12"
+TestDate	s	"2011~12~13~12~12~12"
+TestDate	s	"20111213"
+TestDate	s	"111213"
+TestDate	s	" 2011-12-13"
+TestDate	s	"2011-12-13 "
+TestDate	s	"   2011-12-13    "
+TestDate	s	"2011-12--13"
+TestDate	s	"2011--12-13"
+TestDate	s	"2011-12..13"
+TestDate	s	"2011----12----13"
+TestDate	s	"2011~/.12)_#13T T.12~)12[~12"
+TestDate	s	"   2011----12----13    "
+TestDate	s	"0121231"
+TestDate	s	"1201012736.0000"
+TestDate	s	"1201012736"
+TestDate	s	"2019.01"
+TestDate	s	"2019 01 02"
+TestDate	s	"2019A01A02"
+TestDate	s	"2019-01T02"
+TestDate	s	"2011-12-13 10:10T10"
+TestDate	s	"2019–01–02"
+TestDate	s	"2019—01—02"
+TestTime	s	"10:11:12"
+TestTime	s	"101112"
+TestTime	s	"020005"
+TestTime	s	"02:00:05"
+TestTime	s	"112"
+TestTime	s	"00:01:12"
+TestTime	s	"10:11"
+TestTime	s	"10:11:00"
+TestTime	s	"101112.123456"
+TestTime	s	"1112"
+TestTime	s	"00:11:12"
+TestTime	s	"1"
+TestTime	s	"00:00:01"
+TestTime	s	"12"
+TestTime	s	"00:00:12"
+TestTime	s	"1 12"
+TestTime	s	"36:00:00"
+TestTime	s	"1 10:11:12"
+TestTime	s	"34:11:12"
+TestTime	s	"1 10:11:12.123456"
+TestTime	s	"10:11:12.123456"
+TestTime	s	"1 10:11"
+TestTime	s	"34:11:00"
+TestTime	s	"1 10"
+TestTime	s	"34:00:00"
+TestTime	s	"24 10"
+TestTime	s	"586:00:00"
+TestTime	s	"-24 10"
+TestTime	s	"-586:00:00"
+TestTime	s	"0 10"
+TestTime	s	"10:00:00"
+TestTime	s	"-10:10:10"
+TestTime	s	"-838:59:59"
+TestTime	s	"838:59:59"
+TestTime	s	"2011-11-11 00:00:01"
+TestTime	s	"20111111121212.123"
+TestTime	s	"12:12:12"
+TestTime	s	"2011-11-11T12:12:12"
+TestTime	s	"34:11:12.123456"
+TestTime	s	"0x"
+TestTime	s	"00:00:00.000000"
+TestTime	s	"1x"
+TestTime	s	"00:00:01.000000"
+TestTime	s	"0000-00-00"
+TestTime	s	"2011-11-11"
+TestTime	s	"232 10"
+TestTime	s	"-232 10"
+TestTime	s	"4294967295 0:59:59"
+TestTime	i	1
+TestTime	i	0
+TestDurationAdd	s	"00:00:00.1"
+TestDurationAdd	i	1
+TestDurationAdd	s	"00:00:00.2"
+TestDurationAdd	s	"00:00:00"
+TestDurationAdd	i	0
+TestDurationAdd	s	"00:00:00.09"
+TestDurationAdd	i	2
+TestDurationAdd	s	"00:00:00.01"
+TestDurationAdd	s	"00:00:00.10"
+TestDurationAdd	s	"00:00:00.099"
+TestDurationAdd	i	3
+TestDurationAdd	s	"00:00:00.001"
+TestDurationAdd	s	"00:00:00.100"
+TestDurationAdd	s	"00:01:00"
+TestDurationSub	s	"00:00:00.1"
+TestDurationSub	i	1
+TestDurationSub	s	"00:00:00.0"
+TestDurationSub	s	"00:00:00"
+TestDurationSub	i	0
+TestDurationSub	s	"-00:00:00.1"
+TestTimeFsp	s	"00:00:00.1"
+TestTimeFsp	i	0
+TestTimeFsp	s	"00:00:00"
+TestTimeFsp	i	1
+TestTimeFsp	s	"00:00:00.777777"
+TestTimeFsp	i	2
+TestTimeFsp	s	"00:00:00.78"
+TestTimeFsp	i	6
+TestTimeFsp	s	"00:00:01"
+TestTimeFsp	s	"00:00:00.001"
+TestTimeFsp	i	3
+TestTimeFsp	s	"08:29:59.537368"
+TestTimeFsp	s	"08:30:00"
+TestTimeFsp	s	"08:59:59.537368"
+TestTimeFsp	s	"09:00:00"
+TestYear	s	"1990"
+TestYear	i	1990
+TestYear	s	"10"
+TestYear	i	2010
+TestYear	s	"0"
+TestYear	i	2000
+TestYear	s	"99"
+TestYear	i	1999
+TestYear	i	20000
+TestYear	i	0
+TestYear	i	1
+TestCodec	s	"2016-12-00 00:00:00"
+TestCodec	s	"2010-10-10 10:11:11"
+TestCodec	i	0
+TestCodec	s	"0001-01-01 00:00:00"
+TestCodec	s	"2000-01-01 00:00:00.000000"
+TestCodec	s	"2000-01-01 00:00:00.123456"
+TestCodec	s	"0001-01-01 00:00:00.123456"
+TestCodec	s	"2000-06-01 00:00:00.999999"
+TestParseTimeFromNum	i	20101010111111
+TestParseTimeFromNum	s	"2010-10-10 11:11:11"
+TestParseTimeFromNum	s	"2010-10-10"
+TestParseTimeFromNum	i	2010101011111
+TestParseTimeFromNum	s	"0201-01-01 01:11:11"
+TestParseTimeFromNum	s	"0201-01-01"
+TestParseTimeFromNum	i	201010101111
+TestParseTimeFromNum	s	"2020-10-10 10:11:11"
+TestParseTimeFromNum	s	"2020-10-10"
+TestParseTimeFromNum	i	20101010111
+TestParseTimeFromNum	s	"2002-01-01 01:01:11"
+TestParseTimeFromNum	s	"2002-01-01"
+TestParseTimeFromNum	i	2010101011
+TestParseTimeFromNum	i	201010101
+TestParseTimeFromNum	s	"2000-02-01 01:01:01"
+TestParseTimeFromNum	s	"2000-02-01"
+TestParseTimeFromNum	i	20101010
+TestParseTimeFromNum	s	"2010-10-10 00:00:00"
+TestParseTimeFromNum	i	2010101
+TestParseTimeFromNum	s	"0201-01-01 00:00:00"
+TestParseTimeFromNum	i	201010
+TestParseTimeFromNum	s	"2020-10-10 00:00:00"
+TestParseTimeFromNum	i	20101
+TestParseTimeFromNum	s	"2002-01-01 00:00:00"
+TestParseTimeFromNum	i	2010
+TestParseTimeFromNum	i	201
+TestParseTimeFromNum	s	"2000-02-01 00:00:00"
+TestParseTimeFromNum	i	20
+TestParseTimeFromNum	i	2
+TestParseTimeFromNum	i	0
+TestParseTimeFromNum	i	1
+TestParseTimeFromNum	i	99999999999999
+TestParseTimeFromNum	i	100000000000000
+TestParseTimeFromNum	i	10000102000000
+TestParseTimeFromNum	s	"1000-01-02 00:00:00"
+TestParseTimeFromNum	s	"1000-01-02"
+TestParseTimeFromNum	i	19690101000000
+TestParseTimeFromNum	s	"1969-01-01 00:00:00"
+TestParseTimeFromNum	s	"1969-01-01"
+TestParseTimeFromNum	i	991231235959
+TestParseTimeFromNum	s	"1999-12-31 23:59:59"
+TestParseTimeFromNum	s	"1999-12-31"
+TestParseTimeFromNum	i	691231235959
+TestParseTimeFromNum	s	"2069-12-31 23:59:59"
+TestParseTimeFromNum	s	"2069-12-31"
+TestParseTimeFromNum	i	370119031407
+TestParseTimeFromNum	s	"2037-01-19 03:14:07"
+TestParseTimeFromNum	s	"2037-01-19"
+TestParseTimeFromNum	i	380120031407
+TestParseTimeFromNum	s	"2038-01-20 03:14:07"
+TestParseTimeFromNum	s	"2038-01-20"
+TestParseTimeFromNum	i	11111111111
+TestParseTimeFromNum	s	"2001-11-11 11:11:11"
+TestParseTimeFromNum	s	"2001-11-11"
+TestParseTimeFromNum	s	"%d"
+TestToNumber	s	"America/Los_Angeles"
+TestToNumber	s	"12-12-31 11:30:45"
+TestToNumber	i	0
+TestToNumber	s	"20121231113045"
+TestToNumber	i	6
+TestToNumber	s	"20121231113045.000000"
+TestToNumber	s	"12-12-31 11:30:45.123"
+TestToNumber	s	"20121231113045.123000"
+TestToNumber	s	"12-12-31 11:30:45.123345"
+TestToNumber	i	3
+TestToNumber	s	"20121231113045.123"
+TestToNumber	i	5
+TestToNumber	s	"20121231113045.12335"
+TestToNumber	s	"20121231113045.123345"
+TestToNumber	s	"12-12-31 11:30:45.1233457"
+TestToNumber	s	"20121231113045.123346"
+TestToNumber	s	"12-12-31 11:30:45.823345"
+TestToNumber	s	"20121231113046"
+TestToNumber	s	"20121231"
+TestToNumber	s	"11:30:45"
+TestToNumber	s	"113045"
+TestToNumber	s	"113045.000000"
+TestToNumber	s	"11:30:45.123"
+TestToNumber	s	"113045.123000"
+TestToNumber	s	"11:30:45.123345"
+TestToNumber	s	"113045.123"
+TestToNumber	s	"113045.12335"
+TestToNumber	s	"113045.123345"
+TestToNumber	s	"11:30:45.1233456"
+TestToNumber	s	"113045.123346"
+TestToNumber	s	"11:30:45.9233456"
+TestToNumber	s	"113046"
+TestToNumber	s	"-11:30:45.9233456"
+TestToNumber	s	"-113046"
+TestParseTimeFromFloatString	s	"20170118.123"
+TestParseTimeFromFloatString	i	3
+TestParseTimeFromFloatString	s	"2017-01-18 00:00:00.000"
+TestParseTimeFromFloatString	s	"121231113045.123345"
+TestParseTimeFromFloatString	i	6
+TestParseTimeFromFloatString	s	"2012-12-31 11:30:45.123345"
+TestParseTimeFromFloatString	s	"20121231113045.123345"
+TestParseTimeFromFloatString	s	"121231113045.9999999"
+TestParseTimeFromFloatString	s	"2012-12-31 11:30:46.000000"
+TestParseTimeFromFloatString	s	"170105084059.575601"
+TestParseTimeFromFloatString	s	"2017-01-05 08:40:59.575601"
+TestParseTimeFromFloatString	s	"201705051315111.22"
+TestParseTimeFromFloatString	i	2
+TestParseTimeFromFloatString	s	"0000-00-00 00:00:00.00"
+TestParseTimeFromFloatString	s	"2011110859.1111"
+TestParseTimeFromFloatString	i	4
+TestParseTimeFromFloatString	s	"0000-00-00 00:00:00.0000"
+TestParseTimeFromFloatString	s	"191203081.1111"
+TestParseTimeFromFloatString	s	"43128.121105"
+TestParseTimeFromFloatString	s	"0000-00-00 00:00:00.000000"
+TestParseFrac	s	"1234567"
+TestParseFrac	i	0
+TestParseFrac	i	1
+TestParseFrac	i	100000
+TestParseFrac	s	"0000567"
+TestParseFrac	i	5
+TestParseFrac	i	60
+TestParseFrac	i	123460
+TestParseFrac	i	6
+TestParseFrac	i	123457
+TestParseFrac	s	"123"
+TestParseFrac	i	4
+TestParseFrac	i	123000
+TestParseFrac	s	"11"
+TestParseFrac	i	110000
+TestParseFrac	s	"01"
+TestParseFrac	i	3
+TestParseFrac	i	10000
+TestParseFrac	s	"012"
+TestParseFrac	i	12000
+TestParseFrac	s	"0123"
+TestParseFrac	i	12300
+TestParseFrac	s	"9999999"
+TestParseFrac	s	"999999"
+TestParseFrac	s	"999"
+TestParseFrac	i	2
+TestParseFrac	i	999000
+TestRoundFrac	s	"2012-12-31 11:30:45.123456"
+TestRoundFrac	i	4
+TestRoundFrac	s	"2012-12-31 11:30:45.1235"
+TestRoundFrac	i	6
+TestRoundFrac	i	0
+TestRoundFrac	s	"2012-12-31 11:30:45"
+TestRoundFrac	i	1
+TestRoundFrac	s	"2012-12-31 11:30:45.1"
+TestRoundFrac	s	"2012-12-31 11:30:45.999999"
+TestRoundFrac	s	"2012-12-31 11:30:46.0000"
+TestRoundFrac	s	"2012-12-31 11:30:46"
+TestRoundFrac	s	"2012-00-00 11:30:45.999999"
+TestRoundFrac	i	3
+TestRoundFrac	s	"2012-00-00 11:30:46.000"
+TestRoundFrac	s	"2011-11-11 10:10:10.888888"
+TestRoundFrac	s	"2011-11-11 10:10:11"
+TestRoundFrac	s	"2011-11-11 10:10:10.111111"
+TestRoundFrac	s	"2011-11-11 10:10:10"
+TestRoundFrac	s	"America/Los_Angeles"
+TestRoundFrac	s	"2019-11-25 07:25:45.123456"
+TestRoundFrac	s	"2019-11-25 07:25:45.1235"
+TestRoundFrac	i	5
+TestRoundFrac	s	"2019-11-25 07:25:45.12346"
+TestRoundFrac	s	"2019-11-25 07:25:45"
+TestRoundFrac	i	2
+TestRoundFrac	s	"2019-11-25 07:25:45.12"
+TestRoundFrac	s	"2019-11-26 11:30:45.999999"
+TestRoundFrac	s	"2019-11-26 11:30:46.0000"
+TestRoundFrac	s	"2019-11-26 11:30:46"
+TestRoundFrac	s	"2019-11-26 11:30:46.000"
+TestRoundFrac	s	"11:30:45.123456"
+TestRoundFrac	s	"11:30:45.1235"
+TestRoundFrac	s	"11:30:45"
+TestRoundFrac	s	"1 11:30:45.123456"
+TestRoundFrac	s	"35:30:45.1"
+TestRoundFrac	s	"1 11:30:45.999999"
+TestRoundFrac	s	"35:30:46.0000"
+TestRoundFrac	s	"-1 11:30:45.999999"
+TestRoundFrac	s	"-35:30:46"
+TestRoundFrac	i	2011
+TestRoundFrac	i	11
+TestRoundFrac	i	10
+TestRoundFrac	i	888888
+TestRoundFrac	i	111111
+TestConvert	s	"America/Los_Angeles"
+TestConvert	s	"2012-12-31 11:30:45.123456"
+TestConvert	i	4
+TestConvert	s	"11:30:45.1235"
+TestConvert	i	6
+TestConvert	s	"11:30:45.123456"
+TestConvert	i	0
+TestConvert	s	"11:30:45"
+TestConvert	s	"2012-12-31 11:30:45.999999"
+TestConvert	s	"11:30:46"
+TestConvert	s	"2017-01-05 08:40:59.575601"
+TestConvert	s	"08:41:00"
+TestConvert	s	"2017-01-05 23:59:59.575601"
+TestConvert	s	"00:00:00"
+TestConvert	s	"0000-00-00 00:00:00"
+TestConvert	s	"1 11:30:45.999999"
+TestCompare	s	"2011-10-10 11:11:11"
+TestCompare	i	0
+TestCompare	s	"2011-10-10 11:11:11.123456"
+TestCompare	s	"2011-10-10 11:11:11.1"
+TestCompare	i	1
+TestCompare	s	"2011-10-10 11:11:11.123"
+TestCompare	s	"0000-00-00 00:00:00"
+TestCompare	s	"Test should error"
+TestCompare	s	"11:11:11"
+TestCompare	s	"11:11:11.123456"
+TestCompare	s	"11:11:11.1"
+TestCompare	s	"11:11:11.123"
+TestDurationClock	s	"11:11:11.11"
+TestDurationClock	i	11
+TestDurationClock	i	110000
+TestDurationClock	s	"1 11:11:11.000011"
+TestDurationClock	i	35
+TestDurationClock	s	"2010-10-10 11:11:11.000011"
+TestParseDateFormat	s	"2011-11-11 10:10:10.123456"
+TestParseDateFormat	s	"2011"
+TestParseDateFormat	s	"11"
+TestParseDateFormat	s	"10"
+TestParseDateFormat	s	"123456"
+TestParseDateFormat	s	"  2011-11-11 10:10:10.123456  "
+TestParseDateFormat	s	"2011-11-11 10"
+TestParseDateFormat	s	"2011-11-11T10:10:10.123456"
+TestParseDateFormat	s	"2011:11:11T10:10:10.123456"
+TestParseDateFormat	s	"2011-11-11  10:10:10"
+TestParseDateFormat	s	"xx2011-11-11 10:10:10"
+TestParseDateFormat	s	"T10:10:10"
+TestParseDateFormat	s	"2011-11-11x"
+TestParseDateFormat	s	"11x"
+TestParseDateFormat	s	"xxx 10:10:10"
+TestParseDateFormat	s	"2022-02-01\n16:33:00"
+TestParseDateFormat	s	"2022"
+TestParseDateFormat	s	"02"
+TestParseDateFormat	s	"01"
+TestParseDateFormat	s	"16"
+TestParseDateFormat	s	"33"
+TestParseDateFormat	s	"00"
+TestParseDateFormat	s	"2022-02-01\f16:33:00"
+TestParseDateFormat	s	"2022-02-01\v16:33:00"
+TestParseDateFormat	s	"2022-02-01\r16:33:00"
+TestParseDateFormat	s	"2022-02-01\t16:33:00"
+TestTimestampDiff	s	"MONTH"
+TestTimestampDiff	i	2002
+TestTimestampDiff	i	5
+TestTimestampDiff	i	30
+TestTimestampDiff	i	0
+TestTimestampDiff	i	2001
+TestTimestampDiff	i	1
+TestTimestampDiff	i	16
+TestTimestampDiff	s	"YEAR"
+TestTimestampDiff	s	"MINUTE"
+TestTimestampDiff	i	2003
+TestTimestampDiff	i	2
+TestTimestampDiff	i	12
+TestTimestampDiff	i	55
+TestTimestampDiff	i	128885
+TestTimestampDiff	s	"MICROSECOND"
+TestTimestampDiff	i	13
+TestTimestampDiff	i	25
+TestTimestampDiff	i	805000000
+TestTimestampDiff	i	2000
+TestTimestampDiff	i	12345
+TestTimestampDiff	i	45
+TestTimestampDiff	i	32
+TestTimestampDiff	i	44987687
+TestTimestampDiff	s	"QUARTER"
+TestTimestampDiff	i	2016
+TestTimestampDiff	i	63
+TestTimestampDiff	i	6
+TestDateFSP	s	"2004-01-01 12:00:00.111"
+TestDateFSP	i	3
+TestDateFSP	s	"2004-01-01 12:00:00.11"
+TestDateFSP	i	2
+TestDateFSP	s	"2004-01-01 12:00:00.111111"
+TestDateFSP	i	6
+TestDateFSP	s	"2004-01-01 12:00:00"
+TestDateFSP	i	0
+TestConvertTimeZone	s	"Asia/Shanghai"
+TestConvertTimeZone	i	2017
+TestConvertTimeZone	i	1
+TestConvertTimeZone	i	0
+TestConvertTimeZone	i	8
+TestTimeAdd	s	"2017-01-18"
+TestTimeAdd	s	"12:30:59"
+TestTimeAdd	s	"2017-01-18 12:30:59"
+TestTimeAdd	s	"2017-01-18 01:01:01"
+TestTimeAdd	s	"2017-01-18 13:32:00"
+TestTimeAdd	s	"2017-01-18 01:01:01.123457"
+TestTimeAdd	s	"2017-01-18 13:32:0.123457"
+TestTimeAdd	s	"838:59:59"
+TestTimeAdd	s	"2017-02-22 00:01:00"
+TestTimeAdd	s	"2017-08-21 15:34:42"
+TestTimeAdd	s	"-838:59:59"
+TestTimeAdd	s	"2017-07-17 16:34:43"
+TestTimeAdd	s	"2017-08-21"
+TestTimeAdd	s	"01:01:01.001"
+TestTimeAdd	s	"2017-08-21 01:01:01.001"
+TestTimeAdd	i	0
+TestTimeAdd	s	"%v %v"
+TestTruncateOverflowMySQLTime	i	1
+TestCheckTimestamp	s	"Asia/Shanghai"
+TestCheckTimestamp	i	2038
+TestCheckTimestamp	i	1
+TestCheckTimestamp	i	19
+TestCheckTimestamp	i	11
+TestCheckTimestamp	i	14
+TestCheckTimestamp	i	7
+TestCheckTimestamp	i	0
+TestCheckTimestamp	i	1970
+TestCheckTimestamp	i	8
+TestCheckTimestamp	i	12
+TestCheckTimestamp	i	3
+TestCheckTimestamp	i	4
+TestCheckTimestamp	i	1969
+TestCheckTimestamp	s	"For %s %s"
+TestCheckTimestamp	s	"America/Los_Angeles"
+TestCheckTimestamp	s	"Europe/London"
+TestCheckTimestamp	i	2018
+TestCheckTimestamp	i	50
+TestCheckTimestamp	i	2
+TestCheckTimestamp	i	16
+TestCheckTimestamp	i	20
+TestCheckTimestamp	i	2019
+TestCheckTimestamp	i	31
+TestExtractDurationValue	s	"MICROSECOND"
+TestExtractDurationValue	s	"50"
+TestExtractDurationValue	s	"00:00:00.000050"
+TestExtractDurationValue	s	"SECOND"
+TestExtractDurationValue	s	"00:00:50"
+TestExtractDurationValue	s	"MINUTE"
+TestExtractDurationValue	s	"10"
+TestExtractDurationValue	s	"00:10:00"
+TestExtractDurationValue	s	"HOUR"
+TestExtractDurationValue	s	"10:00:00"
+TestExtractDurationValue	s	"DAY"
+TestExtractDurationValue	s	"1"
+TestExtractDurationValue	s	"24:00:00"
+TestExtractDurationValue	s	"WEEK"
+TestExtractDurationValue	s	"2"
+TestExtractDurationValue	s	"336:00:00"
+TestExtractDurationValue	s	"SECOND_MICROSECOND"
+TestExtractDurationValue	s	"61.01"
+TestExtractDurationValue	s	"00:01:01.010000"
+TestExtractDurationValue	s	"MINUTE_MICROSECOND"
+TestExtractDurationValue	s	"01:61.01"
+TestExtractDurationValue	s	"00:02:01.010000"
+TestExtractDurationValue	s	"MINUTE_SECOND"
+TestExtractDurationValue	s	"61:61"
+TestExtractDurationValue	s	"01:02:01"
+TestExtractDurationValue	s	"HOUR_MICROSECOND"
+TestExtractDurationValue	s	"01:61:01.01"
+TestExtractDurationValue	s	"02:01:01.010000"
+TestExtractDurationValue	s	"HOUR_SECOND"
+TestExtractDurationValue	s	"01:61:01"
+TestExtractDurationValue	s	"02:01:01"
+TestExtractDurationValue	s	"HOUr_MINUTE"
+TestExtractDurationValue	s	"2:2"
+TestExtractDurationValue	s	"02:02:00"
+TestExtractDurationValue	s	"DAY_MICRoSECOND"
+TestExtractDurationValue	s	"1 1:1:1.02"
+TestExtractDurationValue	s	"25:01:01.020000"
+TestExtractDurationValue	s	"DAY_SeCOND"
+TestExtractDurationValue	s	"1 02:03:04"
+TestExtractDurationValue	s	"26:03:04"
+TestExtractDurationValue	s	"DAY_MINUTE"
+TestExtractDurationValue	s	"1 1:2"
+TestExtractDurationValue	s	"25:02:00"
+TestExtractDurationValue	s	"DAY_HOUr"
+TestExtractDurationValue	s	"1 1"
+TestExtractDurationValue	s	"25:00:00"
+TestExtractDurationValue	s	"-35"
+TestExtractDurationValue	s	"day"
+TestExtractDurationValue	s	"34"
+TestExtractDurationValue	s	"816:00:00"
+TestExtractDurationValue	s	"-3020400"
+TestExtractDurationValue	s	"50.-2"
+TestExtractDurationValue	s	"MONTH"
+TestExtractDurationValue	s	"720:00:00"
+TestExtractDurationValue	s	"-2"
+TestExtractDurationValue	s	"DAY_second"
+TestExtractDurationValue	s	"34 23:59:59"
+TestExtractDurationValue	s	"DAY_hOUR"
+TestExtractDurationValue	s	"-34 23"
+TestExtractDurationValue	s	"failed at case %d, unit: %s, format: %s"
+TestExtractDurationValue	s	", dur: %v"
+TestExtractDurationValue	s	", error stack: %s"
+TestCurrentTime	i	0
+TestInvalidZero	i	2019
+TestInvalidZero	i	0
+TestInvalidZero	i	4
+TestInvalidZero	i	12
+TestGetFsp	s	"2019:04:12 14:00:00.123456"
+TestGetFsp	i	6
+TestGetFsp	s	"2019:04:12 14:00:00.1234567890"
+TestGetFsp	s	"2019:04:12 14:00:00.1"
+TestGetFsp	i	1
+TestGetFsp	s	"2019:04:12 14:00:00"
+TestGetFsp	i	0
+TestExtractDatetimeNum	i	2019
+TestExtractDatetimeNum	i	4
+TestExtractDatetimeNum	i	12
+TestExtractDatetimeNum	i	14
+TestExtractDatetimeNum	i	0
+TestExtractDatetimeNum	s	"day"
+TestExtractDatetimeNum	s	"week"
+TestExtractDatetimeNum	s	"MONTH"
+TestExtractDatetimeNum	s	"QUARTER"
+TestExtractDatetimeNum	i	2
+TestExtractDatetimeNum	s	"YEAR"
+TestExtractDatetimeNum	s	"DAY_MICROSECOND"
+TestExtractDatetimeNum	i	12140000000000
+TestExtractDatetimeNum	s	"DAY_SECOND"
+TestExtractDatetimeNum	i	12140000
+TestExtractDatetimeNum	s	"DAY_MINUTE"
+TestExtractDatetimeNum	i	121400
+TestExtractDatetimeNum	s	"DAY_HOUR"
+TestExtractDatetimeNum	i	1214
+TestExtractDatetimeNum	s	"YEAR_MONTH"
+TestExtractDatetimeNum	i	201904
+TestExtractDatetimeNum	s	"TEST_ERROR"
+TestExtractDatetimeNum	s	"^invalid unit"
+TestExtractDurationNum	i	3600
+TestExtractDurationNum	i	24
+TestExtractDurationNum	i	365
+TestExtractDurationNum	s	"MICROSECOND"
+TestExtractDurationNum	i	31536
+TestExtractDurationNum	s	"SECOND"
+TestExtractDurationNum	i	0
+TestExtractDurationNum	s	"MINUTE"
+TestExtractDurationNum	s	"HOUR"
+TestExtractDurationNum	s	"SECOND_MICROSECOND"
+TestExtractDurationNum	s	"MINUTE_MICROSECOND"
+TestExtractDurationNum	s	"MINUTE_SECOND"
+TestExtractDurationNum	s	"HOUR_MICROSECOND"
+TestExtractDurationNum	s	"HOUR_SECOND"
+TestExtractDurationNum	s	"HOUR_MINUTE"
+TestExtractDurationNum	s	"DAY_MICROSECOND"
+TestExtractDurationNum	s	"DAY_SECOND"
+TestExtractDurationNum	s	"DAY_MINUTE"
+TestExtractDurationNum	s	"DAY_HOUR"
+TestExtractDurationNum	i	39541000000000
+TestExtractDurationNum	i	1
+TestExtractDurationNum	i	59
+TestExtractDurationNum	i	10
+TestExtractDurationNum	i	1000000
+TestExtractDurationNum	i	5901000000
+TestExtractDurationNum	i	5901
+TestExtractDurationNum	i	105901000000
+TestExtractDurationNum	i	105901
+TestExtractDurationNum	i	1059
+TestExtractDurationNum	s	"TEST_ERROR"
+TestExtractDurationNum	s	"^invalid unit"
+TestParseDurationValue	s	"52"
+TestParseDurationValue	s	"WEEK"
+TestParseDurationValue	i	0
+TestParseDurationValue	i	52
+TestParseDurationValue	i	7
+TestParseDurationValue	s	"12"
+TestParseDurationValue	s	"DAY"
+TestParseDurationValue	i	12
+TestParseDurationValue	s	"04"
+TestParseDurationValue	s	"MONTH"
+TestParseDurationValue	i	4
+TestParseDurationValue	s	"1"
+TestParseDurationValue	s	"QUARTER"
+TestParseDurationValue	i	1
+TestParseDurationValue	i	3
+TestParseDurationValue	s	"2019"
+TestParseDurationValue	s	"YEAR"
+TestParseDurationValue	i	2019
+TestParseDurationValue	s	"10567890"
+TestParseDurationValue	s	"SECOND_MICROSECOND"
+TestParseDurationValue	i	10567890000
+TestParseDurationValue	i	6
+TestParseDurationValue	s	"10.567890"
+TestParseDurationValue	s	"-10.567890"
+TestParseDurationValue	s	"35:10567890"
+TestParseDurationValue	s	"MINUTE_SECOND"
+TestParseDurationValue	i	122
+TestParseDurationValue	i	29190000000000
+TestParseDurationValue	s	"3510567890"
+TestParseDurationValue	i	40631
+TestParseDurationValue	i	49490000000000
+TestParseDurationValue	s	"11:35:10.567890"
+TestParseDurationValue	s	"HOUR_MICROSECOND"
+TestParseDurationValue	i	41710567890000
+TestParseDurationValue	s	"567890"
+TestParseDurationValue	i	567890000
+TestParseDurationValue	s	"14:00"
+TestParseDurationValue	s	"HOUR_MINUTE"
+TestParseDurationValue	i	50400000000000
+TestParseDurationValue	s	"14"
+TestParseDurationValue	i	840000000000
+TestParseDurationValue	s	"12 14:00:00.345"
+TestParseDurationValue	s	"DAY_MICROSECOND"
+TestParseDurationValue	i	50400345000000
+TestParseDurationValue	s	"12 14:00:00"
+TestParseDurationValue	s	"DAY_SECOND"
+TestParseDurationValue	s	"12 14:00"
+TestParseDurationValue	s	"DAY_MINUTE"
+TestParseDurationValue	s	"12 14"
+TestParseDurationValue	s	"DAY_HOUR"
+TestParseDurationValue	s	"1:1"
+TestParseDurationValue	i	3600000000000
+TestParseDurationValue	s	"aa1bb1"
+TestParseDurationValue	s	"-1:1"
+TestParseDurationValue	s	"-aa1bb1"
+TestParseDurationValue	s	"2019-12"
+TestParseDurationValue	s	"YEAR_MONTH"
+TestParseDurationValue	s	"1 1"
+TestParseDurationValue	s	"-1 1"
+TestParseDurationValue	s	" \t\n\r\n - aa1bb1 \t\n "
+TestParseDurationValue	s	"1.111"
+TestParseDurationValue	s	"MICROSECOND"
+TestParseDurationValue	i	1000
+TestParseDurationValue	s	"Extract %v Unit %v"
+TestIsClockUnit	s	"MICROSECOND"
+TestIsClockUnit	s	"SECOND"
+TestIsClockUnit	s	"MINUTE"
+TestIsClockUnit	s	"HOUR"
+TestIsClockUnit	s	"SECOND_MICROSECOND"
+TestIsClockUnit	s	"MINUTE_MICROSECOND"
+TestIsClockUnit	s	"MINUTE_SECOND"
+TestIsClockUnit	s	"HOUR_MICROSECOND"
+TestIsClockUnit	s	"HOUR_SECOND"
+TestIsClockUnit	s	"HOUR_MINUTE"
+TestIsClockUnit	s	"DAY_MICROSECOND"
+TestIsClockUnit	s	"DAY_SECOND"
+TestIsClockUnit	s	"DAY_MINUTE"
+TestIsClockUnit	s	"DAY_HOUR"
+TestIsClockUnit	s	"TEST"
+TestIsClockUnit	s	"SOME_MICROSECOND"
+TestIsDateUnit	s	"Day"
+TestIsDateUnit	s	"Week"
+TestIsDateUnit	s	"month"
+TestIsDateUnit	s	"quarter"
+TestIsDateUnit	s	"YEAR"
+TestIsDateUnit	s	"DAY_MICROSECOND"
+TestIsDateUnit	s	"DAY_SECOND"
+TestIsDateUnit	s	"DAY_MINUTE"
+TestIsDateUnit	s	"DAY_HOUR"
+TestIsDateUnit	s	"YEAR_MONTH"
+TestIsDateUnit	s	"MICROSECOND"
+TestIsDateUnit	s	"SECOND"
+TestIsDateUnit	s	"MINUTE"
+TestIsDateUnit	s	"HOUR"
+TestIsDateUnit	s	"TEST"
+TestIsDateUnit	s	"SOME_DAY"
+TestIsMicrosecondUnit	s	"Microsecond"
+TestIsMicrosecondUnit	s	"Second_microsecond"
+TestIsMicrosecondUnit	s	"minute_microsecond"
+TestIsMicrosecondUnit	s	"hour_microsecond"
+TestIsMicrosecondUnit	s	"DAY_MICROSECOND"
+TestIsMicrosecondUnit	s	"SECOND"
+TestIsMicrosecondUnit	s	"MINUTE"
+TestIsMicrosecondUnit	s	"HOUR"
+TestIsMicrosecondUnit	s	"DAY_SECOND"
+TestIsMicrosecondUnit	s	"DAY_MINUTE"
+TestIsMicrosecondUnit	s	"DAY_HOUR"
+TestIsMicrosecondUnit	s	"DAY"
+TestIsMicrosecondUnit	s	"WEEK"
+TestIsMicrosecondUnit	s	"MONTH"
+TestIsMicrosecondUnit	s	"QUARTER"
+TestIsMicrosecondUnit	s	"YEAR"
+TestIsMicrosecondUnit	s	"TEST"
+TestIsMicrosecondUnit	s	"SOME_MICROSECOND"
+TestIsDateFormat	s	"1234:321"
+TestIsDateFormat	s	"2019-04-01"
+TestIsDateFormat	s	"2019-4-1"
+TestIsDateFormat	s	"20129"
+TestParseTimeFromInt64	i	20190412140000
+TestParseTimeFromInt64	i	2019
+TestParseTimeFromInt64	i	4
+TestParseTimeFromInt64	i	12
+TestParseTimeFromInt64	i	14
+TestParseTimeFromInt64	i	0
+TestParseTimeFromFloat64	i	20000102
+TestParseTimeFromFloat64	i	2000
+TestParseTimeFromFloat64	i	1
+TestParseTimeFromFloat64	i	2
+TestParseTimeFromFloat64	i	0
+TestParseTimeFromFloat64	i	20000102030405
+TestParseTimeFromFloat64	i	3
+TestParseTimeFromFloat64	i	4
+TestParseTimeFromFloat64	i	5
+TestParseTimeFromFloat64	i	15625
+TestParseTimeFromFloat64	i	7812
+TestParseTimeFromFloat64	i	20000000000000
+TestParseTimeFromFloat64	s	"Type mismatch for case %v"
+TestParseTimeFromFloat64	s	"Year mismatch for case %v"
+TestParseTimeFromFloat64	s	"Month mismatch for case %v"
+TestParseTimeFromFloat64	s	"Day mismatch for case %v"
+TestParseTimeFromFloat64	s	"Hour mismatch for case %v"
+TestParseTimeFromFloat64	s	"Minute mismatch for case %v"
+TestParseTimeFromFloat64	s	"Second mismatch for case %v"
+TestParseTimeFromFloat64	s	"Microsecond mismatch for case %v"
+TestParseTimeFromFloat64	s	"Unexpected error for case %v"
+TestParseTimeFromFloat64	s	"Error mismatch for case %v"
+TestParseTimeFromDecimal	s	"20000102"
+TestParseTimeFromDecimal	i	2000
+TestParseTimeFromDecimal	i	1
+TestParseTimeFromDecimal	i	2
+TestParseTimeFromDecimal	i	0
+TestParseTimeFromDecimal	s	"20000102.9"
+TestParseTimeFromDecimal	s	"0.0"
+TestParseTimeFromDecimal	s	"20000102030405"
+TestParseTimeFromDecimal	i	3
+TestParseTimeFromDecimal	i	4
+TestParseTimeFromDecimal	i	5
+TestParseTimeFromDecimal	s	"20000102030405.015625"
+TestParseTimeFromDecimal	i	15625
+TestParseTimeFromDecimal	s	"20000102030405.0078125"
+TestParseTimeFromDecimal	i	7812
+TestParseTimeFromDecimal	s	"2000"
+TestParseTimeFromDecimal	s	"20000000000000"
+TestParseTimeFromDecimal	s	"Type mismatch for case %v"
+TestParseTimeFromDecimal	s	"Year mismatch for case %v"
+TestParseTimeFromDecimal	s	"Month mismatch for case %v"
+TestParseTimeFromDecimal	s	"Day mismatch for case %v"
+TestParseTimeFromDecimal	s	"Hour mismatch for case %v"
+TestParseTimeFromDecimal	s	"Minute mismatch for case %v"
+TestParseTimeFromDecimal	s	"Second mismatch for case %v"
+TestParseTimeFromDecimal	s	"Microsecond mismatch for case %v"
+TestParseTimeFromDecimal	s	"Unexpected error for case %v"
+TestParseTimeFromDecimal	s	"Error mismatch for case %v"
+TestGetFormatType	s	"TEST"
+TestGetFormatType	s	"%y %m %d 2019 04 01"
+TestGetFormatType	s	"%h 30"
+TestGetFracIndex	s	"2019.01.01 00:00:00"
+TestGetFracIndex	i	1
+TestGetFracIndex	s	"2019.01.01 00:00:00.1"
+TestGetFracIndex	i	19
+TestGetFracIndex	s	"12345.6"
+TestGetFracIndex	i	5
+TestGetFracIndex	s	"2020-01-01 12:00:00.123456 +0600 PST"
+TestGetFracIndex	s	"2020-01-01 12:00:00.123456 -0600 PST"
+TestTimeOverflow	s	"2012-12-31 11:30:45"
+TestTimeOverflow	s	"12-12-31 11:30:45"
+TestTimeOverflow	s	"2012-12-31"
+TestTimeOverflow	s	"20121231"
+TestTimeOverflow	s	"2012-02-29"
+TestTimeOverflow	s	"2018-01-01 18"
+TestTimeOverflow	s	"18-01-01 18"
+TestTimeOverflow	s	"2018.01.01"
+TestTimeOverflow	s	"2018.01.01 00:00:00"
+TestTimeOverflow	s	"2018/01/01-00:00:00"
+TestTimeOverflow	s	"0999-12-31 22:00:00"
+TestTimeOverflow	s	"9999-12-31 23:59:59"
+TestTimeOverflow	s	"0001-01-01 00:00:00"
+TestTimeOverflow	s	"0001-01-01 23:59:59"
+TestTimeOverflow	s	"0000-01-01 00:00:00"
+TestTruncateFrac	i	2011
+TestTruncateFrac	i	11
+TestTruncateFrac	i	10
+TestTruncateFrac	i	888888
+TestTruncateFrac	i	0
+TestTruncateFrac	i	111111
+TestTimeSub	s	"2017-01-18 01:01:01"
+TestTimeSub	s	"2017-01-18 00:00:01"
+TestTimeSub	s	"01:01:00"
+TestTimeSub	s	"00:00:00"
+TestTimeSub	s	"2019-04-12 18:20:00"
+TestTimeSub	s	"2019-04-12 14:00:00"
+TestTimeSub	s	"04:20:00"
+TestCheckMonthDay	i	1900
+TestCheckMonthDay	i	2
+TestCheckMonthDay	i	29
+TestCheckMonthDay	i	0
+TestCheckMonthDay	i	28
+TestCheckMonthDay	i	2000
+TestCheckMonthDay	i	1
+TestCheckMonthDay	i	31
+TestCheckMonthDay	i	4
+TestCheckMonthDay	i	30
+TestCheckMonthDay	i	13
+TestCheckMonthDay	i	4000
+TestCheckMonthDay	i	3200
+TestFormatIntWidthN	i	0
+TestFormatIntWidthN	s	"0"
+TestFormatIntWidthN	i	1
+TestFormatIntWidthN	s	"1"
+TestFormatIntWidthN	i	2
+TestFormatIntWidthN	s	"01"
+TestFormatIntWidthN	i	10
+TestFormatIntWidthN	s	"10"
+TestFormatIntWidthN	i	99
+TestFormatIntWidthN	i	3
+TestFormatIntWidthN	s	"099"
+TestFormatIntWidthN	i	100
+TestFormatIntWidthN	s	"100"
+TestFormatIntWidthN	i	999
+TestFormatIntWidthN	s	"999"
+TestFormatIntWidthN	i	1000
+TestFormatIntWidthN	s	"1000"
+TestFromGoTime	s	"2006-01-02T15:04:05.999999999Z"
+TestFromGoTime	i	2006
+TestFromGoTime	i	1
+TestFromGoTime	i	2
+TestFromGoTime	i	15
+TestFromGoTime	i	4
+TestFromGoTime	i	6
+TestFromGoTime	i	0
+TestFromGoTime	s	"2006-01-02T15:04:05.999999000Z"
+TestFromGoTime	i	5
+TestFromGoTime	i	999999
+TestFromGoTime	s	"2006-01-02T15:04:05.999999499Z"
+TestFromGoTime	s	"2006-01-02T15:04:05.999999500Z"
+TestFromGoTime	s	"2006-01-02T15:04:05.000000501Z"
+TestFromGoTime	s	"idx %d"
+TestGetTimezone	s	"2020-10-10T10:10:10Z"
+TestGetTimezone	i	19
+TestGetTimezone	s	""
+TestGetTimezone	s	"2020-10-10T10:10:10"
+TestGetTimezone	i	1
+TestGetTimezone	s	"2020-10-10T10:10:10-08"
+TestGetTimezone	s	"-"
+TestGetTimezone	s	"08"
+TestGetTimezone	s	"2020-10-10T10:10:10-0700"
+TestGetTimezone	s	"07"
+TestGetTimezone	s	"00"
+TestGetTimezone	s	"2020-10-10T10:10:10+08:20"
+TestGetTimezone	s	"+"
+TestGetTimezone	s	":"
+TestGetTimezone	s	"20"
+TestGetTimezone	s	"2020-10-10T10:10:10+08:10"
+TestGetTimezone	s	"10"
+TestGetTimezone	s	"2020-10-10T10:10:10+8:00"
+TestGetTimezone	s	"2020-10-10T10:10:10+082:10"
+TestGetTimezone	s	"2020-10-10T10:10:10+08:101"
+TestGetTimezone	s	"2020-10-10T10:10:10+T8:11"
+TestGetTimezone	s	"2020-09-06T05:49:13.293Z"
+TestGetTimezone	i	23
+TestGetTimezone	s	"2020-09-06T05:49:13.293"
+TestGetTimezone	i	5
+TestGetTimezone	s	"idx %d"
+TestParseWithTimezone	i	60
+TestParseWithTimezone	s	"-"
+TestParseWithTimezone	s	"UTC%s%02d:%02d"
+TestParseWithTimezone	s	"2006-01-02T15:04:05Z"
+TestParseWithTimezone	i	0
+TestParseWithTimezone	i	2006
+TestParseWithTimezone	i	1
+TestParseWithTimezone	i	2
+TestParseWithTimezone	i	15
+TestParseWithTimezone	i	4
+TestParseWithTimezone	i	5
+TestParseWithTimezone	s	"+"
+TestParseWithTimezone	i	10
+TestParseWithTimezone	s	"2020-10-21T16:05:10.50Z"
+TestParseWithTimezone	i	2020
+TestParseWithTimezone	i	21
+TestParseWithTimezone	i	16
+TestParseWithTimezone	i	500
+TestParseWithTimezone	i	1000
+TestParseWithTimezone	s	"2020-10-21T16:05:10.50+08"
+TestParseWithTimezone	i	8
+TestParseWithTimezone	s	"2020-10-21T16:05:10.50-0700"
+TestParseWithTimezone	i	7
+TestParseWithTimezone	s	"2020-10-21T16:05:10.50+09:00"
+TestParseWithTimezone	i	9
+TestParseWithTimezone	s	"2006-01-02T15:04:05+09:00"
+TestParseWithTimezone	s	"2006-01-02T15:04:05-02:00"
+TestParseWithTimezone	i	3
+TestParseWithTimezone	s	"2006-01-02T15:04:05-14:00"
+TestParseWithTimezone	i	14
+TestParseWithTimezone	s	"tidb time parse misbehaved on %d"
+TestParseWithTimezone	s	"tidb time convert failed on %d"
+TestParseWithTimezone	s	"parsed time mismatch on %dth case"
+TestMarshalTime	s	"2017-01-18 01:01:01.123456"
+TestMarshalTime	i	0
+TestDurationConvertToYearFromNow	i	1
+TestDurationConvertToYearFromNow	i	0
+TestDurationConvertToYearFromNow	s	"2023-11-13T03:09:00Z"
+TestDurationConvertToYearFromNow	i	2023
+TestDurationConvertToYearFromNow	i	40
+TestDurationConvertToYearFromNow	s	"2023-12-31T11:00:00Z"
+TestDurationConvertToYearFromNow	i	2024
+TestDurationConvertToYearFromNow	s	"2023-12-31T11:00:00+12:00"
+TestDurationConvertToYearFromNow	i	20
+TestDurationConvertToYearFromNow	s	"2024-01-01T13:00:00Z"
+TestDurationConvertToYearFromNow	s	"2024-01-01T13:00:00-12:00"
+TestDurationConvertToYearFromNow	i	12
+TestDurationConvertToYearFromNow	i	2012
+TestDurationConvertToYearFromNow	i	200
+TestDurationConvertToYearFromNow	i	2155
+TestDurationConvertToYearFromNow	s	"shouldn't append warninng"
+TestDurationConvertToYearFromNow	s	"convert %s + now(%s) as year"
+TestWeekBehaviour	i	1
+TestWeekBehaviour	i	2
+TestWeekBehaviour	i	4
+TestWeek	i	2008
+TestWeek	i	2
+TestWeek	i	20
+TestWeek	i	0
+TestWeek	i	7
+TestWeek	i	1
+TestWeek	i	8
+TestWeek	i	12
+TestWeek	i	31
+TestWeek	i	53
+TestWeek	s	"%d failed."
+TestCalcDaynr	i	0
+TestCalcDaynr	i	3652424
+TestCalcDaynr	i	9999
+TestCalcDaynr	i	12
+TestCalcDaynr	i	31
+TestCalcDaynr	i	719528
+TestCalcDaynr	i	1970
+TestCalcDaynr	i	1
+TestCalcDaynr	i	733026
+TestCalcDaynr	i	2006
+TestCalcDaynr	i	16
+TestCalcDaynr	i	3654
+TestCalcDaynr	i	10
+TestCalcDaynr	i	2
+TestCalcDaynr	i	733457
+TestCalcDaynr	i	2008
+TestCalcDaynr	i	20
+TestCalcTimeTimeDiff	i	2006
+TestCalcTimeTimeDiff	i	0
+TestCalcTimeTimeDiff	i	1
+TestCalcTimeTimeDiff	i	12
+TestCalcTimeTimeDiff	i	23
+TestCalcTimeTimeDiff	i	21
+TestCalcTimeTimeDiff	i	3
+TestCalcTimeTimeDiff	i	22
+TestCalcTimeTimeDiff	i	57
+TestCalcTimeTimeDiff	i	3600
+TestCalcTimeTimeDiff	i	24
+TestCalcTimeTimeDiff	i	11
+TestCalcTimeTimeDiff	i	10
+TestCalcTimeTimeDiff	i	2
+TestCalcTimeTimeDiff	i	5
+TestCalcTimeTimeDiff	i	6
+TestCalcTimeTimeDiff	i	4
+TestCalcTimeTimeDiff	i	60
+TestCalcTimeTimeDiff	s	"%d failed."
+TestCompareTime	i	0
+TestCompareTime	i	1
+TestCompareTime	i	2006
+TestCompareTime	i	2
+TestCompareTime	i	3
+TestCompareTime	i	4
+TestCompareTime	i	5
+TestCompareTime	i	6
+TestCompareTime	i	2016
+TestCompareTime	i	11
+TestCompareTime	i	22
+TestCompareTime	i	33
+TestCompareTime	i	12
+TestCompareTime	i	21
+TestCompareTime	i	9999
+TestCompareTime	i	30
+TestCompareTime	i	23
+TestCompareTime	i	59
+TestCompareTime	i	999999
+TestGetDateFromDaynr	i	730669
+TestGetDateFromDaynr	i	2000
+TestGetDateFromDaynr	i	7
+TestGetDateFromDaynr	i	3
+TestGetDateFromDaynr	i	720195
+TestGetDateFromDaynr	i	1971
+TestGetDateFromDaynr	i	10
+TestGetDateFromDaynr	i	30
+TestGetDateFromDaynr	i	719528
+TestGetDateFromDaynr	i	1970
+TestGetDateFromDaynr	i	1
+TestGetDateFromDaynr	i	719892
+TestGetDateFromDaynr	i	12
+TestGetDateFromDaynr	i	31
+TestGetDateFromDaynr	i	730850
+TestGetDateFromDaynr	i	730544
+TestGetDateFromDaynr	i	2
+TestGetDateFromDaynr	i	29
+TestGetDateFromDaynr	i	204960
+TestGetDateFromDaynr	i	561
+TestGetDateFromDaynr	i	28
+TestGetDateFromDaynr	i	0
+TestGetDateFromDaynr	i	32
+TestGetDateFromDaynr	i	366
+TestGetDateFromDaynr	i	744729
+TestGetDateFromDaynr	i	2038
+TestGetDateFromDaynr	i	3652424
+TestGetDateFromDaynr	i	9999
+TestMixDateAndTime	i	1896
+TestMixDateAndTime	i	3
+TestMixDateAndTime	i	4
+TestMixDateAndTime	i	0
+TestMixDateAndTime	i	12
+TestMixDateAndTime	i	23
+TestMixDateAndTime	i	24
+TestMixDateAndTime	i	5
+TestMixDateAndTime	i	2016
+TestMixDateAndTime	i	31
+TestMixDateAndTime	i	2017
+TestMixDateAndTime	i	1
+TestMixDateAndTime	i	15
+TestMixDateAndTime	i	2
+TestMixDateAndTime	i	21
+TestMixDateAndTime	i	10
+TestMixDateAndTime	s	"%d"
+TestIsLeapYear	i	1960
+TestIsLeapYear	i	1
+TestIsLeapYear	i	0
+TestIsLeapYear	i	1963
+TestIsLeapYear	i	2
+TestIsLeapYear	i	21
+TestIsLeapYear	i	2008
+TestIsLeapYear	i	11
+TestIsLeapYear	i	25
+TestIsLeapYear	i	2017
+TestIsLeapYear	i	4
+TestIsLeapYear	i	24
+TestIsLeapYear	i	1988
+TestIsLeapYear	i	29
+TestIsLeapYear	i	2000
+TestIsLeapYear	i	3
+TestIsLeapYear	i	15
+TestIsLeapYear	i	1992
+TestIsLeapYear	i	5
+TestIsLeapYear	i	2024
+TestIsLeapYear	i	10
+TestIsLeapYear	i	2016
+TestIsLeapYear	i	6
+TestIsLeapYear	i	2015
+TestIsLeapYear	i	2014
+TestIsLeapYear	i	9
+TestIsLeapYear	i	31
+TestIsLeapYear	i	2001
+TestIsLeapYear	i	12
+TestIsLeapYear	i	7
+TestIsLeapYear	i	1989
+TestGetLastDay	i	2000
+TestGetLastDay	i	1
+TestGetLastDay	i	31
+TestGetLastDay	i	2
+TestGetLastDay	i	29
+TestGetLastDay	i	4
+TestGetLastDay	i	30
+TestGetLastDay	i	1900
+TestGetLastDay	i	28
+TestGetLastDay	i	1996
+TestGetFixDays	i	2000
+TestGetFixDays	i	1
+TestGetFixDays	i	0
+TestGetFixDays	i	31
+TestGetFixDays	i	2
+TestGetFixDays	i	12
+TestGetFixDays	i	24
+TestGetFixDays	i	10
+TestGetFixDays	i	2019
+TestGetFixDays	i	4
+TestGetFixDays	i	5
+TestGetFixDays	i	3
+TestAddDate	i	1
+TestAddDate	i	0
+TestAddDate	i	2000
+TestAddDate	i	2
+TestAddDate	i	12
+TestAddDate	i	3
+TestAddDate	i	4
+TestAddDate	i	24
+TestAddDate	i	10
+TestAddDate	i	5
+TestAddDate	i	2019
+TestAddDate	i	7999
+TestAddDate	i	8000
+TestAddDate	i	10001
+TestAddDate	i	365
+TestAddDate	i	36
+TestAddDate	i	2001
+TestAddDate	s	"datetime"
+TestWeekday	i	2019
+TestWeekday	i	1
+TestWeekday	i	0
+TestWeekday	s	"Tuesday"
+TestWeekday	i	2
+TestWeekday	i	31
+TestWeekday	s	"Sunday"
+TestWeekday	i	4
+TestWeekday	s	"Wednesday"
+TestAdjustedGoTime	s	"Australia/Lord_Howe"
+TestAdjustedGoTime	i	2020
+TestAdjustedGoTime	i	10
+TestAdjustedGoTime	i	4
+TestAdjustedGoTime	i	1
+TestAdjustedGoTime	i	59
+TestAdjustedGoTime	i	997
+TestAdjustedGoTime	s	"2020-10-04 01:59:59.000997 +1030 +1030"
+TestAdjustedGoTime	i	2
+TestAdjustedGoTime	i	0
+TestAdjustedGoTime	s	"2020-10-04 02:30:00 +11 +1100"
+TestAdjustedGoTime	i	15
+TestAdjustedGoTime	i	29
+TestAdjustedGoTime	i	999999
+TestAdjustedGoTime	i	30
+TestAdjustedGoTime	s	"2020-10-04 02:30:00.000001 +11 +1100"
+TestAdjustedGoTime	i	6
+TestAdjustedGoTime	i	3
+TestAdjustedGoTime	i	45
+TestAdjustedGoTime	s	"2020-06-29 03:45:00 +1030 +1030"
+TestAdjustedGoTime	s	"2020-04-04 01:45:00 +11 +1100"
+TestAdjustedGoTime	s	"Europe/Vilnius"
+TestAdjustedGoTime	s	"2020-03-29 04:00:00 EEST +0300"
+TestAdjustedGoTime	i	456789
+TestAdjustedGoTime	i	130000
+TestAdjustedGoTime	s	"2020-03-29 04:00:01.13 EEST +0300"
+TestAdjustedGoTime	i	25
+TestAdjustedGoTime	s	"2020-10-25 03:45:00 EET +0200"
+TestAdjustedGoTime	s	"2020-06-29 03:45:00 EEST +0300"
+TestAdjustedGoTime	s	"Europe/Amsterdam"
+TestAdjustedGoTime	s	"2020-03-29 03:00:00 CEST +0200"
+TestAdjustedGoTime	i	35
+TestAdjustedGoTime	s	"2020-10-25 02:35:00 CET +0100"
+TestAdjustedGoTime	s	"UTC"
+TestAdjustedGoTime	i	31
+TestAdjustedGoTime	s	""
+TestAdjustedGoTime	s	"2006-01-02 15:04:05.999999999 MST -0700"
+TestCheckFsp	i	2019
+TestCheckFsp	s	"Invalid fsp -2019"
+TestCheckFsp	i	4294967296
+TestCheckFsp	s	"Invalid fsp "
+TestCheckFsp	i	1
+TestCheckFsp	i	2
+TestCheckFsp	i	5
+TestParseFrac	s	""
+TestParseFrac	i	200
+TestParseFrac	s	"^Invalid fsp "
+TestParseFrac	s	"NotNum"
+TestParseFrac	s	"^strconv.ParseInt:"
+TestParseFrac	s	"1235"
+TestParseFrac	i	123500
+TestParseFrac	s	"123456"
+TestParseFrac	s	"1236"
+TestParseFrac	i	124000
+TestParseFrac	s	"0312"
+TestParseFrac	i	30000
+TestAlignFrac	s	"100"
+TestAlignFrac	i	6
+TestAlignFrac	s	"100000"
+TestAlignFrac	s	"10000000000"
+TestAlignFrac	s	"-100"
+TestAlignFrac	s	"-100000"
+TestAlignFrac	s	"-10000000000"

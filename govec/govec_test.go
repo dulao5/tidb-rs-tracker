@@ -31,6 +31,8 @@ var minedGoTests = map[string][]string{
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
 		"TestGlobalTracker", "TestOOMActionPriority", "TestFormatBytesWithPrune",
 	},
+	// The literals of time_test.go, core_time_test.go and fsp_test.go (cmd/minelits).
+	"time": domains.TimeMinedTests(),
 }
 
 // oracleStride: the oracle check replays records 0, s, 2s, ... (about 1 in
