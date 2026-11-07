@@ -48,6 +48,20 @@ jobs:
         run: go vet ./... && go test ./...
       - name: Committed vectors of this target are up to date
         run: scripts/govec.sh --check
+      # A new domain's file for a target the author cannot run (e.g. amd64 from an
+      # arm64 Mac without an amd64 runtime) is taken from this artifact: Go ran on
+      # the runner's target. govec/README.md "Regenerating".
+      - name: Fresh vectors of this target (artifact)
+        if: always()
+        run: |
+          (cd govec && go build -o ../bin/govec .)
+          mkdir -p out/$(bin/govec target)
+          for d in $(bin/govec list); do bin/govec "$d" -o "out/$(bin/govec "$d" --filename)"; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: govec-vectors-${{ matrix.runner }}
+          path: out/
       - name: FMA site registry is up to date (cross-compiles every target)
         if: matrix.runner == 'ubuntu-latest'
         run: scripts/go_fma_sites.py --check
