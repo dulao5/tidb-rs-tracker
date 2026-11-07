@@ -37,4 +37,16 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: int64(+Inf) saturates on arm64, MinInt64 on amd64"},
 	{Domain: "time", Op: "parse_time_float64", Args: `["1e19",12,"fat:America_New_York"]`,
 		Why: "M-F2I: int64(1e19) saturates on arm64, MinInt64 on amd64"},
+	{Domain: "parser_types", Op: "duration", Args: `["100000000000d"]`,
+		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
+	{Domain: "parser_types", Op: "duration", Args: `["9223372036h"]`,
+		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
+	{Domain: "parser_types", Op: "duration", Args: `["106752d"]`,
+		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
 }
+
+// targetsPending: domains whose vectors are committed for one target only so far
+// (the other comes from the CI artifact of the PR that adds the domain), with the
+// reason. TestTargetsDiffer fails for a domain with one target that is not listed
+// here, and for a listed domain that has both targets (remove the entry then).
+var targetsPending = map[string]string{}

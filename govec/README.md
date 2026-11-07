@@ -299,7 +299,10 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 
 后两种情况通常是 Go 的行为或生成器变了，需要更新表和原因。
 
+**只有一个目标的领域**：新领域的 amd64 向量要等 PR 的第一次 CI 产出，在此之前必须登记在 `targetsPending`（领域 → 原因）中，否则测试失败；两个目标都提交后，条目必须删除，否则也失败。这样不会有领域被静默跳过。
+
 当前登记的内容：
 - decimal：44 条（M-FMA）。
 - config：824 条 `f2i` 和 5 条 `load`。这 5 条都是 `grpc-keepalive-timeout` 的浮点数转无符号整数时溢出或取 `inf`（M-F2I）。
 - time：3 条 `parse_time_float64`，即 NaN、+Inf、1e19（M-F2I）。
+- parser_types：3 条 `duration`（`100000000000d`、`9223372036h`、`106752d`），`time.Duration(float)` 溢出 int64，amd64 得到最小值，arm64 饱和（M-F2I）。

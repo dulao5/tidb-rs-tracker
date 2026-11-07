@@ -401,8 +401,16 @@ func TestTargetsDiffer(t *testing.T) {
 		}
 		a, b := read("amd64"), read("arm64")
 		if a == nil || b == nil {
-			t.Logf("%s: not committed for both targets yet", name)
+			if targetsPending[name] == "" {
+				t.Errorf("%s: vectors not committed for both targets (amd64 %v, arm64 %v) and not in targetsPending",
+					name, a != nil, b != nil)
+			} else {
+				t.Logf("%s: one target only (targetsPending: %s)", name, targetsPending[name])
+			}
 			continue
+		}
+		if why := targetsPending[name]; why != "" {
+			t.Errorf("%s: committed for both targets; remove it from targetsPending (%s)", name, why)
 		}
 		if len(a) != len(b) {
 			t.Errorf("%s: amd64 %d lines, arm64 %d", name, len(a), len(b))
