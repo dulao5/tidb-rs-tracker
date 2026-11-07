@@ -300,7 +300,7 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - 反序列化任意字节：头部长度按 uint32 计算 `elements*4 + 4`，`elements >= 2^30` 时会回绕。回绕后的长度为 0 或 4 时 Go 在 `Len` / `Elements` 中确定地越界 panic（记为 `panic`）；回绕后不小于 8 且不超过输入长度时，Go 得到长度字大于数据的向量，`Elements` 读越界（未定义行为），这类输入不生成。
 - 距离、范数、`Add`/`Sub`/`Mul`、`Compare`：随机维数（多数不超过 64，少量到 300），元素取小整数、[-1,1]、两位小数、任意有限位模式、大跨度指数，部分含 NaN、±Inf、最大值、非规格化数；包括维数不同、零向量、相同向量、前缀向量。
 
-**目标平台**：距离函数的累加 `distance += x * y`（vector_functions.go:44、71、100–102）和 `L2Norm` 的 float64 累加（:152）在 arm64 上被 gc 融合成 FMA，在 amd64（GOAMD64=v1）上不融合（`data/go_fma_sites.tsv`，M-FMA），所以两个目标的文件在许多 `distance`、`l2_norm` 记录上不同，按 op 登记在 `targetDiffs` 中。
+**目标平台**：距离函数的累加 `distance += x * y`（vector_functions.go:44、71、100–102）和 `L2Norm` 的 float64 累加（:152）在 arm64 上被 gc 融合成 FMA，在 amd64（GOAMD64=v1）上不融合（`data/go_fma_sites.tsv`，M-FMA），所以两个目标的文件在许多 `distance` 记录上不同；另外，无效运算产生的默认 NaN 的符号位随硬件不同（amd64 为负）。按 op 登记在 `targetDiffs` 中（130 条）。`L2Norm` 的 float64 累加虽然也被融合，但两个 float32 的乘积在 float64 中是精确的，融合与否结果相同。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等，错误按消息比对（都是不带错误码的 `errors.Errorf`），`panic` 记录在 Rust 中也必须 panic。
 
@@ -326,3 +326,4 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 - config：824 条 `f2i` 和 5 条 `load`。这 5 条都是 `grpc-keepalive-timeout` 的浮点数转无符号整数时溢出或取 `inf`（M-F2I）。
 - time：3 条 `parse_time_float64`，即 NaN、+Inf、1e19（M-F2I）。
 - parser_types：3 条 `duration`（`100000000000d`、`9223372036h`、`106752d`），`time.Duration(float)` 溢出 int64，amd64 得到最小值，arm64 饱和（M-F2I）。
+- vector：130 条 `distance`。92 条是 arm64 上融合的 float32 累加（M-FMA）；38 条结果是 NaN：无效运算（Inf−Inf、0×Inf）产生的默认 NaN 在 amd64 上带符号位（`0xFFF8…`），在 arm64 上不带（`0x7FF8…`）。Rust 在同一硬件上得到同样的 NaN。

@@ -43,6 +43,13 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
 	{Domain: "parser_types", Op: "duration", Args: `["106752d"]`,
 		Why: "M-F2I: time.Duration(float) overflows int64: MinInt64 on amd64, saturates on arm64"},
+
+	// M-FMA: the float32 sums of the distance functions (vector_functions.go:44, 71,
+	// 100-102) are fused on arm64 only; and the NaN of an invalid operation (Inf-Inf,
+	// 0*Inf) is the hardware's default NaN, which has the sign bit set on amd64
+	// (0xFFF8...) and not on arm64 (0x7FF8...).
+	{Domain: "vector", Op: "distance", Args: "*", N: 130,
+		Why: "M-FMA: VectorFloat32 distance sums fused on arm64 only; default NaN sign of Inf-Inf / 0*Inf differs (amd64 negative)"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far
