@@ -368,39 +368,86 @@ func TestFMA(t *testing.T) {
 	}
 }
 
-// TestTargetsDiffer: the committed amd64 and arm64 files have the same
-// records apart from the outputs that depend on FMA fusion (ops ending in
-// to_float64), and differ in at least domains.FMADiverging of them.
+// TestTargetsDiffer: for every domain, the committed amd64 and arm64 files
+// have the same records except the ones in targetDiffs (targetdiffs_test.go),
+// and every entry there still differs: a difference outside the table fails,
+// and so does a table entry whose records no longer differ (the Go behaviour
+// or the generator changed; update the table and its reason).
 func TestTargetsDiffer(t *testing.T) {
-	d := vec.Lookup("decimal")
-	read := func(target string) []string {
-		b, err := vec.ReadFile(filepath.Join("..", "vectors", vec.TiDBVersion, d.FilePath(target)))
-		if err != nil {
-			t.Skipf("%s: %v", target, err)
+	exact := map[string]*targetDiff{}
+	byOp := map[string]*targetDiff{}
+	for i := range targetDiffs {
+		e := &targetDiffs[i]
+		if e.Why == "" {
+			t.Errorf("targetDiffs %s %s %s: no reason", e.Domain, e.Op, e.Args)
 		}
-		return strings.Split(string(b), "\n")
+		if e.Args == "*" {
+			byOp[e.Domain+"\x00"+e.Op] = e
+		} else {
+			exact[e.Domain+"\x00"+e.Op+"\x00"+e.Args] = e
+		}
 	}
-	a, b := read("amd64"), read("arm64")
-	if len(a) != len(b) {
-		t.Fatalf("amd64 %d lines, arm64 %d", len(a), len(b))
-	}
-	diff := 0
-	for i := 1; i < len(a); i++ {
-		if a[i] == b[i] {
+	hits := map[*targetDiff]int{}
+	known := map[string]bool{}
+	for _, name := range vec.Names() {
+		d := vec.Lookup(name)
+		known[name] = true
+		read := func(target string) []string {
+			b, err := vec.ReadFile(filepath.Join("..", "vectors", vec.TiDBVersion, d.FilePath(target)))
+			if err != nil {
+				return nil
+			}
+			return strings.Split(string(b), "\n")
+		}
+		a, b := read("amd64"), read("arm64")
+		if a == nil || b == nil {
+			t.Logf("%s: not committed for both targets yet", name)
 			continue
 		}
-		diff++
-		var ra, rb vec.Record
-		if err := json.Unmarshal([]byte(a[i]), &ra); err != nil {
-			t.Fatal(err)
+		if len(a) != len(b) {
+			t.Errorf("%s: amd64 %d lines, arm64 %d", name, len(a), len(b))
+			continue
 		}
-		_ = json.Unmarshal([]byte(b[i]), &rb)
-		if ra.Op != rb.Op || !strings.HasSuffix(ra.Op, "to_float64") {
-			t.Errorf("line %d differs outside to_float64:\n amd64 %s\n arm64 %s", i+1, a[i], b[i])
+		diff := 0
+		for i := 1; i < len(a); i++ {
+			if a[i] == b[i] {
+				continue
+			}
+			diff++
+			var ra, rb vec.Record
+			if err := json.Unmarshal([]byte(a[i]), &ra); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(b[i]), &rb); err != nil {
+				t.Fatal(err)
+			}
+			args := string(vec.MustJSON(ra.Args))
+			if ra.Op != rb.Op || args != string(vec.MustJSON(rb.Args)) {
+				t.Errorf("%s line %d: the targets have different calls:\n amd64 %s\n arm64 %s", name, i+1, a[i], b[i])
+				continue
+			}
+			if e := exact[name+"\x00"+ra.Op+"\x00"+args]; e != nil {
+				hits[e]++
+			} else if e := byOp[name+"\x00"+ra.Op]; e != nil {
+				hits[e]++
+			} else {
+				t.Errorf("%s line %d: differs between the targets and is not in targetDiffs:\n amd64 %s\n arm64 %s",
+					name, i+1, a[i], b[i])
+			}
 		}
+		t.Logf("%s: amd64 and arm64 differ in %d records", name, diff)
 	}
-	t.Logf("amd64 and arm64 differ in %d records", diff)
-	if diff < domains.FMADiverging {
-		t.Errorf("amd64 and arm64 differ in %d records, want >= %d", diff, domains.FMADiverging)
+	for i := range targetDiffs {
+		e := &targetDiffs[i]
+		if !known[e.Domain] {
+			t.Errorf("targetDiffs: unknown domain %s", e.Domain)
+			continue
+		}
+		switch {
+		case e.Args == "*" && hits[e] != e.N:
+			t.Errorf("targetDiffs %s %s: %d records differ, the table says %d", e.Domain, e.Op, hits[e], e.N)
+		case e.Args != "*" && hits[e] == 0:
+			t.Errorf("targetDiffs %s %s %s: no longer differs between the targets", e.Domain, e.Op, e.Args)
+		}
 	}
 }
