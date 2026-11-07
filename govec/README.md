@@ -244,3 +244,33 @@ rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来�
 - **环境**：默认的 `tmp-storage-path` 取决于 `os.TempDir()` 和用户 ID，记录中写成 `<TEMP_STORAGE_DIR>`；`temp_storage` 的结果中写成 `<TMPDIR>`、`<UID>_tidb`。记录与 `TMPDIR` 无关（已在两种 `TMPDIR` 下核对）。
 - **Go 运行时与标准库**（tidb-rs 的 `gostd`）：`f2i` 是浮点到各整数类型的转换（映射规则 M-F2I，越界和 NaN 的结果随目标不同，两个目标的文件在这些记录上不同）；`simple_fold_table`、`case_table` 是全部码位的 `unicode.SimpleFold` / `ToUpper` / `ToLower`；`equal_fold` 是 `strings.EqualFold`（折叠轨道上的字符与随机组合）。rsgen 生成 `CASE_RANGES`（`unicode.CaseRanges`）和 `FOLD_ORBIT`（`SimpleFold` 不等于 ToLower/ToUpper 回退值的码位，即 Go 的 `asciiFold` 与 `caseOrbit`）。
 - **豁免**：`InitializeConfig`（`os.Exit`、`terror.MustNil`）和只被它调用的 `isAllRemovedConfigItems`，由 tidb-rs 的单测覆盖。
+
+## time（块 D01.3：`pkg/types` 的 time.go、core_time.go、fsp.go）
+
+领域 `time` 覆盖 D01.3 的 202 个函数，以及它们依赖的 Go `time` 包行为：`time.Location` 的时区查找（`Zone`、`ZoneBounds`）、`time.Date` 的规范化和夏令时处理、`Round`、`AddDate`、`Time.String`。
+
+**值的编码**
+- `types.Time` 记成 64 位原始字（内嵌的 `coreTime`，含 fsp/类型位），即 `"raw"`。输出另加 `"s"`（`String()`）。
+- `types.Duration` 记成 `{"d": 纳秒, "fsp": n}`，输出另加 `"s"`。
+- `time.Time` 输入是 `{"unix", "nsec", "zone"}`；输出另加 `"loc"`（Location 名）和 `"s"`（`String()`）。
+- 上下文参数是 `[flags, zone]`，Go 侧为 `types.NewContext(types.Flags(flags), loc, h)`。`h` 收集 warning，写入记录的 `warnings`。
+
+**时区**
+- zone id 有四种：
+  - `UTC`：即 `time.UTC`，Go 中按指针比较。
+  - `fixed:<名字>:<偏移秒>`：`time.FixedZone`。
+  - `slim:<文件>`：`testdata/tz/slim/` 中的 TZif 文件，取自 Go 1.25 的 `lib/time/zoneinfo.zip`。这类文件只记录到 2007 年左右的转换，之后的时间靠文件尾的 POSIX TZ 规则计算，所以会走到 `tzset` 那条路径。
+  - `fat:<文件>`：`testdata/tz/fat/` 中的 TZif 文件，取自 macOS 的 `/usr/share/zoneinfo`。转换列表一直列到 2037 年。
+- 两类文件都由 `time.LoadLocationFromTZData` 加载，名字是把文件名中的 `_` 换成 `/`。
+- 向量开头为每个 TZif id 生成一条 `zone` 记录，内容是文件本身。Rust 回放时加载完全相同的字节，所以结果与机器上装的 tz 数据库无关。
+
+**用例**
+- **测试中的字面量**：`testdata/time_literals.tsv` 由 `go run ./cmd/minelits <tidb>/pkg/types/{time,core_time,fsp}_test.go` 生成，是这三个测试文件中全部字符串和整数字面量，共 66 个测试函数、1354 个字面量。每个字面量都送进所有吃字符串或整数的 op；`src` 记为所在的测试函数。
+- **夏令时转换**（`sys/dst`）：取 9 个有夏令时的时区在 6 个年份里的转换日，构造当天凌晨各时刻（落在跳过或重复的那段时间里）的字符串，送进 `ParseTime`（TIMESTAMP 和 DATETIME）、`Convert`、`DateTimeIsOverflow`、`RoundFrac`、`ConvertTimeZone`。
+- **随机用例**：各种分隔符、紧凑数字、小数和时区后缀的日期串，畸形串，数字，浮点串，时长串，原始字（含越界字段和非法 fsp 位，`String()` 会越界 panic，记为 `panic`），格式串，以及区间值。
+
+**豁免**：`CurrentTime`、`Duration.ConvertToTime`、`Duration.ConvertToYear` 读墙上时钟，同一路径由给定时刻的 `from_go_time`、`dur_to_time`、`dur_to_year` 覆盖。
+
+**目标平台**：`ParseTimeFromFloat64` 中的 `int64(f)`、`uint32(...)` 按 M-F2I 依平台而定（NaN、±Inf、越界），所以 amd64 和 arm64 的文件在这几条记录上不同。
+
+**Rust 侧比对**：`out` 按 JSON 逐项相等；错误和 warning 按错误码和消息比对。`Time.UnmarshalJSON` 的 JSON 语法错误文本没有移植（与 MyDecimal 相同），只要求同样是不带错误码的错误；类型错误（`json: cannot unmarshal ...`）的文本要一致。
