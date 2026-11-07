@@ -206,7 +206,7 @@ RULES = [
     # Job.Decode reads for ADMIN SHOW DDL JOBS / infoschema DDL tables / SchemaDiff) and the
     # functions reached from read-path blocks (D06.2-D06.5, D12.12, D12.13). The rest is
     # X: "DDL 写路径，由 Go TiDB 承担". job_args.go: only AutoIDGroup (meta autoid reads).
-    ("X", r"pkg/meta/model/(job|reorg|bdr)\.go$", r"^(?!(?:TSConvert2Time|ActionType\.String|Job\.(Decode|GetRowCount|GetWarnings|MayNeedReorg|String)|JobState\.String|SchemaState\.String|DDLReorgMeta\.Get(BatchSize|Concurrency|MaxWriteSpeed)OrDefault|ReorgType\.String)$)(?:\w+\.\w+|init|GetJobVerInUse|ModifyTypeToString|NewJobW|NewMultiSchemaInfo|SetJobVerInUse|StrToJobState|UpdateJobArgsForTest|marshalArgs)$"),
+    ("X", r"pkg/meta/model/(job|reorg|bdr)\.go$", r"^(?!(?:TSConvert2Time|ActionType\.String|Job\.(Decode|GetRowCount|GetWarnings|MayNeedReorg|String)|JobState\.String|JobVersion\.String|SchemaState\.String|DDLReorgMeta\.Get(BatchSize|Concurrency|MaxWriteSpeed)OrDefault|ReorgType\.String)$)(?:\w+\.\w+|init|GetJobVerInUse|ModifyTypeToString|NewJobW|NewMultiSchemaInfo|SetJobVerInUse|StrToJobState|UpdateJobArgsForTest|marshalArgs)$"),
     ("D06.1", r"pkg/meta/model/job_args\.go$", r"^AutoIDGroup$"),
     ("X", r"pkg/meta/model/job_args\.go$", None),
     ("D06.1", r"pkg/meta/model/", None),

@@ -13371,7 +13371,7 @@ pkg/meta/model	pkg/meta/model/job.go	Job.decodeArgs	616	X
 pkg/meta/model	pkg/meta/model/job.go	Job.hasDependentSchema	659	X
 pkg/meta/model	pkg/meta/model/job.go	Job.hasDependentTableForExchangePartition	687	X
 pkg/meta/model	pkg/meta/model/job.go	JobState.String	1192	D06.1
-pkg/meta/model	pkg/meta/model/job.go	JobVersion.String	315	X
+pkg/meta/model	pkg/meta/model/job.go	JobVersion.String	315	D06.1
 pkg/meta/model	pkg/meta/model/job.go	ModifyTypeToString	233	X
 pkg/meta/model	pkg/meta/model/job.go	NewJobW	1401	X
 pkg/meta/model	pkg/meta/model/job.go	NewMultiSchemaInfo	1103	X
