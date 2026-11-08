@@ -5,6 +5,9 @@
 //
 // Output: one line per distinct (func, kind, literal): func \t kind \t value,
 // where kind is "s" (value is the strconv.Quote of the string) or "i" (decimal).
+//
+// With -decls, the package-level `const` / `var` string literals (test fixtures such as
+// the /proc files of pkg/util/cgroup's tests) are emitted too, as func "decl:<Name>".
 package main
 
 import (
@@ -21,7 +24,12 @@ func main() {
 	type lit struct{ fn, kind, v string }
 	seen := map[lit]bool{}
 	var out []lit
-	for _, path := range os.Args[1:] {
+	args := os.Args[1:]
+	decls := len(args) > 0 && args[0] == "-decls"
+	if decls {
+		args = args[1:]
+	}
+	for _, path := range args {
 		fset := token.NewFileSet()
 		f, err := parser.ParseFile(fset, path, nil, 0)
 		if err != nil {
@@ -29,6 +37,30 @@ func main() {
 			os.Exit(1)
 		}
 		for _, decl := range f.Decls {
+			if gd, ok := decl.(*ast.GenDecl); ok && decls && (gd.Tok == token.CONST || gd.Tok == token.VAR) {
+				for _, spec := range gd.Specs {
+					vs := spec.(*ast.ValueSpec)
+					for i, name := range vs.Names {
+						if i >= len(vs.Values) {
+							continue
+						}
+						bl, ok := vs.Values[i].(*ast.BasicLit)
+						if !ok || bl.Kind != token.STRING {
+							continue
+						}
+						s, err := strconv.Unquote(bl.Value)
+						if err != nil {
+							continue
+						}
+						l := lit{"decl:" + name.Name, "s", strconv.Quote(s)}
+						if !seen[l] {
+							seen[l] = true
+							out = append(out, l)
+						}
+					}
+				}
+				continue
+			}
 			fd, ok := decl.(*ast.FuncDecl)
 			if !ok || !strings.HasPrefix(fd.Name.Name, "Test") || fd.Body == nil {
 				continue
