@@ -259,7 +259,8 @@ func sysvarValues(sv *variable.SysVar, rng *rand.Rand) []string {
 	case variable.TypeDuration:
 		vals = append(vals, "1s", "1h", "-1s", "1m30s", "0", "1.5h", "100ms", "1000h", "9999999h", "1d")
 	case variable.TypeTime:
-		vals = append(vals, "10:00", "10:00 +0800", "23:59 -0700", "25:00", "1:00", "10:00 +08:00", "00:00 +0000")
+		vals = append(vals, "10:00", "10:00 +0800", "23:59 -0700", "25:00", "1:00", "10:00 +08:00", "00:00 +0000",
+			"24:00", "23:60", "24:00 +0000", "10:00 +2401", "10:00 +2460", "10:00 +2461", "10:00 x0800", "1:5", "10:0", "10:00 +080", "10:00  +0800", "10:00+0800", "10:00 +0800x", "1:00 -1200", "\"10:00", "日:00")
 	case variable.TypeStr:
 		vals = append(vals, strings.ToUpper(sv.Value), strings.ToLower(sv.Value), " "+sv.Value, sv.Value+",",
 			"utf8mb4", "latin1", "binary", "utf8mb4_bin", "utf8mb4_general_ci", "utf8mb4_0900_ai_ci", "utf8mb4_unicode_ci", "gbk",
