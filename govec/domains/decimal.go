@@ -114,6 +114,10 @@ var decimalBaseCoverage = map[string]vec.Coverage{
 	"marshal_json": {Min: 50, GoFuncs: []string{"MyDecimal.MarshalJSON"}},
 	// args: [JSON text string]               out: Dec
 	"unmarshal_json": {Min: 50, GoFuncs: []string{"MyDecimal.UnmarshalJSON"}},
+	// args: [JSON text vec.GoString]         out: Dec
+	// encoding/json edge cases: invalid UTF-8, -0, case-folded keys, syntax errors
+	// (their messages are compared).
+	"unmarshal_json_gs": {Min: 50, GoFuncs: []string{"MyDecimal.UnmarshalJSON"}},
 }
 
 // Chained ops "<producer>_then_<consumer>": the producer's Dec result (not
@@ -490,6 +494,12 @@ func decimalOp(op string, a argReader) (any, error) {
 	case "unmarshal_json":
 		d := a.to()
 		err := d.UnmarshalJSON([]byte(a.str(0)))
+		return decOut(d), err
+	case "unmarshal_json_gs":
+		var j vec.GoString
+		a.get(0, &j)
+		d := a.to()
+		err := d.UnmarshalJSON([]byte(j))
 		return decOut(d), err
 	}
 	panic(fmt.Sprintf("unknown op %q", op))

@@ -684,6 +684,43 @@ func decimalSystematic(g *vec.Gen) {
 	} {
 		g.Add("sys/json", "unmarshal_json", j)
 	}
+	for _, j := range JSONEdgeCases(`{"DigitsInt":1,"DigitsFrac":0,"ResultFrac":0,"Negative":false,"WordBuf":[7,0,0,0,0,0,0,0,0]}`) {
+		g.Add("sys/json_edge", "unmarshal_json_gs", vec.GoString(j))
+	}
+	for _, j := range []string{
+		`{"DigitsInt":-0,"DigitsFrac":-0,"WordBuf":[-0,5]}`,
+		`{"DigitſInt":2,"digitsfrac":1,"RESULTFRAC":1,"negative":true,"wordbuf":[1,2]}`,
+		`{"Digit\u017fInt":3}`, `{"Key":1,"DigitsInt":1}`, "{\"Dig\xffitsInt\":1,\"DigitsInt\":2}",
+		"{\"DigitsInt\":1,\"x\":\"\xff\xfe\"}", "\"\xff\"", "{\"DigitsInt\":\"\xff\"}",
+		`{"DigitsInt":1,"DigitsInt":2}`, `{"DigitsInt":300}`, `{"DigitsInt":-129}`, `{"DigitsInt":1.0}`,
+		`{"DigitsInt":1e2}`, `{"DigitsInt":"1"}`, `{"Negative":1}`, `{"Negative":null,"DigitsInt":null}`,
+		`{"WordBuf":[1,2,3,4,5,6,7,8,9,10,11]}`, `{"WordBuf":"x"}`, `{"WordBuf":null}`, `{"WordBuf":[2147483648]}`,
+		`{"WordBuf":[1,"a",3],"DigitsInt":"b"}`, `[1,2]`, `true`,
+	} {
+		g.Add("sys/json_edge", "unmarshal_json_gs", vec.GoString(j))
+	}
+}
+
+// JSONEdgeCases are encoding/json syntax errors and near-misses around a valid
+// document doc: every message of the scanner's error states, end-of-input
+// cases, invalid UTF-8 and the nesting limit. Shared by the domains that decode
+// JSON (decimal, time).
+func JSONEdgeCases(doc string) []string {
+	out := []string{
+		"", "   ", "\t\n", "{", "[", "{\"a\"", "{\"a\":", "{\"a\":}", "{\"a\":1,}", "{\"a\" 1}",
+		"{\"a\":1 \"b\":2}", "{1:2}", "{,}", "[1,]", "[1 2]", "[,1]", "]", "}", ",", ":",
+		"tru", "trUe", "t", "fals", "falsE", "nul", "nulL", "n", "-", "-a", "--1", "01", "1.", "1.e1",
+		"1e", "1e+", "1E-", "1ex", ".5", "+1", "0x10", "1 2", "{} {}", "null x", "\"abc", "\"a\\", "\"a\\x\"",
+		"\"\\u12\"", "\"\\u12", "\"\\uzzzz\"", "\"\\ud800\\u12\"", "\"a\x01b\"", "\"a\tb\"", "'a'",
+		"\xff", "[\xff]", "{\"a\":\xfe}", "\"\xff\"", "\x00", "{\"a\":1}\x00", "\u00a0",
+		"\"\\ud800\"", "\"\\udc00\\ud800\"", "\"\\ud83d\\ude00\"", "NaN", "Infinity", "-Infinity",
+		doc + "x", doc + " ", " " + doc, doc[:len(doc)-1], doc[:len(doc)/2],
+		strings.Repeat("[", 10000) + strings.Repeat("]", 10000),
+		strings.Repeat("[", 10001) + strings.Repeat("]", 10001),
+		strings.Repeat("{\"a\":", 10001) + "1" + strings.Repeat("}", 10001),
+		strings.Repeat("[", 10001),
+	}
+	return out
 }
 
 func fmtSpecial(f float64) string {
