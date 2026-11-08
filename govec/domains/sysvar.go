@@ -202,7 +202,14 @@ func sysvarNames() []*variable.SysVar {
 var scopeOf = map[string]variable.ScopeFlag{"session": variable.ScopeSession, "global": variable.ScopeGlobal, "instance": variable.ScopeInstance, "none": variable.ScopeNone}
 
 func sysvarValues(sv *variable.SysVar, rng *rand.Rand) []string {
-	vals := []string{sv.Value, "", "ON", "OFF", "on", "1", "0", "-1", "abc"}
+	def := sv.Value
+	switch sv.Name {
+	case "version_compile_os", "version_compile_machine":
+		// The default depends on the build target: a fixed value keeps the records of
+		// every host identical.
+		def = "linux"
+	}
+	vals := []string{def, "", "ON", "OFF", "on", "1", "0", "-1", "abc"}
 	switch sv.Type {
 	case variable.TypeBool:
 		vals = append(vals, "off", "On", "2", "-2", "true", "TRUE", "false", "01", " 1", "1 ", "+1", "9223372036854775808")
@@ -233,7 +240,7 @@ func sysvarValues(sv *variable.SysVar, rng *rand.Rand) []string {
 		vals = append(vals, "10:00", "10:00 +0800", "23:59 -0700", "25:00", "1:00", "10:00 +08:00", "00:00 +0000",
 			"24:00", "23:60", "24:00 +0000", "10:00 +2401", "10:00 +2460", "10:00 +2461", "10:00 x0800", "1:5", "10:0", "10:00 +080", "10:00  +0800", "10:00+0800", "10:00 +0800x", "1:00 -1200", "\"10:00", "日:00")
 	case variable.TypeStr:
-		vals = append(vals, strings.ToUpper(sv.Value), strings.ToLower(sv.Value), " "+sv.Value, sv.Value+",",
+		vals = append(vals, strings.ToUpper(def), strings.ToLower(def), " "+def, def+",",
 			"utf8mb4", "latin1", "binary", "utf8mb4_bin", "utf8mb4_general_ci", "utf8mb4_0900_ai_ci", "utf8mb4_unicode_ci", "gbk",
 			"SYSTEM", "+08:00", "UTC", "Asia/Shanghai", "-13:00", "+14:01",
 			"512MB", "1GiB", "100KB", "1TB", "10%", "1024", "1KB", "64MiB", "127", "128",
@@ -327,7 +334,11 @@ func sysvarGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("sys/set_sys_var", "set_sys_var", p[0], p[1])
 	}
 	for _, sv := range all {
-		for _, v := range []string{sv.Value, "1", "0", "ON", "abc", "18446744073709551615", "-5"} {
+		def := sv.Value
+		if sv.Name == "version_compile_os" || sv.Name == "version_compile_machine" {
+			def = "linux"
+		}
+		for _, v := range []string{def, "1", "0", "ON", "abc", "18446744073709551615", "-5"} {
 			g.Add("sys/native", "native_type", sv.Name, v)
 		}
 		if len(g.Calls) > 0 && rng.IntN(3) > 0 {
