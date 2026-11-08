@@ -191,6 +191,13 @@ RULES = [
     # UnregisterSysVar: test only; N8 3.1 item 5). The hook plumbing that needs the
     # session state (the *FromHook methods and the SetSession / GetGlobal helpers of
     # varsutil.go and sysvar.go) moves to D05.2, which ports SessionVars.
+    # The non-validation hooks themselves (SetSession / SetGlobal / GetSession / GetGlobal /
+    # GetStateValue) are closures in the table literals, not functions of func_blocks.tsv:
+    # data/sysvar_hooks.tsv (rsgen -sysvar-hooks) assigns them to D05.2 and is its
+    # acceptance checklist. Status variables registered outside this package follow their
+    # registrant (variable.RegisterStatistics): pkg/server Server / compressionStats → D03.1
+    # (server block, by the pkg/server rules below), bindinfo globalBindingHandle → D13.2,
+    # ddl and gcworker → X.
     ("X", r"pkg/sessionctx/variable/sysvar\.go$", r"^GlobalSystemVariableInitialValue$"),
     ("X", r"pkg/sessionctx/variable/varsutil\.go$", r"^(setTiDBTableValue|switchDDL|switchStats)$"),
     ("X", r"pkg/sessionctx/variable/variable\.go$", r"^(RegisterSysVar|UnregisterSysVar)$"),

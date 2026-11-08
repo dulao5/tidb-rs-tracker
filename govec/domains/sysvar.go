@@ -413,6 +413,44 @@ func sysvarGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	g.Add("sys/status", "status_vars", false)
 	g.Add("sys/status", "status_vars", true)
+	sysvarWhitespace(g, all)
+}
+
+// sscanfSysvars are the variables whose values go through fmt.Sscanf (parseByteSize /
+// parsePercentage in varsutil.go), where leading and trailing white space changes the
+// result (#45: '5 ' is 5%, '5' is 5 bytes). The Go name constants keep it in sync with
+// sysvar.go; generation panics when a name is no longer registered.
+var sscanfSysvars = []string{
+	variable.TiDBServerMemoryLimit, variable.TiDBServerMemoryLimitSessMinSize, variable.TiDBServerMemoryLimitGCTrigger,
+	variable.TiDBInstancePlanCacheMaxMemSize, variable.TiDBSchemaCacheSize,
+}
+
+// sysvarWhitespace adds, for every Sscanf-parsed variable and every TypeDuration
+// variable, the base inputs wrapped in leading / trailing white space (Lucky's review of
+// D05.1, the source of #45).
+func sysvarWhitespace(g *vec.Gen, all []*variable.SysVar) {
+	wrap := func(x string) []string {
+		return []string{" " + x, x + " ", "  " + x, x + "  ", " " + x + " ", "\t" + x, x + "\t", x + "\n", "\n" + x}
+	}
+	add := func(name string, bases []string) {
+		for _, b := range bases {
+			for _, v := range wrap(b) {
+				g.Add("sys/whitespace", "validate", name, v, "global", svCtx{StmtType: "Set"})
+				g.Add("sys/whitespace", "validate", name, v, "session", svCtx{StmtType: "Set"})
+			}
+		}
+	}
+	for _, n := range sscanfSysvars {
+		if variable.GetSysVar(n) == nil {
+			panic("govec sysvar: Sscanf variable not registered: " + n)
+		}
+		add(n, []string{"5", "0", "512MB", "1GiB", "100KB", "64MiB", "1TB", "10%", "80%", "0.8", "100%", "5x", "5 %"})
+	}
+	for _, sv := range all {
+		if sv.Type == variable.TypeDuration {
+			add(sv.Name, []string{sv.Value, "1s", "1h", "100ms", "1m30s", "0"})
+		}
+	}
 }
 
 type minedCase struct{ fn, name, val string }
