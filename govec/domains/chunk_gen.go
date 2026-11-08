@@ -829,9 +829,10 @@ func chunkMinedScripts(g *vec.Gen) {
 		s("copy_join_direct", 0, []bool{true, false, true, true, false, false, false, false, true, false}, 1), s("dump", 1))...)
 	script("TestCopySelectedJoinRows", append(append([][]any{}, base...), s("new", 1, []chunkTypeSpec{i64, f32, str}, 0, 1024),
 		s("copy_join_outer", 0, 0, 2, 2, 1, []bool{true, true, false, true, false, false, false, false, true, true}, 1), s("dump", 1))...)
-	script("TestMergeInputIdxToOutputIdxes", s("new", 0, []chunkTypeSpec{i64, i64, i64}, 4, 4), s("app", 0, 0, "1"),
-		s("app", 0, 1, "2"), s("app", 0, 2, "3"), s("make_ref", 0, 0, 1), s("new", 1, []chunkTypeSpec{i64, i64, i64, i64}, 4, 4),
-		s("swap_helper", 0, 1, []int{0, 1, 1, 2}), s("dump", 0), s("dump", 1))
+	script("TestMergeInputIdxToOutputIdxes", s("new_empty", 0, []chunkTypeSpec{i64, i64}), s("app", 0, 0, "99"),
+		s("make_ref", 0, 0, 1), s("new_empty", 1, []chunkTypeSpec{i64, i64, i64, i64}),
+		s("swap_helper", 0, 1, []int{0, 0, 1, 1}), s("dump", 0), s("dump", 1),
+		s("get", 1, 0, 0), s("get", 1, 0, 1), s("get", 1, 0, 2), s("get", 1, 0, 3))
 	script("TestIterator", append(append([][]any{}, base...), s("iter", 0), s("iter_slice", 0, []int{1, 3, 5}),
 		s("list_new", 2, []chunkTypeSpec{i64, f32, str}, 2, 4), s("list_app", 2, 0, 0), s("list_app", 2, 0, 1),
 		s("list_app", 2, 0, 2), s("list_iter", 2), s("list_ptr_iter", 2, [][2]uint32{{0, 1}, {1, 0}}),
