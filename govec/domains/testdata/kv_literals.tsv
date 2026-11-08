@@ -1,0 +1,109 @@
+TestPartialNext	s	"abc"
+TestPartialNext	s	"def"
+TestPartialNext	s	"abca"
+TestPartialNext	i	1
+TestIsPoint	s	"rowkey1"
+TestIsPoint	s	"rowkey2"
+TestIsPoint	s	"rowkey3"
+TestIsPoint	s	""
+TestIsPoint	i	0
+TestIsPoint	i	123
+TestIsPoint	i	255
+TestIsPoint	i	124
+TestIsPoint	i	1
+TestBasicFunc	s	"test"
+TestHandle	i	100
+TestHandle	i	101
+TestHandle	i	1
+TestHandle	s	"100"
+TestHandle	s	"abc"
+TestHandle	i	2
+TestHandle	i	0
+TestHandle	s	"{100, abc}"
+TestPaddingHandle	i	1
+TestPaddingHandle	i	9
+TestPaddingHandle	i	0
+TestHandleMap	i	1
+TestHandleMap	i	100
+TestHandleMap	s	"abc"
+TestHandleMap	s	"a"
+TestHandleMap	i	101
+TestHandleMap	s	"b"
+TestHandleMap	i	99
+TestHandleMap	s	"def"
+TestHandleMap	s	"c"
+TestHandleMap	i	3
+TestHandleMap	i	0
+TestHandleMap	i	2
+TestHandleMapWithPartialHandle	i	1
+TestHandleMapWithPartialHandle	i	2
+TestHandleMapWithPartialHandle	i	3
+TestHandleMapWithPartialHandle	i	5
+TestHandleMapWithPartialHandle	i	9
+TestHandleMapWithPartialHandle	i	4
+TestMemAwareHandleMapWithPartialHandle	i	1
+TestMemAwareHandleMapWithPartialHandle	i	2
+TestMemAwareHandleMapWithPartialHandle	i	3
+TestMemAwareHandleMapWithPartialHandle	i	5
+TestMemAwareHandleMapWithPartialHandle	i	9
+TestMemAwareHandleMapWithPartialHandle	i	4
+TestKeyRangeDefinition	s	"s1"
+TestKeyRangeDefinition	s	"e1"
+TestKeyRangeDefinition	s	"s2"
+TestKeyRangeDefinition	s	"e2"
+TestKeyRangeDefinition	i	168
+TestIsRequestTypeSupported	i	0
+TestBackOff	i	1
+TestBackOff	i	2
+TestBackOff	i	4
+TestBackOff	i	3
+TestBackOff	i	8
+TestBackOff	i	100000
+TestBackOff	i	100
+TestRetryExceedCountError	i	5
+TestRetryExceedCountError	s	"do not retry"
+TestRetryExceedCountError	s	"foo"
+TestInnerTxnStartTsBox	i	5
+TestInnerTxnStartTsBox	i	2022
+TestInnerTxnStartTsBox	i	8
+TestInnerTxnStartTsBox	i	12
+TestInnerTxnStartTsBox	i	10
+TestInnerTxnStartTsBox	i	1
+TestInnerTxnStartTsBox	i	0
+TestInnerTxnStartTsBox	i	14
+TestInnerTxnStartTsBox	i	3
+TestInnerTxnStartTsBox	i	15
+TestInnerTxnStartTsBox	i	24
+TestInnerTxnStartTsBox	i	60
+TestInnerTxnStartTsBox	i	1000
+TestVersion	i	42
+TestVersion	i	43
+TestVersion	i	41
+TestVersion	i	0
+TestMppVersion	i	2
+TestMppVersion	s	"unspecified"
+TestMppVersion	s	"-1"
+TestMppVersion	s	"0"
+TestMppVersion	s	"1"
+TestMppVersion	s	"2"
+TestExchangeCompressionMode	s	"UNSPECIFIED"
+TestExchangeCompressionMode	s	"NONE"
+TestExchangeCompressionMode	s	"FAST"
+TestExchangeCompressionMode	s	"HIGH_COMPRESSION"
+TestSetCDCWriteSource	s	"cdc write source is set"
+TestSetCDCWriteSource	i	1
+TestSetCDCWriteSource	s	"cdc write source is not set"
+TestSetCDCWriteSource	i	0
+TestSetCDCWriteSource	s	"cdc write source is not valid"
+TestSetCDCWriteSource	i	16
+TestSetCDCWriteSource	s	".*out of TiCDC write source range.*"
+TestSetCDCWriteSource	s	""
+TestSetLossyDDLReorgSource	s	"lossy ddl reorg source is set"
+TestSetLossyDDLReorgSource	i	0
+TestSetLossyDDLReorgSource	i	1
+TestSetLossyDDLReorgSource	i	12
+TestSetLossyDDLReorgSource	s	"lossy ddl reorg source is not set"
+TestSetLossyDDLReorgSource	s	"lossy ddl reorg source is not valid"
+TestSetLossyDDLReorgSource	i	256
+TestSetLossyDDLReorgSource	s	".*out of lossy DDL reorg source range.*"
+TestSetLossyDDLReorgSource	s	""

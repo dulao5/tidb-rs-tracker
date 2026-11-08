@@ -239,6 +239,27 @@ RULES = [
     # --- D07 ---
     ("D07.4", r"pkg/store/copr/coprocessor_cache\.go$", None),
     ("D07.2", r"pkg/store/copr/", None),
+    # pkg/kv scoping (D07.0, 2026-11-08): tidb-rs is read-only. Reachability over the
+    # function-level reference graph (work/go_refs.tsv, iface edges included) from the
+    # read-path blocks, then judged per function. X: "写路径，由 Go TiDB 承担" (memdb key
+    # flags, prewrite/commit write sources, duplicate-key errors, stmt-buffer staging,
+    # commit options, IncInt64/WalkMemBuffer), the fault-injection test helper, and
+    # functions with no caller on any read path in v8.5.8 (KeyRange.IsPoint: mockstore
+    # only; KeyRanges.ForEachPartition/TotalRangeNum: lightning only; GetInt64,
+    # NewVariables, Version.Cmp: no caller). mpp.go belongs to the deferred MPP scope
+    # except GetNewestMppVersion (SessionVars.ChooseMppVersion).
+    ("X", r"pkg/kv/(keyflags|fault_injection)\.go$", None),
+    # cacheDB: no callers in v8.5.8; cached tables read through tables/cache.go MemBuffer
+    # (GetMemCache is only used by schema_validator to Delete). Lucky, tracker #22 review.
+    ("X", r"pkg/kv/cachedb\.go$", None),
+    ("X", r"pkg/kv/error\.go$", r"^GenKeyExistsErr$"),
+    ("X", r"pkg/kv/kv\.go$", r"^(FindKeysInStage|WithReturnCommitTS|KeyRanges\.(ForEachPartition|TotalRangeNum))$"),
+    ("X", r"pkg/kv/key\.go$", r"^KeyRange\.IsPoint$"),
+    ("X", r"pkg/kv/option\.go$", r"^(SetCDCWriteSource|getCDCWriteSource|isCDCWriteSourceSet|SetLossyDDLReorgSource|getLossyDDLReorgSource|isLossyDDLReorgSourceSet)$"),
+    ("X", r"pkg/kv/utils\.go$", None),
+    ("X", r"pkg/kv/variables\.go$", None),
+    ("X", r"pkg/kv/version\.go$", r"^Version\.Cmp$"),
+    ("DEF.MPP", r"pkg/kv/mpp\.go$", r"^(?!GetNewestMppVersion$)"),
     ("D07.0", r"pkg/kv/", None),
     ("D07.1", r"pkg/(store/driver|store/helper|store)/", None),
     ("D07.3", r"pkg/distsql/", None),
