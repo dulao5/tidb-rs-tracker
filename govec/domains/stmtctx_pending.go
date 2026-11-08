@@ -7,28 +7,6 @@ func stmtctxExempt() map[string]string {
 	return map[string]string{
 		"DistSQLContext.AppendWarning":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/distsql/context/context.go
 		"DistSQLContext.Detach":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/distsql/context/context.go
-		"AssertLocationWithSessionVars":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"ConstantPropagateCheckContext.IsConstantPropagateCheck":     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"CtxWithHandleTruncateErrLevel":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"NewSimplePlanColumnIDAllocator":                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"NullRejectCheckExprContext.IsInNullRejectCheck":             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"SimplePlanColumnIDAllocator.AllocPlanColumnID":              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"SimplePlanColumnIDAllocator.GetLastPlanColumnID":            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"WithConstantPropagateCheck":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"WithNullRejectCheck":                                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"innerOverrideBuildContext.GetEvalCtx":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"innerOverrideEvalContext.ErrCtx":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"innerOverrideEvalContext.TypeCtx":                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/context.go
-		"OptionalEvalPropDesc.Key":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKey.AsPropKeySet":                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKey.Desc":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKey.String":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKeySet.Add":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKeySet.Contains":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKeySet.IsEmpty":                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKeySet.IsFull":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"OptionalEvalPropKeySet.Remove":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/optional.go
-		"emptyParamValues.GetParamValue":                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprctx/param.go
 		"AdvisoryLockPropProvider.Desc":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/advisory_lock.go
 		"AdvisoryLockPropReader.AdvisoryLockCtx":                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/advisory_lock.go
 		"AdvisoryLockPropReader.RequiredOptionalEvalProps":           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/advisory_lock.go
@@ -48,11 +26,6 @@ func stmtctxExempt() map[string]string {
 		"KVStorePropProvider.Desc":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/kvstore.go
 		"KVStorePropReader.GetKVStore":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/kvstore.go
 		"KVStorePropReader.RequiredOptionalEvalProps":                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/kvstore.go
-		"OptionalEvalPropProviders.Add":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/optional.go
-		"OptionalEvalPropProviders.Contains":                         "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/optional.go
-		"OptionalEvalPropProviders.Get":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/optional.go
-		"OptionalEvalPropProviders.PropKeySet":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/optional.go
-		"getPropProvider":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/optional.go
 		"PrivilegeCheckerPropReader.GetPrivilegeChecker":             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/priv.go
 		"PrivilegeCheckerPropReader.RequiredOptionalEvalProps":       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/priv.go
 		"PrivilegeCheckerProvider.Desc":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/priv.go
@@ -66,87 +39,6 @@ func stmtctxExempt() map[string]string {
 		"SQLExecutorPropProvider.Desc":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/sqlexec.go
 		"SQLExecutorPropReader.GetSQLExecutor":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/sqlexec.go
 		"SQLExecutorPropReader.RequiredOptionalEvalProps":            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/expropt/sqlexec.go
-		"EvalContext.AllParamValues":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.AppendNote":                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.AppendWarning":                                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.Apply":                                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.CopyWarnings":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.CtxID":                                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.CurrentDB":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.CurrentTime":                                    "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.ErrCtx":                                         "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetDefaultWeekFormatMode":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetDivPrecisionIncrement":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetMaxAllowedPacket":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetOptionalPropProvider":                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetOptionalPropSet":                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetParamValue":                                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetTiDBRedactLog":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetUserVarsReader":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.GetWarnHandler":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.LoadSystemVars":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.Location":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.SQLMode":                                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.TruncateWarnings":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.TypeCtx":                                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.WarningCount":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.currentTimeFuncFromStringVal":                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"EvalContext.loadSessionVarsInternal":                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"MakeEvalContextStatic":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"NewEvalContext":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithCurrentDB":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithCurrentTime":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithDefaultWeekFormatMode":                                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithDivPrecisionIncrement":                                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithEnableRedactLog":                                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithErrLevelMap":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithLocation":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithMaxAllowedPacket":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithOptionalProperty":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithParamList":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithSQLMode":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithTypeFlags":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithUserVarsReader":                                         "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"WithWarnHandler":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"newSessionVarsWithSystemVariables":                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"timeOnce.getTime":                                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/evalctx.go
-		"ExprContext.AllocPlanColumnID":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.Apply":                                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.ConnectionID":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetBlockEncryptionMode":                         "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetCharsetInfo":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetDefaultCollationForUTF8MB4":                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetEvalCtx":                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetGroupConcatMaxLen":                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetLastPlanColumnID":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetNoopFuncsMode":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetPlanCacheTracker":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetStaticConvertibleEvalContext":                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetStaticEvalCtx":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetSysdateIsNow":                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.GetWindowingUseHighPrecision":                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.IsConstantPropagateCheck":                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.IsInNullRejectCheck":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.IsReadonlyUserVar":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.IsUseCache":                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.LoadSystemVars":                                 "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.Rng":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.SetSkipPlanCache":                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"ExprContext.loadSessionVarsInternal":                        "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"MakeExprContextStatic":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"NewExprContext":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithBlockEncryptionMode":                                    "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithCharset":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithColumnIDAllocator":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithConnectionID":                                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithDefaultCollationForUTF8MB4":                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithEvalCtx":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithGroupConcatMaxLen":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithNoopFuncsMode":                                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithPlanCacheTracker":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithRng":                                                    "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithSysDateIsNow":                                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
-		"WithWindowingUseHighPrecision":                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/exprstatic/exprctx.go
 		"EvalContext.IntoStatic":                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/sessionexpr/sessionctx.go
 		"EvalContext.RequestDynamicVerification":                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/sessionexpr/sessionctx.go
 		"EvalContext.RequestVerification":                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/expression/sessionexpr/sessionctx.go
