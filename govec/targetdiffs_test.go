@@ -76,7 +76,6 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: Datum.ToInt64 of a NaN float datum is int64(NaN)"},
 	{Domain: "datum", Op: "d_convert_recv", Args: "*", N: 20,
 		Why: "M-F2I: d_convert_recv repeats d_convert's NaN float datum to integer / YEAR / TIME conversions (int64(NaN)) over every field type"},
-
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far
