@@ -409,3 +409,11 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **豁免**：几个只被其他函数调用的辅助函数（经由调用者覆盖）、`IndexInfo.ConditionExpr`（返回 parser 的 AST）。Part 2 去掉了 `job.go`、`reorg.go` 和 `ColumnNeedRestoredData` 的 14 个豁免。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等（编码结果是字符串，逐字节）；错误比对全文，JSON 语法错误只要求报错。
+
+## sysvar（块 D05.1：`pkg/sessionctx/variable` 的定义与校验，N8）
+
+领域 `sysvar` 覆盖全部 944 个系统变量的注册表（op `registry`）、校验（`validate` / `relaxed`，各种作用域和上下文）、`SetSysVar`、原生类型转换和 status vars。每条记录都在新 session 上执行，时区固定为 UTC、MemTotal 固定为 64 GiB，不依赖宿主机。
+
+**首尾空白**（`sys/whitespace`，D05.1 评审）：经过 `fmt.Sscanf` 解析的变量（`parseByteSize` / `parsePercentage`：`sscanfSysvars`）和全部 TypeDuration 变量，基础输入各加上前后的空格、制表符和换行。来源是 #45：`tidb_server_memory_limit = '5 '` 被解析成 5%，而 `'5'` 是 5 字节。
+
+**非校验 hook 的清单**：`data/sysvar_hooks.tsv`（`go run ./cmd/rsgen -sysvar-hooks ../data/sysvar_hooks.tsv`）列出每个带 SetSession / SetGlobal / GetSession / GetGlobal / GetStateValue 的变量。这些 hook 是表字面量中的闭包，不在 `func_blocks.tsv` 里，由这份清单归给 D05.2，作为 D05.2 的验收清单。

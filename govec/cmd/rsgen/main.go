@@ -35,12 +35,13 @@ import (
 )
 
 var (
-	out       = flag.String("out", "", "tidb-rs crates/base/src directory")
-	protosOpt = flag.Bool("protos", false, "rewrite internal/protos/protos_list.go (run from govec/)")
-	modelOpt  = flag.String("model", "", "tidb-rs crates/model/src directory: generate the meta/model types (D06.1)")
-	typesOut  = flag.String("types", "", "tidb-rs crates/types/src directory (collate tables, block D01.9)")
-	parserOut = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
-	sysvarOut = flag.String("sysvar", "", "tidb-rs crates/sessionctx/src directory: system variable table (D05.1)")
+	out            = flag.String("out", "", "tidb-rs crates/base/src directory")
+	protosOpt      = flag.Bool("protos", false, "rewrite internal/protos/protos_list.go (run from govec/)")
+	modelOpt       = flag.String("model", "", "tidb-rs crates/model/src directory: generate the meta/model types (D06.1)")
+	typesOut       = flag.String("types", "", "tidb-rs crates/types/src directory (collate tables, block D01.9)")
+	parserOut      = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
+	sysvarOut      = flag.String("sysvar", "", "tidb-rs crates/sessionctx/src directory: system variable table (D05.1)")
+	sysvarHooksOut = flag.String("sysvar-hooks", "", "TSV path: the D05.2 checklist of non-validation sysvar hooks (data/sysvar_hooks.tsv)")
 )
 
 // domainName overrides the govec domain named in the generated file header.
@@ -517,6 +518,10 @@ func main() {
 	if *modelOpt != "" {
 		*out = *modelOpt
 		genModel(filepath.Join(modDir("github.com/pingcap/tidb"), "pkg", "meta", "model"))
+		return
+	}
+	if *sysvarHooksOut != "" {
+		genSysvarHooks(*sysvarHooksOut)
 		return
 	}
 	if *sysvarOut != "" {
