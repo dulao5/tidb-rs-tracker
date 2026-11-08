@@ -76,7 +76,7 @@ func scalarDump(sv *variable.SessionVars) map[string]string {
 			}
 		}
 	}
-	walk(reflect.ValueOf(sv).Elem(), reflect.TypeOf(*sv))
+	walk(reflect.ValueOf(sv).Elem(), reflect.TypeOf(sv).Elem())
 	return out
 }
 

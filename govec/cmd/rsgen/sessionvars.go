@@ -84,7 +84,7 @@ func genSessionVarsFields(outDir string) {
 			fields = append(fields, f)
 		}
 	}
-	walk(reflect.ValueOf(sv).Elem(), reflect.TypeOf(*sv), "")
+	walk(reflect.ValueOf(sv).Elem(), reflect.TypeOf(sv).Elem(), "")
 
 	var e emitter
 	domainName = "sessionvars"
