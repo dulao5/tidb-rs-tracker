@@ -10,6 +10,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -20,14 +21,17 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/meta/model"
 	"github.com/pingcap/tidb/pkg/parser/auth"
 	pmodel "github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	ptypes "github.com/pingcap/tidb/pkg/parser/types"
+	"go.uber.org/atomic"
 )
 
 const modelPkg = "github.com/pingcap/tidb/pkg/meta/model"
@@ -44,7 +48,25 @@ var (
 	userType      = reflect.TypeOf(auth.UserIdentity{})
 	timeType      = reflect.TypeOf(time.Time{})
 	sqlModeType   = reflect.TypeOf(mysql.SQLMode(0))
+	// D06.1 part 2 (job.go, reorg.go): *terror.Error (= errors.Error, its own MarshalJSON /
+	// UnmarshalJSON in compatible_shim.go), go.uber.org/atomic.Int64 (MarshalJSON /
+	// UnmarshalJSON of the int64; Rust holds a plain i64, spec 3.4) and json.RawMessage.
+	errorType      = reflect.TypeOf(errors.Error{})
+	atomicI64Type  = reflect.TypeOf(atomic.Int64{})
+	rawMessageType = reflect.TypeOf(json.RawMessage(nil))
+	mutexType      = reflect.TypeOf(sync.Mutex{})
 )
+
+// skipField: fields that encoding/json ignores (json:"-") and that have no Rust
+// counterpart: Job.Mu (sync.Mutex; Rust borrows instead) and SubJob.JobArgs (a non-empty
+// interface of typed job arguments, filled only by the DDL code, which is not ported).
+func skipField(f reflect.StructField) bool {
+	return f.Tag.Get("json") == "-" && (f.Type == mutexType || (f.Type.Kind() == reflect.Interface && f.Type.NumMethod() > 0))
+}
+
+// cloneNotPorted: Go types with a Clone method that is not ported (DDL write path, X):
+// the Rust struct derives Clone.
+var cloneNotPorted = map[string]bool{"Job": true, "SubJob": true}
 
 // jsonField is one field of encoding/json's view of a struct.
 type jsonField struct {
@@ -246,7 +268,7 @@ func (g *modelGen) walk(t reflect.Type, parent string, field string) {
 		}
 		return
 	}
-	if t == ciStrType || t == fieldTypeType || t == timeType {
+	if t == ciStrType || t == fieldTypeType || t == timeType || t == errorType || t == atomicI64Type {
 		return
 	}
 	if t == userType {
@@ -268,12 +290,12 @@ func (g *modelGen) walk(t reflect.Type, parent string, field string) {
 	}
 	g.seen[t] = true
 	g.structs = append(g.structs, t)
-	if _, ok := reflect.PointerTo(t).MethodByName("Clone"); ok && t.Name() != "" {
+	if _, ok := reflect.PointerTo(t).MethodByName("Clone"); ok && t.Name() != "" && !cloneNotPorted[t.Name()] {
 		g.hasClone[t] = true
 	}
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !f.IsExported() || skipField(f) {
 			continue
 		}
 		g.walk(f.Type, g.structName(t), f.Name)
@@ -292,6 +314,15 @@ func (g *modelGen) rustType(t reflect.Type) string {
 		return "Time"
 	case sqlModeType:
 		return "SQLMode"
+	case errorType:
+		return "Error"
+	case atomicI64Type:
+		return "i64"
+	case rawMessageType:
+		return "Option<Vec<u8>>"
+	}
+	if t.Kind() == reflect.Pointer && t.Elem() == errorType {
+		return "Option<Error>" // tidb_base::Error is boxed already
 	}
 	if (t.PkgPath() == modelPkg || t.PkgPath() == parserModelPkg) && t.Name() != "" && t.Kind() != reflect.Struct {
 		return t.Name()
@@ -403,6 +434,14 @@ func (g *modelGen) enc(ref string, t reflect.Type) string {
 		return fmt.Sprintf("encode_user_identity(out, %s);", ref)
 	case timeType:
 		return fmt.Sprintf("crate::gotime::encode_time(out, %s)?;", ref)
+	case atomicI64Type:
+		return fmt.Sprintf("out.push_str(&(*%s).to_string());", ref)
+	case rawMessageType:
+		return fmt.Sprintf("json::append_raw_message(out, %s).map_err(Error::plain)?;", ref)
+	}
+	if t.Kind() == reflect.Pointer && t.Elem() == errorType {
+		x := tmp("p")
+		return fmt.Sprintf("match %s { None => out.push_str(\"null\"), Some(%s) => out.push_str(&%s.marshal_json()) }", ref, x, x)
 	}
 	val := "*" + ref
 	if isNamedBasic(t) {
@@ -458,7 +497,7 @@ func (g *modelGen) enc(ref string, t reflect.Type) string {
 
 // isEmpty: encoding/json.isEmptyValue for omitempty (ref: &RustType).
 func (g *modelGen) isEmpty(ref string, t reflect.Type) string {
-	if t == timeType || t == ciStrType || t == fieldTypeType || t == userType {
+	if t == timeType || t == ciStrType || t == fieldTypeType || t == userType || t == atomicI64Type {
 		return "false"
 	}
 	val := "*" + ref
@@ -499,6 +538,19 @@ func (g *modelGen) dec(place string, t reflect.Type) string {
 		return fmt.Sprintf("decode_user_identity(d, v, &mut %s);", place)
 	case timeType:
 		return fmt.Sprintf("if let Err(e) = crate::gotime::decode_time(&mut %s, v) { d.fail(e); }", place)
+	case atomicI64Type:
+		// (*atomic.Int64).UnmarshalJSON: json.Unmarshal(b, &v) into a fresh int64, then
+		// Store(v): null stores 0; an error is returned (the type error gets the context of
+		// the field, as for any UnmarshalJSON error) and leaves the value.
+		return fmt.Sprintf("{ let mut n = 0i64; let mut d2 = Decoder::new(); d2.int(v, &mut n, i64::MIN, i64::MAX, \"int64\"); match d2.finish() { Ok(()) => %s = n, Err(e) => d.fail(e) } }", place)
+	case rawMessageType:
+		return fmt.Sprintf("d.raw_message(v, &mut %s);", place)
+	}
+	if t.Kind() == reflect.Pointer && t.Elem() == errorType {
+		x := tmp("p")
+		// indirect: null sets the pointer to nil; otherwise it is allocated before
+		// UnmarshalJSON is called (so a failed decode leaves a zero errors.Error).
+		return fmt.Sprintf("match v { Raw::Null => %s = None, _ => { let %s = %s.get_or_insert_with(Default::default); if let Err(e) = %s.unmarshal_json_raw(v) { d.fail(e); } } }", place, x, place, x)
 	}
 	val := place
 	if isNamedBasic(t) {
@@ -600,7 +652,7 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 	e.p("#[derive(%s)]\npub struct %s {\n", derive, name)
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !f.IsExported() || skipField(f) {
 			continue
 		}
 		tag := f.Tag.Get("json")
@@ -616,7 +668,7 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 	e.p("\nimpl GoCopy for %s {\n    // glue: Go struct copy of %s (generated)\n    fn go_copy(&self) -> Self {\n        Self {\n", name, t.String())
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !f.IsExported() || skipField(f) {
 			continue
 		}
 		e.p("            %s: self.%s.go_copy(),\n", msnake(f.Name), msnake(f.Name))
@@ -730,7 +782,36 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 		e.p("    /// Go's struct copy `*x` (every field copied as is, without the Go `Clone` methods of\n    /// the field types; Rust has no shared pointers to keep), the starting point of the\n    /// hand-ported `Clone`.\n    // glue: Go struct copy of %s (generated)\n    pub(crate) fn struct_copy(&self) -> Self {\n        self.go_copy()\n    }\n\n", t.String())
 	}
 	e.p("    /// `json.Marshal(x)`.\n    // glue: json.Marshal of %s (generated)\n    pub fn marshal_json(&self) -> Result<String, Error> {\n        let mut out = String::new();\n        self.encode_json(&mut out)?;\n        Ok(out)\n    }\n\n", t.String())
-	e.p("    /// `json.Unmarshal(data, x)`: a syntax error changes nothing; otherwise the first error.\n    // glue: json.Unmarshal into %s (generated)\n    pub fn unmarshal_json(&mut self, data: &[u8]) -> Result<(), Error> {\n        let v = json::unmarshal_raw(data).map_err(Error::plain)?;\n        let mut d = Decoder::new();\n        self.decode_json(&mut d, &v);\n        d.finish().map_err(|e| Error::plain(e.to_string()))\n    }\n}\n", t.String())
+	// json.RawMessage keeps the bytes of the input: only then does the decoder need it.
+	newDecoder := "Decoder::new()"
+	if containsRawMessage(t, map[reflect.Type]bool{}) {
+		newDecoder = "Decoder::with_source(data)"
+	}
+	e.p("    /// `json.Unmarshal(data, x)`: a syntax error changes nothing; otherwise the first error.\n    // glue: json.Unmarshal into %s (generated)\n    pub fn unmarshal_json(&mut self, data: &[u8]) -> Result<(), Error> {\n        let v = json::unmarshal_raw(data).map_err(Error::plain)?;\n        let mut d = %s;\n        self.decode_json(&mut d, &v);\n        d.finish().map_err(|e| Error::plain(e.to_string()))\n    }\n}\n", t.String(), newDecoder)
+}
+
+// containsRawMessage: whether a value of type t can hold a json.RawMessage.
+func containsRawMessage(t reflect.Type, seen map[reflect.Type]bool) bool {
+	if t == rawMessageType {
+		return true
+	}
+	if seen[t] {
+		return false
+	}
+	seen[t] = true
+	switch t.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Array:
+		return containsRawMessage(t.Elem(), seen)
+	case reflect.Map:
+		return containsRawMessage(t.Elem(), seen)
+	case reflect.Struct:
+		for i := 0; i < t.NumField(); i++ {
+			if f := t.Field(i); f.IsExported() && containsRawMessage(f.Type, seen) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // namedBasics returns the named basic types declared in the model package AST,
@@ -766,7 +847,7 @@ func genModel(modelDir string) {
 	g := &modelGen{seen: map[reflect.Type]bool{}, anonName: map[reflect.Type]string{},
 		named: map[reflect.Type]bool{}, hasClone: map[reflect.Type]bool{}, leaves: map[string]bool{}}
 	for _, v := range []any{model.DBInfo{}, model.TableInfo{}, model.SchemaDiff{}, model.PolicyInfo{},
-		model.ResourceGroupInfo{}, model.TableItemID{}, model.StatsLoadItem{}} {
+		model.ResourceGroupInfo{}, model.TableItemID{}, model.StatsLoadItem{}, model.Job{}} {
 		g.walk(reflect.TypeOf(v), "", "")
 	}
 	p := load(modelDir)
@@ -806,7 +887,7 @@ func genModel(modelDir string) {
 
 	e := &emitter{}
 	e.header(goFiles...)
-	e.p("use std::collections::BTreeMap;\n\nuse tidb_base::Error;\nuse tidb_base::gostd::json::{self, Decoder, Raw};\nuse tidb_base::gostd::time::Time;\nuse tidb_parser::auth::UserIdentity;\nuse tidb_parser::model::{CIStr, ColumnChoice, IndexType, PartitionType, RunawayActionType, RunawayWatchType, TableLockType, ViewAlgorithm, ViewCheckOption, ViewSecurity};\nuse tidb_parser::types::FieldType;\n\nuse crate::any::AnyValue;\nuse crate::consts_gen::*;\nuse crate::gocopy::{GoCopy, go_copy_leaf};\n")
+	e.p("use std::collections::BTreeMap;\n\nuse tidb_base::Error;\nuse tidb_base::gostd::json::{self, Decoder, Raw};\nuse tidb_base::gostd::time::Time;\nuse tidb_base::mysql::SQLMode;\nuse tidb_parser::auth::UserIdentity;\nuse tidb_parser::model::{CIStr, ColumnChoice, IndexType, PartitionType, RunawayActionType, RunawayWatchType, TableLockType, ViewAlgorithm, ViewCheckOption, ViewSecurity};\nuse tidb_parser::types::FieldType;\n\nuse crate::any::AnyValue;\nuse crate::consts_gen::*;\nuse crate::gocopy::{GoCopy, go_copy_leaf};\n")
 	for _, t := range g.structs {
 		g.emitStruct(e, t)
 	}

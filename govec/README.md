@@ -357,11 +357,12 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **集群语料**：`domains/testdata/model_cluster.jsonl.gz`，从一个 v8.5.8 集群（tiup playground）的 status 端口 `/schema/{db}/{table}` 原样导出的 meta（857 张表、9 个库），建表语句是同目录的 `model_cluster_ddl.sql`：全部列类型与默认值、生成列、各种分区、placement、TTL、视图、序列、外键、check 约束、资源组。表的 JSON 是集群返回的原始字节（不经过 Python 重编码，数字文本不变）。
 - **随机值**：每个结构体按反射填充（字段边界值、HTML 字符、U+2028、非 UTF-8 字节、interface 中的浮点与嵌套值、带时区的时间），`[]*T` 不含 nil 元素（tidb-rs 按值持有元素）。
 - **变异**：对语料和随机值删键、重复键、改大小写、加未知键、换成错误类型或越界数字、`null`（`mutateJSON`，只在对象这一层）；Lucky 的 `luckyMutate`（评审 tidb-rs #20）在任意节点（包括数组元素）换成边界字面量，专门变异 ColumnInfo 的 interface{} 字段，做部分大写与 K/ſ 折叠的键、追加重复键，每条 1 到 3 次。种子 1618，随机值和 `mutateJSON` 各 15,000 条，`luckyMutate` 20,000 条，`into` 3,000 条。
-- **出错路径**（`site/...`，61 条 `into`）：Go 1.25 `encoding/json` decode.go 中每个 `saveError` 和提前返回的位置各一条，基值的每个字段都有值，记录 Go 写了什么、保留了什么、是否继续解码（literalStore 的 null / bool / string / base64 / 数字进 interface、整数、浮点与错误类型；array 进非切片、元素错误、元素的 UnmarshalJSON 错误、长短数组；object 进非结构体、map 的整数键与值错误的先后；字段的未知键、重复键、折叠键、先存错误再遇 UnmarshalJSON 错误、为提升字段分配嵌入指针；CIStr、FieldType、time.Time 的 UnmarshalJSON）。
-- **已知偏离**：解码后的值在某个 `[]*T` 中有 nil 元素（JSON 的 `null` 元素）时，`out` 多一个 `"known_deviation": "nil-ptr-elem"`。tidb-rs 按值持有元素，把 null 解码成零值（tidb-rs specs/D06.1-model §4.1）；回放把这类记录单独计数，并且在它们不再不同时报错。
+- **出错路径**（`site/...`，93 条 `into`；Part 1 的 61 条之外，Part 2 加了 32 条：`map[ErrorID]*terror.Error` 的值 `UnmarshalJSON` 出错、`null`、旧 class，`atomic.Int64` 的 `null` / 类型错误 / 范围，`terror.Error` 的非对象值、折叠键、重复键，`json.RawMessage` 的空白与转义、`null`、标量、子 job，`HistoryInfo` 的无 tag 键，`[]*SubJob` 的 null 元素）：Go 1.25 `encoding/json` decode.go 中每个 `saveError` 和提前返回的位置各一条，基值的每个字段都有值，记录 Go 写了什么、保留了什么、是否继续解码（literalStore 的 null / bool / string / base64 / 数字进 interface、整数、浮点与错误类型；array 进非切片、元素错误、元素的 UnmarshalJSON 错误、长短数组；object 进非结构体、map 的整数键与值错误的先后；字段的未知键、重复键、折叠键、先存错误再遇 UnmarshalJSON 错误、为提升字段分配嵌入指针；CIStr、FieldType、time.Time 的 UnmarshalJSON）。
+- **已知偏离**：解码后的值在某个 `[]*T` 中有 nil 元素（JSON 的 `null` 元素）时，`out` 多一个 `"known_deviation": "nil-ptr-elem"`。tidb-rs 按值持有元素，把 null 解码成零值（tidb-rs specs/D06.1-model §4.1）；这类记录还带 `"ported"`：把 nil 元素换成 `new(T)` 后的 `Marshal` 输出，回放要求 tidb-rs 的输出与它严格相等，并且在它们不再与 Go 不同时报错。
 - `into`：解码到已有值（缺字段保持原值、切片重填、map 合并）。
 - `sys/time`：`Time.UnmarshalJSON`（Go 1.25 的 `parseStrictRFC3339` 在快速路径失败时就是 `time.Parse(RFC3339)`，严格复查被禁用）与 `marshal_time`（`Time.MarshalJSON` 的年份、时区范围错误）。时间串不含 JSON 转义：Go 解析引号间的原始字节（go.dev/issue/47353），tidb-rs 用解码后的字符串。
-- 方法 op：`table`、`column`、`column_set`、`index`、`partition`、`placement`、`resource`、`fk`、`misc`。
-- **豁免**：`job.go`、`reorg.go` 的函数和 `ColumnNeedRestoredData`（D06.1 part 2）；几个只被其他函数调用的辅助函数（经由调用者覆盖）。
+- 方法 op：`table`、`column`、`column_set`、`index`、`partition`、`placement`、`resource`、`fk`、`misc`；Part 2：`job`（`Job.Decode` 与各方法；`Job.String` 中本地时区的开始时间换成 `<T>`，另给 UTC 形式，记录与机器时区无关）、`job_strings`、`reorg`、`need_restored`（新 collation 关与开）。
+- **Part 2 的结构体**：`Job`、`SubJob`、`MultiSchemaInfo`、`DDLReorgMeta`、`HistoryInfo`、`TimeZoneLocation`、`TraceInfo`、`InvolvingSchemaInfo` 也参与随机值、变异与 `into`；随机值中的 terror 由 `errors.Normalize` 生成，atomic 取边界值，RawMessage 取几种合法 JSON。
+- **豁免**：几个只被其他函数调用的辅助函数（经由调用者覆盖）、`IndexInfo.ConditionExpr`（返回 parser 的 AST）。Part 2 去掉了 `job.go`、`reorg.go` 和 `ColumnNeedRestoredData` 的 14 个豁免。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等（编码结果是字符串，逐字节）；错误比对全文，JSON 语法错误只要求报错。
