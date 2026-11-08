@@ -65,6 +65,17 @@ func init() {
 
 var chunkCoverage = map[string]vec.Coverage{
 	"script": {Min: 1000, GoFuncs: []string{
+		// types.Datum / Enum / Set users (follow-up after block D01.1)
+		"Column.AppendSet", "Column.AppendEnum", "Column.GetEnum", "Column.GetSet", "Row.GetEnum", "Row.GetSet",
+		"Chunk.AppendEnum", "Chunk.AppendSet", "Chunk.AppendDatum", "Chunk.ToString", "Row.ToString",
+		"Row.GetDatumRow", "Row.GetDatumRowWithBuffer", "Row.GetDatum", "Row.DatumWithBuffer", "Compare",
+		"Chunk.LowerBound", "Chunk.UpperBound",
+		// mutrow.go
+		"MutRow.ToRow", "MutRow.Len", "MutRow.Clone", "MutRowFromValues", "MutRowFromDatums", "MutRowFromTypes",
+		"zeroValForType", "makeMutRowColumn", "newMutRowFixedLenColumn", "newMutRowVarLenColumn",
+		"makeMutRowUint64Column", "makeMutRowBytesColumn", "cleanColOfMutRow", "MutRow.SetRow", "MutRow.SetValues",
+		"MutRow.SetValue", "MutRow.SetDatums", "MutRow.SetDatum", "setMutRowBytes", "setMutRowNameValue",
+		"setMutRowJSON", "MutRow.ShallowCopyPartialRow",
 		// column.go
 		"Column.AppendDuration", "Column.AppendMyDecimal", "Column.appendNameValue", "Column.AppendJSON",
 		"Column.AppendVectorFloat32", "DefaultColumnAllocator.NewColumn", "NewEmptyColumn", "NewColumn",
@@ -134,49 +145,7 @@ var chunkCoverage = map[string]vec.Coverage{
 	"type_width": {Min: 30, GoFuncs: []string{"GetFixedLen", "EstimateTypeWidth"}},
 }
 
-const chunkWaitsD011 = "needs types.Enum / types.Set / types.Datum (block D01.1); the Rust port waits for D01.1"
-
 var chunkExempt = map[string]string{
-	"Column.AppendSet":           chunkWaitsD011 + " (the name/value form is covered through Column.appendNameValue)",
-	"Column.AppendEnum":          chunkWaitsD011 + " (the name/value form is covered through Column.appendNameValue)",
-	"Column.GetEnum":             chunkWaitsD011 + " (covered through Column.getNameValue)",
-	"Column.GetSet":              chunkWaitsD011 + " (covered through Column.getNameValue)",
-	"Row.GetEnum":                chunkWaitsD011 + " (covered through Row.getNameValue)",
-	"Row.GetSet":                 chunkWaitsD011 + " (covered through Row.getNameValue)",
-	"Chunk.AppendEnum":           chunkWaitsD011 + " (covered through Column.appendNameValue)",
-	"Chunk.AppendSet":            chunkWaitsD011 + " (covered through Column.appendNameValue)",
-	"Chunk.AppendDatum":          chunkWaitsD011,
-	"Chunk.ToString":             chunkWaitsD011 + " (Enum.String, Set.String, FieldType.EvalType of types)",
-	"Row.ToString":               chunkWaitsD011 + " (Enum.String, Set.String)",
-	"Row.GetDatumRow":            chunkWaitsD011,
-	"Row.GetDatumRowWithBuffer":  chunkWaitsD011,
-	"Row.GetDatum":               chunkWaitsD011,
-	"Row.DatumWithBuffer":        chunkWaitsD011,
-	"Compare":                    chunkWaitsD011,
-	"Chunk.LowerBound":           chunkWaitsD011,
-	"Chunk.UpperBound":           chunkWaitsD011,
-	"MutRow.ToRow":               chunkWaitsD011 + " (mutrow.go is built on any / types.Datum values)",
-	"MutRow.Len":                 chunkWaitsD011,
-	"MutRow.Clone":               chunkWaitsD011,
-	"MutRowFromValues":           chunkWaitsD011,
-	"MutRowFromDatums":           chunkWaitsD011,
-	"MutRowFromTypes":            chunkWaitsD011,
-	"zeroValForType":             chunkWaitsD011,
-	"makeMutRowColumn":           chunkWaitsD011,
-	"newMutRowFixedLenColumn":    chunkWaitsD011,
-	"newMutRowVarLenColumn":      chunkWaitsD011,
-	"makeMutRowUint64Column":     chunkWaitsD011,
-	"makeMutRowBytesColumn":      chunkWaitsD011,
-	"cleanColOfMutRow":           chunkWaitsD011,
-	"MutRow.SetRow":              chunkWaitsD011,
-	"MutRow.SetValues":           chunkWaitsD011,
-	"MutRow.SetValue":            chunkWaitsD011,
-	"MutRow.SetDatums":           chunkWaitsD011,
-	"MutRow.SetDatum":            chunkWaitsD011,
-	"setMutRowBytes":             chunkWaitsD011,
-	"setMutRowNameValue":         chunkWaitsD011,
-	"setMutRowJSON":              chunkWaitsD011,
-	"MutRow.ShallowCopyPartialRow": chunkWaitsD011,
 	"Column.DestroyDataForTest":  "test helper writing math/rand bytes; Rust unit test",
 	"Chunk.Destroy":              "M-POOL: puts the chunk into a sync.Pool (nondeterministic reuse); a no-op in Rust",
 	"init":                       "package init: fills allNotNullBitmap (a constant table in Rust)",
@@ -219,6 +188,7 @@ type chunkState struct {
 	ltracks map[int]*memory.Tracker
 	decs    map[int]*chunk.Decoder
 	dfts    map[int][]*types.FieldType
+	mrs     map[int]chunk.MutRow
 }
 
 func newChunkState() *chunkState {
@@ -226,6 +196,7 @@ func newChunkState() *chunkState {
 		chks: map[int]*chunk.Chunk{}, fts: map[int][]*types.FieldType{},
 		lists: map[int]*chunk.List{}, ltracks: map[int]*memory.Tracker{},
 		decs: map[int]*chunk.Decoder{}, dfts: map[int][]*types.FieldType{},
+		mrs: map[int]chunk.MutRow{},
 	}
 }
 
@@ -665,6 +636,97 @@ func chunkSpecs(raw json.RawMessage) []chunkTypeSpec {
 	return r
 }
 
+// chunkReadSize is the size of the fixed-length read Row.ToString (str) or
+// Row.GetDatum makes for a cell of type ft (0: a variable-length read). The
+// typed getters (GetInt64, GetTime, ...) check only the index of the first byte
+// (&c.data[idx*size]); the read may run past the data's capacity when the cell
+// was written with another type (a MutRow cell set to a FLOAT is 4 bytes, a
+// BIT cell is variable-length): Go then reads whatever memory follows
+// (undefined behaviour, D01.7 spec §4; Rust panics).
+func chunkReadSize(ft *types.FieldType, str bool) int {
+	switch ft.GetType() {
+	case mysql.TypeFloat:
+		return 4
+	case mysql.TypeNewDecimal:
+		return 40
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeYear,
+		mysql.TypeDouble, mysql.TypeDate, mysql.TypeDatetime, mysql.TypeTimestamp, mysql.TypeDuration:
+		return 8
+	case mysql.TypeBit:
+		if str {
+			return 8 // ETInt: GetInt64
+		}
+	}
+	return 0
+}
+
+// chunkStrPastCap reports a read past the capacity, in the order Go reads the
+// cells (an index past the length comes first: both panic, so it runs).
+func chunkStrPastCap(c *chunk.Chunk, fts []*types.FieldType, rows []int, cols []int, str bool) bool {
+	for _, idx := range rows {
+		for _, col := range cols {
+			cc := c.Column(col)
+			size := chunkReadSize(fts[col], str)
+			if cc.IsNull(idx) || size == 0 {
+				continue
+			}
+			data := reflect.ValueOf(cc).Elem().FieldByName("data")
+			off := idx * size
+			if off >= data.Len() {
+				return false
+			}
+			if off+size > data.Cap() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// chunkSetValuePastCap: MutRow.SetValue stores a Duration, *MyDecimal or Time
+// with *(*T)(unsafe.Pointer(&col.data[0])) = x, checking only index 0; a cell
+// shorter than T (set before to a FLOAT) is written past its capacity in Go
+// (memory corruption, D01.7 spec §4; Rust panics). Reported instead of run (the
+// step is skipped on both sides).
+func chunkSetValuePastCap(mr chunk.MutRow, col int, v any) bool {
+	size := 0
+	switch v.(type) {
+	case types.Duration:
+		size = 8
+	case *types.MyDecimal:
+		size = types.MyDecimalStructSize
+	case types.Time:
+		size = 8
+	}
+	if size == 0 {
+		return false
+	}
+	data := reflect.ValueOf(mr.ToRow().Chunk().Column(col)).Elem().FieldByName("data")
+	return data.Len() > 0 && data.Cap() < size
+}
+
+func chunkAllCols(c *chunk.Chunk) []int {
+	r := make([]int, c.NumCols())
+	for i := range r {
+		r[i] = i
+	}
+	return r
+}
+
+// chunkArr is a JSON array argument, element by element.
+func chunkArr(raw json.RawMessage) []json.RawMessage {
+	var a []json.RawMessage
+	must(json.Unmarshal(raw, &a))
+	return a
+}
+
+// chunkArrs is a JSON array of arrays.
+func chunkArrs(raw json.RawMessage) [][]json.RawMessage {
+	var a [][]json.RawMessage
+	must(json.Unmarshal(raw, &a))
+	return a
+}
+
 func chunkErr(err error) any {
 	if err != nil {
 		return map[string]any{"err": err.Error()}
@@ -692,6 +754,7 @@ func chunkErr(err error) any {
 //	list_clear l | list_get l ci ri | list_walk l | list_iter l | list_ptr_iter l ptrs
 //	multi_iter [[kind, id, ...], ...] preBegin | copy_join_direct s sel d
 //	copy_join_outer s io il oo ol sel d | copy_sel_rows d dcol s scol sel | copy_sel_rows_fn d dcol s scol sel start end
+//	Datum / MutRow steps (after block D01.1): see chunk_gen2.go.
 func chunkStep(st *chunkState, a []json.RawMessage) any {
 	op := chunkStr(a[0])
 	ci := func(i int) int { return chunkInt(a[i]) }
@@ -1046,6 +1109,115 @@ func chunkStep(st *chunkState, a []json.RawMessage) any {
 		chunk.CopySelectedRowsWithRowIDFunc(ch(1).Column(ci(2)), ch(3).Column(ci(4)), sel, ci(6), ci(7), func(i int) int {
 			return n - 1 - i
 		})
+	// ---- types.Datum / Enum / Set (block D01.1) ----
+	case "app_datum":
+		d := d2DatumIn(chunkArr(a[3]))
+		ch(1).AppendDatum(ci(2), &d)
+	case "get_datum":
+		ft := st.fts[ci(1)][ci(3)]
+		if string(a[4]) != "null" {
+			ft = d2FtIn(chunkArr(a[4]))
+		}
+		return d2DatumOut(ch(1).GetRow(ci(2)).GetDatum(ci(3), ft))
+	case "datum_row":
+		return datumOuts(ch(1).GetRow(ci(2)).GetDatumRow(st.fts[ci(1)]))
+	case "datum_row_buf":
+		var buf []types.Datum
+		for _, p := range chunkArrs(a[3]) {
+			buf = append(buf, d2DatumIn(p))
+		}
+		return datumOuts(ch(1).GetRow(ci(2)).GetDatumRowWithBuffer(st.fts[ci(1)], buf))
+	case "to_string":
+		c := ch(1)
+		var rows []int
+		for i := range c.NumRows() {
+			rows = append(rows, c.GetRow(i).Idx())
+		}
+		if chunkStrPastCap(c, st.fts[ci(1)], rows, chunkAllCols(c), true) {
+			return map[string]any{"past_cap": true}
+		}
+		return vec.GoString(c.ToString(st.fts[ci(1)]))
+	case "row_string":
+		r := ch(1).GetRow(ci(2))
+		if chunkStrPastCap(ch(1), st.fts[ci(1)], []int{r.Idx()}, chunkAllCols(ch(1)), true) {
+			return map[string]any{"past_cap": true}
+		}
+		return vec.GoString(r.ToString(st.fts[ci(1)]))
+	case "cmp_datum":
+		d := d2DatumIn(chunkArr(a[4]))
+		return chunk.Compare(ch(1).GetRow(ci(2)), ci(3), &d)
+	case "lower_bound":
+		d := d2DatumIn(chunkArr(a[3]))
+		i, m := ch(1).LowerBound(ci(2), &d)
+		return []any{i, m}
+	case "upper_bound":
+		d := d2DatumIn(chunkArr(a[3]))
+		return ch(1).UpperBound(ci(2), &d)
+	// ---- MutRow ----
+	case "mr_values":
+		var vals []any
+		for _, p := range chunkArrs(a[2]) {
+			vals = append(vals, goValueIn(p))
+		}
+		st.mrs[ci(1)] = chunk.MutRowFromValues(vals...)
+	case "mr_datums":
+		var ds []types.Datum
+		for _, p := range chunkArrs(a[2]) {
+			ds = append(ds, d2DatumIn(p))
+		}
+		st.mrs[ci(1)] = chunk.MutRowFromDatums(ds)
+	case "mr_types":
+		st.mrs[ci(1)] = chunk.MutRowFromTypes(chunkFts(chunkSpecs(a[2])))
+	case "mr_set_row":
+		st.mrs[ci(1)].SetRow(ch(2).GetRow(ci(3)))
+	case "mr_set_values":
+		var vals []any
+		for _, p := range chunkArrs(a[2]) {
+			vals = append(vals, goValueIn(p))
+		}
+		for i, v := range vals {
+			if chunkSetValuePastCap(st.mrs[ci(1)], i, v) {
+				return map[string]any{"past_cap": true}
+			}
+		}
+		st.mrs[ci(1)].SetValues(vals...)
+	case "mr_set_value":
+		v := goValueIn(chunkArr(a[3]))
+		if chunkSetValuePastCap(st.mrs[ci(1)], ci(2), v) {
+			return map[string]any{"past_cap": true}
+		}
+		st.mrs[ci(1)].SetValue(ci(2), v)
+	case "mr_set_datums":
+		var ds []types.Datum
+		for _, p := range chunkArrs(a[2]) {
+			ds = append(ds, d2DatumIn(p))
+		}
+		st.mrs[ci(1)].SetDatums(ds...)
+	case "mr_set_datum":
+		st.mrs[ci(1)].SetDatum(ci(2), d2DatumIn(chunkArr(a[3])))
+	case "mr_shallow":
+		st.mrs[ci(1)].ShallowCopyPartialRow(ci(2), ch(3).GetRow(ci(4)))
+	case "mr_clone":
+		st.mrs[ci(1)] = st.mrs[ci(2)].Clone()
+	case "mr_dump":
+		mr := st.mrs[ci(1)]
+		return []any{mr.Len(), chunkDump(mr.ToRow().Chunk())}
+	case "mr_get":
+		r := st.mrs[ci(1)].ToRow()
+		fts := chunkFts(chunkSpecs(a[3]))
+		full := make([]*types.FieldType, r.Len())
+		full[ci(2)] = fts[0]
+		if chunkStrPastCap(r.Chunk(), full, []int{r.Idx()}, []int{ci(2)}, false) {
+			return map[string]any{"past_cap": true}
+		}
+		return []any{d2DatumOut(r.GetDatum(ci(2), fts[0])), hex.EncodeToString(r.GetRaw(ci(2))), r.IsNull(ci(2))}
+	case "mr_string":
+		r := st.mrs[ci(1)].ToRow()
+		fts := chunkFts(chunkSpecs(a[2]))
+		if chunkStrPastCap(r.Chunk(), fts, []int{r.Idx()}, chunkAllCols(r.Chunk()), true) {
+			return map[string]any{"past_cap": true}
+		}
+		return vec.GoString(r.ToString(fts))
 	default:
 		panic(fmt.Sprintf("chunk: unknown step %q", op))
 	}

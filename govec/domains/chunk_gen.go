@@ -782,6 +782,12 @@ func chunkGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add(src, "script", steps)
 	}
+
+	// After block D01.1: the Datum / Enum / Set users and mutrow.go.
+	chunkDatumMinedScripts(g)
+	for range 600 {
+		g.Add("rand/datum-script", "script", chunkDatumScript(rng, 6+rng.IntN(30)))
+	}
 }
 
 // ChunkMinedTests lists the Go tests chunkMinedScripts reproduces.
