@@ -42,6 +42,7 @@ var (
 	parserOut      = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
 	sysvarOut      = flag.String("sysvar", "", "tidb-rs crates/sessionctx/src directory: system variable table (D05.1)")
 	sessionVarsOut = flag.String("sessionvars", "", "tidb-rs crates/sessionctx/src directory: scalar SessionVars fields (D05.2)")
+	sysvarDefsOut  = flag.String("sysvar-defs", "", "tidb-rs crates/sessionctx/src directory: Def* constants of package variable (D05.2)")
 	sysvarHooksOut = flag.String("sysvar-hooks", "", "TSV path: the D05.2 checklist of non-validation sysvar hooks (data/sysvar_hooks.tsv)")
 )
 
@@ -527,6 +528,10 @@ func main() {
 	}
 	if *sysvarHooksOut != "" {
 		genSysvarHooks(*sysvarHooksOut)
+		return
+	}
+	if *sysvarDefsOut != "" {
+		genSysvarDefs(*sysvarDefsOut)
 		return
 	}
 	if *sysvarOut != "" {
