@@ -36,6 +36,8 @@ import (
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/tidb/pkg/config"
+	"github.com/pingcap/tidb/pkg/privilege/privileges/ldap"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
@@ -202,6 +204,15 @@ var processGlobalsRestore = func() func() {
 	vTiFlashEnablePipelineMode := variable.TiFlashEnablePipelineMode.Load()
 	vVarTiDBSuperReadOnly := variable.VarTiDBSuperReadOnly.Load()
 	vGOGCTunerThreshold := variable.GOGCTunerThreshold.Load()
+	vHistoricalStatsDuration := variable.HistoricalStatsDuration.Load()
+	vAdvancerCheckPointLagLimit := variable.AdvancerCheckPointLagLimit.Load()
+	vEnablePProfSQLCPU := variable.EnablePProfSQLCPU.Load()
+	vForcePriority := atomic.LoadInt32(&variable.ForcePriority)
+	vEnableGCAwareMemoryTrack := memory.EnableGCAwareMemoryTrack.Load()
+	vServerMemoryLimitSessMinSize := memory.ServerMemoryLimitSessMinSize.Load()
+	vServerMemoryLimitOriginText := memory.ServerMemoryLimitOriginText.Load()
+	vServerMemoryLimit := memory.ServerMemoryLimit.Load()
+	vConfig := *config.GetGlobalConfig()
 	vDDLSlowOprThreshold := atomic.LoadUint32(&variable.DDLSlowOprThreshold)
 	vExpensiveQueryTimeThreshold := atomic.LoadUint64(&variable.ExpensiveQueryTimeThreshold)
 	vExpensiveTxnTimeThreshold := atomic.LoadUint64(&variable.ExpensiveTxnTimeThreshold)
@@ -242,11 +253,56 @@ var processGlobalsRestore = func() func() {
 		variable.TiFlashEnablePipelineMode.Store(vTiFlashEnablePipelineMode)
 		variable.VarTiDBSuperReadOnly.Store(vVarTiDBSuperReadOnly)
 		variable.GOGCTunerThreshold.Store(vGOGCTunerThreshold)
+		variable.HistoricalStatsDuration.Store(vHistoricalStatsDuration)
+		variable.AdvancerCheckPointLagLimit.Store(vAdvancerCheckPointLagLimit)
+		variable.EnablePProfSQLCPU.Store(vEnablePProfSQLCPU)
+		atomic.StoreInt32(&variable.ForcePriority, vForcePriority)
+		memory.EnableGCAwareMemoryTrack.Store(vEnableGCAwareMemoryTrack)
+		memory.ServerMemoryLimitSessMinSize.Store(vServerMemoryLimitSessMinSize)
+		memory.ServerMemoryLimitOriginText.Store(vServerMemoryLimitOriginText)
+		memory.ServerMemoryLimit.Store(vServerMemoryLimit)
+		// The global config: INSTANCE hooks write it, other domains may store their own.
+		c := vConfig
+		config.StoreGlobalConfig(&c)
+		resetLDAP(ldap.LDAPSASLAuthImpl.SetSASLAuthMethod, ldap.LDAPSASLAuthImpl)
+		resetLDAP(nil, ldap.LDAPSimpleAuthImpl)
 		atomic.StoreUint32(&variable.DDLSlowOprThreshold, vDDLSlowOprThreshold)
 		atomic.StoreUint64(&variable.ExpensiveQueryTimeThreshold, vExpensiveQueryTimeThreshold)
 		atomic.StoreUint64(&variable.ExpensiveTxnTimeThreshold, vExpensiveTxnTimeThreshold)
 	}
 }()
+
+// ldapSettings is the setter set of the LDAP impls (ldap.ldapAuthImpl is unexported).
+type ldapSettings interface {
+	SetBindBaseDN(string)
+	SetBindRootDN(string)
+	SetBindRootPW(string)
+	SetSearchAttr(string)
+	SetLDAPServerHost(string)
+	SetLDAPServerPort(int)
+	SetEnableTLS(bool)
+	SetCAPath(string) error
+	SetInitCapacity(int)
+	SetMaxCapacity(int)
+}
+
+// resetLDAP puts an LDAP impl back to its zero value (written by the authentication_ldap_*
+// SetGlobal hooks).
+func resetLDAP(setMethod func(string), impl ldapSettings) {
+	if setMethod != nil {
+		setMethod("")
+	}
+	impl.SetInitCapacity(0)
+	impl.SetMaxCapacity(0)
+	impl.SetBindBaseDN("")
+	impl.SetBindRootDN("")
+	impl.SetBindRootPW("")
+	impl.SetSearchAttr("")
+	impl.SetLDAPServerHost("")
+	impl.SetLDAPServerPort(0)
+	impl.SetEnableTLS(false)
+	_ = impl.SetCAPath("")
+}
 
 // sysvarMemTotal is the MemTotal of the records (tidb_server_memory_limit accepts a
 // percentage of it); fixed so that records do not depend on the host.
