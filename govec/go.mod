@@ -16,6 +16,7 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20260827064614-8b857efa2036
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260827064614-8b857efa2036
 	github.com/tikv/client-go/v2 v2.0.8-0.20260803075849-c3b50791b9fb
+	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.27.1
 )
 
@@ -231,7 +232,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
