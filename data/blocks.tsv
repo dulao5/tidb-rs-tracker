@@ -1,8 +1,8 @@
 block	domain	title	phase
 D00.1	D00 接口与上下文	上下文接口骨架（sessionctx、planctx、exprctx、stmtctx、errctx、base 接口）	P1
-D00.1a	D00 接口与上下文	contextutil（pkg/util/context：warning、plan cache 跟踪、context ID）；位于 tidb-base（D00.1 评审：types.Context 也要用）	P1
 D00.2	D00 接口与上下文	常量、错误码与配置（parser/mysql、terror、errno、dbterror、config）	P1
 D00.3	D00 接口与上下文	通用工具（util/*）：不单独排期，被已排期的块用到时整文件移植（宪章 4.4）	ON-DEMAND
+D00.4	D00 接口与上下文	contextutil（pkg/util/context：warning、plan cache 跟踪、context ID）；位于 tidb-base（D00.1 评审：types.Context 也要用）	P1
 D01.1	D01 基础类型与编码	Datum、FieldType 与类型辅助	P1
 D01.10	D01 基础类型与编码	落盘容器与磁盘 chunk（按 A1）	P4
 D01.11	D01 基础类型与编码	表与行编码：tablecodec、rowcodec（N0 评审：从 D01.8 拆出，位于 kv 之上）	P1
