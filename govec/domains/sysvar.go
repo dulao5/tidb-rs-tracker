@@ -38,6 +38,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/config"
 	"github.com/pingcap/tidb/pkg/privilege/privileges/ldap"
+	"github.com/pingcap/tidb/pkg/sessionctx/slowlogrule"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
@@ -162,6 +163,9 @@ func resetSysvarAtomics() {
 	variable.GOGCTunerThreshold.Store(variable.DefTiDBGOGCTunerThreshold)
 	variable.RunAutoAnalyze.Store(variable.DefTiDBEnableAutoAnalyze)
 	variable.EnableAutoAnalyzePriorityQueue.Store(variable.DefTiDBEnableAutoAnalyzePriorityQueue)
+	// D05.2 B2: tidb_cloud_storage_uri / tidb_slow_log_rules SetGlobal hooks.
+	variable.CloudStorageURI.Store("")
+	variable.GlobalSlowLogRules.Store(&slowlogrule.GlobalSlowLogRules{RulesMap: make(map[int64]*slowlogrule.SlowLogRules)})
 	processGlobalsRestore()
 }
 
