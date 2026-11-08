@@ -249,6 +249,10 @@ func timeGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, u := range []string{"0", "null", "-1", "1.5", "\"1\"", "true", "[]", "18446744073709551616", "x", " 7 "} {
 		add("sys/json", "unmarshal_json", timeSampleRaws()[0], vec.GoString(u))
 	}
+	for _, u := range append(JSONEdgeCases("1234567890123"), "-0", "0.0", "1e2", "\"\xff\"", "{\"a\":1}",
+		"18446744073709551615", "-1", " 1 ", "[\xff]") {
+		add("sys/json_edge", "unmarshal_json", timeSampleRaws()[0], vec.GoString(u))
+	}
 
 	// ---- format types and splits
 	for range 300 {
