@@ -19,6 +19,8 @@ import (
 // copied into the generator. Each must appear as a record src.
 var minedGoTests = map[string][]string{
 	"collate": domains.CollateMinedTests(),
+	// The literals of the D01.1/D01.4 test files (cmd/minelits).
+	"datum": domains.DatumMinedTests(),
 	"decimal": {
 		"TestFromInt", "TestFromUint", "TestToInt", "TestToUint", "TestFromFloat", "TestToFloat",
 		"TestToHashKey", "TestRemoveTrailingZeros", "TestRoundWithHalfEven", "TestRoundWithTruncate",
