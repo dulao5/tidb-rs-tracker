@@ -345,6 +345,25 @@ op：`parse valid unmarshal create type unquote unquote_string hash compare is_z
 - 路径 `$."\` 这类以反斜杠结尾的带引号键，`readWhile` 会越过末尾，切片越界 panic。
 - `PeekBytesAsJSON` 对只有类型码的 opaque 输入越界 panic。
 
+## chunk（块 D01.7：`pkg/util/chunk`）
+
+`Chunk`、`Column`、`Row`、`Codec`/`Decoder`、`List`、迭代器、比较函数和行复制函数。两个 op：
+
+- `script`：`args[0]` 是一串步骤，在若干 chunk、list、decoder（用小整数编号）上依次执行；`out` 每步一项：无结果的修改为 `null`，有结果的为值或 dump，错误为 `{"err": msg}`，Go panic 为 `{"panic": msg}` 并结束脚本（Rust 侧必须同样 panic，不比消息）。步骤列表见 `domains/chunk.go` 的 `chunkStep` 注释。
+- `type_width`：`GetFixedLen` 与 `EstimateTypeWidth`。
+
+**列类型**写作 `[tp, flag, collate, flen]`（`types.NewFieldType` 后再设置这三项）。**值**按列类型编码：整数为十进制字符串，浮点为位模式的十进制字符串，decimal 为字符串（`FromString`），时间为 `[CoreTime, tp, fsp]`（`NewTime`），duration 为 `[纳秒, fsp]`，字节串为 hex，JSON 为文本（`ParseBinaryJSONFromString`），向量为 float32 位模式列表，enum/set 为 `[名字 hex, 值]`，`null` 为 NULL。
+
+**dump** 是 `{n, nc, v, cap, req, full, inc, sel, mem, enc, alias, cols}`：`NumRows`、`NumCols`、`GetNumVirtualRows`、`Capacity`、`RequiredRows`、`IsFull`、`IsInCompleteChunk`、`Sel`、`MemoryUsage`、`Codec.Encode` 的 hex、每个槽位第一个指向同一 `*Column` 的槽位，以及每列的 length 和四个切片（`nullBitmap`、`offsets` 的小端字节、`data`、`elemBuf`，用 reflect 读）连同各自的 cap。也就是说，Go 切片的容量（`growslice` 的增长与 size class 取整）、NULL 单元下面的字节（定长列追加 NULL 时写入的是 `elemBuf` 里上一次写入的值；`ResizeX(n, true)` 复用容量时露出的旧字节）都在比对范围内，Rust 移植按 Go 的规则复现（D01.7 spec §3）。
+
+**生成**：生成器一边构造脚本一边在自己的状态上执行，所以下标都合法；某步在生成时 panic 就在它之前结束脚本。不会写入被两个 chunk 共享的列，也不会写入同一 chunk 中被两个槽位共享的列（`Reset` 和交换类步骤除外）：Go 通过别名写入，Rust 在 debug 构建下对这种写入 panic（N5a 3.2）。输入：
+- **Go 测试场景**：chunk_test.go、column_test.go、codec_test.go、chunk_util_test.go、iterator_test.go、list_test.go 中 20 个测试的场景写成脚本，`src` 为测试名，在 `minedGoTests["chunk"]` 登记（`domains.ChunkMinedTests`）。
+- **随机脚本**：1,600 个，每个 8–37 步，列类型从 21 种中随机取（各种整数、浮点、decimal、三种时间、duration、三种排序规则的字符串、blob、JSON、向量、enum、set、bit、NULL 类型），值含边界（NaN 位模式、±Inf、-0、MaxInt64、非法 UTF-8 字节）。
+
+**豁免**：需要 `types.Enum`/`Set`/`Datum` 的函数（`AppendEnum`、`GetSet`、`AppendDatum`、`GetDatum`、`ToString`、`Compare`、`LowerBound`、`mutrow.go` 全部等）等块 D01.1；落盘文件和 `RowContainer` 迭代器属于 D01.10；复用池（`alloc.go` 的分配器、`Chunk.Destroy`）按 A1 的 `M-POOL` 不移植，内部实现在 tracker 中归 X，接口由 Rust 单元测试覆盖。
+
+**目标平台**：没有浮点运算，两个目标的记录应相同。amd64 的文件取自 tracker CI 的产物。
+
 ## 两个目标的差异（`TestTargetsDiffer`）
 
 每个领域都比较已提交的 amd64 和 arm64 两个文件。不同的记录必须登记在 `targetdiffs_test.go` 的允许表 `targetDiffs` 中，并写明原因（M-FMA、M-F2I）。
