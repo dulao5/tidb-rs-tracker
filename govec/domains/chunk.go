@@ -881,6 +881,13 @@ func chunkStep(st *chunkState, a []json.RawMessage) any {
 		return chunkGet(c.GetRow(ci(2)), st.fts[ci(1)][ci(3)], ci(3))
 	case "view":
 		c := ch(1).Column(ci(2))
+		// The typed views are slice headers with Len = length and Cap = cap(data)/size; when
+		// Len > Cap Go reads past the data's capacity (undefined behaviour, D01.7 spec §4
+		// item 4: Rust panics). Record that instead of whatever memory Go happens to read.
+		size := map[string]int{"i64": 8, "u64": 8, "f32": 4, "f64": 8, "dur": 8, "time": 8, "dec": 40}[chunkStr(a[3])]
+		if dc := reflect.ValueOf(c).Elem().FieldByName("data").Cap(); size > 0 && c.Rows()*size > dc {
+			return map[string]any{"past_cap": []int{c.Rows(), dc}}
+		}
 		var out []string
 		switch chunkStr(a[3]) {
 		case "i64":

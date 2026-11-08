@@ -66,6 +66,18 @@ jobs:
         with:
           name: govec-vectors-${{ matrix.runner }}
           path: out/
+      # Generator robustness: other seeds of the script domains must generate without a
+      # crash (output not committed). The files are kept as an artifact; replay them in
+      # tidb-rs with GOVEC_CHUNK_FILES=a.jsonl.gz,b.jsonl.gz cargo test -p tidb-chunk
+      # --test govec_chunk (govec/README.md "Extra seeds").
+      - name: Extra seeds generate (chunk)
+        run: |
+          mkdir -p seeds
+          for s in 1 2 3 4 5 6 7 8; do bin/govec chunk -seed "$s" -o "seeds/chunk-seed$s.jsonl.gz"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: govec-extra-seeds-${{ matrix.runner }}
+          path: seeds/
       - name: FMA site registry is up to date (cross-compiles every target)
         if: matrix.runner == 'ubuntu-latest'
         run: scripts/go_fma_sites.py --check

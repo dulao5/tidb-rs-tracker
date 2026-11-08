@@ -362,6 +362,10 @@ op：`parse valid unmarshal create type unquote unquote_string hash compare is_z
 
 **豁免**：需要 `types.Enum`/`Set`/`Datum` 的函数（`AppendEnum`、`GetSet`、`AppendDatum`、`GetDatum`、`ToString`、`Compare`、`LowerBound`、`mutrow.go` 全部等）等块 D01.1；落盘文件和 `RowContainer` 迭代器属于 D01.10；复用池（`alloc.go` 的分配器、`Chunk.Destroy`）按 A1 的 `M-POOL` 不移植，内部实现在 tracker 中归 X，接口由 Rust 单元测试覆盖。
 
+**读到容量之外**：`view` 步骤把列重解释成定长类型切片（`Int64s`、`Times`、`Decimals` 等，Len = length、Cap = cap(data)/宽度）。length × 宽度超过 `cap(data)` 时 Go 读到容量之外（未定义行为，读到什么取决于内存），生成器不读，记为 `{"past_cap": [length, cap]}`；Rust 侧在同样条件下必须 panic（D01.7 spec §4 第 4 条）。
+
+**额外种子**（生成器的健壮性）：`govec chunk -seed N -o f.jsonl.gz` 用别的种子生成，输出不提交。CI 对种子 1–8 各生成一次（不能崩溃），文件作为产物 `govec-extra-seeds-<runner>` 上传；在 tidb-rs 中回放：`GOVEC_CHUNK_FILES=a.jsonl.gz,b.jsonl.gz cargo test -p tidb-chunk --test govec_chunk`。生成器构造步骤时调用 Go chunk API 的地方都在 `recover` 之内（`chunkGen.goSafe`），脚本结束（某步 panic）后构造的步骤一律被拒绝，`fill` 也不再访问未建成的 chunk。
+
 **目标平台**：没有浮点运算，两个目标的记录应相同。amd64 的文件取自 tracker CI 的产物。
 
 ## 两个目标的差异（`TestTargetsDiffer`）

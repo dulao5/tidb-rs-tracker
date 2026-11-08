@@ -239,6 +239,9 @@ func (g *chunkGen) newChunk() int {
 
 func (g *chunkGen) fill(id int, rows int) {
 	c := g.st.chks[id]
+	if g.dead || c == nil {
+		return
+	}
 	fts := g.st.fts[id]
 	for range rows {
 		for col := range c.NumCols() {
@@ -274,6 +277,21 @@ func (g *chunkGen) bools(n int) []bool {
 	return r
 }
 
+// goSafe runs f, a call into the Go chunk package made while building a step (outside
+// step's recover); false if it panicked, and the script ends there like a panicking step.
+func (g *chunkGen) goSafe(f func()) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+			g.dead = true
+		}
+	}()
+	f()
+	return true
+}
+
+// randomStep may run after the script died (a dump ended it): it still draws from rng as
+// before, so later scripts of a seed are unchanged, and every step it builds is refused.
 func (g *chunkGen) randomStep() bool {
 	id := g.pick()
 	if id < 0 || g.intn(8) == 0 {
@@ -469,7 +487,10 @@ func (g *chunkGen) randomStep() bool {
 			col := g.intn(nc)
 			if chunkKind(g.st.fts[id][col]) == "bytes" {
 				r := g.intn(nr)
-				n := len(c.Column(col).GetBytes(r))
+				var n int
+				if !g.goSafe(func() { n = len(c.Column(col).GetBytes(r)) }) {
+					return false
+				}
 				b := make([]byte, n)
 				for i := range b {
 					b[i] = byte(g.rng.UintN(256))
@@ -560,9 +581,12 @@ func (g *chunkGen) randomStep() bool {
 	case 38:
 		if g.typed(id) {
 			// encode, then decode into a new chunk, into an existing one, or through a Decoder
-			raw := hex.EncodeToString(chunk.NewCodec(nil).Encode(c))
 			if c.Sel() != nil {
 				return g.step("encode", id)
+			}
+			var raw string
+			if !g.goSafe(func() { raw = hex.EncodeToString(chunk.NewCodec(nil).Encode(c)) }) {
+				return false
 			}
 			switch g.intn(3) {
 			case 0:
