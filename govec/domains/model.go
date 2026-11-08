@@ -20,6 +20,16 @@ package domains
 //   - "table": args [table text, probes, id]: the TableInfo methods (see tableOut).
 //   - "column", "index", "partition", "placement", "resource", "fk", "misc": the other
 //     methods; see their Exec cases.
+//   - Part 2 (job.go, reorg.go, types.ColumnNeedRestoredData): "job" (Job.Decode and the
+//     job methods), "job_strings" (the String methods of ActionType, SchemaState, JobState,
+//     JobVersion, ReorgType), "reorg" (the DDLReorgMeta getters), "need_restored"
+//     (ColumnNeedRestoredData with new collations off and on). The job structs (Job,
+//     SubJob, MultiSchemaInfo, DDLReorgMeta, HistoryInfo, ...) are also roundtrip / into
+//     types: *terror.Error (errors.Error's MarshalJSON / UnmarshalJSON), atomic.Int64 and
+//     json.RawMessage go through their own JSON methods.
+//
+// A record marked "known_deviation" also carries "ported": the Marshal output after the
+// nil []*T elements are replaced by new(T), which is what the Rust port must write.
 
 import (
 	"bytes"
@@ -36,11 +46,15 @@ import (
 	"time"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/meta/model"
 	"github.com/pingcap/tidb/pkg/parser/auth"
 	pmodel "github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	ptypes "github.com/pingcap/tidb/pkg/parser/types"
+	"github.com/pingcap/tidb/pkg/types"
+	"github.com/pingcap/tidb/pkg/util/collate"
+	"go.uber.org/atomic"
 )
 
 const modelSeed = 1618
@@ -62,20 +76,6 @@ func init() {
 }
 
 var modelExempt = map[string]string{
-	"ActionType.String":                       "job.go: D06.1 part 2",
-	"Job.Decode":                              "job.go: D06.1 part 2",
-	"Job.GetRowCount":                         "job.go: D06.1 part 2",
-	"Job.GetWarnings":                         "job.go: D06.1 part 2",
-	"Job.MayNeedReorg":                        "job.go: D06.1 part 2",
-	"Job.String":                              "job.go: D06.1 part 2",
-	"JobState.String":                         "job.go: D06.1 part 2",
-	"JobVersion.String":                       "job.go: D06.1 part 2",
-	"SchemaState.String":                      "job.go: D06.1 part 2",
-	"DDLReorgMeta.GetBatchSizeOrDefault":      "reorg.go: D06.1 part 2",
-	"DDLReorgMeta.GetConcurrencyOrDefault":    "reorg.go: D06.1 part 2",
-	"DDLReorgMeta.GetMaxWriteSpeedOrDefault":  "reorg.go: D06.1 part 2",
-	"ReorgType.String":                        "reorg.go: D06.1 part 2",
-	"ColumnNeedRestoredData":                  "pkg/types/etc.go: needs types.NeedRestoredData and the collate package (D01.9, in progress); D06.1 part 2",
 	"IndexInfo.ConditionExpr":                 "returns the parser's AST; covered through isIndexConditionCoveredByForeignKeyCols (misc fk_covered)",
 	"writeSettingDurationToBuilder":           "covered through ResourceGroupSettings.String (resource)",
 	"writeSettingIntegerToBuilder":            "covered through PlacementSettings.String (placement)",
@@ -121,6 +121,12 @@ var modelCoverage = map[string]vec.Coverage{
 	"resource": {Min: 50, GoFuncs: []string{"ResourceGroupSettings.String", "ResourceGroupSettings.Adjust", "ResourceGroupSettings.Clone",
 		"ResourceGroupInfo.Clone", "NewResourceGroupSettings"}},
 	"fk": {Min: 20, GoFuncs: []string{"FKInfo.String"}},
+	"job": {Min: 300, GoFuncs: []string{"Job.Decode", "Job.String", "Job.GetRowCount", "Job.GetWarnings", "Job.MayNeedReorg"}},
+	"job_strings": {Min: 100, GoFuncs: []string{"ActionType.String", "SchemaState.String", "JobState.String", "JobVersion.String",
+		"ReorgType.String"}},
+	"reorg": {Min: 50, GoFuncs: []string{"DDLReorgMeta.GetConcurrencyOrDefault", "DDLReorgMeta.GetBatchSizeOrDefault",
+		"DDLReorgMeta.GetMaxWriteSpeedOrDefault"}},
+	"need_restored": {Min: 100, GoFuncs: []string{"ColumnNeedRestoredData"}},
 	"misc": {Min: 100, GoFuncs: []string{"GenRemovingObjName", "FindIndexByColumns", "IsIndexPrefixCovered",
 		"FindIndexByColumnsForForeignKey", "IsIndexPrefixCoveredForForeignKey", "NewStatsOptions", "WindowRepeatType.String",
 		"TTLInfo.GetJobInterval", "NewTableAffinityInfoWithLevel", "TableItemID.Key", "StatsLoadItem.Key",
@@ -138,6 +144,11 @@ var modelTypes = map[string]func() any{
 	"TTLInfo": func() any { return new(model.TTLInfo) }, "ViewInfo": func() any { return new(model.ViewInfo) },
 	"SequenceInfo": func() any { return new(model.SequenceInfo) }, "TiFlashReplicaInfo": func() any { return new(model.TiFlashReplicaInfo) },
 	"TableLockInfo": func() any { return new(model.TableLockInfo) }, "StatsLoadItem": func() any { return new(model.StatsLoadItem) },
+	// Part 2: job.go, reorg.go.
+	"Job": func() any { return new(model.Job) }, "SubJob": func() any { return new(model.SubJob) },
+	"MultiSchemaInfo": func() any { return new(model.MultiSchemaInfo) }, "DDLReorgMeta": func() any { return new(model.DDLReorgMeta) },
+	"HistoryInfo": func() any { return new(model.HistoryInfo) }, "TimeZoneLocation": func() any { return new(model.TimeZoneLocation) },
+	"TraceInfo": func() any { return new(model.TraceInfo) }, "InvolvingSchemaInfo": func() any { return new(model.InvolvingSchemaInfo) },
 }
 
 func marshalOut(v any) map[string]any {
@@ -157,8 +168,36 @@ const knownNilPtrElem = "nil-ptr-elem"
 func markDeviation(v any, out map[string]any) map[string]any {
 	if hasNilPtrElem(reflect.ValueOf(v)) {
 		out["known_deviation"] = knownNilPtrElem
+		// What the port writes: the null elements decoded as zero values.
+		fillNilPtrElems(reflect.ValueOf(v))
+		out["ported"] = marshalOut(v)
 	}
 	return out
+}
+
+// fillNilPtrElems replaces every nil element of a []*T inside v by new(T).
+func fillNilPtrElems(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Pointer:
+		if !v.IsNil() {
+			fillNilPtrElems(v.Elem())
+		}
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).IsExported() {
+				fillNilPtrElems(v.Field(i))
+			}
+		}
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			e := v.Index(i)
+			if e.Kind() == reflect.Pointer && e.IsNil() {
+				e.Set(reflect.New(e.Type().Elem()))
+			}
+			fillNilPtrElems(e)
+		}
+	}
+	// Map values are not addressable; no []*T sits in a map value in meta/model.
 }
 
 func hasNilPtrElem(v reflect.Value) bool {
@@ -540,6 +579,46 @@ func modelExec(op string, args []json.RawMessage) (any, error) {
 			panic(err)
 		}
 		return map[string]any{"string": fk.String(arg[string](args, 1), arg[string](args, 2)), "clone": marshalOut(fk.Clone())}, nil
+	case "job":
+		return jobOut(arg[vec.GoString](args, 0))
+	case "job_strings":
+		n := arg[int64](args, 1)
+		switch arg[string](args, 0) {
+		case "action":
+			return model.ActionType(n).String(), nil
+		case "schema_state":
+			return model.SchemaState(n).String(), nil
+		case "job_state":
+			return model.JobState(n).String(), nil
+		case "job_version":
+			return model.JobVersion(n).String(), nil
+		case "reorg_type":
+			return model.ReorgType(n).String(), nil
+		}
+	case "reorg":
+		rm := new(model.DDLReorgMeta)
+		if err := json.Unmarshal([]byte(arg[vec.GoString](args, 0)), rm); err != nil {
+			panic(err)
+		}
+		d := arg[int](args, 1)
+		return map[string]any{"concurrency": rm.GetConcurrencyOrDefault(d), "batch_size": rm.GetBatchSizeOrDefault(d),
+			"max_write_speed": rm.GetMaxWriteSpeedOrDefault()}, nil
+	case "need_restored":
+		t := mustTable(arg[vec.GoString](args, 0))
+		old := collate.NewCollationEnabled()
+		collate.SetNewCollationEnabledForTest(arg[bool](args, 3))
+		defer collate.SetNewCollationEnabledForTest(old)
+		var out any
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					out = "panic"
+				}
+			}()
+			ic := t.Indices[arg[int](args, 1)].Columns[arg[int](args, 2)]
+			out = types.ColumnNeedRestoredData(ic, t.Columns)
+		}()
+		return out, nil
 	case "misc":
 		switch arg[string](args, 0) {
 		case "removing_name":
@@ -597,6 +676,40 @@ func modelExec(op string, args []json.RawMessage) (any, error) {
 		}
 	}
 	return nil, fmt.Errorf("unknown op %q", op)
+}
+
+// jobOut: Job.Decode, then the job methods. Job.String's start time is TSConvert2Time in
+// the local zone: the record has the string with that time replaced by "<T>" and the time
+// itself in UTC ("start_utc"), so that it does not depend on the zone of the machine.
+func jobOut(text vec.GoString) (any, error) {
+	job := new(model.Job)
+	if err := job.Decode([]byte(text)); err != nil {
+		return nil, err
+	}
+	out := marshalOut(job)
+	ts := model.TSConvert2Time(job.StartTS)
+	out["string"] = strings.Replace(job.String(), "start time: "+ts.String()+",", "start time: <T>,", 1)
+	out["start_utc"] = ts.UTC().String()
+	out["row_count"] = job.GetRowCount()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				out["warnings"] = "panic"
+			}
+		}()
+		// The two maps, written through a DDLReorgMeta that holds only them.
+		w, wc := job.GetWarnings()
+		out["warnings"] = marshalOut(&model.DDLReorgMeta{Warnings: w, WarningsCount: wc})
+	}()
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				out["may_need_reorg"] = "panic"
+			}
+		}()
+		out["may_need_reorg"] = job.MayNeedReorg()
+	}()
+	return out, nil
 }
 
 // ---------------------------------------------------------------- random values
@@ -665,6 +778,23 @@ func (r ptRand) fill(v reflect.Value, depth int) {
 		v.SetInt(r.rng.Int64N(1 << 20))
 		return
 	}
+	switch t {
+	case reflect.TypeOf(errors.Error{}):
+		// A terror.Error as Go TiDB writes it (job warnings and errors).
+		e := errors.Normalize(r.str(), errors.RFCCodeText([]string{"", "ddl:8214", "types:1265", "executor:1062", "x"}[r.rng.IntN(5)]),
+			errors.MySQLErrorCode([]int{0, 1062, 8214, -1}[r.rng.IntN(4)]))
+		v.Set(reflect.ValueOf(e).Elem())
+		return
+	case reflect.TypeOf(atomic.Int64{}):
+		v.Addr().Interface().(*atomic.Int64).Store([]int64{0, 1, 16, 256, -1, math.MaxInt64, math.MinInt64}[r.rng.IntN(7)])
+		return
+	case reflect.TypeOf(json.RawMessage(nil)):
+		raws := []string{"", "null", "[]", `[1,"a",null]`, `{"k":[1.5e300,true]}`, `"<s>&"`, `[[1,2],{"a":{}}]`, `-0`}
+		if x := raws[r.rng.IntN(len(raws))]; x != "" {
+			v.SetBytes([]byte(x))
+		}
+		return
+	}
 	switch t.Kind() {
 	case reflect.Bool:
 		v.SetBool(r.rng.IntN(2) == 0)
@@ -681,6 +811,9 @@ func (r ptRand) fill(v reflect.Value, depth int) {
 	case reflect.String:
 		v.SetString(r.str())
 	case reflect.Interface:
+		if t.NumMethod() > 0 {
+			return // SubJob.JobArgs (json:"-"): typed DDL arguments, not part of the JSON
+		}
 		if a := r.any(0); a != nil {
 			v.Set(reflect.ValueOf(a))
 		}
@@ -1066,6 +1199,18 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("misc/covered", "misc", "covered", vec.GoString(t), cols)
 	}
+	// ColumnNeedRestoredData on the index columns, new collations off and on.
+	for _, t := range allTables {
+		tb := mustTable(vec.GoString(t))
+		for i, idx := range tb.Indices {
+			for j := range idx.Columns {
+				if rng.IntN(3) == 0 {
+					g.Add("need_restored", "need_restored", vec.GoString(t), i, j, rng.IntN(4) != 0)
+				}
+			}
+		}
+	}
+	jobGenerate(g, rng, r)
 	// Random partitions with DDL states (overlapping / dropping paths).
 	for i := 0; i < 150; i++ {
 		pi := new(model.PartitionInfo)
@@ -1213,6 +1358,57 @@ func modelGenerate(g *vec.Gen, rng *rand.Rand) {
 	decodeSiteCases(g)
 }
 
+// jobGenerate: the job.go / reorg.go methods on random jobs and reorg metas.
+func jobGenerate(g *vec.Gen, rng *rand.Rand, r ptRand) {
+	actions := []model.ActionType{model.ActionAddIndex, model.ActionAddPrimaryKey, model.ActionReorganizePartition,
+		model.ActionRemovePartitioning, model.ActionAlterTablePartitioning, model.ActionModifyColumn, model.ActionMultiSchemaChange,
+		model.ActionCreateTable, model.ActionDropSchema, model.ActionNone, 200}
+	for i := 0; i < 400; i++ {
+		j := new(model.Job)
+		r.fill(reflect.ValueOf(j).Elem(), 0)
+		j.Type = actions[rng.IntN(len(actions))]
+		j.StartTS = []uint64{0, 450000000000000000, 1 << 18, rng.Uint64() >> 1}[rng.IntN(4)]
+		if j.MultiSchemaInfo != nil {
+			// No nil sub-jobs: Go's MayNeedReorg dereferences them (spec D06.1 §4.1).
+			j.MultiSchemaInfo.SubJobs = dropNil(j.MultiSchemaInfo.SubJobs)
+			for _, sub := range j.MultiSchemaInfo.SubJobs {
+				sub.Type = actions[rng.IntN(len(actions))]
+			}
+		}
+		if j.BinlogInfo != nil {
+			j.BinlogInfo.MultipleTableInfos = dropNil(j.BinlogInfo.MultipleTableInfos)
+		}
+		b, err := json.Marshal(j)
+		if err != nil {
+			continue
+		}
+		g.Add("job", "job", vec.GoString(b))
+	}
+	for n := int64(-1); n <= 90; n++ {
+		g.Add("job_strings", "job_strings", "action", n)
+	}
+	g.Add("job_strings", "job_strings", "action", 255)
+	for n := int64(-1); n <= 9; n++ {
+		g.Add("job_strings", "job_strings", "schema_state", n)
+		g.Add("job_strings", "job_strings", "reorg_type", n)
+	}
+	for n := int64(-1); n <= 12; n++ {
+		g.Add("job_strings", "job_strings", "job_state", n)
+	}
+	for _, n := range []int64{-1, 0, 1, 2, 3, 1 << 40, math.MinInt64} {
+		g.Add("job_strings", "job_strings", "job_version", n)
+	}
+	for i := 0; i < 80; i++ {
+		rm := new(model.DDLReorgMeta)
+		r.fill(reflect.ValueOf(rm).Elem(), 0)
+		b, err := json.Marshal(rm)
+		if err != nil {
+			continue
+		}
+		g.Add("reorg", "reorg", vec.GoString(b), []int{0, 4, -1, 1 << 40}[rng.IntN(4)])
+	}
+}
+
 // decodeSiteCases: one "into" record per error / early-return site of encoding/json's
 // decoder (Go 1.25 decode.go), on a base value with every field set, so that the record
 // shows what Go writes, what it keeps and whether it goes on decoding: literalStore
@@ -1247,7 +1443,54 @@ func decodeSiteCases(g *vec.Gen) {
 	tbb, _ := json.Marshal(tb)
 	tbn := &model.TableInfo{ID: 9, Name: pmodel.NewCIStr("t")}
 	tbnb, _ := json.Marshal(tbn)
+	w := func(code int, text string) *errors.Error {
+		return errors.Normalize(text, errors.RFCCodeText(fmt.Sprintf("ddl:%d", code)), errors.MySQLErrorCode(code))
+	}
+	rm := &model.DDLReorgMeta{SQLMode: 3, Warnings: map[errors.ErrorID]*errors.Error{"8001": w(8001, "w1"), "8002": w(8002, "w2 %d")},
+		WarningsCount: map[errors.ErrorID]int64{"8001": 2, "8002": 1}, Location: &model.TimeZoneLocation{Name: "UTC"},
+		ReorgTp: model.ReorgTypeIngest, Version: 1, AnalyzeState: 2, Stage: 1}
+	rm.Concurrency.Store(4)
+	rm.BatchSize.Store(256)
+	rmb, _ := json.Marshal(rm)
+	jb := &model.Job{ID: 1, Type: model.ActionAddIndex, Warning: w(8003, "jw"), Error: w(8004, "je <x>"), ReorgMeta: rm,
+		RawArgs: json.RawMessage(`[1, "a"]`), Query: "q", MultiSchemaInfo: &model.MultiSchemaInfo{Revertible: true,
+			SubJobs: []*model.SubJob{{Type: model.ActionAddColumn, RawArgs: json.RawMessage(`{"x":1}`), Warning: w(8005, "sw")}}}}
+	jbb, _ := json.Marshal(jb)
 	cases := []struct{ site, ty, base, text string }{
+		// Part 2: map values with an UnmarshalJSON method (DDLReorgMeta.Warnings,
+		// map[ErrorID]*terror.Error), terror.Error, atomic.Int64, json.RawMessage.
+		{"map/value-unmarshaler-error", "DDLReorgMeta", string(rmb), `{"warnings":{"9001":{"code":1},"9002":{"code":"x"},"9003":{"code":3}},"version":7}`},
+		{"map/value-unmarshaler-type", "DDLReorgMeta", string(rmb), `{"warnings":{"9001":5},"version":7}`},
+		{"map/value-unmarshaler-array", "DDLReorgMeta", string(rmb), `{"warnings":{"9001":[1]}}`},
+		{"map/value-null", "DDLReorgMeta", string(rmb), `{"warnings":{"8001":null,"9001":{"class":2,"code":7}}}`},
+		{"map/value-class", "DDLReorgMeta", string(rmb), `{"warnings":{"a":{"class":99,"code":7},"b":{"class":0,"code":5,"message":"m%d"},"c":{"class":24,"code":-1,"rfccode":""}}}`},
+		{"map/value-replaced", "DDLReorgMeta", string(rmb), `{"warnings":{"8001":{"message":"new"}}}`},
+		{"map/value-saved-then-fatal", "DDLReorgMeta", string(rmb), `{"warnings_count":{"8001":"x"},"warnings":{"9":{"rfccode":5}},"version":7}`},
+		{"map/into-nil", "DDLReorgMeta", `{}`, `{"warnings":{"1":{"code":1,"message":"m","rfccode":"ddl:1"}},"warnings_count":{"1":1}}`},
+		{"map/warnings-null", "DDLReorgMeta", string(rmb), `{"warnings":null,"warnings_count":null}`},
+		{"atomic/null", "DDLReorgMeta", string(rmb), `{"concurrency":null,"batch_size":512}`},
+		{"atomic/wrong-kind", "DDLReorgMeta", string(rmb), `{"concurrency":"x","batch_size":512}`},
+		{"atomic/forms", "DDLReorgMeta", string(rmb), `{"concurrency":1e2,"version":9}`},
+		{"atomic/range", "DDLReorgMeta", string(rmb), `{"max_write_speed":9223372036854775808}`},
+		{"atomic/ok", "DDLReorgMeta", string(rmb), `{"batch_size":-0,"max_write_speed":-9223372036854775808,"concurrency":7}`},
+		{"atomic/saved-then-fatal", "DDLReorgMeta", string(rmb), `{"version":"x","concurrency":{},"stage":2}`},
+		{"error/fields", "Job", string(jbb), `{"warning":{"rfccode":"x:1","message":"<w>"},"err":[1],"query":"never"}`},
+		{"error/string", "Job", string(jbb), `{"err":"s","query":"never"}`},
+		{"error/bool", "Job", string(jbb), `{"warning":true}`},
+		{"error/fold", "Job", string(jbb), `{"warning":{"Code":5,"MESSAGE":"fold","RfcCode":"r"}}`},
+		{"error/duplicate", "Job", string(jbb), `{"err":{"code":1,"code":2,"message":"a","message":"b"}}`},
+		{"error/null", "Job", string(jbb), `{"err":null,"warning":null}`},
+		{"error/into-nil", "Job", `{}`, `{"err":{"code":"x"},"query":"never"}`},
+		{"error/unknown-keys", "Job", string(jbb), `{"err":{"x":[1e400],"code":9}}`},
+		{"raw/whitespace", "Job", string(jbb), "{\"raw_args\":  [ 1 , \"a\\u0041<\" , {\"k\" : null}, \"\\/\" ] , \"id\": 3}"},
+		{"raw/null", "Job", string(jbb), `{"raw_args":null}`},
+		{"raw/scalars", "Job", string(jbb), "{\"raw_args\":\"x\u2028y\\u2029&\"}"},
+		{"raw/number", "Job", string(jbb), `{"raw_args": -1.50E+3 }`},
+		{"raw/subjob", "Job", string(jbb), "{\"multi_schema_info\":{\"sub_jobs\":[{\"raw_args\": [ true ,{ } ] ,\"type\":5}],\"revertible\":true}}"},
+		{"raw/duplicate", "Job", string(jbb), `{"raw_args":[1],"raw_args":{"a" :1}}`},
+		{"history/keys", "Job", string(jbb), `{"binlog":{"SchemaVersion":3,"dbinfo":{"id":1},"MultipleTableInfos":[{"id":2},null],"FinishedTS":5}}`},
+		{"job/omitempty", "Job", string(jbb), `{"involving_schema_info":[],"session_vars":{}}`},
+		{"job/sub-null-element", "Job", string(jbb), `{"multi_schema_info":{"sub_jobs":[null,{"type":3}]}}`},
 		// literalStore: null.
 		{"null/primitives", "ColumnInfo", string(cb), `{"id":null,"offset":null,"comment":null,"hidden":null,"state":null,"version":null}`},
 		{"null/interface", "ColumnInfo", string(cb), `{"default":null}`},
