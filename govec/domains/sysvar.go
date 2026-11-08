@@ -81,40 +81,9 @@ func init() {
 			{Name: "ErrInvalidDefaultUTF8MB4Collation", Err: variable.ErrInvalidDefaultUTF8MB4Collation},
 		},
 		Exempt: map[string]string{
-			"RegisterSysVar":                   "extension / plugin registration (N8 §3.1 item 5); the static registry is built from the generated table",
-			"UnregisterSysVar":                 "only used in tests",
-			"init":                             "variable.go init (registry construction) and statusvar.go init (cipher list); covered through registry / status_vars",
-			"GlobalSystemVariableInitialValue": "bootstrap of mysql.global_variables (write path, done by Go TiDB)",
-			"setTiFlashComputeDispatchPolicy":  "SetGlobal hook helper (D05.2 session hooks)",
-			"SysVar.SetSessionFromHook":        "needs SessionVars.systems and the SetSession hooks (block D05.2)",
-			"SysVar.SetGlobalFromHook":         "needs the SetGlobal hooks and GlobalVarAccessor writes (D05.2 / D06.5)",
-			"SysVar.GetSessionFromHook":        "needs SessionVars.systems and the GetSession hooks (block D05.2)",
-			"SysVar.GetGlobalFromHook":         "needs the GetGlobal hooks (block D05.2)",
-			"setSnapshotTS":                    "SetSession hook helper (D05.2)",
-			"setTxnReadTS":                     "SetSession hook helper (D05.2)",
-			"setReadStaleness":                 "SetSession hook helper (D05.2)",
-			"parseTSFromNumberOrTime":          "only called by setSnapshotTS (D05.2)",
-			"getTiDBTableValue":                "GetGlobal hook helper (D05.2)",
-			"setTiDBTableValue":                "SetGlobal hook helper (D05.2)",
-			"switchDDL":                        "SetGlobal hook helper; DDL owner switch (write path, X)",
-			"switchStats":                      "SetGlobal hook helper; stats owner switch",
-			"serverMemoryLimitDefaultValue":    "reads the machine memory; only the default of tidb_server_memory_limit when the config sets none (D06.5)",
-			"mustParseDuration":                "package-level default helper; its results are the registry values (op registry)",
-			"mustParseTime":                    "package-level default helper; its results are the registry values (op registry)",
-			"SetDDLReorgWorkerCounter":         "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetDDLReorgWorkerCounter":         "atomic load; trivial",
-			"SetDDLFlashbackConcurrency":       "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetDDLFlashbackConcurrency":       "atomic load; trivial",
-			"SetDDLReorgBatchSize":             "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetDDLReorgBatchSize":             "atomic load; trivial",
-			"SetDDLErrorCountLimit":            "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetDDLErrorCountLimit":            "atomic load; trivial",
-			"SetDDLReorgRowFormat":             "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetDDLReorgRowFormat":             "atomic load; trivial",
-			"SetMaxDeltaSchemaCount":           "atomic store used by SetGlobal hooks (D05.2); trivial",
-			"GetMaxDeltaSchemaCount":           "atomic load; trivial",
-			"RegisterStatistics":               "registration of status providers (server, D12); covered through status_vars with the default provider",
-			"UnregisterStatistics":             "only used in tests",
+			"init":                 "variable.go init (registry construction) and statusvar.go init (cipher list); covered through registry / status_vars",
+			"RegisterStatistics":   "registration of status providers (server, D12); covered through status_vars with the default provider",
+			"UnregisterStatistics": "only used in tests",
 		},
 		Gzip:     true,
 		Generate: sysvarGenerate,
@@ -143,6 +112,8 @@ var sysvarCoverage = map[string]vec.Coverage{
 	"sequence":     {Min: 20, GoFuncs: []string{"NewSequenceState", "SequenceState.UpdateState", "SequenceState.GetLastValue", "SequenceState.GetAllStates", "SequenceState.SetAllStates"}},
 	"order_dep":    {Min: 20, GoFuncs: []string{"OrderByDependency"}},
 	"status_vars":  {Min: 1, GoFuncs: []string{"GetStatusVars", "defaultStatusStat.GetScope", "defaultStatusStat.Stats"}},
+	"ddl_atomic":   {Min: 12, GoFuncs: []string{"SetDDLReorgWorkerCounter", "GetDDLReorgWorkerCounter", "SetDDLFlashbackConcurrency", "GetDDLFlashbackConcurrency", "SetDDLReorgBatchSize", "GetDDLReorgBatchSize", "SetDDLErrorCountLimit", "GetDDLErrorCountLimit", "SetDDLReorgRowFormat", "GetDDLReorgRowFormat", "SetMaxDeltaSchemaCount", "GetMaxDeltaSchemaCount"}},
+	"defaults":     {Min: 1, GoFuncs: []string{"serverMemoryLimitDefaultValue", "mustParseDuration"}},
 }
 
 // ---------------------------------------------------------------- context
@@ -421,6 +392,14 @@ func sysvarGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("sys/order_dep", "order_dep", names)
 	}
+	for _, w := range []string{"reorg_worker", "flashback", "reorg_batch", "err_limit", "row_format", "delta_schema"} {
+		for _, v := range []int64{0, 7, -3} {
+			g.Add("sys/ddl_atomic", "ddl_atomic", w, v)
+		}
+	}
+	for _, d := range []string{"1s", "10m", "1h30m", "0"} {
+		g.Add("sys/defaults", "defaults", d)
+	}
 	g.Add("sys/status", "status_vars", false)
 	g.Add("sys/status", "status_vars", true)
 }
@@ -687,6 +666,46 @@ func sysvarExec(op string, args []json.RawMessage) (out any, err error) {
 		sort.Strings(dep)
 		sort.Strings(rest)
 		return map[string]any{"dep": dep, "rest": rest}, nil
+	case "ddl_atomic":
+		v := arg[int64](args, 1)
+		var before, after int64
+		switch arg[string](args, 0) {
+		case "reorg_worker":
+			before = int64(variable.GetDDLReorgWorkerCounter())
+			variable.SetDDLReorgWorkerCounter(int32(v))
+			after = int64(variable.GetDDLReorgWorkerCounter())
+			variable.SetDDLReorgWorkerCounter(int32(before))
+		case "flashback":
+			before = int64(variable.GetDDLFlashbackConcurrency())
+			variable.SetDDLFlashbackConcurrency(int32(v))
+			after = int64(variable.GetDDLFlashbackConcurrency())
+			variable.SetDDLFlashbackConcurrency(int32(before))
+		case "reorg_batch":
+			before = int64(variable.GetDDLReorgBatchSize())
+			variable.SetDDLReorgBatchSize(int32(v))
+			after = int64(variable.GetDDLReorgBatchSize())
+			variable.SetDDLReorgBatchSize(int32(before))
+		case "err_limit":
+			before = variable.GetDDLErrorCountLimit()
+			variable.SetDDLErrorCountLimit(v)
+			after = variable.GetDDLErrorCountLimit()
+			variable.SetDDLErrorCountLimit(before)
+		case "row_format":
+			before = variable.GetDDLReorgRowFormat()
+			variable.SetDDLReorgRowFormat(v)
+			after = variable.GetDDLReorgRowFormat()
+			variable.SetDDLReorgRowFormat(before)
+		case "delta_schema":
+			before = variable.GetMaxDeltaSchemaCount()
+			variable.SetMaxDeltaSchemaCount(v)
+			after = variable.GetMaxDeltaSchemaCount()
+			variable.SetMaxDeltaSchemaCount(before)
+		}
+		return []int64{before, after}, nil
+	case "defaults":
+		memory.MemTotal = func() (uint64, error) { return sysvarMemTotal, nil }
+		// The Go helpers are unexported: their results through the values they produce.
+		return map[string]any{"mem_limit_default": svServerMemoryLimitDefaultValue(), "dur": int64(svMustParseDuration(arg[string](args, 0)))}, nil
 	case "status_vars":
 		vars := variable.NewSessionVars(nil)
 		if arg[bool](args, 0) {
@@ -745,3 +764,9 @@ func svParseByteSize(s string) (byteSize uint64, normalizedStr string)
 
 //go:linkname svParsePercentage github.com/pingcap/tidb/pkg/sessionctx/variable.parsePercentage
 func svParsePercentage(s string) (percentage uint64, normalizedStr string)
+
+//go:linkname svServerMemoryLimitDefaultValue github.com/pingcap/tidb/pkg/sessionctx/variable.serverMemoryLimitDefaultValue
+func svServerMemoryLimitDefaultValue() string
+
+//go:linkname svMustParseDuration github.com/pingcap/tidb/pkg/sessionctx/variable.mustParseDuration
+func svMustParseDuration(str string) time.Duration

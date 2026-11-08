@@ -199,7 +199,7 @@ func genSysvarTable(outDir string) {
 		if en.computed != "" {
 			computed = "Some(" + rustStr(en.computed) + ")"
 		}
-		e.p("    // go: %s:L%d %s\n", en.file, en.line, en.ident)
+		e.p("    // Go %s:L%d %s\n", en.file, en.line, en.ident)
 		e.p("    SysVarData { go_file: %s, go_line: %d, scope: %s, name: %s, value: %s, computed: %s, typ: %s, min_value: %d, max_value: %d, possible_values: %s, aliases: %s, global_config_name: %s, flags: %s, hooks: %s },\n",
 			rustStr(en.file), en.line, rustScope(sv.Scope), rustStr(sv.Name), rustStr(sv.Value), computed,
 			rustTypeFlag(sv.Type), sv.MinValue, sv.MaxValue, rustStrSlice(sv.PossibleValues), rustStrSlice(sv.Aliases),
