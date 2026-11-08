@@ -19,6 +19,8 @@ import (
 // copied into the generator. Each must appear as a record src.
 var minedGoTests = map[string][]string{
 	"collate": domains.CollateMinedTests(),
+	// The literals of codec_test.go, bytes_test.go, decimal_test.go and collation_test.go (cmd/minelits).
+	"codec": domains.CodecMinedTests(),
 	// Scenarios of the pkg/util/chunk tests, as scripts (domains/chunk_gen.go).
 	"chunk": append(domains.ChunkMinedTests(), domains.ChunkDatumMinedTests()...),
 	// The literals of the D01.1/D01.4 test files (cmd/minelits).
