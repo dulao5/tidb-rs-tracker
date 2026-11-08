@@ -35,6 +35,8 @@ var minedGoTests = map[string][]string{
 	// The literals of json_binary_test.go, json_binary_functions_test.go and
 	// json_path_expr_test.go (cmd/minelits).
 	"json": domains.JSONMinedTests(),
+	// The literals of the pkg/kv tests of ported functions (cmd/minelits).
+	"kv": domains.KVMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
