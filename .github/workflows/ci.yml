@@ -86,6 +86,10 @@ jobs:
         run: |
           mkdir -p seeds
           for s in 1 2 3 4 5 6 7 8; do bin/govec cgroup -seed "$s" -o "seeds/cgroup-seed$s.jsonl.gz"; done
+      - name: Extra seeds generate (sessionvars)
+        run: |
+          mkdir -p seeds
+          for s in 1 2 3 4 81 82 83 84; do bin/govec sessionvars -seed "$s" -o "seeds/sessionvars-seed$s.jsonl.gz"; done
       - uses: actions/upload-artifact@v4
         with:
           name: govec-extra-seeds-${{ matrix.runner }}

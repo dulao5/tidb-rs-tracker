@@ -34,6 +34,7 @@ import (
 	_ "unsafe" // go:linkname
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
@@ -128,9 +129,27 @@ type svCtx struct {
 	NoMPP    bool              `json:"nompp,omitempty"` // allowMPPExecution = false
 }
 
-// resetSysvarAtomics puts the process-wide state the validation hooks read back to
-// its value after init.
+// initialRedactLog is errors.RedactLogEnabled after init (tidb_redact_log's SetSession
+// hook stores the session value into this process-wide flag: tidb-rs #62).
+var initialRedactLog = errors.RedactLogEnabled.Load()
+
+// resetSysvarAtomics puts the process-wide state the hooks read or write back to its
+// value after init, so that no record depends on an earlier one. The process-wide state
+// written by hooks of variable/sysvar.go (v8.5.8):
+//   - Validation hooks: the password-validation atomics, GOGCTunerThreshold,
+//     RunAutoAnalyze, EnableAutoAnalyzePriorityQueue (reset below);
+//   - SetSession hooks: tidb_redact_log stores errors.RedactLogEnabled (reset below;
+//     upstream bug tidb-rs #62: the flag redacts the warnings of every session);
+//     tidb_constraint_check_in_place_pessimistic increments a metrics counter (not
+//     observed by any record);
+//   - SetGlobal hooks of the 27 INSTANCE-scope variables (log, slow log, plugin,
+//     memory/expensive-query thresholds, max_connections, DDL/stats owner, statement
+//     summary files, service scope…): the sessionvars domain's set_global op restores
+//     the previous value right after the call.
+//
+// The other SetSession hooks write only the session.
 func resetSysvarAtomics() {
+	errors.RedactLogEnabled.Store(initialRedactLog)
 	variable.PasswordValidationLength.Store(8)
 	variable.PasswordValidationMixedCaseCount.Store(1)
 	variable.PasswordValidtaionNumberCount.Store(1)
