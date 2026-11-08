@@ -360,7 +360,9 @@ op：`parse valid unmarshal create type unquote unquote_string hash compare is_z
 - **Go 测试场景**：chunk_test.go、column_test.go、codec_test.go、chunk_util_test.go、iterator_test.go、list_test.go 中 20 个测试的场景写成脚本，`src` 为测试名，在 `minedGoTests["chunk"]` 登记（`domains.ChunkMinedTests`）。
 - **随机脚本**：1,600 个，每个 8–37 步，列类型从 21 种中随机取（各种整数、浮点、decimal、三种时间、duration、三种排序规则的字符串、blob、JSON、向量、enum、set、bit、NULL 类型），值含边界（NaN 位模式、±Inf、-0、MaxInt64、非法 UTF-8 字节）。
 
-**豁免**：需要 `types.Enum`/`Set`/`Datum` 的函数（`AppendEnum`、`GetSet`、`AppendDatum`、`GetDatum`、`ToString`、`Compare`、`LowerBound`、`mutrow.go` 全部等）等块 D01.1；落盘文件和 `RowContainer` 迭代器属于 D01.10；复用池（`alloc.go` 的分配器、`Chunk.Destroy`）按 A1 的 `M-POOL` 不移植，内部实现在 tracker 中归 X，接口由 Rust 单元测试覆盖。
+**Datum / MutRow**（D01.1 合并后的后续 PR，`domains/chunk_gen2.go`）：`AppendDatum`、`GetDatum*`、`ToString`、`Compare`、`LowerBound`/`UpperBound` 和 `mutrow.go` 全部，由加在原有脚本之后的 600 个随机脚本和 5 个 Go 测试场景覆盖（原有记录不变）。datum 写作 datum2 领域的 `[kind, payload…]`，Go 动态值写作 `goValueIn` 的 `[type, payload]`。Go 的 `ShallowCopyPartialRow` 让 MutRow 与源列共用缓冲，Rust 复制（spec §4 第 6 条），所以生成器在浅复制之后不再写源 chunk、也不再通过该 MutRow 写。`to_string`、`row_string`、`mr_string`、`mr_get` 在 typed getter 会读出 `cap(data)` 时记 `{"past_cap": true}`（例如对 BIT 列 `GetInt64`）；`mr_set_value(s)` 在 Go 会写出容量时（Duration/Decimal/Time 写进更短的单元）记 `past_cap` 并跳过；`AppendDatum` 只用与列同类型的 datum（更宽的定长 kind 在 Go 中会写坏内存）。
+
+**豁免**：落盘文件和 `RowContainer` 迭代器属于 D01.10；复用池（`alloc.go` 的分配器、`Chunk.Destroy`）按 A1 的 `M-POOL` 不移植，内部实现在 tracker 中归 X，接口由 Rust 单元测试覆盖。
 
 **读到容量之外**：`view` 步骤把列重解释成定长类型切片（`Int64s`、`Times`、`Decimals` 等，Len = length、Cap = cap(data)/宽度）。length × 宽度超过 `cap(data)` 时 Go 读到容量之外（未定义行为，读到什么取决于内存），生成器不读，记为 `{"past_cap": [length, cap]}`；Rust 侧在同样条件下必须 panic（D01.7 spec §4 第 4 条）。
 
