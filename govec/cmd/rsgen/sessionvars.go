@@ -116,6 +116,22 @@ func genSessionVarsFields(outDir string) {
 		e.p("            %s: %s,\n", rustField(f.name), f.value)
 	}
 	e.p("        }\n    }\n}\n\n")
+	e.p("impl SessionVarsFields {\n")
+	e.p("    /// The fields as the govec `fresh` op dumps them: Go names, bools and integers in\n")
+	e.p("    /// decimal, floats as their IEEE-754 bits, strings as is.\n")
+	e.p("    // glue: test dump of the scalar fields\n")
+	e.p("    pub fn scalar_strings(&self) -> Vec<(&'static str, String)> {\n        vec![\n")
+	for _, f := range fields {
+		conv := "self.%s.to_string()"
+		switch f.rustType {
+		case "f64", "f32":
+			conv = "self.%s.to_bits().to_string()"
+		case "String":
+			conv = "self.%s.clone()"
+		}
+		e.p("            (%s, "+conv+"),\n", rustStr(f.name), rustField(f.name))
+	}
+	e.p("        ]\n    }\n}\n\n")
 	e.p("/// Names of the scalar fields, in declaration order (the govec `fresh` op dumps these).\n")
 	e.p("pub const SCALAR_FIELDS: &[&str] = &[\n")
 	for _, f := range fields {
