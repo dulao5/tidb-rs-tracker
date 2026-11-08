@@ -21,6 +21,8 @@ var minedGoTests = map[string][]string{
 	"collate": domains.CollateMinedTests(),
 	// Scenarios of the pkg/util/chunk tests, as scripts (domains/chunk_gen.go).
 	"chunk": domains.ChunkMinedTests(),
+	// The literals of the D01.1/D01.4 test files (cmd/minelits).
+	"datum": domains.DatumMinedTests(),
 	"decimal": {
 		"TestFromInt", "TestFromUint", "TestToInt", "TestToUint", "TestFromFloat", "TestToFloat",
 		"TestToHashKey", "TestRemoveTrailingZeros", "TestRoundWithHalfEven", "TestRoundWithTruncate",
