@@ -67,6 +67,15 @@ var targetDiffs = []targetDiff{
 	// ConvertFloatToInt(NaN): both bound checks are false, so int64(NaN) is returned.
 	{Domain: "datum", Op: "convert_num", Args: "*", N: 10,
 		Why: "M-F2I: ConvertFloatToInt(NaN) returns int64(NaN): MinInt64 on amd64, 0 on arm64"},
+	// D01.1 part 2: the same int64(NaN) reached through Datum conversions of a NaN
+	// float32 / float64 datum (to integer types, YEAR, TIME via ToInt64, ToInt64 itself,
+	// and the reverse evaluation built on ConvertTo).
+	{Domain: "datum", Op: "d_convert", Args: "*", N: 16,
+		Why: "M-F2I: a NaN float datum converted to an integer, YEAR or TIME type goes through int64(NaN)"},
+	{Domain: "datum", Op: "d_to", Args: "*", N: 2,
+		Why: "M-F2I: Datum.ToInt64 of a NaN float datum is int64(NaN)"},
+	{Domain: "datum", Op: "d_reverse", Args: "*", N: 10,
+		Why: "M-F2I: ChangeReverseResultByUpperLowerBound converts a NaN float datum with ConvertTo (int64(NaN))"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far
