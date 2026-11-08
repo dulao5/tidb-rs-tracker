@@ -158,8 +158,11 @@ func tcHandleOut(h kv.Handle) any {
 	if h == nil {
 		return nil
 	}
+	// DecodeHandleInIndexValue of a value with a partition ID and no handle (a unique index
+	// entry with NULLs, whose handle is in the key) returns PartitionHandle{nil}, whose
+	// every method panics; the Rust port returns None (spec §4): recorded as nil.
 	if ph, ok := h.(kv.PartitionHandle); ok && ph.Handle == nil {
-		return map[string]any{"nil_inner": true, "pid": ph.PartitionID}
+		return nil
 	}
 	return specOf(h)
 }
@@ -225,6 +228,20 @@ func tcStrs(ss []string) any {
 }
 
 func tcErr(err error) any { return d2ErrMsg(err) }
+
+// tcChecksumErr: appendDatumForChecksum annotates a recovered runtime panic (a failed
+// type assertion in a Datum getter); the runtime text after "interface conversion" is
+// Go's, not reproduced by Rust (spec §4): it is cut off.
+func tcChecksumErr(err error) any {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
+	if i := strings.Index(msg, ": interface conversion"); i >= 0 {
+		msg = msg[:i] + ": interface conversion"
+	}
+	return vec.GoString(msg)
+}
 
 // tcMapFail: an error or a panic of a map-order dependent decoder is {"fail": true}.
 func tcMapFail(o any) any {
@@ -345,13 +362,13 @@ func tablecodecExec(op string, p []json.RawMessage) (out any, err error) {
 			rd.Cols = append(rd.Cols, cd)
 			encs = append(encs, tcTry(func() any {
 				b, err := cd.Encode(loc, nil)
-				return map[string]any{"b": hx(b), "err": tcErr(err)}
+				return map[string]any{"b": hx(b), "err": tcChecksumErr(err)}
 			}))
 		}
 		sort.Sort(rd)
 		sum := tcTry(func() any {
 			c, err := rd.Checksum(loc)
-			return map[string]any{"sum": c, "err": tcErr(err)}
+			return map[string]any{"sum": c, "err": tcChecksumErr(err)}
 		})
 		return map[string]any{"encs": encs, "sum": sum}, nil
 	case "index":
