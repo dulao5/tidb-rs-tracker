@@ -18,6 +18,7 @@ import (
 // minedGoTests lists, per domain, the Go test functions whose case tables were
 // copied into the generator. Each must appear as a record src.
 var minedGoTests = map[string][]string{
+	"collate": domains.CollateMinedTests(),
 	"decimal": {
 		"TestFromInt", "TestFromUint", "TestToInt", "TestToUint", "TestFromFloat", "TestToFloat",
 		"TestToHashKey", "TestRemoveTrailingZeros", "TestRoundWithHalfEven", "TestRoundWithTruncate",
@@ -64,6 +65,7 @@ func TestBlockCoverage(t *testing.T) {
 	}
 	defer f.Close()
 	blockFuncs := map[string][]string{} // block -> symbols
+	fileFuncs := map[string][]string{}  // file -> symbols
 	sc := bufio.NewScanner(f)
 	sc.Scan() // header: pkg file symbol start_line block
 	for sc.Scan() {
@@ -72,6 +74,7 @@ func TestBlockCoverage(t *testing.T) {
 			t.Fatalf("func_blocks.tsv: bad line %q", sc.Text())
 		}
 		blockFuncs[c[4]] = append(blockFuncs[c[4]], c[2])
+		fileFuncs[c[1]] = append(fileFuncs[c[1]], c[2])
 	}
 	covered := map[string]map[string]bool{} // block -> symbol -> covered by some domain
 	exempt := map[string]map[string]bool{}  // block -> symbol -> exempt in some domain
@@ -92,6 +95,14 @@ func TestBlockCoverage(t *testing.T) {
 				covered[b], exempt[b] = map[string]bool{}, map[string]bool{}
 			}
 		}
+		for _, file := range d.Files {
+			if len(fileFuncs[file]) == 0 {
+				t.Errorf("domain %s: file %s has no functions in func_blocks.tsv", name, file)
+			}
+			for _, fn := range fileFuncs[file] {
+				inBlocks[file+":"+fn] = true
+			}
+		}
 		domCovered := map[string]bool{}
 		for op, c := range d.Coverage {
 			for _, fn := range c.GoFuncs {
@@ -110,6 +121,13 @@ func TestBlockCoverage(t *testing.T) {
 			}
 			if why == "" {
 				t.Errorf("domain %s: exempt %q has no reason", name, fn)
+			}
+		}
+		for _, file := range d.Files {
+			for _, fn := range fileFuncs[file] {
+				if q := file + ":" + fn; !domCovered[q] && d.Exempt[q] == "" {
+					t.Errorf("domain %s: %s of file %s is neither covered by an op nor exempt", name, fn, file)
+				}
 			}
 		}
 		for _, b := range d.Blocks {
