@@ -53,7 +53,6 @@ func init() {
 			"init":                       "creates the global LRU path cache, which the port does not keep (A4 spec 5.6)",
 			"jsonPathExpressionKey.Hash": "the key of that cache",
 			"JSONPathExpression.clone":   "copies legs for the cache; the port's Clone is derived",
-			"BinaryJSON.UnmarshalJSON":   "covered through ParseBinaryJSONFromString (parse), its only caller in TiDB",
 		},
 		Gzip:     true,
 		Generate: jsonGenerate,
@@ -92,6 +91,8 @@ func withFuncs(a []string, b ...string) []string { return append(append([]string
 
 var jsonCoverage = map[string]vec.Coverage{
 	"parse":          {Min: 20000, GoFuncs: withFuncs(append(jsonOutFuncs, jsonCreateFuncs...), "ParseBinaryJSONFromString")},
+	"valid":          {Min: 1000},
+	"unmarshal":      {Min: 500, GoFuncs: withFuncs(jsonCreateFuncs, "BinaryJSON.UnmarshalJSON")},
 	"create":         {Min: 3000, GoFuncs: withFuncs(append(jsonOutFuncs, jsonCreateFuncs...), "BinaryJSON.Copy")},
 	"type":           {Min: 500, GoFuncs: []string{"BinaryJSON.Type", "BinaryJSON.GetOpaqueFieldType"}},
 	"unquote":        {Min: 500, GoFuncs: []string{"BinaryJSON.Unquote", "UnquoteString", "unquoteJSONString", "decodeEscapedUnicode"}},
@@ -267,6 +268,14 @@ func jsonExec(op string, args []json.RawMessage) (out any, err error) {
 			return nil, err
 		}
 		return map[string]any{"j": jsonOut(bj), "type": bj.Type(), "depth": bj.GetElemDepth()}, nil
+	case "valid":
+		return json.Valid([]byte(arg[vec.GoString](args, 0))), nil
+	case "unmarshal":
+		var bj types.BinaryJSON
+		if err := bj.UnmarshalJSON([]byte(arg[vec.GoString](args, 0))); err != nil {
+			return nil, err
+		}
+		return jsonOut(bj), nil
 	case "create":
 		bj, err := types.CreateBinaryJSONWithCheck(goValueOfSpec(args[0]))
 		if err != nil {
@@ -480,11 +489,7 @@ var jsonPathEdges = []string{
 
 func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 	// Parse: mined, edge, random and mutated texts.
-	docs := []string{}
-	for _, s := range jsonMinedDocs {
-		g.Add("lit/go-tests", "parse", vec.GoString(s))
-		docs = append(docs, s)
-	}
+	docs, minedPaths := jsonMinedRecords(g)
 	for _, s := range jsonEdgeDocs {
 		g.Add("sys/edge", "parse", vec.GoString(s))
 		docs = append(docs, s)
@@ -496,6 +501,13 @@ func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("sys/depth", "parse", vec.GoString(strings.Repeat(`{"a":`, d)+"1"+strings.Repeat("}", d)))
 	}
 	g.Add("sys/depth", "parse", vec.GoString(strings.Repeat("[", 150)+`{"k":1e400}`+strings.Repeat("]", 150)))
+	for _, s := range jsonDeepDocs() {
+		g.Add("sys/deep", "parse", vec.GoString(s))
+		g.Add("sys/deep", "valid", vec.GoString(s))
+		if json.Valid([]byte(s)) {
+			g.Add("sys/deep", "unmarshal", vec.GoString(s))
+		}
+	}
 	for _, n := range []int{65535, 65536} {
 		k := strings.Repeat("k", n)
 		g.Add("sys/keylen", "parse", vec.GoString(`{"`+k+`":1}`))
@@ -515,6 +527,16 @@ func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 			base = docs[rng.IntN(len(docs))]
 		}
 		g.Add("rand/mutate", "parse", vec.GoString(mutate(rng, base)))
+	}
+	for i := 0; i < 1500; i++ {
+		s := good[rng.IntN(len(good))]
+		if rng.IntN(2) == 0 {
+			s = mutate(rng, s)
+		}
+		g.Add("rand", "valid", vec.GoString(s))
+		if json.Valid([]byte(s)) {
+			g.Add("rand", "unmarshal", vec.GoString(s))
+		}
 	}
 	// Only texts Go parses are document inputs of the other ops.
 	var pool []string
@@ -591,11 +613,7 @@ func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 
 	// Paths.
-	paths := []string{}
-	for _, p := range jsonMinedPaths {
-		g.Add("lit/go-tests", "path_parse", vec.GoString(p))
-		paths = append(paths, p)
-	}
+	paths := append([]string{}, minedPaths...)
 	for _, p := range jsonPathEdges {
 		g.Add("sys/edge", "path_parse", vec.GoString(p))
 		paths = append(paths, p)
@@ -635,6 +653,18 @@ func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	for i := 0; i < 1800; i++ {
 		g.Add("rand", "array_insert", pick(), pickPaths(1), pick())
+	}
+	// Parent paths (popOneLastLeg, flags == 0) whose legs contain ** or a range, on documents
+	// where they reach the same value twice (Extract's dup set; Lucky's review of tidb-rs #21).
+	for _, d := range []string{`[-2123674258274170172]`, `[1]`, `[[1]]`, `[[1,2],[3]]`, `{"a":[1]}`,
+		`[{"a":[1]}]`, `[[[0]]]`, `"x"`, `[null,[true]]`} {
+		for _, p := range []string{`$**[0 to 0][last-2 to last]`, `$**[0][0]`, `$**[0 to 0][0]`,
+			`$**[0][1]`, `$[0 to 1][0][0]`, `$[*][0][0]`, `$**.a[0]`, `$**[last][0]`} {
+			g.Add("sys/dup", "array_insert", vec.GoString(d), []vec.GoString{vec.GoString(p)}, vec.GoString(`9`))
+			g.Add("sys/dup", "remove", vec.GoString(d), []vec.GoString{vec.GoString(p)})
+			g.Add("sys/dup", "modify", vec.GoString(d), []vec.GoString{vec.GoString(p)}, []any{vec.GoString(`9`)}, 1)
+			g.Add("sys/dup", "extract", vec.GoString(d), []vec.GoString{vec.GoString(p)})
+		}
 	}
 	for i := 0; i < 2500; i++ {
 		g.Add("rand", "remove", pick(), pickPaths(1+rng.IntN(2)))
@@ -690,6 +720,7 @@ func jsonGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("rand", "walk", pick(), ps, 1+rng.IntN(40))
 	}
+	luckyJSON(g, rng)
 }
 
 func mustPath(s string) types.JSONPathExpression {
@@ -907,3 +938,135 @@ func isIdent(s string) bool {
 	}
 	return true
 }
+
+// jsonDeepDocs: texts nested deeper than maxJSONDepth (they never convert in Go: the result is
+// the first appendBinaryJSON error in its traversal order, else ErrJSONDocumentTooDeep) and
+// invalid deep texts, at depths around the limits.
+func jsonDeepDocs() []string {
+	nest := func(d int, open, close, inner string) string {
+		return strings.Repeat(open, d) + inner + strings.Repeat(close, d)
+	}
+	long := strings.Repeat("k", 65536)
+	var out []string
+	for _, d := range []int{100, 101, 102, 103, 150, 256, 257, 1000, 9998, 9999} {
+		out = append(out,
+			nest(d, "[", "]", ""),
+			nest(d, "[", "]", "1"),
+			nest(d, "[", "]", "1e400"),
+			nest(d, "[", "]", "-1e400"),
+			nest(d, "[", "]", "18446744073709551616"),
+			nest(d, `{"a":`, "}", "1"),
+			nest(d, `{"a":`, "}", "{}"),
+			nest(d, `{"a":`, "}", `{"`+long+`":1}`),
+			nest(d, "[", "]", `{"`+long+`":1e400}`),
+			nest(d, "[ ", " ]", " 1e400 "),
+			nest(d, "[", "]", "")[1:],                  // unbalanced
+			nest(d, "[", "]", "1")+"x",                 // trailing data
+			nest(d, "[", "]", "01"),                    // invalid number
+			nest(d, "[", "]", `"\x"`),                  // invalid escape
+			nest(d, "[", ",]", "1"),                    // trailing comma
+			nest(d, `{"a":`, "}", `{"a":1e400,"a":1}`), // duplicate key: last one wins
+			nest(d, `{"a":`, "}", `{"a":1,"a":1e400}`),
+		)
+		// Traversal order: an error in an earlier element (or a smaller key) wins over a
+		// later one; all keys of an object are checked before its values.
+		deep := nest(d, "[", "]", "1")
+		out = append(out,
+			`[1e400,`+deep+`]`,
+			`[`+deep+`,1e400]`,
+			`{"b":1e400,"a":`+deep+`}`,
+			`{"a":1e400,"b":`+deep+`}`,
+			`{"a":`+deep+`,"`+long+`":1}`,
+			`{"a":1e400,"`+long+`":`+deep+`}`,
+			`[`+nest(d, "[", "]", "1e400")+`,{"`+long+`":1}]`,
+			`[{"`+long+`":1},`+nest(d, "[", "]", "1e400")+`]`,
+			`{"a":{"z":1e400},"b":`+nest(d, "[", "]", `{"`+long+`":1}`)+`}`,
+		)
+	}
+	out = append(out, nest(10000, "[", "]", ""), nest(10001, "[", "]", ""), nest(10000, `{"a":`, "}", "1"))
+	return out
+}
+
+// luckyKey: object keys with shared prefixes, multi-byte runes, escapes and 200-byte keys,
+// so that objects with many keys exercise the binary key search and the key order.
+func luckyKey(rng *rand.Rand) string {
+	switch rng.IntN(6) {
+	case 0:
+		return strings.Repeat("k", 1+rng.IntN(3)) + []string{"", "a", "b", `\u0000`, "é", "😀"}[rng.IntN(6)]
+	case 1:
+		return strings.Repeat("p", 200+rng.IntN(3)) + string(rune('a'+rng.IntN(3)))
+	case 2:
+		return []string{"", " ", "a", "aa", "ab", "b", "é", "中", "😀", `\u007f`, "A", "Z", "~"}[rng.IntN(13)]
+	}
+	b := make([]byte, 1+rng.IntN(6))
+	for i := range b {
+		b[i] = "abcAB01_ "[rng.IntN(9)]
+	}
+	return string(b)
+}
+
+// luckyBigObject: an object text with n members (duplicate keys allowed) and valid values.
+func luckyBigObject(rng *rand.Rand, n int) (string, []string) {
+	keys := make([]string, n)
+	parts := make([]string, n)
+	for i := range keys {
+		keys[i] = luckyKey(rng)
+		// Scalar values (depth 5) keep the records small; the nesting is covered elsewhere.
+		v := randJSONText(rng, 5)
+		for _, err := types.ParseBinaryJSONFromString(v); err != nil; _, err = types.ParseBinaryJSONFromString(v) {
+			v = randJSONText(rng, 5)
+		}
+		parts[i] = `"` + keys[i] + `":` + v
+	}
+	return "{" + strings.Join(parts, ",") + "}", keys
+}
+
+func luckyPathKey(k string) string { return `$."` + strings.ReplaceAll(k, `"`, `\"`) + `"` }
+
+// luckyJSON: objects with up to 400 keys through extract, compare, hash, contains,
+// remove, modify, merge and merge_patch (Lucky's review of tidb-rs #21; scaled down from
+// 3000 objects with nested values to 60 with scalar values to keep the vector files small:
+// every record carries the whole document).
+func luckyJSON(g *vec.Gen, rng *rand.Rand) {
+	for i := 0; i < jsonBigObjects; i++ {
+		n := 1 + rng.IntN(400)
+		if rng.IntN(4) == 0 {
+			n = 1 + rng.IntN(20)
+		}
+		doc, keys := luckyBigObject(rng, n)
+		if rng.IntN(5) == 0 {
+			doc = "[" + doc + "," + doc + "]"
+		}
+		g.Add("lucky/big", "parse", vec.GoString(doc))
+		ps := []vec.GoString{}
+		for j := 0; j < 1+rng.IntN(3); j++ {
+			var p string
+			switch rng.IntN(6) {
+			case 0, 1:
+				p = luckyPathKey(keys[rng.IntN(len(keys))])
+			case 2:
+				p = luckyPathKey(luckyKey(rng))
+			case 3:
+				p = []string{"$.*", "$**.a", "$**.aa", "$[0]", "$[*].a", "$[1].*"}[rng.IntN(6)]
+			case 4:
+				p = luckyPathKey(keys[rng.IntN(len(keys))]) + "[0]"
+			default:
+				p = "$[last]" + luckyPathKey(keys[rng.IntN(len(keys))])[1:]
+			}
+			ps = append(ps, vec.GoString(p))
+		}
+		g.Add("lucky/big", "extract", vec.GoString(doc), ps)
+		doc2, _ := luckyBigObject(rng, 1+rng.IntN(30))
+		g.Add("lucky/big", "compare", vec.GoString(doc), vec.GoString(doc2))
+		g.Add("lucky/big", "compare", vec.GoString(doc), vec.GoString(doc))
+		g.Add("lucky/big", "hash", vec.GoString(doc))
+		g.Add("lucky/big", "contains", vec.GoString(doc), vec.GoString(doc2))
+		g.Add("lucky/big", "remove", vec.GoString(doc), ps[:1])
+		g.Add("lucky/big", "modify", vec.GoString(doc), ps[:1], []any{vec.GoString(doc2)}, 1+rng.IntN(3))
+		g.Add("lucky/big", "merge", []any{vec.GoString(doc), vec.GoString(doc2)})
+		g.Add("lucky/big", "merge_patch", []any{vec.GoString(doc), vec.GoString(doc2)})
+	}
+}
+
+// jsonBigObjects: how many of luckyJSON's big objects are generated.
+const jsonBigObjects = 60

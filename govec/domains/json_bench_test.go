@@ -98,4 +98,13 @@ func BenchmarkJSON(b *testing.B) {
 			_ = bjSm.HashValue(nil)
 		}
 	})
+	// Texts nested deeper than maxJSONDepth (they always fail; Lucky's review of tidb-rs #21).
+	for _, d := range []int{256, 257, 1000, 10000} {
+		text := strings.Repeat("[", d) + "1" + strings.Repeat("]", d)
+		b.Run(fmt.Sprintf("parse_deep_%d", d), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, _ = types.ParseBinaryJSONFromString(text)
+			}
+		})
+	}
 }

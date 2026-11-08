@@ -28,6 +28,9 @@ var minedGoTests = map[string][]string{
 		"TestShiftMyDecimal", "TestFromStringMyDecimal", "TestMarshalMyDecimal",
 		"BenchmarkMyDecimalToBin", "BenchmarkMyDecimalToHashKey",
 	},
+	// The literals of json_binary_test.go, json_binary_functions_test.go and
+	// json_path_expr_test.go (cmd/minelits).
+	"json": domains.JSONMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
