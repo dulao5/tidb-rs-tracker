@@ -44,6 +44,7 @@ BLOCKS = {
     "D06.4": ("D06 元数据与 Schema", "table 抽象（tables、index、partition 的读取路径）", "P2"),
     "D06.5": ("D06 元数据与 Schema", "schema 同步与 domain（schema validator、infosync）", "P2"),
     "D06.6": ("D06 元数据与 Schema", "infoschema 内存表定义与 cluster 表", "P5"),
+    "D06.7": ("D06 元数据与 Schema", "系统变量的持久化与集群全局值：mysql.global_variables / mysql.tidb 的窄写入器、sysvar cache 的读取与 etcd 通知（#58 选 (c)，D05.2 §6）", "P1"),
     # ---- D07 kv / distsql ----
     "D07.0": ("D07 KV 与 DistSQL", "kv 接口与 key 类型（pkg/kv）", "P1"),
     "D07.1": ("D07 KV 与 DistSQL", "store driver（snapshot 读）", "P2"),
@@ -186,7 +187,7 @@ RULES = [
     # pkg/sessionctx/variable scoping (D05.1, 2026-11-08; N8): every variable keeps Go's
     # name / default / scope / validation (SET and SHOW behave the same). X: writes done by
     # Go TiDB (GlobalSystemVariableInitialValue: bootstrap of mysql.global_variables;
-    # setTiDBTableValue: mysql.tidb writes; switchDDL / switchStats: DDL and stats owner
+    # switchDDL / switchStats: DDL and stats owner
     # switches, tidb-rs never owns them), extension registration (RegisterSysVar,
     # UnregisterSysVar: test only; N8 3.1 item 5). The hook plumbing that needs the
     # session state (the *FromHook methods and the SetSession / GetGlobal helpers of
@@ -199,7 +200,7 @@ RULES = [
     # (server block, by the pkg/server rules below), bindinfo globalBindingHandle → D13.2,
     # ddl and gcworker → X.
     ("X", r"pkg/sessionctx/variable/sysvar\.go$", r"^GlobalSystemVariableInitialValue$"),
-    ("X", r"pkg/sessionctx/variable/varsutil\.go$", r"^(setTiDBTableValue|switchDDL|switchStats)$"),
+    ("X", r"pkg/sessionctx/variable/varsutil\.go$", r"^(switchDDL|switchStats)$"),
     ("X", r"pkg/sessionctx/variable/variable\.go$", r"^(RegisterSysVar|UnregisterSysVar)$"),
     # mustParseTime only initializes the TTL job window atomics (TTL jobs: X).
     ("X", r"pkg/sessionctx/variable/tidb_vars\.go$", r"^mustParseTime$"),
@@ -214,7 +215,7 @@ RULES = [
     # read-only SQL or the server).
     ("X", r"pkg/sessionctx/variable/session\.go$", r"^(RetryInfo\.|retryInfoAutoIDs\.|NewRowIDShardGenerator$|RowIDShardGenerator\.|SessionVars\.GetRowIDShardGenerator$|TableDelta\.|NewTemporaryTableData$|temporaryTableData\.|SessionVars\.GetTemporaryTable$|WriteStmtBufs\.|SessionVars\.GetWriteStmtBufs$|SessionVars\.(Set|Get|Clear)DiskFullOpt$|SessionVars\.setDDLReorgPriority$|TransactionContext\.(AddUnchangedKeyForLock|CollectUnchangedKeysForSLock|CollectUnchangedKeysForXLock|ResetUnchangedKeysForLock|FlushStmtPessimisticLockCache|GetKeyInPessimisticLockCache|SetPessimisticLockCache|UpdateDeltaForTable|ClearDelta)$|SessionVars\.PessimisticLockEligible$)"),
     ("D05.2", r"pkg/sessionctx/variable/variable\.go$", r"^SysVar\.(Get|Set)(Global|Session)FromHook$"),
-    ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
+    ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|setTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
     ("D05.2", r"pkg/sessionctx/variable/sysvar\.go$", r"^setTiFlashComputeDispatchPolicy$"),
     ("D05.1", r"pkg/sessionctx/variable/(sysvar|tidb_vars|varsutil|variable|statusvar|removed|setvar_affect|sequence_state|mock_globalaccessor|noop)\.go$", None),
     ("D05.2", r"pkg/sessionctx/variable/", None),
@@ -243,6 +244,15 @@ RULES = [
     ("D01.10", r"pkg/util/chunk/(row_container|chunk_in_disk|row_in_disk|row_container_reader|disk)", None),
     ("D01.7", r"pkg/util/chunk/", None),
     ("D01.8", r"pkg/util/codec/", None),
+    # D06.7 (2026-11-09, #58 option (c), D05.2 spec §6): SET GLOBAL persists like Go. The row
+    # encoders, the index value encoders and their helpers come back from X to D01.11 (the
+    # narrow system-table writer needs them). D06.7 itself: the session functions that read and
+    # write mysql.global_variables / mysql.tidb, the domain's sysvar cache (reload, etcd
+    # notification, global config), and the autoid allocation used for _tidb_rowid.
+    ("D06.7", r"pkg/session/session\.go$", r"^session\.(replaceGlobalVariablesTableValue|getTableValue|GetTiDBTableValue|SetTiDBTableValue)$"),
+    ("D06.7", r"pkg/domain/domain\.go$", r"^Domain\.(LoadSysVarCacheLoop|NotifyUpdateSysVarCache|NotifyGlobalConfigChange)$"),
+    ("D06.7", r"pkg/domain/sysvar_cache\.go$", r"^Domain\.(fetchTableValues|rebuildSysVarCache|rebuildSysVarCacheIfNeeded)$"),
+    ("D06.7", r"pkg/meta/autoid/autoid\.go$", r"^allocator\.alloc4Signed$"),
     # tablecodec / rowcodec scoping (D01.11, 2026-11-08): tidb-rs is read-only. Reachability
     # over the function-level reference graph (work/go_refs.tsv) from the read-path blocks,
     # judged per function. X: "写路径，由 Go TiDB 承担" — the row encoders (EncodeRow,
@@ -254,10 +264,9 @@ RULES = [
     # DecodeIndexID, EncodeMetaKeyPrefix, TruncateToRowKeyLen, IsRowKey, row.ColumnIsNull,
     # row.CalculateRawChecksum); no caller in v8.5.8 (CutIndexKey, CutIndexPrefix,
     # CutRowKeyPrefix, EncodeMetaKey, MetaPrefix, UnflattenDatums, RowData.Encode).
-    ("X", r"pkg/tablecodec/tablecodec\.go$", r"^(EncodeRow|EncodeOldRow|GenIndexValuePortal|GenIndexValueForClusteredIndexVersion1|genIndexValueVersion0|TryGetCommonPkColumnRestoredIds|EncodeHandleInUniqueIndexValue|encodeCommonHandle|encodePartitionID|DecodeTempIndexValue|TempIndexValue\.\w+|TempIndexValueElem\.\w+|TempIndexValueIsUntouched|IsUntouchedIndexKValue|IndexKVIsUnique|TempIndexKey2IndexKey|CutCommonHandle|DecodeIndexID|EncodeMetaKeyPrefix|TruncateToRowKeyLen|CutIndexKey|CutIndexPrefix|CutRowKeyPrefix|EncodeMetaKey|MetaPrefix|UnflattenDatums)$"),
-    ("X", r"pkg/util/rowcodec/encoder\.go$", None),
-    ("X", r"pkg/util/rowcodec/common\.go$", r"^(encodeInt|encodeUint|(large|small)(Not)?NullSorter\.\w+|u16SliceToBytes|u32SliceToBytes|IsRowKey|RowData\.Encode)$"),
-    ("X", r"pkg/util/rowcodec/row\.go$", r"^row\.(toBytes|initColIDs|initColIDs32|initOffsets|initOffsets32|ColumnIsNull|CalculateRawChecksum)$"),
+    ("X", r"pkg/tablecodec/tablecodec\.go$", r"^(EncodeRow|EncodeOldRow|DecodeTempIndexValue|TempIndexValue\.\w+|TempIndexValueElem\.\w+|TempIndexValueIsUntouched|IsUntouchedIndexKValue|IndexKVIsUnique|TempIndexKey2IndexKey|CutCommonHandle|DecodeIndexID|EncodeMetaKeyPrefix|TruncateToRowKeyLen|CutIndexKey|CutIndexPrefix|CutRowKeyPrefix|EncodeMetaKey|MetaPrefix|UnflattenDatums)$"),
+    ("X", r"pkg/util/rowcodec/common\.go$", r"^(IsRowKey|RowData\.Encode)$"),
+    ("X", r"pkg/util/rowcodec/row\.go$", r"^row\.(ColumnIsNull|CalculateRawChecksum)$"),
     ("D01.11", r"pkg/(tablecodec|util/rowcodec)/", None),
     ("D01.9", r"pkg/util/collate/", None),
     # --- D03 ---

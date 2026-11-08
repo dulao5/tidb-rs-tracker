@@ -203,6 +203,7 @@ var sessionvarsPending = []string{
 	"parseTSFromNumberOrTime",
 	"planCacheStmtKey.Hash",
 	"setReadStaleness",
+	"setTiDBTableValue",
 	"setSnapshotTS",
 	"setTiFlashComputeDispatchPolicy",
 	"setTxnReadTS",

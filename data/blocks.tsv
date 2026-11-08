@@ -29,6 +29,7 @@ D06.3	D06 元数据与 Schema	InfoSchema 构建与缓存（v2 按 A3）	P2
 D06.4	D06 元数据与 Schema	table 抽象（tables、index、partition 的读取路径）	P2
 D06.5	D06 元数据与 Schema	schema 同步与 domain（schema validator、infosync）	P2
 D06.6	D06 元数据与 Schema	infoschema 内存表定义与 cluster 表	P5
+D06.7	D06 元数据与 Schema	系统变量的持久化与集群全局值：mysql.global_variables / mysql.tidb 的窄写入器、sysvar cache 的读取与 etcd 通知（#58 选 (c)，D05.2 §6）	P1
 D07.0	D07 KV 与 DistSQL	kv 接口与 key 类型（pkg/kv）	P1
 D07.1	D07 KV 与 DistSQL	store driver（snapshot 读）	P2
 D07.2	D07 KV 与 DistSQL	coprocessor 客户端（不含 batch/MPP）	P2

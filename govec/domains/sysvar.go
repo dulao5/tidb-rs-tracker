@@ -452,6 +452,9 @@ func sysvarValues(sv *variable.SysVar, rng *rand.Rand) []string {
 		def = "linux"
 	}
 	vals := []string{def, "", "ON", "OFF", "on", "1", "0", "-1", "abc"}
+	// Special float inputs for every variable (Lucky, review of tidb-rs #69: Go's range
+	// checks `v < lo || v > hi` let NaN through; ParseFloat accepts these spellings).
+	vals = append(vals, "NaN", "Inf", "-Inf", "infinity", "-0", "1e-400", "0x1p-2", "1e400", "-1e400")
 	switch sv.Type {
 	case variable.TypeBool:
 		vals = append(vals, "off", "On", "2", "-2", "true", "TRUE", "false", "01", " 1", "1 ", "+1", "9223372036854775808")
