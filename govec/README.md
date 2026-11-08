@@ -331,9 +331,14 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 
 `types.BinaryJSON` 与 `types.JSONPathExpression`。JSON 参数有两种写法：GoString 文本（用 `ParseBinaryJSONFromString` 解析），或 `{"k": 类型, "v": 值}`，由 `CreateBinaryJSON` 从 Go 值构造。类型有 `int64 uint64 float64(IEEE 位) string nil bool opaque([类型码, hex]) time([CoreTime 位, mysql 类型]) duration([纳秒, fsp]) array object([[键, 值], ...])`。JSON 输出是 `{"tc": 类型码, "hex": Value 的 hex, "s": String()}`。路径参数是 GoString 列表，用 `ParseJSONPathExpr` 解析，解析错误就是该记录的错误。
 
-op：`parse create type unquote unquote_string hash compare is_zero depth keys get_value peek path_parse extract modify array_insert remove merge merge_patch contains overlaps search walk`，参数和覆盖的 Go 函数见 `domains/json.go` 的 `jsonCoverage`。
+op：`parse valid unmarshal create type unquote unquote_string hash compare is_zero depth keys get_value peek path_parse extract modify array_insert remove merge merge_patch contains overlaps search walk`，参数和覆盖的 Go 函数见 `domains/json.go` 的 `jsonCoverage`。`valid` 是 `json.Valid`，`unmarshal` 是 `BinaryJSON.UnmarshalJSON`（只喂 `json.Valid` 通过的文本：语法错误的文案不移植）。
 
-输入：从 `json_*_test.go` 抽出的全部字符串字面量（`json_cases.go`，作文档和路径各跑一遍）、手写的边界文本（数字边界、转义、非法 UTF-8、孤立代理项、深度 99–10001、键长 65535/65536 以及错误先后顺序）、带种子的随机文档（嵌套、重复键、空白）和它们的随机变异、随机路径。除 `parse` 外，各 op 的文档参数只取 Go 能解析的文本。
+输入：
+- **Go 测试字面量**：`testdata/json_literals.tsv` 由 `go run ./cmd/minelits <tidb>/pkg/types/{json_binary,json_binary_functions,json_path_expr}_test.go` 生成（26 个测试函数、426 个字面量）。以 `$` 开头的做 `path_parse`，首字符像 JSON 的（`{["-0-9tfn` 或空串）做 `parse`，其余（结构体字段名、消息）丢掉；同一测试函数内，文档两两做 `compare`/`contains`/`merge`，文档×路径做 `extract`/`remove`/`array_insert`/`modify`。`src` 为测试函数名，在 `minedGoTests["json"]` 登记。
+- **边界**：数字边界、转义、非法 UTF-8、孤立代理项、深度 99–10001、键长 65535/65536 以及错误先后顺序；`sys/deep`：嵌套超过 `maxJSONDepth` 的文本（100–10001 层），包括出错先后顺序（前面元素、较小 key 的错误先报，对象的全部 key 先于值检查，重复 key 后者生效）和非法的深文本；`sys/dup`：父路径含 `**` 或范围、同一个值被命中两次的 `array_insert`/`remove`/`modify`/`extract`（tidb-rs #21 评审）。
+- **随机**：带种子的随机文档（嵌套、重复键、空白）和它们的随机变异、随机路径；`lucky/big`：1–400 个 key 的大对象（公共前缀、多字节、200 字节长 key、重复 key），60 个、值只取标量（每条记录都带完整文档，控制向量体积）。
+
+除 `parse`/`valid` 外，各 op 的文档参数只取 Go 能解析的文本。
 
 生成时看到的 Go 行为（移植时的坑）：
 - `\ud800` 这类孤立代理项经 `JSON_UNQUOTE`（`decodeEscapedUnicode`）或带引号的路径键会 panic：`utf8.RuneLen` 返回 -1，`char[0:-1]` 越界。记录为 panic，Rust 侧同样 panic。
