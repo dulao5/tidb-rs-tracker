@@ -141,9 +141,12 @@ func errStr(err error) any {
 }
 
 // sessionvarsVolatile are the variables whose read-back depends on the wall clock
-// (timestamp: time.Now when unset) or on the session's random generator (rand_seed1/2
-// state values): their read-back values are recorded as "<volatile>".
-var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true}
+// (timestamp: time.Now when unset), on the session's random generator (rand_seed1/2
+// state values) or on the host (version_compile_os / version_compile_machine: the
+// build target; tidb_config: the config with host paths): their read-back values are
+// recorded as "<volatile>".
+var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true,
+	"version_compile_os": true, "version_compile_machine": true, "tidb_config": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("sys/fresh", "fresh")
