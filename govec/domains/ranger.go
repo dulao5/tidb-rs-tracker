@@ -5,7 +5,7 @@ package domains
 //
 // A range is {"l": [datum...], "h": [datum...], "c": [collation...], "le": bool, "he": bool}
 // with datums in the codec / datum2 form (d2DatumIn). A sub-result that panics in Go is
-// {"panic": true}; an error is {"err": msg}.
+// {"panic": true}; an error is {"err": msg}. Every record runs with new collations enabled.
 //
 // Records:
 //   - "range": args [range] -> the range's String / Redact, Width, IsPoint (RangerContext
@@ -139,6 +139,8 @@ func rStrs(rs ranger.Ranges) any {
 }
 
 func rangerExec(op string, p []json.RawMessage) (out any, err error) {
+	// Collators depend on the process-wide new-collation switch other domains flip.
+	collate.SetNewCollationEnabledForTest(true)
 	tc := types.DefaultStmtNoWarningContext
 	switch op {
 	case "range":

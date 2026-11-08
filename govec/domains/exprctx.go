@@ -10,7 +10,8 @@ package domains
 //     ["div", n], ["params", [int...]], ["redact", s], ["props", [key...]]
 //   expr options: ["charset", cs, col], ["defcoll", s], ["block", s], ["sysdate", b], ["noop", n],
 //     ["connid", n], ["window", b], ["gcml", n], ["alloc", offset], ["rng", seed]
-// A Go panic is {"panic": true}; an error is {"err": msg}.
+// A Go panic is {"panic": true}; an error is {"err": msg}. Every record runs with new
+// collations enabled and restores errors.RedactLogEnabled (tidb_redact_log, #62).
 //
 // Records:
 //   - "keyset": args [set, key] -> AsPropKeySet / String / Desc / Add / Remove / Contains /
@@ -38,6 +39,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
+	"github.com/pingcap/tidb/pkg/util/collate"
 	contextutil "github.com/pingcap/tidb/pkg/util/context"
 	"github.com/pingcap/tidb/pkg/util/mathutil"
 )
@@ -402,6 +404,9 @@ func ecSeeded(raw json.RawMessage) bool {
 }
 
 func exprctxExec(op string, p []json.RawMessage) (out any, err error) {
+	// Collation validation in LoadSystemVars depends on the process-wide new-collation
+	// switch other domains flip: every record runs with new collations enabled.
+	collate.SetNewCollationEnabledForTest(true)
 	switch op {
 	case "keyset":
 		set, key := exprctx.OptionalEvalPropKeySet(arg[uint64](p, 0)), exprctx.OptionalEvalPropKey(arg[int](p, 1))
@@ -480,6 +485,9 @@ func exprctxExec(op string, p []json.RawMessage) (out any, err error) {
 		m["nr_gcml"] = exprctx.WithNullRejectCheck(ctx).GetGroupConcatMaxLen()
 		return m, nil
 	case "load":
+		// tidb_redact_log's SetSession hook writes the process-wide errors.RedactLogEnabled
+		// (upstream bug tidb-rs #62): restore it so it cannot leak into later records/domains.
+		defer errors.RedactLogEnabled.Store(initialRedactLog)
 		var kvs [][]string
 		if err := json.Unmarshal(p[0], &kvs); err != nil {
 			panic(err)
