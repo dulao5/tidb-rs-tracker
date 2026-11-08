@@ -441,7 +441,8 @@ func datumExec(op string, args []json.RawMessage) (out any, err error) {
 		case "ErrInvalidCharacterString":
 			e = charset.ErrInvalidCharacterString.GenWithStackByArgs("gbk", "x")
 		}
-		return dw(w, nil), ctx.HandleTruncate(e)
+		err := ctx.HandleTruncate(e) // before dw: dw reads the warnings
+		return dw(w, nil), err
 	case "binlit_from_uint":
 		return hex.EncodeToString(types.NewBinaryLiteralFromUint(arg[uint64](args, 0), arg[int](args, 1))), nil
 	case "binlit":
@@ -1052,7 +1053,8 @@ func datumGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	elemSets = append(elemSets, big)
 	names := []string{"a", "A", "b", "c", "d", "", "x", "1", "2", "3", "0", "10", "0x2", "0b1", "07", "0o7", "1_0", "-1",
-		"a,b", "b,a", "a,,b", "A,c", "a ", "a,a", "ss", "ß", "K", "中", "e63", "e0,e63", "18446744073709551615", "4", "7", "8"}
+		"a,b", "b,a", "a,,b", "A,c", "a ", "a,a", "ss", "ß", "K", "中", "e63", "e0,e63", "18446744073709551615", "4", "7", "8",
+		"0x1_", "0x_1", "0__1", "1__0", "_1", "0b1_", "0o_7", "0X1", "0B1", "0O7", "08", "0x", "+1", "18446744073709551616", "0xffffffffffffffff", "0x10000000000000000"}
 	for _, l := range lits {
 		if l.str != nil && (l.fn == "TestEnum" || l.fn == "TestSet") {
 			names = append(names, *l.str)
