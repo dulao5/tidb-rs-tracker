@@ -74,8 +74,6 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: a NaN float datum converted to an integer, YEAR or TIME type goes through int64(NaN)"},
 	{Domain: "datum", Op: "d_to", Args: "*", N: 2,
 		Why: "M-F2I: Datum.ToInt64 of a NaN float datum is int64(NaN)"},
-	{Domain: "datum", Op: "d_reverse", Args: "*", N: 10,
-		Why: "M-F2I: ChangeReverseResultByUpperLowerBound converts a NaN float datum with ConvertTo (int64(NaN))"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far

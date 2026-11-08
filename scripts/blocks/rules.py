@@ -171,6 +171,13 @@ RULES = [
     ("D06.1", r"pkg/types/etc\.go$", r"^ColumnNeedRestoredData$"),
     # types.EOFAsNil: no caller in v8.5.8 (D01.1 review); tidb-base has no io.EOF error value.
     ("X", r"pkg/types/etc\.go$", r"^EOFAsNil$"),
+    # types.ChangeReverseResultByUpperLowerBound (and its helper getDatumBound): no non-test
+    # caller in v8.5.8 (D01.1 part 2 review).
+    ("X", r"pkg/types/datum\.go$", r"^(ChangeReverseResultByUpperLowerBound|getDatumBound)$"),
+    # The parser driver's AST value nodes and NameSlice.FindAstColName (takes *ast.ColumnName)
+    # implement parser AST pieces: they go with the parser block, not D01.1 (D01.1 part 2 review).
+    ("D02.2", r"pkg/types/parser_driver/", None),
+    ("D02.2", r"pkg/types/field_name\.go$", r"^NameSlice\.FindAstColName$"),
     # pkg/util/tikvutil is one variable (CommitterConcurrency) read by config.GetTiKVConfig.
     ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---

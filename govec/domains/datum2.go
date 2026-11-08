@@ -41,29 +41,13 @@ func datum2Literals() []datumLit { return parseDatumLiterals(datum2LiteralsTSV) 
 
 // The D01.1 functions part 2 leaves to other blocks or does not port.
 var datum2Exempt = map[string]string{
-	"Datum.Hash64":                  "calls Hash64ForDatum, set by the codec package (D01.8); covered there",
-	"NameSlice.FindAstColName":      "takes *ast.ColumnName, a parser AST node not yet faithfully ported (blocked by D02.2)",
-	"ParamMarkerExpr.Accept":        "parser AST driver (ast.Node, format.RestoreCtx): blocked by D02.2",
-	"ParamMarkerExpr.Format":        "parser AST driver: blocked by D02.2",
-	"ParamMarkerExpr.Restore":       "parser AST driver: blocked by D02.2",
-	"ParamMarkerExpr.SetOrder":      "parser AST driver: blocked by D02.2",
-	"UnwrapFromSingleQuotes":        "parser AST driver: blocked by D02.2",
-	"ValueExpr.Accept":              "parser AST driver: blocked by D02.2",
-	"ValueExpr.Format":              "parser AST driver: blocked by D02.2",
-	"ValueExpr.GetDatumString":      "parser AST driver: blocked by D02.2",
-	"ValueExpr.GetProjectionOffset": "parser AST driver: blocked by D02.2",
-	"ValueExpr.Restore":             "parser AST driver: blocked by D02.2",
-	"ValueExpr.SetProjectionOffset": "parser AST driver: blocked by D02.2",
-	"ValueExpr.SetValue":            "parser AST driver: blocked by D02.2",
-	"WrapInSingleQuotes":            "parser AST driver: blocked by D02.2",
-	"newParamMarkerExpr":            "parser AST driver: blocked by D02.2",
-	"newValueExpr":                  "parser AST driver: blocked by D02.2",
-	"FieldTypeBuilder.SetElems":     "covered through NewFieldType / the ft decoder (elems are set on every field type input)",
-	"FieldTypeBuilder.SetArray":     "a one-line setter of FieldType.SetArray (D02.3)",
-	"FieldTypeBuilder.ToggleFlag":   "a one-line setter of FieldType.ToggleFlag (D02.3)",
-	"FieldTypeBuilder.Build":        "returns the built FieldType; covered by ft_builder",
-	"datumsSorter.Len":              "sort.Interface method; covered by d_list sort",
-	"datumsSorter.Swap":             "sort.Interface method; covered by d_list sort",
+	"Datum.Hash64":                "calls Hash64ForDatum, set by the codec package (D01.8); covered there",
+	"FieldTypeBuilder.SetElems":   "covered through NewFieldType / the ft decoder (elems are set on every field type input)",
+	"FieldTypeBuilder.SetArray":   "a one-line setter of FieldType.SetArray (D02.3)",
+	"FieldTypeBuilder.ToggleFlag": "a one-line setter of FieldType.ToggleFlag (D02.3)",
+	"FieldTypeBuilder.Build":      "returns the built FieldType; covered by ft_builder",
+	"datumsSorter.Len":            "sort.Interface method; covered by d_list sort",
+	"datumsSorter.Swap":           "sort.Interface method; covered by d_list sort",
 }
 
 var datum2Coverage = map[string]vec.Coverage{
@@ -102,9 +86,11 @@ var datum2Coverage = map[string]vec.Coverage{
 	"d_list": {Min: 500, GoFuncs: []string{"SortDatums", "datumsSorter.Less", "DatumsToString", "DatumsToStringSmart",
 		"datumsToString", "isPrintable", "DatumsToStrNoErr", "DatumsToStrNoErrSmart", "CloneRow", "EstimatedMemUsage",
 		"DatumsContainNull"}},
-	"d_bound":   {Min: 70, GoFuncs: []string{"GetMaxValue", "GetMinValue"}},
-	"d_reverse": {Min: 500, GoFuncs: []string{"ChangeReverseResultByUpperLowerBound", "getDatumBound"}},
-	"d_plus":    {Min: 500, GoFuncs: []string{"ComputePlus", "InvOp2"}},
+	"d_bound": {Min: 70, GoFuncs: []string{"GetMaxValue", "GetMinValue"}},
+	// d_convert_recv: the receiver after ConvertTo (Go's pointer receiver; convertToMysqlBit sets
+	// d.k = KindUint64 on a KindInt64 receiver, visible to callers: upstream-pitfall tidb-rs#34).
+	"d_convert_recv": {Min: 3000, GoFuncs: []string{"Datum.ConvertTo", "Datum.convertToMysqlBit"}},
+	"d_plus":         {Min: 500, GoFuncs: []string{"ComputePlus", "InvOp2"}},
 	"d_new": {Min: 300, GoFuncs: []string{"NewDatum", "MakeDatums", "Datum.SetValueWithDefaultCollation", "Datum.SetValue",
 		"Datum.SetInterface", "InferParamTypeFromDatum", "InferParamTypeFromUnderlyingValue",
 		"hasVariantFieldLength", "DefaultTypeForValue", "SetBinChsClnFlag"}},
@@ -372,6 +358,12 @@ func datum2Exec(op string, args []json.RawMessage) (out any, err error, ok bool)
 		// errors.Wrap(ErrTruncated, msg) of the enum / set conversions is recorded as
 		// its cause (mapping rule M-ERR, as for the Enum parsers in part 1).
 		return dw(w, d2DatumOut(ret)), errors.Cause(err), true
+	case "d_convert_recv":
+		ctx, w := datumCtx(args, 0)
+		d := d2DatumIn(arg[[]json.RawMessage](args, 1))
+		ft := d2FtIn(arg[[]json.RawMessage](args, 2))
+		ret, err := d.ConvertTo(ctx, ft)
+		return dw(w, map[string]any{"ret": d2DatumOut(ret), "recv": d2DatumOut(d)}), errors.Cause(err), true
 	case "d_compare":
 		ctx, w := datumCtx(args, 0)
 		a := d2DatumIn(arg[[]json.RawMessage](args, 1))
@@ -483,12 +475,6 @@ func datum2Exec(op string, args []json.RawMessage) (out any, err error, ok bool)
 	case "d_bound":
 		ft := d2FtIn(arg[[]json.RawMessage](args, 0))
 		return map[string]any{"max": d2DatumOut(types.GetMaxValue(ft)), "min": d2DatumOut(types.GetMinValue(ft))}, nil, true
-	case "d_reverse":
-		ctx, w := datumCtx(args, 0)
-		ft := d2FtIn(arg[[]json.RawMessage](args, 1))
-		d := d2DatumIn(arg[[]json.RawMessage](args, 2))
-		ret, err := types.ChangeReverseResultByUpperLowerBound(ctx, ft, d, types.RoundingType(arg[uint8](args, 3)))
-		return dw(w, d2DatumOut(ret)), errors.Cause(err), true // M-ERR, as d_convert
 	case "d_plus":
 		a := d2DatumIn(arg[[]json.RawMessage](args, 0))
 		b := d2DatumIn(arg[[]json.RawMessage](args, 1))
@@ -787,6 +773,22 @@ func datum2Generate(g *vec.Gen, rng *rand.Rand) {
 	for i := 0; i < 6000; i++ {
 		g.Add("rand", "d_convert", flags[rng.IntN(len(flags))], pool[rng.IntN(len(pool))], fts[rng.IntN(len(fts))])
 	}
+	// d_convert_recv: every pool datum to every field type, plus the signed integers that
+	// convertToMysqlBit reinterprets (the seed-12 d_reverse record of the D01.1 part 2 review:
+	// Int64 0 to BIT(32); tidb-rs#34: Int64 -1 to BIT(8) gives ErrDataTooLong, not ErrOverflow).
+	for _, d := range pool {
+		for _, ft := range fts {
+			g.Add("sys/convert_recv", "d_convert_recv", flags[0], d, ft)
+		}
+	}
+	for _, i := range []int64{0, 1, -1, 127, -128, 255, 256, math.MaxInt32, math.MinInt32, math.MaxInt64, math.MinInt64} {
+		for _, flen := range []int{1, 8, 32, 63, 64} {
+			for fi := range flags[:2] {
+				g.Add("sys/convert_recv_bit", "d_convert_recv", flags[fi], []any{types.KindInt64, i},
+					[]any{mysql.TypeBit, uint(mysql.UnsignedFlag), flen, 0, "binary", "binary", nil})
+			}
+		}
+	}
 	for _, l := range lits {
 		if l.str != nil {
 			for fi := 0; fi < len(fts); fi += 3 {
@@ -860,17 +862,9 @@ func datum2Generate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("rand", "d_list", "sort", flags[rng.IntN(2)], ds)
 	}
-	// d_bound / d_reverse.
+	// d_bound.
 	for _, ft := range fts {
 		g.Add("sys/bound", "d_bound", ft)
-	}
-	for i := 0; i < 1500; i++ {
-		g.Add("rand", "d_reverse", flags[rng.IntN(2)], fts[rng.IntN(len(fts))], pool[rng.IntN(len(pool))], uint8(rng.IntN(2)))
-	}
-	for _, d := range pool {
-		for _, ft := range fts[:12] {
-			g.Add("sys/reverse", "d_reverse", flags[0], ft, d, uint8(0))
-		}
 	}
 	// d_plus.
 	for i := 0; i < 1500; i++ {
