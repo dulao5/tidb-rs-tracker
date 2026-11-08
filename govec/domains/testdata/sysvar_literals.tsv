@@ -1,0 +1,652 @@
+TestSQLSelectLimit	s	"-10"
+TestSQLSelectLimit	s	"0"
+TestSQLSelectLimit	s	"9999"
+TestSQLSelectLimit	i	9999
+TestSQLModeVar	s	"strict_trans_tabLES  "
+TestSQLModeVar	s	"STRICT_TRANS_TABLES"
+TestSQLModeVar	s	"strict_trans_tabLES,nonsense_option"
+TestSQLModeVar	s	"ERROR 1231 (42000): Variable 'sql_mode' can't be set to the value of 'NONSENSE_OPTION'"
+TestSQLModeVar	s	"ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+TestSQLModeVar	s	"ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+TestMaxExecutionTime	s	"-10"
+TestMaxExecutionTime	s	"0"
+TestMaxExecutionTime	s	"99999"
+TestMaxExecutionTime	i	99999
+TestTiFlashMaxBytes	s	"-10"
+TestTiFlashMaxBytes	s	"-1"
+TestTiFlashMaxBytes	s	"100"
+TestTiFlashMaxBytes	i	1
+TestTiFlashMaxBytes	i	10
+TestTiFlashMaxBytes	s	"10000"
+TestTiFlashMaxBytes	i	0
+TestTiFlashMaxBytes	i	10000
+TestTiFlashMaxBytes	i	2
+TestTiFlashMemQuotaQueryPerNode	s	"-10"
+TestTiFlashMemQuotaQueryPerNode	s	"-1"
+TestTiFlashMemQuotaQueryPerNode	s	"100"
+TestTiFlashMemQuotaQueryPerNode	i	1
+TestTiFlashMemQuotaQueryPerNode	i	10
+TestTiFlashMemQuotaQueryPerNode	s	"10000"
+TestTiFlashMemQuotaQueryPerNode	i	10000
+TestTiFlashQuerySpillRatio	s	"-10"
+TestTiFlashQuerySpillRatio	s	"0"
+TestTiFlashQuerySpillRatio	s	"100"
+TestTiFlashQuerySpillRatio	s	"0.9"
+TestTiFlashQuerySpillRatio	s	"0.85"
+TestTiFlashQuerySpillRatio	s	"0.75"
+TestCollationServer	s	"LATIN1_bin"
+TestCollationServer	s	"latin1_bin"
+TestCollationServer	s	"BOGUSCOLLation"
+TestCollationServer	s	"[ddl:1273]Unknown collation: 'BOGUSCOLLation'"
+TestCollationServer	s	"latin1"
+TestCollationServer	s	"utf8mb4_bin"
+TestCollationServer	s	"utf8mb4"
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_BIN"
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_bin"
+TestDefaultCollationForUTF8MB4	i	0
+TestDefaultCollationForUTF8MB4	s	"[variable:1681]Updating 'default_collation_for_utf8mb4' is deprecated. It will be made read-only in a future release."
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_GENeral_CI"
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_general_ci"
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_0900_AI_CI"
+TestDefaultCollationForUTF8MB4	s	"utf8mb4_0900_ai_ci"
+TestDefaultCollationForUTF8MB4	s	"LATIN1_bin"
+TestDefaultCollationForUTF8MB4	s	"latin1_bin"
+TestTimeZone	s	"America/Edmonton"
+TestTimeZone	s	"+10:00"
+TestTimeZone	s	"UTC"
+TestTimeZone	s	"+00:00"
+TestTxnIsolation	s	"on"
+TestTxnIsolation	s	"[variable:1231]Variable 'tx_isolation' can't be set to the value of 'on'"
+TestTxnIsolation	s	"read-COMMitted"
+TestTxnIsolation	s	"READ-COMMITTED"
+TestTxnIsolation	s	"Serializable"
+TestTxnIsolation	s	"[variable:8048]The isolation level 'SERIALIZABLE' is not supported. Set tidb_skip_isolation_level_check=1 to skip this error"
+TestTxnIsolation	s	"read-uncommitted"
+TestTxnIsolation	s	"[variable:8048]The isolation level 'READ-UNCOMMITTED' is not supported. Set tidb_skip_isolation_level_check=1 to skip this error"
+TestTxnIsolation	s	"ON"
+TestTxnIsolation	s	"SERIALIZABLE"
+TestTxnIsolation	s	"1"
+TestTiDBMultiStatementMode	s	"on"
+TestTiDBMultiStatementMode	s	"ON"
+TestTiDBMultiStatementMode	i	1
+TestTiDBMultiStatementMode	s	"0"
+TestTiDBMultiStatementMode	s	"OFF"
+TestTiDBMultiStatementMode	i	0
+TestTiDBMultiStatementMode	s	"Warn"
+TestTiDBMultiStatementMode	s	"WARN"
+TestTiDBMultiStatementMode	i	2
+TestReadOnlyNoop	s	"on"
+TestReadOnlyNoop	s	"[variable:1235]function READ ONLY has only noop implementation in tidb now, use tidb_enable_noop_functions to enable these functions"
+TestReadOnlyNoop	s	"OFF"
+TestReadOnlyNoop	s	"ON"
+TestReadOnlyNoop	s	"[variable:1235]function OFFLINE MODE has only noop implementation in tidb now, use tidb_enable_noop_functions to enable these functions"
+TestSkipInit	s	"skipinit1"
+TestSessionGetterFuncs	s	"%d"
+TestInstanceScopedVars	s	"0"
+TestInstanceScopedVars	s	"1"
+TestInstanceScopedVars	s	"%d"
+TestInstanceScopedVars	s	"%g"
+TestInstanceScopedVars	i	10
+TestInstanceScopedVars	i	1
+TestSecureAuth	s	"OFF"
+TestSecureAuth	s	"[variable:1231]Variable 'secure_auth' can't be set to the value of 'OFF'"
+TestSecureAuth	s	"ON"
+TestTiDBReplicaRead	s	"follower"
+TestSQLAutoIsNull	s	"ON"
+TestSQLAutoIsNull	s	"OFF"
+TestLastInsertID	s	"0"
+TestLastInsertID	i	21
+TestLastInsertID	s	"21"
+TestLastInsertID	s	"9223372036854775809"
+TestLastInsertID	s	"last_insert_id"
+TestTimestamp	s	""
+TestTimestamp	s	"10"
+TestTimestamp	s	"0"
+TestTimestamp	s	"-5"
+TestTimestamp	i	0
+TestTimestamp	s	"[variable:1292]Truncated incorrect timestamp value: '-5'"
+TestTimestamp	s	"3147483698"
+TestTimestamp	s	"[variable:1231]Variable 'timestamp' can't be set to the value of '3147483698'"
+TestTimestamp	s	"2147483648"
+TestTimestamp	s	"[variable:1231]Variable 'timestamp' can't be set to the value of '2147483648'"
+TestTimestamp	s	"2147483647"
+TestIdentity	s	"0"
+TestIdentity	i	21
+TestIdentity	s	"21"
+TestLcTimeNamesReadOnly	s	"lc_time_names"
+TestLcTimeNamesReadOnly	s	"newvalue"
+TestLcMessages	s	"lc_messages"
+TestLcMessages	s	"zh_CN"
+TestDDLWorkers	s	"-100"
+TestDDLWorkers	s	"1"
+TestDDLWorkers	s	"1234"
+TestDDLWorkers	s	"256"
+TestDDLWorkers	s	"100"
+TestDDLWorkers	s	"10"
+TestDDLWorkers	s	"999999"
+TestNetBufferLength	s	"1"
+TestNetBufferLength	s	"1024"
+TestNetBufferLength	s	"10485760"
+TestNetBufferLength	s	"1048576"
+TestNetBufferLength	s	"524288"
+TestTiDBBatchPendingTiFlashCount	s	"-10"
+TestTiDBBatchPendingTiFlashCount	s	"0"
+TestTiDBBatchPendingTiFlashCount	s	"9999"
+TestTiDBBatchPendingTiFlashCount	s	"1.5"
+TestTiDBBatchPendingTiFlashCount	s	"[variable:1232]Incorrect argument type to variable 'tidb_batch_pending_tiflash_count'"
+TestTiDBMemQuotaQuery	i	32
+TestTiDBMemQuotaQuery	i	1024
+TestTiDBMemQuotaQuery	s	"%d"
+TestTiDBMemQuotaQuery	s	"33554432"
+TestTiDBMemQuotaQuery	i	2
+TestTiDBMemQuotaQuery	i	1
+TestTiDBQueryLogMaxLen	i	32
+TestTiDBQueryLogMaxLen	i	1024
+TestTiDBQueryLogMaxLen	s	"%d"
+TestTiDBQueryLogMaxLen	s	"33554432"
+TestTiDBQueryLogMaxLen	i	1073741825
+TestTiDBQueryLogMaxLen	i	1073741824
+TestTiDBQueryLogMaxLen	i	2
+TestTiDBQueryLogMaxLen	i	0
+TestTiDBCommitterConcurrency	i	1024
+TestTiDBCommitterConcurrency	s	"%d"
+TestTiDBCommitterConcurrency	s	"1024"
+TestTiDBCommitterConcurrency	i	10001
+TestTiDBCommitterConcurrency	i	10000
+TestTiDBCommitterConcurrency	i	0
+TestTiDBCommitterConcurrency	i	1
+TestTiDBDDLFlashbackConcurrency	i	128
+TestTiDBDDLFlashbackConcurrency	s	"%d"
+TestTiDBDDLFlashbackConcurrency	s	"128"
+TestTiDBDDLFlashbackConcurrency	i	1
+TestTiDBDDLFlashbackConcurrency	i	0
+TestDefaultMemoryDebugModeValue	s	"0"
+TestDefaultPartitionPruneMode	s	"dynamic"
+TestSetTIDBDiskQuota	i	1024
+TestSetTIDBDiskQuota	i	100
+TestSetTIDBDiskQuota	i	10
+TestSetTIDBDiskQuota	i	50
+TestSetTIDBDiskQuota	i	200
+TestSetTIDBDiskQuota	i	2
+TestTiDBServerMemoryLimit	i	1
+TestTiDBServerMemoryLimit	i	20
+TestTiDBServerMemoryLimit	i	100
+TestTiDBServerMemoryLimit	i	10
+TestTiDBServerMemoryLimit	s	"512MB"
+TestTiDBServerMemoryLimit	i	0
+TestTiDBServerMemoryLimit	s	"0"
+TestTiDBServerMemoryLimit	i	1024
+TestTiDBServerMemoryLimit	i	128
+TestTiDBServerMemoryLimit	i	200
+TestTiDBServerMemoryLimit2	i	0
+TestTiDBServerMemoryLimit2	s	"1%"
+TestTiDBServerMemoryLimit2	i	100
+TestTiDBServerMemoryLimit2	i	512
+TestTiDBServerMemoryLimit2	i	20
+TestTiDBServerMemoryLimit2	s	"512MB"
+TestTiDBServerMemoryLimit2	s	"0%"
+TestTiDBServerMemoryLimit2	s	"100%"
+TestTiDBServerMemoryLimit2	s	"75%"
+TestTiDBServerMemoryLimit2	i	75
+TestTiDBServerMemoryLimit2	s	"github.com/pingcap/tidb/pkg/util/memory/GetMemTotalError"
+TestTiDBServerMemoryLimit2	s	"return(true)"
+TestTiDBServerMemoryLimit2	s	"1234"
+TestTiDBServerMemoryLimit2	s	"1234567890123"
+TestTiDBServerMemoryLimit2	i	1234567890123
+TestTiDBServerMemoryLimit2	s	"10KB"
+TestTiDBServerMemoryLimit2	s	"12345678KB"
+TestTiDBServerMemoryLimit2	i	12345678
+TestTiDBServerMemoryLimit2	i	10
+TestTiDBServerMemoryLimit2	s	"10MB"
+TestTiDBServerMemoryLimit2	s	"700MB"
+TestTiDBServerMemoryLimit2	i	700
+TestTiDBServerMemoryLimit2	s	"20GB"
+TestTiDBServerMemoryLimit2	i	30
+TestTiDBServerMemoryLimit2	s	"2TB"
+TestTiDBServerMemoryLimit2	i	2
+TestTiDBServerMemoryLimit2	i	40
+TestTiDBServerMemoryLimit2	s	"123aaa123"
+TestTiDBServerMemoryLimit2	s	"700MBaa"
+TestTiDBServerMemoryLimit2	s	"a700MB"
+TestTiDBServerMemoryLimitSessMinSize	i	10
+TestTiDBServerMemoryLimitSessMinSize	s	"123456"
+TestTiDBServerMemoryLimitSessMinSize	i	123456
+TestTiDBServerMemoryLimitSessMinSize	s	"100"
+TestTiDBServerMemoryLimitSessMinSize	i	128
+TestTiDBServerMemoryLimitSessMinSize	s	"128"
+TestTiDBServerMemoryLimitSessMinSize	s	"123MB"
+TestTiDBServerMemoryLimitSessMinSize	i	123
+TestTiDBServerMemoryLimitSessMinSize	i	20
+TestTiDBServerMemoryLimitSessMinSize	s	"128974848"
+TestTiDBServerMemoryLimitGCTrigger	i	1
+TestTiDBServerMemoryLimitGCTrigger	i	64
+TestTiDBServerMemoryLimitGCTrigger	s	"0.8"
+TestTiDBServerMemoryLimitGCTrigger	s	"90%"
+TestTiDBServerMemoryLimitGCTrigger	s	"0.9"
+TestTiDBServerMemoryLimitGCTrigger	s	"100%"
+TestTiDBServerMemoryLimitGCTrigger	s	"101%"
+TestTiDBServerMemoryLimitGCTrigger	s	"99%"
+TestTiDBServerMemoryLimitGCTrigger	s	"0.4"
+TestTiDBServerMemoryLimitGCTrigger	s	"49%"
+TestTiDBServerMemoryLimitGCTrigger	s	"51%"
+TestTiDBServerMemoryLimitGCTrigger	s	"50"
+TestTiDBServerMemoryLimitGCTrigger	s	"200"
+TestTiDBServerMemoryLimitGCTrigger	s	"1000"
+TestTiDBServerMemoryLimitGCTrigger	s	"100"
+TestSetAggPushDownGlobally	s	"OFF"
+TestSetAggPushDownGlobally	s	"ON"
+TestSetDeriveTopNGlobally	s	"OFF"
+TestSetDeriveTopNGlobally	s	"ON"
+TestSetJobScheduleWindow	s	"00:00 +0000"
+TestSetJobScheduleWindow	s	"16:11"
+TestSetJobScheduleWindow	s	"16:11 +0000"
+TestSetJobScheduleWindow	s	"Asia/Shanghai"
+TestSetJobScheduleWindow	s	"16:11 +0800"
+TestTiDBAutoAnalyzeRatio	s	"0.5"
+TestTiDBAutoAnalyzeRatio	s	"0.1"
+TestTiDBAutoAnalyzeRatio	s	"1.1"
+TestTiDBAutoAnalyzeRatio	s	"0"
+TestTiDBAutoAnalyzeRatio	s	"0.0000000001"
+TestTiDBAutoAnalyzeRatio	s	"0.00001"
+TestTiDBAutoAnalyzeRatio	s	"0.000009999"
+TestTiDBTiFlashReplicaRead	s	"all_replicas"
+TestTiDBTiFlashReplicaRead	s	"closest_adaptive"
+TestTiDBTiFlashReplicaRead	s	"closest_replicas"
+TestTiDBTiFlashReplicaRead	s	"random"
+TestSetTiDBCloudStorageURI	i	0
+TestSetTiDBCloudStorageURI	s	""
+TestSetTiDBCloudStorageURI	s	"noop://blackhole?access-key=hello&secret-access-key=world"
+TestSetTiDBCloudStorageURI	s	"s3://blackhole"
+TestSetTiDBCloudStorageURI	s	"unreachable storage URI"
+TestSetTiDBCloudStorageURI	i	200
+TestSetTiDBCloudStorageURI	s	"s3://tiflow-test/?access-key=testid&secret-access-key=testkey8&session-token=testtoken&endpoint="
+TestSetTiDBCloudStorageURI	s	"s3://tiflow-test/"
+TestSetTiDBCloudStorageURI	s	"access-key=xxxxxx"
+TestSetTiDBCloudStorageURI	s	"secret-access-key=xxxxxx"
+TestSetTiDBCloudStorageURI	s	"session-token=xxxxxx"
+TestSetTiDBCloudStorageURI	s	"ks3://tiflow-test/?region=test&access-key=testid&secret-access-key=testkey8&session-token=testtoken&endpoint="
+TestSetTiDBCloudStorageURI	s	"ks3://tiflow-test/"
+TestGlobalSystemVariableInitialValue	s	"pessimistic"
+TestTiDBOptTxnAutoRetry	s	"OFF"
+TestTiDBOptTxnAutoRetry	s	"ON"
+TestTiDBOptTxnAutoRetry	i	0
+TestTiDBOptTxnAutoRetry	s	"[variable:1287]'OFF' is deprecated and will be removed in a future release. Please use ON instead"
+TestTiDBLowResTSOUpdateInterval	s	"0"
+TestTiDBLowResTSOUpdateInterval	i	10
+TestTiDBLowResTSOUpdateInterval	i	0
+TestTiDBLowResTSOUpdateInterval	s	"[variable:1292]Truncated incorrect tidb_low_resolution_tso_update_interval value: '0'"
+TestTiDBLowResTSOUpdateInterval	s	"100000"
+TestTiDBLowResTSOUpdateInterval	i	1
+TestTiDBLowResTSOUpdateInterval	s	"[variable:1292]Truncated incorrect tidb_low_resolution_tso_update_interval value: '100000'"
+TestTiDBLowResTSOUpdateInterval	s	"1000"
+TestTiDBSchemaCacheSize	i	1
+TestTiDBSchemaCacheSize	i	20
+TestTiDBSchemaCacheSize	i	63
+TestTiDBSchemaCacheSize	i	10
+TestTiDBSchemaCacheSize	s	"64MB"
+TestTiDBSchemaCacheSize	i	64
+TestTiDBSchemaCacheSize	i	1024
+TestTiDBSchemaCacheSize	i	0
+TestTiDBSchemaCacheSize	s	"0"
+TestTiDBSchemaCacheSize	s	"1234567890123"
+TestTiDBSchemaCacheSize	i	1234567890123
+TestTiDBSchemaCacheSize	s	"10KB"
+TestTiDBSchemaCacheSize	s	"12345678KB"
+TestTiDBSchemaCacheSize	i	12345678
+TestTiDBSchemaCacheSize	s	"700MB"
+TestTiDBSchemaCacheSize	i	700
+TestTiDBSchemaCacheSize	s	"20GB"
+TestTiDBSchemaCacheSize	i	30
+TestTiDBSchemaCacheSize	s	"2TB"
+TestTiDBSchemaCacheSize	i	2
+TestTiDBSchemaCacheSize	i	40
+TestTiDBSchemaCacheSize	s	"123aaa123"
+TestTiDBSchemaCacheSize	s	"700MBaa"
+TestTiDBSchemaCacheSize	s	"a700MB"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"-1"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	i	10
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	i	0
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"[variable:1292]Truncated incorrect tidb_cb_pd_metadata_error_rate_threshold_ratio value: '-1'"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"1.1"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	i	1
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"[variable:1292]Truncated incorrect tidb_cb_pd_metadata_error_rate_threshold_ratio value: '1.1'"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"0.9"
+TestTiDBCircuitBreakerPDMetadataErrorRateThresholdRatio	s	"0.0"
+TestEnableWindowFunction	s	"on"
+TestEnableWindowFunction	s	"0"
+TestEnableWindowFunction	s	"1"
+TestTiDBHashJoinVersion	s	"invalid"
+TestTiDBHashJoinVersion	s	"legacy"
+TestTiDBHashJoinVersion	s	"optimized"
+TestTiDBHashJoinVersion	s	"Legacy"
+TestTiDBHashJoinVersion	s	"Optimized"
+TestTiDBHashJoinVersion	s	"LegaCy"
+TestTiDBHashJoinVersion	s	"OptimiZed"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"3"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"Both enabled, valid input"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"10"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"Auto analyze disabled"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"Auto analyze priority queue disabled"
+TestTiDBAutoAnalyzeConcurrencyValidation	s	"Both disabled"
+TestTiDBOptPartialOrderedIndexForTopN	s	"DISABLE"
+TestTiDBOptPartialOrderedIndexForTopN	s	"COST"
+TestTiDBOptPartialOrderedIndexForTopN	s	"cost"
+TestTiDBOptPartialOrderedIndexForTopN	s	"disable"
+TestTiDBOptPartialOrderedIndexForTopN	s	"ON"
+TestTiDBOptPartialOrderedIndexForTopN	s	"can't be set to the value of"
+TestTiDBOptPartialOrderedIndexForTopN	s	"OFF"
+TestTiDBOptPartialOrderedIndexForTopN	s	"1"
+TestTiDBOptPartialOrderedIndexForTopN	s	"0"
+TestTiDBOptPartialOrderedIndexForTopN	s	"true"
+TestTiDBOptPartialOrderedIndexForTopN	s	"false"
+TestTiDBOptPartialOrderedIndexForTopN	s	"2"
+TestTiDBOptPartialOrderedIndexForTopN	s	"-1"
+TestTiDBOptPartialOrderedIndexForTopN	s	"yes"
+TestTiDBOptPartialOrderedIndexForTopN	s	"no"
+TestSysVar	s	"autocommit"
+TestSysVar	s	"wrong-var-name"
+TestSysVar	s	"explicit_defaults_for_timestamp"
+TestSysVar	s	"ON"
+TestSysVar	s	"port"
+TestSysVar	s	"4000"
+TestSysVar	s	"tidb_low_resolution_tso"
+TestSysVar	s	"OFF"
+TestSysVar	s	"tidb_replica_read"
+TestSysVar	s	"leader"
+TestSysVar	s	"tidb_enable_table_partition"
+TestSysVar	s	"version_compile_os"
+TestSysVar	s	"version_compile_machine"
+TestSysVar	s	"tidb_enable_vectorized_expression"
+TestRegistrationOfNewSysVar	s	"mynewsysvar"
+TestRegistrationOfNewSysVar	s	"set should fail"
+TestRegistrationOfNewSysVar	i	1
+TestRegistrationOfNewSysVar	s	"ABCD"
+TestRegistrationOfNewSysVar	s	"oN"
+TestRegistrationOfNewSysVar	s	"ON"
+TestRegistrationOfNewSysVar	s	"0"
+TestRegistrationOfNewSysVar	s	"OFF"
+TestIntValidation	s	"mynewsysvar"
+TestIntValidation	s	"123"
+TestIntValidation	i	10
+TestIntValidation	i	300
+TestIntValidation	s	"oN"
+TestIntValidation	s	"[variable:1232]Incorrect argument type to variable 'mynewsysvar'"
+TestIntValidation	s	"301"
+TestIntValidation	s	"300"
+TestIntValidation	s	"5"
+TestIntValidation	s	"10"
+TestIntValidation	s	"-1"
+TestPerformanceSchemaSessionConnectAttrsSizeValidation	s	"-1"
+TestPerformanceSchemaSessionConnectAttrsSizeValidation	s	"0"
+TestPerformanceSchemaSessionConnectAttrsSizeValidation	s	"65536"
+TestPerformanceSchemaSessionConnectAttrsSizeValidation	s	"65537"
+TestPerformanceSchemaSessionConnectAttrsSizeValidation	s	"-2"
+TestUintValidation	s	"mynewsysvar"
+TestUintValidation	s	"123"
+TestUintValidation	i	10
+TestUintValidation	i	300
+TestUintValidation	s	"oN"
+TestUintValidation	s	"[variable:1232]Incorrect argument type to variable 'mynewsysvar'"
+TestUintValidation	s	""
+TestUintValidation	s	"301"
+TestUintValidation	s	"300"
+TestUintValidation	s	"-301"
+TestUintValidation	s	"10"
+TestUintValidation	s	"-ERR"
+TestUintValidation	s	"5"
+TestUintValidation	s	"-1"
+TestEnumValidation	s	"mynewsysvar"
+TestEnumValidation	s	"OFF"
+TestEnumValidation	s	"ON"
+TestEnumValidation	s	"AUTO"
+TestEnumValidation	s	"randomstring"
+TestEnumValidation	s	"[variable:1231]Variable 'mynewsysvar' can't be set to the value of 'randomstring'"
+TestEnumValidation	s	"oFf"
+TestEnumValidation	s	"On"
+TestEnumValidation	s	"auto"
+TestEnumValidation	s	"2"
+TestDurationValidation	s	"mynewsysvar"
+TestDurationValidation	s	"10m0s"
+TestDurationValidation	s	"1hr"
+TestDurationValidation	s	"[variable:1232]Incorrect argument type to variable 'mynewsysvar'"
+TestDurationValidation	s	"1ms"
+TestDurationValidation	s	"1s"
+TestDurationValidation	s	"2h10m"
+TestDurationValidation	s	"1h0m0s"
+TestFloatValidation	s	"mynewsysvar"
+TestFloatValidation	s	"10m0s"
+TestFloatValidation	i	2
+TestFloatValidation	i	7
+TestFloatValidation	s	"stringval"
+TestFloatValidation	s	"[variable:1232]Incorrect argument type to variable 'mynewsysvar'"
+TestFloatValidation	s	""
+TestFloatValidation	s	"1.1"
+TestFloatValidation	s	"2"
+TestFloatValidation	s	"22"
+TestFloatValidation	s	"7"
+TestBoolValidation	s	"mynewsysvar"
+TestBoolValidation	s	"0.000"
+TestBoolValidation	s	"[variable:1231]Variable 'mynewsysvar' can't be set to the value of '0.000'"
+TestBoolValidation	s	"1.000"
+TestBoolValidation	s	"[variable:1231]Variable 'mynewsysvar' can't be set to the value of '1.000'"
+TestBoolValidation	s	"0"
+TestBoolValidation	s	"1"
+TestBoolValidation	s	"OFF"
+TestBoolValidation	s	"ON"
+TestBoolValidation	s	"off"
+TestBoolValidation	s	"on"
+TestBoolValidation	s	"-1"
+TestTimeValidation	s	"mynewsysvar"
+TestTimeValidation	s	"23:59 +0000"
+TestTimeValidation	s	"3:00 +0000"
+TestTimeValidation	s	"03:00 +0000"
+TestTimeValidation	s	"0.000"
+TestGetNativeValType	s	"mynewsysvar"
+TestGetNativeValType	s	"ON"
+TestGetNativeValType	i	1
+TestGetNativeValType	s	"OFF"
+TestGetNativeValType	i	0
+TestGetNativeValType	s	"bogus"
+TestGetNativeValType	s	"1234"
+TestGetNativeValType	i	1234
+TestGetNativeValType	s	"abc"
+TestSynonyms	s	"SERIALIZABLE"
+TestSynonyms	s	"[variable:8048]The isolation level 'SERIALIZABLE' is not supported. Set tidb_skip_isolation_level_check=1 to skip this error"
+TestSynonyms	s	"ON"
+TestSynonyms	i	0
+TestDeprecation	s	"123"
+TestDeprecation	i	0
+TestDeprecation	s	"[variable:1287]'tidb_index_lookup_concurrency' is deprecated and will be removed in a future release. Please use tidb_executor_concurrency instead"
+TestScope	s	"mynewsysvar"
+TestScope	s	"OFF"
+TestScope	s	"ON"
+TestScope	s	"AUTO"
+TestSysVarNameIsLowerCase	s	"sysvar name contains uppercase characters"
+TestSkipInitIsUsed	s	"skipInit has no effect on a variable without session scope: %s"
+TestSkipInitIsUsed	s	"skipInit has no effect on variables without an init (setsession) func: %s"
+TestSkipInitIsUsed	s	"skipInit has no effect on noop variables: %s"
+TestSkipInitIsUsed	s	"0"
+TestSkipInitIsUsed	s	"default value is zero: %s"
+TestSkipInitIsUsed	s	"OFF"
+TestSkipInitIsUsed	s	"default value is OFF: %s"
+TestSkipInitIsUsed	s	"skipInit should not be set on new system variables. variable %s is in violation"
+TestScopeToString	s	"GLOBAL"
+TestScopeToString	s	"SESSION"
+TestScopeToString	s	"INSTANCE"
+TestScopeToString	s	"NONE"
+TestScopeToString	s	"SESSION,GLOBAL"
+TestScopeToString	s	"SESSION,INSTANCE"
+TestValidateWithRelaxedValidation	s	"1"
+TestValidateWithRelaxedValidation	s	"ON"
+TestValidateWithRelaxedValidation	s	"RandomText"
+TestValidateWithRelaxedValidation	s	"RandomText - should be valid SQL"
+TestInstanceConfigHasMatchingSysvar	s	"instance"
+TestInstanceConfigHasMatchingSysvar	s	"config option: instance.%v requires a matching sysvar of the same name"
+TestInstanceScope	s	"sysvar %s has both instance and global scope"
+TestInstanceScope	s	"newinstancesysvar"
+TestInstanceScope	s	"set should fail"
+TestInstanceScope	s	""
+TestInstanceScope	s	"get should fail"
+TestInstanceScope	i	1
+TestInstanceScope	s	"ABCD"
+TestInstanceScope	s	"oN"
+TestInstanceScope	s	"ON"
+TestInstanceScope	s	"0"
+TestInstanceScope	s	"OFF"
+TestSetSysVar	s	"America/New_York"
+TestTimeValidationWithTimezone	s	"mynewsysvar"
+TestTimeValidationWithTimezone	s	"23:59 +0000"
+TestTimeValidationWithTimezone	s	"23:59"
+TestTimeValidationWithTimezone	s	"Asia/Shanghai"
+TestTimeValidationWithTimezone	s	"23:59 +0800"
+TestOrderByDependency	s	"unknown"
+TestOrderByDependency	s	"1"
+TestTiDBOptOn	s	"ON"
+TestTiDBOptOn	s	"on"
+TestTiDBOptOn	s	"On"
+TestTiDBOptOn	s	"1"
+TestTiDBOptOn	s	"off"
+TestTiDBOptOn	s	"No"
+TestTiDBOptOn	s	"0"
+TestTiDBOptOn	s	"1.1"
+TestTiDBOptOn	s	""
+TestVarsutil	s	"autocommit"
+TestVarsutil	s	"1"
+TestVarsutil	s	"ON"
+TestVarsutil	s	""
+TestVarsutil	s	"foreign_key_checks"
+TestVarsutil	s	"0"
+TestVarsutil	s	"OFF"
+TestVarsutil	s	"sql_mode"
+TestVarsutil	s	"strict_trans_tables"
+TestVarsutil	s	"STRICT_TRANS_TABLES"
+TestVarsutil	s	"character_set_connection"
+TestVarsutil	s	"utf8"
+TestVarsutil	s	"collation_connection"
+TestVarsutil	s	"utf8_general_ci"
+TestVarsutil	s	"character_set_results"
+TestVarsutil	s	"Europe/Helsinki"
+TestVarsutil	i	2
+TestVarsutil	s	"US/Eastern"
+TestVarsutil	i	5
+TestVarsutil	s	"+10:00"
+TestVarsutil	i	10
+TestVarsutil	s	"-6:00"
+TestVarsutil	i	6
+TestVarsutil	s	"+14:00"
+TestVarsutil	i	14
+TestVarsutil	s	"-12:59"
+TestVarsutil	i	12
+TestVarsutil	i	59
+TestVarsutil	s	"+14:01"
+TestVarsutil	s	"-13:00"
+TestVarsutil	i	13
+TestVarsutil	i	2000
+TestVarsutil	i	1
+TestVarsutil	i	0
+TestVarsutil	s	"6:00"
+TestVarsutil	s	"REAL_AS_FLOAT,ANSI_QUOTES"
+TestVarsutil	s	"4"
+TestVarsutil	i	4
+TestVarsutil	i	32
+TestVarsutil	i	1024
+TestVarsutil	s	"2"
+TestVarsutil	s	"1024"
+TestVarsutil	s	"abc"
+TestVarsutil	s	"off"
+TestVarsutil	s	"3"
+TestVarsutil	i	3
+TestVarsutil	s	"5"
+TestVarsutil	s	"5.0"
+TestVarsutil	s	"3.0"
+TestVarsutil	s	"50.0"
+TestVarsutil	s	"1.0"
+TestVarsutil	s	"1.1"
+TestVarsutil	s	"follower"
+TestVarsutil	s	"leader"
+TestVarsutil	s	"leader-and-follower"
+TestVarsutil	s	"oN"
+TestVarsutil	s	"OfF"
+TestVarsutil	s	"marker"
+TestVarsutil	s	"MARKER"
+TestVarsutil	s	"]Variable 'last_plan_from_cache' is a read only variable$"
+TestVarsutil	s	"]Variable 'last_plan_from_binding' is a read only variable$"
+TestVarsutil	s	"UnknownVariable"
+TestVarsutil	s	"on"
+TestVarsutil	s	"]Unknown system variable 'UnknownVariable'$"
+TestVarsutil	s	"[variable:1287]'tidb_analyze_version=1' is deprecated and will be removed in a future release. Please use tidb_analyze_version=2 instead"
+TestVarsutil	s	"Truncated incorrect tidb_analyze_version value"
+TestVarsutil	s	"123"
+TestVarsutil	s	"'tidb_table_cache_lease' is a GLOBAL variable and should be set with SET GLOBAL"
+TestVarsutil	i	123
+TestVarsutil	s	"456"
+TestVarsutil	i	456
+TestVarsutil	s	"45678"
+TestVarsutil	i	45678
+TestValidate	s	"15:04"
+TestValidate	s	"15:04 -0700"
+TestValidate	s	"ON"
+TestValidate	s	"OFF"
+TestValidate	s	"ALL"
+TestValidate	s	"3"
+TestValidate	s	"256"
+TestValidate	s	"OWN_GTID"
+TestValidate	s	"ALL_GTIDS"
+TestValidate	s	"WARN"
+TestValidate	s	"DEMAND"
+TestValidate	s	"1"
+TestValidate	s	"a"
+TestValidate	s	"-10"
+TestValidate	s	"-2"
+TestValidate	s	"READ-UNCOMMITTED"
+TestValidate	s	"-1"
+TestValidate	s	"invalid"
+TestValidate	s	"pessimistic"
+TestValidate	s	"optimistic"
+TestValidate	s	""
+TestValidate	s	"ad"
+TestValidate	s	"-123"
+TestValidate	s	"128"
+TestValidate	s	"tiflash"
+TestValidate	s	"  tiflash  "
+TestValidate	s	"tikv"
+TestValidate	s	"tidb"
+TestValidate	s	"tiflash,tikv,tidb"
+TestValidate	s	"%v got err=%v"
+TestValidate	s	"TiKV,tiflash"
+TestValidate	s	"   tikv,   tiflash  "
+TestValidateStmtSummary	s	""
+TestValidateStmtSummary	s	"0"
+TestValidateStmtSummary	s	"99999999999"
+TestValidateStmtSummary	s	"-1"
+TestValidateStmtSummary	s	"99999999"
+TestValidateStmtSummary	s	"%v got err=%v"
+TestConcurrencyVariables	i	2
+TestConcurrencyVariables	i	1
+TestHelperFuncs	s	"ON"
+TestHelperFuncs	i	1
+TestHelperFuncs	s	"OFF"
+TestHelperFuncs	i	0
+TestHelperFuncs	s	"bogus"
+TestHelperFuncs	i	1234
+TestHelperFuncs	s	"1234"
+TestHelperFuncs	i	5
+TestHelperFuncs	s	"-1234"
+TestSessionStatesSystemVar	s	"autocommit"
+TestSessionStatesSystemVar	s	"1"
+TestSessionStatesSystemVar	s	"ON"
+TestSessionStatesSystemVar	s	"1024"
+TestOnOffHelpers	s	"ON"
+TestOnOffHelpers	s	"TRUE"
+TestOnOffHelpers	s	"TRue"
+TestOnOffHelpers	s	"true"
+TestOnOffHelpers	s	"OFF"
+TestOnOffHelpers	s	"FALSE"
+TestOnOffHelpers	s	"False"
+TestOnOffHelpers	s	"false"
+TestOnOffHelpers	s	"other"
+TestOnOffHelpers	s	"on"
+TestOnOffHelpers	s	"On"
+TestOnOffHelpers	s	"Off"
+TestOnOffHelpers	s	"off"
+TestAssertionLevel	s	"bogus"
