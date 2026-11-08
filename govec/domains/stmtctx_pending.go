@@ -219,40 +219,5 @@ func stmtctxExempt() map[string]string {
 		"UsedStatsInfoForTable.recordedColIdxCount":                  "used-stats info: statistics types (D11.1/D11.2)",                                               // pkg/sessionctx/stmtctx/stmtctx.go
 		"WithStmtLabel":                                              "ast.GetStmtLabel (parser AST, D02.2)",                                                          // pkg/sessionctx/stmtctx/stmtctx.go
 		"GenContextID":                                               "a process-wide counter; covered by unit tests",                                                 // pkg/util/context/context.go
-		"FullIntRange":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/points.go
-		"FullNotNullRange":                                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/points.go
-		"FullRange":                                                  "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/points.go
-		"HasFullRange":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Clone":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Encode":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Equal":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IntersectRange":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IsFullRange":                                          "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IsOnlyNull":                                           "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IsPoint":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IsPointNonNullable":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.IsPointNullable":                                      "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.MemUsage":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.PrefixEqualLen":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Redact":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.String":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Subset":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.Width":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.isPoint":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Range.string":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.CloneForPlanCache":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.IntersectRanges":                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.MemUsage":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.Range":                                               "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.Rebuild":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"Ranges.Subset":                                              "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"checkCollators":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"compareLexicographically":                                   "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"dealWithRedact":                                             "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"extendBound":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"formatDatum":                                                "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"isBoundaryValue":                                            "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"prefix":                                                     "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/types.go
-		"RangerContext.Detach":                                       "D00.1 part 2 (expression/planner contexts; needs the expression framework D08.1)",              // pkg/util/ranger/context/context.go
 	}
 }

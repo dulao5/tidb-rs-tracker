@@ -48,6 +48,8 @@ var minedGoTests = map[string][]string{
 	"sysvar": domains.SysvarMinedTests(),
 	// Scenarios of the errctx, util/context and stmtctx tests, as scripts.
 	"stmtctx": domains.StmtctxMinedTests(),
+	// Scenarios of pkg/util/ranger/types_test.go (D00.1 part 2a), as records.
+	"ranger": domains.RangerMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
