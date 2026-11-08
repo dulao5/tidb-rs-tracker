@@ -1,0 +1,284 @@
+TestDatum	i	1
+TestDatum	s	"abc"
+TestToBool	i	0
+TestToBool	i	1
+TestToBool	s	""
+TestToBool	s	"0.1"
+TestToBool	s	"a"
+TestToBool	s	"0"
+TestToBool	s	"aaabbb"
+TestToBool	i	2
+TestToBool	s	"ke"
+TestToBool	s	"val"
+TestToBool	s	"0000-00-00 00:00:00"
+TestToBool	s	"0778"
+TestToBool	s	"0000"
+TestToBool	s	"2011-11-10 11:11:11.999999"
+TestToBool	i	6
+TestToBool	s	"11:11:11.999999"
+TestToBool	i	5
+TestToInt64	s	"0"
+TestToInt64	i	0
+TestToInt64	i	3
+TestToInt64	i	100
+TestToInt64	i	1
+TestToInt64	s	"a"
+TestToInt64	s	"2011-11-10 11:11:11.999999"
+TestToInt64	i	20111110111112
+TestToInt64	s	"11:11:11.999999"
+TestToInt64	i	6
+TestToInt64	i	111112
+TestToInt64	i	5
+TestToUint32	i	5000000000
+TestToUint32	i	4294967295
+TestToUint32	i	1
+TestToUint32	s	"5000000000"
+TestToUint32	i	12345
+TestToUint32	i	0
+TestToUint32	i	2147483648
+TestToUint32	s	"a"
+TestConvertToFloat	s	""
+TestConvertToFloat	s	"12345.678"
+TestConvertToFloat	i	12345
+TestConvertToFloat	i	123456
+TestConvertToFloat	i	123
+TestConvertToFloat	s	"cannot convert "
+TestConvertToFloat	i	0
+TestConvertToFloat	s	"constant .* overflows double"
+TestConvertToFloat	i	1
+TestConvertToFloat	s	"281.37"
+TestToJSON	i	1
+TestToJSON	i	2
+TestToJSON	s	"\"hello, 世界\""
+TestToJSON	s	"hello, 世界"
+TestToJSON	s	"[1, 2, 3]"
+TestToJSON	i	3
+TestToJSON	s	"{}"
+TestToJSON	s	"2011-11-10 11:11:11.111111"
+TestToJSON	i	6
+TestToJSON	s	"{\"a\": \"9223372036854775809\"}"
+TestToJSON	s	"a"
+TestToJSON	s	"9223372036854775809"
+TestToJSON	i	129
+TestToJSON	s	""
+TestToJSON	i	0
+TestIsNull	i	0
+TestIsNull	i	1
+TestIsNull	s	"string"
+TestIsNull	s	""
+TestToBytes	i	1
+TestToBytes	s	"1"
+TestToBytes	s	"1.23"
+TestToBytes	s	"abc"
+TestComputePlusAndMinus	i	72
+TestComputePlusAndMinus	i	28
+TestComputePlusAndMinus	i	100
+TestComputePlusAndMinus	i	44
+TestComputePlusAndMinus	s	"72.5"
+TestComputePlusAndMinus	i	3
+TestComputePlusAndMinus	s	"75.5"
+TestComputePlusAndMinus	s	"69.5"
+TestComputePlusAndMinus	i	42
+TestComputePlusAndMinus	s	"abcd"
+TestComputePlusAndMinus	i	0
+TestComputePlusAndMinus	s	"%dth got:%#v, %#v, expect:%#v, %#v"
+TestCloneDatum	s	"raw"
+TestCloneDatum	i	72
+TestCloneDatum	s	"abcd"
+TestCloneDatum	i	0
+TestEstimatedMemUsage	s	"a"
+TestEstimatedMemUsage	i	1
+TestEstimatedMemUsage	s	"1234.1234"
+TestEstimatedMemUsage	i	10
+TestEstimatedMemUsage	i	2
+TestChangeReverseResultByUpperLowerBound	i	1
+TestChangeReverseResultByUpperLowerBound	i	2
+TestChangeReverseResultByUpperLowerBound	s	"2"
+TestChangeReverseResultByUpperLowerBound	i	30
+TestChangeReverseResultByUpperLowerBound	i	3
+TestChangeReverseResultByUpperLowerBound	s	"1"
+TestChangeReverseResultByUpperLowerBound	i	10
+TestChangeReverseResultByUpperLowerBound	i	0
+TestChangeReverseResultByUpperLowerBound	s	"%dth got:%#v, expect:%#v"
+TestStringToMysqlBit	s	"true"
+TestStringToMysqlBit	i	1
+TestStringToMysqlBit	i	116
+TestStringToMysqlBit	i	114
+TestStringToMysqlBit	i	117
+TestStringToMysqlBit	i	101
+TestStringToMysqlBit	i	32
+TestStringToMysqlBit	s	"false"
+TestStringToMysqlBit	i	102
+TestStringToMysqlBit	i	97
+TestStringToMysqlBit	i	108
+TestStringToMysqlBit	i	115
+TestStringToMysqlBit	i	40
+TestStringToMysqlBit	s	"1"
+TestStringToMysqlBit	i	49
+TestStringToMysqlBit	i	8
+TestStringToMysqlBit	s	"0"
+TestStringToMysqlBit	i	48
+TestStringToMysqlBit	s	"b'1'"
+TestStringToMysqlBit	i	98
+TestStringToMysqlBit	i	39
+TestStringToMysqlBit	s	"b'0'"
+TestStringToMysqlBit	s	"%s %d %t"
+TestStringToMysqlBit	s	"Data Too Long"
+TestMarshalDatum	s	"a"
+TestMarshalDatum	s	"b"
+TestMarshalDatum	s	"c"
+TestMarshalDatum	s	"d"
+TestMarshalDatum	s	"e"
+TestMarshalDatum	i	1
+TestMarshalDatum	i	72
+TestMarshalDatum	s	"1.2345"
+TestMarshalDatum	s	"abcde"
+TestMarshalDatum	i	2018
+TestMarshalDatum	i	3
+TestMarshalDatum	i	8
+TestMarshalDatum	i	16
+TestMarshalDatum	i	0
+TestMarshalDatum	i	315313000
+TestMarshalDatum	i	6
+TestMarshalDatum	i	129
+TestMarshalDatum	i	2557891634
+TestMarshalDatum	i	4
+TestMarshalDatum	s	"failed at %dth test"
+TestProduceDecWithSpecifiedTp	s	"0.0000"
+TestProduceDecWithSpecifiedTp	i	4
+TestProduceDecWithSpecifiedTp	i	3
+TestProduceDecWithSpecifiedTp	s	"0.000"
+TestProduceDecWithSpecifiedTp	s	"0.0001"
+TestProduceDecWithSpecifiedTp	s	"123"
+TestProduceDecWithSpecifiedTp	i	8
+TestProduceDecWithSpecifiedTp	i	5
+TestProduceDecWithSpecifiedTp	s	"123.00000"
+TestProduceDecWithSpecifiedTp	s	"-123"
+TestProduceDecWithSpecifiedTp	s	"-123.00000"
+TestProduceDecWithSpecifiedTp	s	"123.899"
+TestProduceDecWithSpecifiedTp	i	2
+TestProduceDecWithSpecifiedTp	s	"123.90"
+TestProduceDecWithSpecifiedTp	s	"-123.899"
+TestProduceDecWithSpecifiedTp	s	"-123.90"
+TestProduceDecWithSpecifiedTp	i	6
+TestProduceDecWithSpecifiedTp	s	"123.99"
+TestProduceDecWithSpecifiedTp	i	1
+TestProduceDecWithSpecifiedTp	s	"124.0"
+TestProduceDecWithSpecifiedTp	i	0
+TestProduceDecWithSpecifiedTp	s	"124"
+TestProduceDecWithSpecifiedTp	s	"-123.99"
+TestProduceDecWithSpecifiedTp	s	"-124"
+TestProduceDecWithSpecifiedTp	s	"99.9"
+TestProduceDecWithSpecifiedTp	s	"-99.9"
+TestProduceDecWithSpecifiedTp	s	"99.9999"
+TestProduceDecWithSpecifiedTp	s	"99.999"
+TestProduceDecWithSpecifiedTp	s	"-99.9999"
+TestProduceDecWithSpecifiedTp	s	"-99.999"
+TestProduceDecWithSpecifiedTp	s	"100.000"
+TestProduceDecWithSpecifiedTp	s	"-100.000"
+TestProduceDecWithSpecifiedTp	s	"Error is not overflow"
+TestProduceDecWithSpecifiedTp	s	"err: %v before: %v after: %v"
+TestProduceDecWithSpecifiedTp	s	"Warn is not truncated"
+TestProduceDecWithSpecifiedTp	s	"warn: %v before: %v after: %v"
+TestProduceDecWithSpecifiedTp	s	"Warn is not nil"
+TestNULLNotEqualWithOthers	i	0
+TestNULLNotEqualWithOthers	s	"0"
+TestNULLNotEqualWithOthers	s	""
+TestNULLNotEqualWithOthers	i	4
+TestDatumsToString	i	1
+TestDatumsToString	i	2
+TestDatumsToString	i	5
+TestDatumsToString	s	"6.6"
+TestDatumsToString	s	"abc"
+TestDatumsToString	s	""
+TestDatumsToString	i	11111
+TestDatumsToString	s	"xxx"
+TestDatumsToString	s	"(1, 2, -3.1111112, 4.123, +Inf, 6.6, \"abc\", \"\", 00:00:00, 0000-00-00 00:00:00, xxx, , null, -inf, +inf)"
+TestIsPrintable	i	97
+TestIsPrintable	i	98
+TestIsPrintable	i	99
+TestIsPrintable	i	0
+TestIsPrintable	i	195
+TestIsPrintable	i	169
+TestIsPrintable	s	"%v (0x%X) expected printable: %v (but got %v)"
+TestFieldType	i	5
+TestFieldType	s	"time(5)"
+TestFieldType	s	"int(5) UNSIGNED ZEROFILL"
+TestFieldType	s	"int(5) unsigned"
+TestFieldType	i	12
+TestFieldType	i	3
+TestFieldType	s	"float(12,3)"
+TestFieldType	i	1
+TestFieldType	s	"float"
+TestFieldType	i	7
+TestFieldType	s	"float(7,3)"
+TestFieldType	i	22
+TestFieldType	s	"double(22,3)"
+TestFieldType	s	"double"
+TestFieldType	s	"double(7,3)"
+TestFieldType	i	10
+TestFieldType	s	"UTF8"
+TestFieldType	s	"UTF8_UNICODE_GI"
+TestFieldType	s	"text CHARACTER SET UTF8 COLLATE UTF8_UNICODE_GI"
+TestFieldType	s	"varchar(10) BINARY CHARACTER SET utf8mb4 COLLATE utf8mb4_bin"
+TestFieldType	s	"binary(1) COLLATE utf8mb4_bin"
+TestFieldType	s	"a"
+TestFieldType	s	"b"
+TestFieldType	s	"enum('a','b')"
+TestFieldType	s	"'a'"
+TestFieldType	s	"'b'"
+TestFieldType	s	"enum('''a''','''b''')"
+TestFieldType	s	"a\nb"
+TestFieldType	s	"a\tb"
+TestFieldType	s	"a\rb"
+TestFieldType	s	"enum('a\\nb','a\tb','a\\rb')"
+TestFieldType	s	"a'\t\r\nb"
+TestFieldType	s	"enum('a\\nb','a''\t\\r\\nb','a\\rb')"
+TestFieldType	s	"set('a','b')"
+TestFieldType	s	"set('''a''','''b''')"
+TestFieldType	s	"set('a\\nb','a''\t\\r\\nb','a\\rb')"
+TestFieldType	s	"a'\nb"
+TestFieldType	s	"a'b\tc"
+TestFieldType	s	"set('a''\\nb','a''b\tc')"
+TestFieldType	i	8
+TestFieldType	i	2
+TestFieldType	s	"timestamp(2)"
+TestFieldType	i	0
+TestFieldType	s	"timestamp"
+TestFieldType	s	"datetime(2)"
+TestFieldType	s	"datetime"
+TestFieldType	s	"date"
+TestFieldType	i	4
+TestFieldType	s	"year(4)"
+TestFieldType	s	"year(2)"
+TestDefaultTypeForValue	i	0
+TestDefaultTypeForValue	i	1
+TestDefaultTypeForValue	i	432
+TestDefaultTypeForValue	i	3
+TestDefaultTypeForValue	i	4321
+TestDefaultTypeForValue	i	4
+TestDefaultTypeForValue	i	1234567
+TestDefaultTypeForValue	i	7
+TestDefaultTypeForValue	i	12345678
+TestDefaultTypeForValue	i	8
+TestDefaultTypeForValue	i	12345678901234567
+TestDefaultTypeForValue	i	17
+TestDefaultTypeForValue	i	42
+TestDefaultTypeForValue	i	123
+TestDefaultTypeForValue	i	1234
+TestDefaultTypeForValue	s	"abc"
+TestDefaultTypeForValue	i	19
+TestDefaultTypeForValue	i	2017
+TestDefaultTypeForValue	i	12
+TestDefaultTypeForValue	i	59
+TestDefaultTypeForValue	i	23
+TestDefaultTypeForValue	i	2
+TestDefaultTypeForValue	s	"a"
+TestDefaultTypeForValue	s	"%v %v %v"
+TestAggFieldType	i	1
+TestAggFieldTypeForTypeFlag	i	0
+TestAggFieldTypeForTypeFlag	i	1
+TestAggFieldTypeForIntegralPromotion	i	1
+TestAggFieldTypeForIntegralPromotion	i	0
+TestAggregateEvalType	i	1
+TestAggregateEvalType	i	0
