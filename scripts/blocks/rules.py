@@ -169,6 +169,8 @@ RULES = [
     ("D00.2", r"pkg/util/context/warn\.go$", r"^WarnAppender($|\.)"),
     # types.ColumnNeedRestoredData takes *model.IndexColumn / *model.ColumnInfo: belongs with meta/model.
     ("D06.1", r"pkg/types/etc\.go$", r"^ColumnNeedRestoredData$"),
+    # types.EOFAsNil: no caller in v8.5.8 (D01.1 review); tidb-base has no io.EOF error value.
+    ("X", r"pkg/types/etc\.go$", r"^EOFAsNil$"),
     # pkg/util/tikvutil is one variable (CommitterConcurrency) read by config.GetTiKVConfig.
     ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---

@@ -24552,7 +24552,7 @@ pkg/types	pkg/types/enum.go	ParseEnum	51	D01.1
 pkg/types	pkg/types/enum.go	ParseEnumName	64	D01.1
 pkg/types	pkg/types/enum.go	ParseEnumValue	76	D01.1
 pkg/types	pkg/types/etc.go	ColumnNeedRestoredData	124	D06.1
-pkg/types	pkg/types/etc.go	EOFAsNil	194	D01.1
+pkg/types	pkg/types/etc.go	EOFAsNil	194	X
 pkg/types	pkg/types/etc.go	InvOp2	202	D01.1
 pkg/types	pkg/types/etc.go	IsBinaryStr	110	D01.1
 pkg/types	pkg/types/etc.go	IsNonBinaryStr	116	D01.1
