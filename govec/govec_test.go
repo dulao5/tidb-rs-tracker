@@ -46,6 +46,8 @@ var minedGoTests = map[string][]string{
 	// The literals of sysvar_test.go, variable_test.go and varsutil_test.go (cmd/minelits),
 	// paired with the variables each test names.
 	"sysvar": domains.SysvarMinedTests(),
+	// Scenarios of the errctx, util/context and stmtctx tests, as scripts.
+	"stmtctx": domains.StmtctxMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
