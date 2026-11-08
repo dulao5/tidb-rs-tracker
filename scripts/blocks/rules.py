@@ -203,6 +203,16 @@ RULES = [
     ("X", r"pkg/sessionctx/variable/variable\.go$", r"^(RegisterSysVar|UnregisterSysVar)$"),
     # mustParseTime only initializes the TTL job window atomics (TTL jobs: X).
     ("X", r"pkg/sessionctx/variable/tidb_vars\.go$", r"^mustParseTime$"),
+    # D05.2 read-path scoping (2026-11-08): parts of SessionVars / TransactionContext that
+    # only serve writes done by Go TiDB. Retry of auto-increment / auto-random IDs (INSERT
+    # retry), row-ID sharding (INSERT), table deltas for stats (DML), local temporary
+    # tables (created by DDL on the creating session; tidb-rs runs no DDL), the write
+    # statement buffers (INSERT/UPDATE/DELETE), disk-full DML options, the DDL reorg
+    # priority, and the pessimistic lock bookkeeping (SELECT ... FOR UPDATE / DML locks;
+    # tidb-rs takes no locks). Savepoints, for-update TS, user variables, prepared
+    # statements, txn read TS and the session-state encoding stay (they are reachable from
+    # read-only SQL or the server).
+    ("X", r"pkg/sessionctx/variable/session\.go$", r"^(RetryInfo\.|retryInfoAutoIDs\.|NewRowIDShardGenerator$|RowIDShardGenerator\.|SessionVars\.GetRowIDShardGenerator$|TableDelta\.|NewTemporaryTableData$|temporaryTableData\.|SessionVars\.GetTemporaryTable$|WriteStmtBufs\.|SessionVars\.GetWriteStmtBufs$|SessionVars\.(Set|Get|Clear)DiskFullOpt$|SessionVars\.setDDLReorgPriority$|TransactionContext\.(AddUnchangedKeyForLock|CollectUnchangedKeysForSLock|CollectUnchangedKeysForXLock|ResetUnchangedKeysForLock|FlushStmtPessimisticLockCache|GetKeyInPessimisticLockCache|SetPessimisticLockCache|UpdateDeltaForTable|ClearDelta)$|SessionVars\.PessimisticLockEligible$)"),
     ("D05.2", r"pkg/sessionctx/variable/variable\.go$", r"^SysVar\.(Get|Set)(Global|Session)FromHook$"),
     ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
     ("D05.2", r"pkg/sessionctx/variable/sysvar\.go$", r"^setTiFlashComputeDispatchPolicy$"),
