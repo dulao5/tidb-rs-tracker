@@ -39,6 +39,9 @@ var minedGoTests = map[string][]string{
 	"json": domains.JSONMinedTests(),
 	// The literals of the pkg/kv tests of ported functions (cmd/minelits).
 	"kv": domains.KVMinedTests(),
+	// The literals of sysvar_test.go, variable_test.go and varsutil_test.go (cmd/minelits),
+	// paired with the variables each test names.
+	"sysvar": domains.SysvarMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",

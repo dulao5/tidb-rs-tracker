@@ -183,6 +183,22 @@ RULES = [
     # --- D00 ---
     ("D05.2", r"pkg/sessionctx/sessionstates/", None),
     ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|sessionctx/stmtctx/)", None),
+    # pkg/sessionctx/variable scoping (D05.1, 2026-11-08; N8): every variable keeps Go's
+    # name / default / scope / validation (SET and SHOW behave the same). X: writes done by
+    # Go TiDB (GlobalSystemVariableInitialValue: bootstrap of mysql.global_variables;
+    # setTiDBTableValue: mysql.tidb writes; switchDDL / switchStats: DDL and stats owner
+    # switches, tidb-rs never owns them), extension registration (RegisterSysVar,
+    # UnregisterSysVar: test only; N8 3.1 item 5). The hook plumbing that needs the
+    # session state (the *FromHook methods and the SetSession / GetGlobal helpers of
+    # varsutil.go and sysvar.go) moves to D05.2, which ports SessionVars.
+    ("X", r"pkg/sessionctx/variable/sysvar\.go$", r"^GlobalSystemVariableInitialValue$"),
+    ("X", r"pkg/sessionctx/variable/varsutil\.go$", r"^(setTiDBTableValue|switchDDL|switchStats)$"),
+    ("X", r"pkg/sessionctx/variable/variable\.go$", r"^(RegisterSysVar|UnregisterSysVar)$"),
+    # mustParseTime only initializes the TTL job window atomics (TTL jobs: X).
+    ("X", r"pkg/sessionctx/variable/tidb_vars\.go$", r"^mustParseTime$"),
+    ("D05.2", r"pkg/sessionctx/variable/variable\.go$", r"^SysVar\.(Get|Set)(Global|Session)FromHook$"),
+    ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
+    ("D05.2", r"pkg/sessionctx/variable/sysvar\.go$", r"^setTiFlashComputeDispatchPolicy$"),
     ("D05.1", r"pkg/sessionctx/variable/(sysvar|tidb_vars|varsutil|variable|statusvar|removed|setvar_affect|sequence_state|mock_globalaccessor|noop)\.go$", None),
     ("D05.2", r"pkg/sessionctx/variable/", None),
     ("D00.2", r"pkg/(parser/mysql|parser/terror|errno|util/dbterror|config)/", None),
