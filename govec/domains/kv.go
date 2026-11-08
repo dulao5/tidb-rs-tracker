@@ -376,13 +376,20 @@ func withRequestSource(ctx context.Context, internal bool, source, explicit stri
 func kvGenerate(g *vec.Gen, rng *rand.Rand) {
 	lits := kvLiterals()
 	var keys [][]byte
+	var keySrc []string
 	for _, l := range lits {
 		if l.str != nil {
 			keys = append(keys, []byte(*l.str))
+			keySrc = append(keySrc, l.fn)
 		}
 	}
 	for _, k := range [][]byte{nil, {}, {0}, {0xff}, {0xff, 0xff}, {1, 0xff}, {0xfe, 0xff, 0xff}, {0, 0}} {
 		keys = append(keys, k)
+	}
+	// All-0xff keys of every length up to 40: PrefixNext appends a byte with Go's growth
+	// rule (size classes: 9 -> 24, 17 -> 48, 33 -> 80, ...).
+	for n := 1; n <= 40; n++ {
+		keys = append(keys, bytesRepeat(0xff, n))
 	}
 	for len(keys) < 320 {
 		n := rng.IntN(12)
@@ -399,17 +406,11 @@ func kvGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		keys = append(keys, b)
 	}
-	litSrc := func(i int) string {
-		if i < len(lits) {
-			return lits[i].fn
-		}
-		return "rand/kv"
-	}
 	// key ops
 	for i, k := range keys {
 		src := "rand/key"
-		if i < len(lits) {
-			src = litSrc(i)
+		if i < len(keySrc) {
+			src = keySrc[i]
 		}
 		g.Add(src, "key", hex.EncodeToString(k))
 	}
@@ -507,11 +508,18 @@ func kvGenerate(g *vec.Gen, rng *rand.Rand) {
 	// key ranges
 	for i := 0; i < 240; i++ {
 		np := rng.IntN(4)
+		maxPer := 4
+		if i%4 == 0 {
+			// large partitions and many partitions: pdqsort differs from a stable sort
+			// only above 12 elements (insertion sort below)
+			np = rng.IntN(25)
+			maxPer = 50
+		}
 		parts := make([][][2]string, np)
 		var hints [][]int
 		withHints := rng.IntN(2) == 0
 		for p := range parts {
-			n := rng.IntN(4)
+			n := rng.IntN(maxPer)
 			var h []int
 			for j := 0; j < n; j++ {
 				parts[p] = append(parts[p], [2]string{hex.EncodeToString(keys[rng.IntN(len(keys))]), hex.EncodeToString(keys[rng.IntN(len(keys))])})
@@ -655,6 +663,17 @@ func kvGenerate(g *vec.Gen, rng *rand.Rand) {
 
 // ---------------------------------------------------------------- exec
 
+func bytesRepeat(b byte, n int) []byte {
+	out := make([]byte, n)
+	for i := range out {
+		out[i] = b
+	}
+	return out
+}
+
+// kvKeySink makes the results of the "key" op escape to the heap.
+var kvKeySink []kv.Key
+
 func keyOf(s string) kv.Key {
 	b, err := hex.DecodeString(s)
 	if err != nil {
@@ -758,6 +777,11 @@ func kvExec(op string, args []json.RawMessage) (out any, err error) {
 	case "key":
 		k := keyOf(arg[string](args, 0))
 		n, p, c := k.Next(), k.PrefixNext(), k.Clone()
+		// The results escape, as they do in TiDB (stored in ranges and handles). A result
+		// that does not escape may get a 32-byte stack backing store from the Go 1.25
+		// compiler (append to a non-escaping slice), and its capacity would be the call
+		// site's, not PrefixNext's.
+		kvKeySink = append(kvKeySink[:0], n, p, c)
 		return map[string]any{"next": hex.EncodeToString(n), "next_cap": cap(n), "pnext": hex.EncodeToString(p),
 			"pnext_cap": cap(p), "clone": hex.EncodeToString(c), "clone_cap": cap(c), "str": k.String()}, nil
 	case "key2":
