@@ -56,7 +56,7 @@ func genSysvarDefs(outDir string) {
 	b.WriteString("//\n//! The `Def*` constants of pkg/sessionctx/variable (tidb_vars.go and others) that the\n")
 	b.WriteString("//! session hooks pass as defaults (D05.2). Go's types: untyped integers are `i64`,\n")
 	b.WriteString("//! untyped floats `f64`, `time.Duration` nanoseconds `i64`. The ones D05.1 declares by\n")
-	b.WriteString("//! hand are in `tidb_vars.rs`.\n\n#![allow(non_upper_case_globals)]\n#![allow(clippy::excessive_precision)]\n\n")
+	b.WriteString("//! hand are in `tidb_vars.rs`.\n\n#![allow(non_upper_case_globals)]\n\n")
 	for _, d := range defs {
 		fmt.Fprintf(&b, "/// Go: `%s` (%s).\npub const %s: %s = %s;\n", d.name, d.file, d.name, d.rt, d.val)
 	}
