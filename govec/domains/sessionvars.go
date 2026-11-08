@@ -286,6 +286,12 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 				// generation, start from the same state.
 				prev, perr := sv.GetGlobalFromHook(context.Background(), vars)
 				err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+				if err == nil && sv.GetGlobal != nil && !sessionvarsVolatile[name] {
+					// The process-wide value the SetGlobal hook stored, read back through
+					// GetGlobal (so that a missing SetGlobal effect is caught).
+					after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
+					res["after"], res["after_err"] = after, errStr(aerr)
+				}
 				if perr == nil {
 					_ = sv.SetGlobalFromHook(context.Background(), freshVars(svCtx{}), prev, false)
 				}
