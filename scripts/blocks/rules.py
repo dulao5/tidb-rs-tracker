@@ -226,6 +226,21 @@ RULES = [
     ("D01.10", r"pkg/util/chunk/(row_container|chunk_in_disk|row_in_disk|row_container_reader|disk)", None),
     ("D01.7", r"pkg/util/chunk/", None),
     ("D01.8", r"pkg/util/codec/", None),
+    # tablecodec / rowcodec scoping (D01.11, 2026-11-08): tidb-rs is read-only. Reachability
+    # over the function-level reference graph (work/go_refs.tsv) from the read-path blocks,
+    # judged per function. X: "写路径，由 Go TiDB 承担" — the row encoders (EncodeRow,
+    # EncodeOldRow, rowcodec.Encoder and its sorters, row.toBytes/init*), the index value
+    # encoders (GenIndexValue*, EncodeHandleInUniqueIndexValue, encodeCommonHandle,
+    # encodePartitionID, TryGetCommonPkColumnRestoredIds), the temp-index value codec
+    # (DDL backfill/merge, session KeyNeedToLock, mutation checker), IsUntouchedIndexKValue,
+    # IndexKVIsUnique, TempIndexKey2IndexKey; DDL/unistore/TiCDC only (CutCommonHandle,
+    # DecodeIndexID, EncodeMetaKeyPrefix, TruncateToRowKeyLen, IsRowKey, row.ColumnIsNull,
+    # row.CalculateRawChecksum); no caller in v8.5.8 (CutIndexKey, CutIndexPrefix,
+    # CutRowKeyPrefix, EncodeMetaKey, MetaPrefix, UnflattenDatums, RowData.Encode).
+    ("X", r"pkg/tablecodec/tablecodec\.go$", r"^(EncodeRow|EncodeOldRow|GenIndexValuePortal|GenIndexValueForClusteredIndexVersion1|genIndexValueVersion0|TryGetCommonPkColumnRestoredIds|EncodeHandleInUniqueIndexValue|encodeCommonHandle|encodePartitionID|DecodeTempIndexValue|TempIndexValue\.\w+|TempIndexValueElem\.\w+|TempIndexValueIsUntouched|IsUntouchedIndexKValue|IndexKVIsUnique|TempIndexKey2IndexKey|CutCommonHandle|DecodeIndexID|EncodeMetaKeyPrefix|TruncateToRowKeyLen|CutIndexKey|CutIndexPrefix|CutRowKeyPrefix|EncodeMetaKey|MetaPrefix|UnflattenDatums)$"),
+    ("X", r"pkg/util/rowcodec/encoder\.go$", None),
+    ("X", r"pkg/util/rowcodec/common\.go$", r"^(encodeInt|encodeUint|(large|small)(Not)?NullSorter\.\w+|u16SliceToBytes|u32SliceToBytes|IsRowKey|RowData\.Encode)$"),
+    ("X", r"pkg/util/rowcodec/row\.go$", r"^row\.(toBytes|initColIDs|initColIDs32|initOffsets|initOffsets32|ColumnIsNull|CalculateRawChecksum)$"),
     ("D01.11", r"pkg/(tablecodec|util/rowcodec)/", None),
     ("D01.9", r"pkg/util/collate/", None),
     # --- D03 ---
