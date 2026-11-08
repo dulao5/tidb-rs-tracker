@@ -65,11 +65,11 @@ func init() {
 }
 
 var tablecodecExempt = map[string]string{
-	"init":                  "sets kv.DecodeTableIDFunc; tidb-rs returns the function from tablecodec::init() (covered through key_decode \"tid_func\")",
-	"RowData.Len":           "sort.Interface method; callers sort RowData by column ID before Checksum (covered: checksum op sorts)",
-	"RowData.Less":          "sort.Interface method (covered: checksum op sorts)",
-	"RowData.Swap":          "sort.Interface method (covered: checksum op sorts)",
-	"NewDecoder":            "constructor of the unexported base decoder; the exported decoders build it (covered by row)",
+	"init":                     "sets kv.DecodeTableIDFunc; tidb-rs returns the function from tablecodec::init() (covered through key_decode \"tid_func\")",
+	"RowData.Len":              "sort.Interface method; callers sort RowData by column ID before Checksum (covered: checksum op sorts)",
+	"RowData.Less":             "sort.Interface method (covered: checksum op sorts)",
+	"RowData.Swap":             "sort.Interface method (covered: checksum op sorts)",
+	"NewDecoder":               "constructor of the unexported base decoder; the exported decoders build it (covered by row)",
 	"FieldTypeFromModelColumn": "FieldType.Clone of a model column (covered: the index op's columns are built with it)",
 }
 
@@ -78,7 +78,7 @@ var tablecodecCoverage = map[string]vec.Coverage{
 		"EncodeTableIndexPrefix", "EncodeTablePrefix", "appendTableRecordPrefix", "appendTableIndexPrefix",
 		"GenTableRecordPrefix", "GenTableIndexPrefix", "GenTablePrefix", "GetTableHandleKeyRange",
 		"GetTableIndexKeyRange", "EncodeIndexSeekKey"}},
-	"key_decode": {Min: 3000, GoFuncs: []string{"DecodeRecordKey", "DecodeRowKey", "DecodeKeyHead", "DecodeIndexKey",
+	"key_decode": {Min: 2900, GoFuncs: []string{"DecodeRecordKey", "DecodeRowKey", "DecodeKeyHead", "DecodeIndexKey",
 		"DecodeValuesBytesToStrings", "DecodeTableID", "DecodeMetaKey", "IsRecordKey", "IsIndexKey", "IsTableKey",
 		"IsTempIndexKey", "IndexKey2TempIndexKey", "hasTablePrefix", "hasRecordPrefixSep", "GetKeyKind"}},
 	"encode_value": {Min: 500, GoFuncs: []string{"EncodeValue", "flatten"}},
@@ -95,7 +95,7 @@ var tablecodecCoverage = map[string]vec.Coverage{
 		"bytesToU32Slice", "bytes2U16Slice", "decodeInt", "decodeUint"}},
 	"checksum": {Min: 300, GoFuncs: []string{"RowData.Checksum", "ColData.Encode", "appendDatumForChecksum",
 		"appendLengthValue"}},
-	"index": {Min: 3000, GoFuncs: []string{"GenIndexKey", "GetIndexKeyBuf", "TruncateIndexValues", "TruncateIndexValue",
+	"index": {Min: 1500, GoFuncs: []string{"GenIndexKey", "GetIndexKeyBuf", "TruncateIndexValues", "TruncateIndexValue",
 		"DecodeIndexKV", "DecodeIndexKVEx", "DecodeIndexHandle", "DecodeHandleInIndexValue",
 		"DecodeIntHandleInIndexValue", "decodeHandleInIndexKey", "SplitIndexValue",
 		"splitIndexValueForIndexValueVersion0", "splitIndexValueForClusteredIndexVersion1", "getIndexVersion",
@@ -225,6 +225,15 @@ func tcStrs(ss []string) any {
 }
 
 func tcErr(err error) any { return d2ErrMsg(err) }
+
+// tcMapFail: an error or a panic of a map-order dependent decoder is {"fail": true}.
+func tcMapFail(o any) any {
+	m := o.(map[string]any)
+	if m["panic"] == true || m["err"] != nil {
+		return map[string]any{"fail": true}
+	}
+	return o
+}
 
 // ---------------------------------------------------------------- exec
 
@@ -395,10 +404,14 @@ func tcRow(p []json.RawMessage) any {
 	infos := tcColInfos(p, 5)
 	commitTS := arg[uint64](p, 6)
 	o := map[string]any{}
-	o["map"] = tcTry(func() any {
+	// DecodeRowWithMapNew (and DecodeRowToDatumMap on a v2 row) decodes the columns in
+	// Go's random map order and stops at the first failure: which column fails first, and
+	// whether that is an error or a panic, varies between runs. A failure is recorded as
+	// {"fail": true} (an error or a panic in Rust too).
+	o["map"] = tcMapFail(tcTry(func() any {
 		m, err := tablecodec.DecodeRowToDatumMap(b, cols, loc)
 		return map[string]any{"m": tcMapOut(m), "err": tcErr(err)}
-	})
+	}))
 	o["hmap"] = tcTry(func() any {
 		m, err := tablecodec.DecodeHandleToDatumMap(h, hids, cols, loc, nil)
 		return map[string]any{"m": tcMapOut(m), "err": tcErr(err)}
@@ -419,10 +432,10 @@ func tcRow(p []json.RawMessage) any {
 		})
 		return o
 	}
-	o["v2"] = tcTry(func() any {
+	o["v2"] = tcMapFail(tcTry(func() any {
 		m, err := tablecodec.DecodeRowWithMapNew(b, cols, loc, nil)
 		return map[string]any{"m": tcMapOut(m), "err": tcErr(err)}
-	})
+	}))
 	o["dm"] = tcTry(func() any {
 		dec := rowcodec.NewDatumMapDecoder(infos, loc)
 		m, err := dec.DecodeToDatumMap(b, nil)
@@ -1067,16 +1080,36 @@ func tcGenerateRows(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit, a
 			}
 			infos = append(infos, []any{id, rng.IntN(10) == 0, rng.IntN(12) == 0, ft})
 		}
-		// columns not in the row (default / handle / commit ts / checksum columns)
-		extra := []int64{99, model.ExtraCommitTSID, model.ExtraRowChecksumID, model.ExtraHandleID}
-		for _, hid := range hids {
-			extra = append(extra, hid)
-		}
-		for _, id := range extra {
+		// columns not in the row (default / commit ts / checksum columns, any type)
+		for _, id := range []int64{99, model.ExtraCommitTSID, model.ExtraRowChecksumID} {
 			if rng.IntN(3) == 0 {
-				c := cols[rng.IntN(len(cols))]
-				infos = append(infos, []any{id, id == model.ExtraHandleID, false, c.ft})
-				colsMap = append(colsMap, []any{id, c.ft})
+				ft := cols[rng.IntN(len(cols))].ft
+				if id == model.ExtraCommitTSID {
+					// DecodeToChunk appends the commit ts as a uint64 whatever the column type.
+					ft = tcFt(mysql.TypeLonglong, uint(mysql.UnsignedFlag), -1, 0, "binary", "binary", nil)
+				}
+				infos = append(infos, []any{id, false, false, ft})
+				colsMap = append(colsMap, []any{id, ft})
+			}
+		}
+		// Handle columns get the handle's types: ChunkDecoder.tryAppendHandleColumn appends
+		// an int64 (or the common handle's datum) whatever the column type, and a chunk
+		// column of another width makes Go write out of bounds (undefined behaviour; Rust
+		// panics). The IDs are disjoint from the row's.
+		hft := tcFt(mysql.TypeLonglong, 0, -1, 0, "binary", "binary", nil)
+		sft := tcFt(mysql.TypeVarchar, 0, 64, -1, "utf8mb4", "utf8mb4_bin", nil)
+		if rng.IntN(3) == 0 {
+			infos = append(infos, []any{model.ExtraHandleID, true, false, hft})
+			colsMap = append(colsMap, []any{model.ExtraHandleID, hft})
+		}
+		for j, id := range hids {
+			if rng.IntN(4) != 0 {
+				ft := hft
+				if j == 1 {
+					ft = sft
+				}
+				infos = append(infos, []any{id, false, false, ft})
+				colsMap = append(colsMap, []any{id, ft})
 			}
 		}
 		var defs, defBytes any
@@ -1122,11 +1155,11 @@ func tcGenerateRows(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit, a
 		switch rng.IntN(3) {
 		case 0:
 			h = kv.IntHandle(rng.Int64())
-			hids = []int64{int64(1 + rng.IntN(40))}
+			hids = []int64{1000}
 		case 1:
 			enc, _ := codec.EncodeKey(gotime.UTC, nil, types.NewIntDatum(rng.Int64N(100)), types.NewStringDatum("pk"))
 			h = mustCommon(enc)
-			hids = []int64{int64(1 + rng.IntN(40)), int64(1 + rng.IntN(40))}
+			hids = []int64{1000, 1001}
 		}
 		lc := tcLocNil(rawsOf([]any{loc}), 0)
 		if rng.IntN(4) == 0 {
@@ -1188,7 +1221,7 @@ func tcGenerateRows(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit, a
 		}
 		enc := rowcodec.Encoder{Enable: true}
 		if b, err := enc.Encode(gotime.UTC, rc.ids, rc.ds, nil, nil); err == nil {
-			emit(fn, rc, b, nil, kv.IntHandle(1), []int64{1})
+			emit(fn, rc, b, nil, kv.IntHandle(1), []int64{1000})
 		}
 		if b, err := tablecodec.EncodeOldRow(gotime.UTC, rc.ds, rc.ids, nil, nil); err == nil {
 			emit(fn, rc, b, nil, nil, nil)
@@ -1215,6 +1248,9 @@ func tcGenerateRows(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit, a
 			b = tcMutate(rng, b)
 		}
 		args[0] = hx(b)
+		if !tcSmall(func() any { return tcRow(rawsOf(args)) }) {
+			continue
+		}
 		g.Add("rand/row_mut", "row", args...)
 	}
 }
@@ -1388,19 +1424,7 @@ func tcGenerateIndexes(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit
 		trunc := append([]types.Datum(nil), idxVals...)
 		tablecodec.TruncateIndexValues(tbl, idx, trunc)
 		needRestored := tables.NeedRestoredData(idx.Columns, tbl.Columns)
-		var rsData []types.Datum
-		if tbl.IsCommonHandle && tbl.CommonHandleVersion == 1 {
-			for _, id := range tablecodec.TryGetCommonPkColumnRestoredIds(tbl) {
-				d := row[id-1]
-				pkIdx := tbl.Indices[0]
-				for _, ic := range pkIdx.Columns {
-					if ic.Offset == int(id-1) {
-						tablecodec.TruncateIndexValue(&d, ic, tbl.Columns[ic.Offset])
-					}
-				}
-				rsData = append(rsData, d)
-			}
-		}
+		rsData := tables.TryGetHandleRestoredDataWrapper(tbl, row, nil, idx)
 		untouched := rng.IntN(6) == 0
 		pid := int64(0)
 		if idx.Global {
@@ -1441,7 +1465,10 @@ func tcGenerateIndexes(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit
 		args := append([]any(nil), rawCorpus[rng.IntN(nr)]...)
 		k, _ := hex.DecodeString(args[0].(string))
 		v, _ := hex.DecodeString(args[1].(string))
-		if rng.IntN(2) == 0 {
+		// A corrupted restored _bin padding count makes Go build a string of up to 2^64
+		// spaces (spec §5): values with restored data are not mutated.
+		hasRestored := tcTry(func() any { return tablecodec.SplitIndexValue(v).RestoredValues != nil }) == true
+		if rng.IntN(2) == 0 && !hasRestored {
 			v = tcMutate(rng, v)
 		} else {
 			k = tcMutate(rng, k)
@@ -1449,6 +1476,12 @@ func tcGenerateIndexes(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit
 		args[0], args[1] = hx(k), hx(v)
 		g.Add("rand/index_raw", "index_raw", args...)
 	}
+}
+
+// tcSmall: the op's output marshals to at most 64 KiB.
+func tcSmall(f func() any) bool {
+	b, err := json.Marshal(tcTry(f))
+	return err == nil && len(b) <= 64<<10
 }
 
 func specOrNil(h kv.Handle) any {

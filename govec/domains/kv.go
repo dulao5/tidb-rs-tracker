@@ -37,8 +37,8 @@ import (
 	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/codec"
-	"github.com/tikv/client-go/v2/oracle"
 	tikvstore "github.com/tikv/client-go/v2/kv"
+	"github.com/tikv/client-go/v2/oracle"
 	"github.com/tikv/client-go/v2/tikv"
 	"github.com/tikv/client-go/v2/util"
 )
@@ -87,14 +87,14 @@ func init() {
 			{Name: "ErrLockExpire", Err: kv.ErrLockExpire},
 		},
 		Exempt: map[string]string{
-			"NewResourceGroupTagBuilder":                 "parser.Digest (D02.2 digester) not ported",
-			"ResourceGroupTagBuilder.SetSQLDigest":       "parser.Digest (D02.2 digester) not ported",
-			"ResourceGroupTagBuilder.SetPlanDigest":      "parser.Digest (D02.2 digester) not ported",
-			"ResourceGroupTagBuilder.BuildProtoTagger":   "tikvrpc.Request (store driver, D07.1)",
-			"ResourceGroupTagBuilder.Build":              "tikvrpc.Request (store driver, D07.1)",
-			"ResourceGroupTagBuilder.EncodeTagWithKey":   "resourcegrouptag.GetResourceGroupLabelByKey needs rowindexcodec (D01.11) and parser.Digest",
-			"decodeTableID":                              "only called by EncodeTagWithKey",
-			"PrintLongTimeInternalTxn":                   "only logs; called by GetMinInnerTxnStartTS (covered)",
+			"NewResourceGroupTagBuilder":               "parser.Digest (D02.2 digester) not ported",
+			"ResourceGroupTagBuilder.SetSQLDigest":     "parser.Digest (D02.2 digester) not ported",
+			"ResourceGroupTagBuilder.SetPlanDigest":    "parser.Digest (D02.2 digester) not ported",
+			"ResourceGroupTagBuilder.BuildProtoTagger": "tikvrpc.Request (store driver, D07.1)",
+			"ResourceGroupTagBuilder.Build":            "tikvrpc.Request (store driver, D07.1)",
+			"ResourceGroupTagBuilder.EncodeTagWithKey": "resourcegrouptag.GetResourceGroupLabelByKey needs rowindexcodec (D01.11) and parser.Digest",
+			"decodeTableID":                            "only called by EncodeTagWithKey",
+			"PrintLongTimeInternalTxn":                 "only logs; called by GetMinInnerTxnStartTS (covered)",
 		},
 		Gzip:     true,
 		Generate: kvGenerate,
