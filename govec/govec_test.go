@@ -18,6 +18,8 @@ import (
 // minedGoTests lists, per domain, the Go test functions whose case tables were
 // copied into the generator. Each must appear as a record src.
 var minedGoTests = map[string][]string{
+	// The case tables of cgroup_mock_test.go (fixtures via cmd/minelits -decls).
+	"cgroup": domains.CgroupMinedTests(),
 	"collate": domains.CollateMinedTests(),
 	// The literals of codec_test.go, bytes_test.go, decimal_test.go and collation_test.go (cmd/minelits).
 	"codec": domains.CodecMinedTests(),
