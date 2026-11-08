@@ -66,8 +66,13 @@ func sysvarEntries(p *pkg, file, varName string) []sysvarEntry {
 			}
 		}
 		if valueExpr != nil {
+			// Function calls of constants (strconv.Itoa(Def...), BoolToOnOff(...)) are
+			// deterministic and kept as their evaluated value; only values that depend on
+			// the build target or the loaded config are marked for the Rust side.
 			if tv := p.info.Types[valueExpr]; tv.Value == nil {
-				e.computed = exprString(p, valueExpr)
+				if x := exprString(p, valueExpr); strings.Contains(x, "runtime.") || strings.Contains(x, "config.GetGlobalConfig") {
+					e.computed = x
+				}
 			}
 		}
 		out = append(out, e)
@@ -197,7 +202,7 @@ func genSysvarTable(outDir string) {
 		e.p("    // go: %s:L%d %s\n", en.file, en.line, en.ident)
 		e.p("    SysVarData { go_file: %s, go_line: %d, scope: %s, name: %s, value: %s, computed: %s, typ: %s, min_value: %d, max_value: %d, possible_values: %s, aliases: %s, global_config_name: %s, flags: %s, hooks: %s },\n",
 			rustStr(en.file), en.line, rustScope(sv.Scope), rustStr(sv.Name), rustStr(sv.Value), computed,
-			typeNames[sv.Type], sv.MinValue, sv.MaxValue, rustStrSlice(sv.PossibleValues), rustStrSlice(sv.Aliases),
+			rustTypeFlag(sv.Type), sv.MinValue, sv.MaxValue, rustStrSlice(sv.PossibleValues), rustStrSlice(sv.Aliases),
 			rustStr(sv.GlobalConfigName), flagExpr, hookExpr)
 	}
 	e.p("];\n")
@@ -222,4 +227,13 @@ func (p *pkg) srcOf(path string) []byte {
 	}
 	srcCache[path] = b
 	return b
+}
+
+// rustTypeFlag: the TypeFlag constant, or TypeFlag(n) for a value no constant names (the
+// zero value of an entry without Type, which ValidateFromType treats as a string).
+func rustTypeFlag(t variable.TypeFlag) string {
+	if n, ok := typeNames[t]; ok {
+		return n
+	}
+	return fmt.Sprintf("TypeFlag(%d)", t)
 }

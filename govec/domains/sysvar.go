@@ -37,6 +37,7 @@ import (
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
+	"github.com/pingcap/tidb/pkg/util/memory"
 )
 
 const sysvarSeed = 5051
@@ -168,7 +169,12 @@ func resetSysvarAtomics() {
 	variable.EnableAutoAnalyzePriorityQueue.Store(variable.DefTiDBEnableAutoAnalyzePriorityQueue)
 }
 
+// sysvarMemTotal is the MemTotal of the records (tidb_server_memory_limit accepts a
+// percentage of it); fixed so that records do not depend on the host.
+const sysvarMemTotal = 64 << 30
+
 func freshVars(c svCtx) *variable.SessionVars {
+	memory.MemTotal = func() (uint64, error) { return sysvarMemTotal, nil }
 	vars := variable.NewSessionVars(nil)
 	acc := variable.NewMockGlobalAccessor4Tests()
 	for k, v := range c.Globals {
@@ -686,9 +692,13 @@ func sysvarExec(op string, args []json.RawMessage) (out any, err error) {
 			vars.TLSConnectionState = &tlsState
 		}
 		m, e := variable.GetStatusVars(vars)
+		// Only the default provider's variables: other packages linked into govec
+		// (pkg/server: Compression*) register their own providers at init.
 		keys := make([]string, 0, len(m))
 		for k := range m {
-			keys = append(keys, k)
+			if strings.HasPrefix(k, "Ssl_") || strings.HasPrefix(k, "Performance_schema_session_connect_attrs_") {
+				keys = append(keys, k)
+			}
 		}
 		sort.Strings(keys)
 		var rows []any
