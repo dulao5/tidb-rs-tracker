@@ -65,6 +65,4 @@ var targetDiffs = []targetDiff{
 // (the other comes from the CI artifact of the PR that adds the domain), with the
 // reason. TestTargetsDiffer fails for a domain with one target that is not listed
 // here, and for a listed domain that has both targets (remove the entry then).
-var targetsPending = map[string]string{
-	"chunk": "D01.7: amd64 vectors come from the CI artifact of the PR",
-}
+var targetsPending = map[string]string{}
