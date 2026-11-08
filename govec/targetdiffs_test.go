@@ -77,14 +77,6 @@ var targetDiffs = []targetDiff{
 	{Domain: "datum", Op: "d_convert_recv", Args: "*", N: 20,
 		Why: "M-F2I: d_convert_recv repeats d_convert's NaN float datum to integer / YEAR / TIME conversions (int64(NaN)) over every field type"},
 
-	// sessionvars (D05.2). The GetGlobal hook of tidb_slow_log_max_per_sec returns
-	// int(GlobalSlowLogRateLimiter.Limit()), and the limiter's default limit is rate.Inf:
-	// int(+Inf) saturates to MaxInt64 on arm64 (then clamped to the max 1000000) and is
-	// MinInt64 on amd64 (clamped to 0). Every read-back of the variable differs.
-	{Domain: "sessionvars", Op: "set", Args: "*", N: 12,
-		Why: "M-F2I: tidb_slow_log_max_per_sec GetGlobal returns int(rate.Inf): MaxInt64 on arm64, MinInt64 on amd64"},
-	{Domain: "sessionvars", Op: "get", Args: "*", N: 1,
-		Why: "M-F2I: tidb_slow_log_max_per_sec GetGlobal returns int(rate.Inf): MaxInt64 on arm64, MinInt64 on amd64"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far

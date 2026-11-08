@@ -145,6 +145,16 @@ func errStr(err error) any {
 // state values) or on the host (version_compile_os / version_compile_machine: the
 // build target; tidb_config: the config with host paths): their read-back values are
 // recorded as "<volatile>".
+// globalHookRead reports whether reading name back goes through a GetGlobal hook (the
+// variable has one and no session scope): such hooks read process-wide state that other
+// domains generated in the same process change, so the value is recorded as
+// "<global-hook>" (the GetGlobal hooks get their own records when they are ported, with
+// that state reset).
+func globalHookRead(name string) bool {
+	sv := variable.GetSysVar(name)
+	return sv != nil && sv.GetGlobal != nil && !sv.HasSessionScope()
+}
+
 var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true,
 	"version_compile_os": true, "version_compile_machine": true, "tidb_config": true}
 
@@ -216,6 +226,8 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			res["old"] = old
 			if sessionvarsVolatile[name] {
 				res["old"] = "<volatile>"
+			} else if globalHookRead(name) {
+				res["old"] = "<global-hook>"
 			}
 		}
 		res["fields"] = diff(f0, scalarDump(vars))
@@ -224,6 +236,8 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			v, gerr := vars.GetSessionOrGlobalSystemVar(context.Background(), name)
 			if sessionvarsVolatile[name] {
 				v = "<volatile>"
+			} else if globalHookRead(name) {
+				v = "<global-hook>"
 			}
 			res["get"] = v
 			res["get_err"] = errStr(gerr)
@@ -242,6 +256,11 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		res["state"], res["keep"], res["state_err"] = v, keep, errStr(err)
 		if sessionvarsVolatile[name] {
 			res["sess"], res["glob"], res["state"] = "<volatile>", "<volatile>", "<volatile>"
+		} else if sv := variable.GetSysVar(name); sv != nil && sv.GetGlobal != nil {
+			res["glob"] = "<global-hook>"
+			if !sv.HasSessionScope() {
+				res["sess"] = "<global-hook>"
+			}
 		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, nil
 	case "set_global":
