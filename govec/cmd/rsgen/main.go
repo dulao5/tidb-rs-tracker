@@ -40,6 +40,7 @@ var (
 	modelOpt  = flag.String("model", "", "tidb-rs crates/model/src directory: generate the meta/model types (D06.1)")
 	typesOut  = flag.String("types", "", "tidb-rs crates/types/src directory (collate tables, block D01.9)")
 	parserOut = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
+	sysvarOut = flag.String("sysvar", "", "tidb-rs crates/sessionctx/src directory: system variable table (D05.1)")
 )
 
 // domainName overrides the govec domain named in the generated file header.
@@ -516,6 +517,10 @@ func main() {
 	if *modelOpt != "" {
 		*out = *modelOpt
 		genModel(filepath.Join(modDir("github.com/pingcap/tidb"), "pkg", "meta", "model"))
+		return
+	}
+	if *sysvarOut != "" {
+		genSysvarTable(*sysvarOut)
 		return
 	}
 	if *typesOut != "" {
