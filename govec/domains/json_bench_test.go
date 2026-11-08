@@ -7,9 +7,27 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	_ "unsafe" // go:linkname
 
 	"github.com/pingcap/tidb/pkg/types"
 )
+
+// parseJSONPathExpr is the parser behind ParseJSONPathExpr's process-wide LRU cache
+// (peCache). tidb-rs has no such cache (constant paths are parsed once per expression), so
+// parse_path_uncached is the comparable number; parse_path is the cache hit.
+//
+//go:linkname parseJSONPathExpr github.com/pingcap/tidb/pkg/types.parseJSONPathExpr
+func parseJSONPathExpr(pathExpr string) (types.JSONPathExpression, error)
+
+// benchLarge: ~256 KB, an array of 64 medium documents.
+func benchLarge() string {
+	md := benchMedium()
+	parts := make([]string, 64)
+	for i := range parts {
+		parts[i] = md
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
+}
 
 func benchSmall() string {
 	return `{"id": 12345, "name": "tidb-rs", "tags": ["a", "b", "c"], "score": 3.5, "ok": true}`
@@ -43,6 +61,13 @@ func BenchmarkJSON(b *testing.B) {
 			_, _ = types.ParseBinaryJSONFromString(md)
 		}
 	})
+	lg := benchLarge()
+	b.Run("parse_large", func(b *testing.B) {
+		b.SetBytes(int64(len(lg)))
+		for i := 0; i < b.N; i++ {
+			_, _ = types.ParseBinaryJSONFromString(lg)
+		}
+	})
 	b.Run("string_medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_ = bjMd.String()
@@ -56,6 +81,11 @@ func BenchmarkJSON(b *testing.B) {
 	b.Run("parse_path", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, _ = types.ParseJSONPathExpr("$.key20.nested.a")
+		}
+	})
+	b.Run("parse_path_uncached", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = parseJSONPathExpr("$.key20.nested.a")
 		}
 	})
 	b.Run("compare_medium", func(b *testing.B) {
