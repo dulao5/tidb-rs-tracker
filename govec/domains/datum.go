@@ -48,12 +48,18 @@ const datumSeed = 20261108
 var datumLiteralsTSV string
 
 func init() {
+	for k, v := range datum2Exempt {
+		datumExempt[k] = v
+	}
+	for k, v := range datum2Coverage {
+		datumCoverage[k] = v
+	}
 	vec.Register(&vec.Domain{
 		Name:     "datum",
 		Seed:     datumSeed,
 		Errors:   datumErrors,
 		Coverage: datumCoverage,
-		Blocks:   []string{"D01.4"},
+		Blocks:   []string{"D01.4", "D01.1"},
 		Files:    datumFiles,
 		Exempt:   datumExempt,
 		Gzip:     true,
@@ -75,10 +81,8 @@ var datumErrors = []vec.NamedErr{
 	{Name: "ErrInvalidCharacterString", Err: charset.ErrInvalidCharacterString},
 }
 
-// The D01.1 files of part 1 (the block itself is listed in part 2, with datum.go).
+// The charset Encoding files (D02.2) ported ahead for Datum's string conversions; block D01.1 itself is in Blocks.
 var datumFiles = []string{
-	"pkg/types/binary_literal.go", "pkg/types/enum.go", "pkg/types/set.go", "pkg/types/compare.go",
-	"pkg/types/helper.go", "pkg/types/etc.go",
 	"pkg/parser/charset/encoding.go", "pkg/parser/charset/encoding_base.go",
 	"pkg/parser/charset/encoding_utf8.go", "pkg/parser/charset/encoding_latin1.go",
 	"pkg/parser/charset/encoding_ascii.go", "pkg/parser/charset/encoding_bin.go",
@@ -86,11 +90,7 @@ var datumFiles = []string{
 }
 
 var datumExempt = map[string]string{
-	"ToString":                                       "takes Go's dynamic types (any): ported with the Datum part of D01.1 (the GoValue enum)",
-	"pkg/types/etc.go:EOFAsNil":                      "io.EOF has no tidb_base::Error counterpart (M-ERR); ported with the Datum part if a caller needs it",
-	"pkg/types/etc.go:InvOp2":                        "formats Go's dynamic types (%v %T of any): ported with the Datum part (GoValue)",
-	"pkg/types/etc.go:ColumnNeedRestoredData":        "takes model structs; ported in tidb-model and covered by the model domain (need_restored)",
-	"pkg/types/etc.go:NeedRestoredData":              "covered by the model domain (need_restored); depends on the global new-collation switch",
+	"NeedRestoredData":                               "covered by the model domain (need_restored); depends on the global new-collation switch",
 	"pkg/parser/charset/encoding_utf8.go:init":       "registers the encoding in Go's encoding map; Rust dispatches with a match",
 	"pkg/parser/charset/encoding_latin1.go:init":     "registers the encoding in Go's encoding map; Rust dispatches with a match",
 	"pkg/parser/charset/encoding_ascii.go:init":      "registers the encoding in Go's encoding map; Rust dispatches with a match",
@@ -115,17 +115,17 @@ var datumCoverage = map[string]vec.Coverage{
 		"SubUint64", "SubInt64", "SubUintWithInt", "SubIntWithUint", "MulUint64", "MulInt64", "MulInteger",
 		"DivInt64", "DivUintWithInt", "DivIntWithUint"}},
 	// helper.go
-	"float_helper": {Min: 2000, GoFuncs: []string{"pkg/types/helper.go:RoundFloat", "pkg/types/helper.go:Round",
-		"pkg/types/helper.go:Truncate", "pkg/types/helper.go:GetMaxFloat", "pkg/types/helper.go:TruncateFloat",
-		"pkg/types/helper.go:TruncateFloatToString"}},
-	"length_precision": {Min: 100, GoFuncs: []string{"pkg/types/helper.go:DecimalLength2Precision",
-		"pkg/types/helper.go:Precision2LengthNoTruncation"}},
-	"helper_str_to_int": {Min: 300, GoFuncs: []string{"pkg/types/helper.go:strToInt", "pkg/types/helper.go:isSpace",
-		"pkg/types/helper.go:isDigit", "pkg/types/helper.go:isPunctuation"}},
+	"float_helper": {Min: 2000, GoFuncs: []string{"RoundFloat", "Round",
+		"Truncate", "GetMaxFloat", "TruncateFloat",
+		"TruncateFloatToString"}},
+	"length_precision": {Min: 100, GoFuncs: []string{"DecimalLength2Precision",
+		"Precision2LengthNoTruncation"}},
+	"helper_str_to_int": {Min: 300, GoFuncs: []string{"strToInt", "isSpace",
+		"isDigit", "isPunctuation"}},
 	// convert.go
 	"int_bounds": {Min: 9, GoFuncs: []string{"IntegerUnsignedUpperBound", "IntegerSignedUpperBound", "IntegerSignedLowerBound"}},
 	"convert_num": {Min: 3000, GoFuncs: []string{"ConvertFloatToInt", "ConvertIntToInt", "ConvertUintToInt",
-		"ConvertIntToUint", "ConvertUintToUint", "ConvertFloatToUint", "pkg/types/etc.go:overflow"}},
+		"ConvertIntToUint", "ConvertUintToUint", "ConvertFloatToUint", "overflow"}},
 	"convert_decimal_to_uint": {Min: 500, GoFuncs: []string{"ConvertDecimalToUint", "convertDecimalStrToUint", "convertScientificNotation"}},
 	"str_to_num": {Min: 5000, GoFuncs: []string{"StrToInt", "StrToUint", "StrToFloat", "getValidIntPrefix",
 		"roundIntStr", "floatStrToIntStr", "getValidFloatPrefix", "Context.HandleTruncate"}},
@@ -135,34 +135,34 @@ var datumCoverage = map[string]vec.Coverage{
 	"truncate_str":       {Min: 30, GoFuncs: []string{"truncateStr"}},
 	"handle_truncate":    {Min: 30, GoFuncs: []string{"Context.HandleTruncate"}},
 	// binary_literal.go
-	"binlit_from_uint": {Min: 140, GoFuncs: []string{"pkg/types/binary_literal.go:NewBinaryLiteralFromUint",
-		"pkg/types/binary_literal.go:trimLeadingZeroBytes"}},
-	"binlit": {Min: 500, GoFuncs: []string{"pkg/types/binary_literal.go:BinaryLiteral.String",
-		"pkg/types/binary_literal.go:BinaryLiteral.ToString", "pkg/types/binary_literal.go:BinaryLiteral.ToBitLiteralString",
-		"pkg/types/binary_literal.go:BinaryLiteral.ToInt", "pkg/types/binary_literal.go:BinaryLiteral.Compare"}},
-	"parse_bit_hex": {Min: 1000, GoFuncs: []string{"pkg/types/binary_literal.go:ParseBitStr", "pkg/types/binary_literal.go:NewBitLiteral",
-		"pkg/types/binary_literal.go:BitLiteral.ToString", "pkg/types/binary_literal.go:ParseHexStr",
-		"pkg/types/binary_literal.go:NewHexLiteral", "pkg/types/binary_literal.go:HexLiteral.ToString"}},
+	"binlit_from_uint": {Min: 140, GoFuncs: []string{"NewBinaryLiteralFromUint",
+		"trimLeadingZeroBytes"}},
+	"binlit": {Min: 500, GoFuncs: []string{"BinaryLiteral.String",
+		"BinaryLiteral.ToString", "BinaryLiteral.ToBitLiteralString",
+		"BinaryLiteral.ToInt", "BinaryLiteral.Compare"}},
+	"parse_bit_hex": {Min: 1000, GoFuncs: []string{"ParseBitStr", "NewBitLiteral",
+		"BitLiteral.ToString", "ParseHexStr",
+		"NewHexLiteral", "HexLiteral.ToString"}},
 	// enum.go / set.go
-	"enum": {Min: 500, GoFuncs: []string{"pkg/types/enum.go:ParseEnum", "pkg/types/enum.go:ParseEnumName",
-		"pkg/types/enum.go:ParseEnumValue", "pkg/types/enum.go:Enum.Copy", "pkg/types/enum.go:Enum.String",
-		"pkg/types/enum.go:Enum.ToNumber"}},
-	"set": {Min: 500, GoFuncs: []string{"pkg/types/set.go:ParseSet", "pkg/types/set.go:ParseSetName",
-		"pkg/types/set.go:ParseSetValue", "pkg/types/set.go:Set.Copy", "pkg/types/set.go:Set.String",
-		"pkg/types/set.go:Set.ToNumber", "pkg/types/set.go:init"}},
+	"enum": {Min: 500, GoFuncs: []string{"ParseEnum", "ParseEnumName",
+		"ParseEnumValue", "Enum.Copy", "Enum.String",
+		"Enum.ToNumber"}},
+	"set": {Min: 500, GoFuncs: []string{"ParseSet", "ParseSetName",
+		"ParseSetValue", "Set.Copy", "Set.String",
+		"Set.ToNumber", "init"}},
 	// compare.go
-	"vec_compare": {Min: 200, GoFuncs: []string{"pkg/types/compare.go:VecCompareUU", "pkg/types/compare.go:VecCompareII",
-		"pkg/types/compare.go:VecCompareUI", "pkg/types/compare.go:VecCompareIU"}},
-	"compare_int":    {Min: 1000, GoFuncs: []string{"pkg/types/compare.go:CompareInt"}},
-	"compare_string": {Min: 100, GoFuncs: []string{"pkg/types/compare.go:CompareString"}},
+	"vec_compare": {Min: 200, GoFuncs: []string{"VecCompareUU", "VecCompareII",
+		"VecCompareUI", "VecCompareIU"}},
+	"compare_int":    {Min: 1000, GoFuncs: []string{"CompareInt"}},
+	"compare_string": {Min: 100, GoFuncs: []string{"CompareString"}},
 	// etc.go
-	"type_preds": {Min: 256, GoFuncs: []string{"pkg/types/etc.go:IsTypeVarchar", "pkg/types/etc.go:IsTypeUnspecified",
-		"pkg/types/etc.go:IsTypePrefixable", "pkg/types/etc.go:IsTypeFractionable", "pkg/types/etc.go:IsTypeTime",
-		"pkg/types/etc.go:IsTypeFloat", "pkg/types/etc.go:IsTypeInteger", "pkg/types/etc.go:IsTypeNumeric",
-		"pkg/types/etc.go:IsTemporalWithDate", "pkg/types/etc.go:IsString", "pkg/types/etc.go:IsTypeTemporal"}},
-	"ft_preds": {Min: 80, GoFuncs: []string{"pkg/types/etc.go:IsTypeBit", "pkg/types/etc.go:IsBinaryStr",
-		"pkg/types/etc.go:IsNonBinaryStr"}},
-	"kind": {Min: 30, GoFuncs: []string{"pkg/types/etc.go:IsStringKind", "pkg/types/etc.go:KindStr"}},
+	"type_preds": {Min: 256, GoFuncs: []string{"IsTypeVarchar", "IsTypeUnspecified",
+		"IsTypePrefixable", "IsTypeFractionable", "IsTypeTime",
+		"IsTypeFloat", "IsTypeInteger", "IsTypeNumeric",
+		"IsTemporalWithDate", "IsString", "IsTypeTemporal"}},
+	"ft_preds": {Min: 80, GoFuncs: []string{"IsTypeBit", "IsBinaryStr",
+		"IsNonBinaryStr"}},
+	"kind": {Min: 30, GoFuncs: []string{"IsStringKind", "KindStr"}},
 	// charset encodings
 	"encoding": {Min: 3000, GoFuncs: encodingFuncs},
 }
@@ -277,6 +277,9 @@ func datumExec(op string, args []json.RawMessage) (out any, err error) {
 	// toggle it): every record runs with new collations enabled, the default
 	// of a new cluster.
 	collate.SetNewCollationEnabledForTest(true)
+	if out, err, ok := datum2Exec(op, args); ok {
+		return out, err
+	}
 	s := func(i int) string { return string(arg[vec.GoString](args, i)) }
 	switch op {
 	case "overflow":
@@ -606,9 +609,11 @@ type datumLit struct {
 	num *int64
 }
 
-func datumLiterals() []datumLit {
+func datumLiterals() []datumLit { return parseDatumLiterals(datumLiteralsTSV) }
+
+func parseDatumLiterals(tsv string) []datumLit {
 	var lits []datumLit
-	sc := bufio.NewScanner(bytes.NewReader([]byte(datumLiteralsTSV)))
+	sc := bufio.NewScanner(bytes.NewReader([]byte(tsv)))
 	for sc.Scan() {
 		c := strings.SplitN(sc.Text(), "\t", 3)
 		if len(c) != 3 {
@@ -636,7 +641,7 @@ func datumLiterals() []datumLit {
 func DatumMinedTests() []string {
 	seen := map[string]bool{}
 	var fns []string
-	for _, l := range datumLiterals() {
+	for _, l := range append(datumLiterals(), datum2Literals()...) {
 		if !seen[l.fn] {
 			seen[l.fn] = true
 			fns = append(fns, l.fn)
@@ -922,6 +927,26 @@ func datumGenerate(g *vec.Gen, rng *rand.Rand) {
 			g.Add("sys/str", "str_to_time", uint16(0), "datetime", vec.GoString(s), fsp)
 		}
 	}
+	// The zero-date flag bits (D01.1 review): each alone, together, and with
+	// truncate-as-warning, on both StrToDateTime and StrToDuration.
+	zeroFlags := []uint16{
+		uint16(types.StrictFlags.WithIgnoreZeroDateErr(true)),
+		uint16(types.StrictFlags.WithIgnoreZeroInDate(true)),
+		uint16(types.StrictFlags.WithIgnoreInvalidDateErr(true)),
+		uint16(types.StrictFlags.WithIgnoreZeroDateErr(true).WithIgnoreZeroInDate(true).WithIgnoreInvalidDateErr(true)),
+		uint16(types.StrictFlags.WithTruncateAsWarning(true).WithIgnoreZeroDateErr(true).WithIgnoreZeroInDate(true)),
+		uint16(types.StrictFlags.WithTruncateAsWarning(true).WithIgnoreInvalidDateErr(true)),
+	}
+	zeroStrs := []string{"0000-00-00", "0000-00-00 00:00:00", "2011-00-10", "2011-11-00", "0000-11-10", "2011-02-30",
+		"2011-02-29", "2012-02-29 11:11:11", "2011-13-01", "2011-04-31 00:00:00.5", "00:00:00", "0", "00000000",
+		"20110230", "20110010", "abc", "2011-11-10 25:00:00", "838:59:59", "0000-00-00 00:00:00.000001"}
+	for _, s := range append(zeroStrs, timeStrs...) {
+		for i, fl := range zeroFlags {
+			fsp := []int{0, 3, 6}[i%3]
+			g.Add("sys/zero_flags", "str_to_time", fl, "datetime", vec.GoString(s), fsp)
+			g.Add("sys/zero_flags", "str_to_time", fl, "duration", vec.GoString(s), fsp)
+		}
+	}
 	for _, n := range append(append([]int64{}, datumEdgeInts...), litInts...) {
 		for _, fsp := range []int{0, 2, 6} {
 			g.Add("sys/num", "number_to_duration", n, fsp)
@@ -1172,4 +1197,5 @@ func datumGenerate(g *vec.Gen, rng *rand.Rand) {
 		// this marks the functions whose literals only fed shared pools)
 		g.Add(fn, "kind", byte(0))
 	}
+	datum2Generate(g, rng)
 }
