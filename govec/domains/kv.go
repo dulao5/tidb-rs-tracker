@@ -9,9 +9,10 @@ package domains
 //     codec.EncodeKey bytes (copied into an exact-capacity slice, so cap == len); its
 //     spec carries the column end offsets NewCommonHandle computed (from EncodedCol),
 //     because the Rust port builds it from them until codec.CutOne (D01.8) is ported;
-//   - handle outputs (handleOut) record every method that does not panic for the kind,
-//     and Data/String only for handles without a CommonHandle inside (CommonHandle.Data
-//     needs codec.DecodeOne, D01.8: exempt);
+//   - handle outputs (handleOut) record every method that does not panic for the kind;
+//     Data as int64s for handles without a CommonHandle inside, the datum kinds for the
+//     others; String when it is valid UTF-8 ("str"), else only its validity ("str_bad":
+//     the Rust port returns a Rust String, lossy for such bytes);
 //   - map scripts (handle_map, mem_aware_map) are sequences of steps; Range results are
 //     sorted (Go's map order is random, M-MAPORDER);
 //   - RunInNewTxn, the cache DB, NextUntil, GetValue and BatchGetValue run against mock
@@ -30,6 +31,7 @@ import (
 	"slices"
 	"sort"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/kv"
@@ -85,9 +87,6 @@ func init() {
 			{Name: "ErrLockExpire", Err: kv.ErrLockExpire},
 		},
 		Exempt: map[string]string{
-			"NewCommonHandle":     "splits the bytes with codec.CutOne (block D01.8); the Rust replay builds the handle from the offsets Go computed",
-			"CommonHandle.Data":   "codec.DecodeOne (block D01.8)",
-			"CommonHandle.String": "goes through CommonHandle.Data (D01.8)",
 			"NewResourceGroupTagBuilder":                 "parser.Digest (D02.2 digester) not ported",
 			"ResourceGroupTagBuilder.SetSQLDigest":       "parser.Digest (D02.2 digester) not ported",
 			"ResourceGroupTagBuilder.SetPlanDigest":      "parser.Digest (D02.2 digester) not ported",
@@ -131,6 +130,7 @@ var handleFuncs = []string{"IntHandle.Copy", "IntHandle.IsInt", "IntHandle.IntVa
 	"IntHandle.Len", "IntHandle.Data", "IntHandle.String", "IntHandle.MemUsage", "IntHandle.ExtraMemSize",
 	"CommonHandle.Copy", "CommonHandle.IsInt", "CommonHandle.Next", "CommonHandle.Encoded", "CommonHandle.Len",
 	"CommonHandle.NumCols", "CommonHandle.EncodedCol", "CommonHandle.MemUsage", "CommonHandle.ExtraMemSize",
+	"NewCommonHandle", "CommonHandle.Data", "CommonHandle.String",
 	"PartitionHandle.Copy", "PartitionHandle.MemUsage", "PartitionHandle.ExtraMemSize", "NewPartitionHandle"}
 
 // ---------------------------------------------------------------- handles
@@ -224,17 +224,27 @@ func handleOut(h kv.Handle) map[string]any {
 		}
 		out["cols"] = cols
 	}
+	if str := h.String(); utf8.ValidString(str) {
+		out["str"] = str
+	} else {
+		out["str_bad"] = true
+	}
+	d, err := h.Data()
+	if err != nil {
+		panic(err)
+	}
 	if !hasCommon(h) {
-		out["str"] = h.String()
-		d, err := h.Data()
-		if err != nil {
-			panic(err)
-		}
 		var ds []int64
 		for _, x := range d {
 			ds = append(ds, x.GetInt64())
 		}
 		out["data"] = ds
+	} else {
+		ks := []int{}
+		for _, x := range d {
+			ks = append(ks, int(x.Kind()))
+		}
+		out["data_kinds"] = ks
 	}
 	return out
 }
