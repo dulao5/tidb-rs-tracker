@@ -36,6 +36,8 @@ import (
 	"strconv"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/tidb/pkg/planner/util/fixcontrol"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 )
 
@@ -64,13 +66,15 @@ func init() {
 				"SysVar.SetSessionFromHook", "SessionVars.GetSystemVar"}},
 			"get": {Min: 900, GoFuncs: []string{"SessionVars.GetSessionOrGlobalSystemVar", "SessionVars.GetGlobalSystemVar",
 				"SessionVars.GetSessionStatesSystemVar", "SysVar.GetSessionFromHook", "SysVar.GetGlobalFromHook"}},
-			"set_global": {Min: 100, GoFuncs: []string{"SysVar.SetGlobalFromHook"}},
-			"init":       {Min: 20},
+			"set_global":      {Min: 100, GoFuncs: []string{"SysVar.SetGlobalFromHook"}},
+			"set_global_hook": {Min: 100},
+			"init":            {Min: 20},
 		},
 		Exempt:   exempt,
+		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}},
 		Gzip:     true,
 		Generate: sessionvarsGenerate,
-		Exec:     sessionvarsExec,
+		Exec:     sessionvarsExecClient,
 	})
 }
 
@@ -147,18 +151,78 @@ func errStr(err error) any {
 // state values) or on the host (version_compile_os / version_compile_machine: the
 // build target; tidb_config: the config with host paths): their read-back values are
 // recorded as "<volatile>".
-// globalHookRead reports whether reading name back goes through a GetGlobal hook (the
-// variable has one and no session scope): such hooks read process-wide state that other
-// domains generated in the same process change, so the value is recorded as
-// "<global-hook>" (the GetGlobal hooks get their own records when they are ported, with
-// that state reset).
-func globalHookRead(name string) bool {
-	sv := variable.GetSysVar(name)
-	return sv != nil && sv.GetGlobal != nil && !sv.HasSessionScope()
+// sessionvarsGlobalHookVars are the GLOBAL-scope variables whose SetGlobal hook writes
+// only process-wide state that resetSysvarAtomics restores; set_global_hook records run
+// their SetGlobal (then GetGlobal) hook. Extend the list as more hooks are ported and
+// their written state is added to the restore list (D05.2 PR B).
+var sessionvarsGlobalHookVars = []string{
+	"authentication_ldap_sasl_auth_method_name",
+	"authentication_ldap_sasl_bind_base_dn",
+	"authentication_ldap_sasl_bind_root_dn",
+	"authentication_ldap_sasl_bind_root_pwd",
+	"authentication_ldap_sasl_ca_path",
+	"authentication_ldap_sasl_init_pool_size",
+	"authentication_ldap_sasl_max_pool_size",
+	"authentication_ldap_sasl_server_host",
+	"authentication_ldap_sasl_server_port",
+	"authentication_ldap_sasl_tls",
+	"authentication_ldap_sasl_user_search_attr",
+	"authentication_ldap_simple_auth_method_name",
+	"authentication_ldap_simple_bind_base_dn",
+	"authentication_ldap_simple_bind_root_dn",
+	"authentication_ldap_simple_bind_root_pwd",
+	"authentication_ldap_simple_ca_path",
+	"authentication_ldap_simple_init_pool_size",
+	"authentication_ldap_simple_max_pool_size",
+	"authentication_ldap_simple_server_host",
+	"authentication_ldap_simple_server_port",
+	"authentication_ldap_simple_tls",
+	"authentication_ldap_simple_user_search_attr",
+	"max_user_connections",
+	"password_history",
+	"password_reuse_interval",
+	"performance_schema_session_connect_attrs_size",
+	"tidb_accelerate_user_creation_update",
+	"tidb_advancer_check_point_lag_limit",
+	"tidb_ddl_enable_fast_reorg",
+	"tidb_enable_auto_analyze",
+	"tidb_enable_auto_analyze_priority_queue",
+	"tidb_enable_batch_dml",
+	"tidb_enable_check_constraint",
+	"tidb_enable_column_tracking",
+	"tidb_enable_foreign_key",
+	"tidb_enable_gc_aware_memory_track",
+	"tidb_enable_historical_stats_for_capture",
+	"tidb_enable_instance_plan_cache",
+	"tidb_enable_noop_variables",
+	"tidb_enable_row_level_checksum",
+	"tidb_enable_tiflash_pipeline_model",
+	"tidb_enable_tmp_storage_on_oom",
+	"tidb_gc_max_wait_time",
+	"tidb_historical_stats_duration",
+	"tidb_ignore_inlist_plan_digest",
+	"tidb_mem_oom_action",
+	"tidb_mem_quota_binding_cache",
+	"tidb_memory_usage_alarm_keep_record_num",
+	"tidb_memory_usage_alarm_ratio",
+	"tidb_query_log_max_len",
+	"tidb_schema_version_cache_limit",
+	"tidb_server_memory_limit_sess_min_size",
+	"tidb_stats_load_pseudo_timeout",
+	"tidb_stats_load_sync_wait",
+	"tidb_super_read_only",
+	"tidb_ttl_job_enable",
+	"validate_password.length",
+	"validate_password.mixed_case_count",
+	"validate_password.number_count",
+	"validate_password.special_char_count",
 }
 
 var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true,
-	"version_compile_os": true, "version_compile_machine": true, "tidb_config": true}
+	"version_compile_os": true, "version_compile_machine": true, "tidb_config": true,
+	// GetGlobal converts int(rate.Inf) (the default limiter): platform-dependent (M-F2I,
+	// tidb-rs #27).
+	"tidb_slow_log_max_per_sec": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("sys/fresh", "fresh")
@@ -197,6 +261,13 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 		slices.Reverse(rev)
 		g.Add("sys/init", "init", rev)
 	}
+	// SetGlobal / GetGlobal hooks of GLOBAL-scope variables (their written state is reset).
+	for _, name := range sessionvarsGlobalHookVars {
+		sv := variable.GetSysVar(name)
+		for _, v := range sysvarValues(sv, rng) {
+			g.Add("sys/set_global_hook", "set_global_hook", name, v)
+		}
+	}
 	// SET GLOBAL last: an INSTANCE hook may change process-wide state.
 	for _, sv := range all {
 		vals := sysvarValues(sv, rng)
@@ -206,6 +277,40 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 			}
 		}
 	}
+	// tidb_opt_fix_control values with nothing after a colon (fix pingcap/tidb#65884: v8.5.8
+	// indexes s[0] and panics; with the fix the value is "", no error, no warning). Appended
+	// after the other records so that those are unchanged.
+	for _, v := range []string{"1:", "1: ", "1:,2:x", "123:", "44: ,45:on", "1:''"} {
+		g.Add("fix "+fix65884, "set", "set", variable.TiDBOptFixControl, v)
+		g.Add("fix "+fix65884, "set", "old", variable.TiDBOptFixControl, v)
+	}
+}
+
+// fix65884: fixcontrol.ParseToMap indexes s[0] after a value's colon without a length
+// check, so "123:" panics; master guards it (pingcap/tidb#65884, commit 811a10e115). tidb-rs
+// ports the fix; govec links the patched file (govec/fixes).
+const fix65884 = "pingcap/tidb#65884"
+
+func fix65884Applied() (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	m, warns, err := fixcontrol.ParseToMap("123:")
+	return err == nil && len(warns) == 0 && m[123] == ""
+}
+
+// sessionvarsExecClient records the error the client sees: the server writes
+// errors.Cause(err) (server/conn.go writeError), so a Wrap/Wrapf/Annotate prefix (e.g. the
+// LDAP ca_path hook's "read ca certificate at …") only reaches Go's log. tidb-rs ports the
+// wrappers away (M-ERR: Cause is the identity), returning the client-visible error.
+func sessionvarsExecClient(op string, args []json.RawMessage) (any, error) {
+	out, err := sessionvarsExec(op, args)
+	if err != nil {
+		err = errors.Cause(err)
+	}
+	return out, err
 }
 
 func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
@@ -233,8 +338,6 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			res["old"] = old
 			if sessionvarsVolatile[name] {
 				res["old"] = "<volatile>"
-			} else if globalHookRead(name) {
-				res["old"] = "<global-hook>"
 			}
 		}
 		res["fields"] = diff(f0, scalarDump(vars))
@@ -243,8 +346,6 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			v, gerr := vars.GetSessionOrGlobalSystemVar(context.Background(), name)
 			if sessionvarsVolatile[name] {
 				v = "<volatile>"
-			} else if globalHookRead(name) {
-				v = "<global-hook>"
 			}
 			res["get"] = v
 			res["get_err"] = errStr(gerr)
@@ -263,11 +364,6 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		res["state"], res["keep"], res["state_err"] = v, keep, errStr(err)
 		if sessionvarsVolatile[name] {
 			res["sess"], res["glob"], res["state"] = "<volatile>", "<volatile>", "<volatile>"
-		} else if sv := variable.GetSysVar(name); sv != nil && sv.GetGlobal != nil {
-			res["glob"] = "<global-hook>"
-			if !sv.HasSessionScope() {
-				res["sess"] = "<global-hook>"
-			}
 		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, nil
 	case "set_global":
@@ -286,6 +382,12 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 				// generation, start from the same state.
 				prev, perr := sv.GetGlobalFromHook(context.Background(), vars)
 				err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+				if err == nil && sv.GetGlobal != nil && !sessionvarsVolatile[name] {
+					// The process-wide value the SetGlobal hook stored, read back through
+					// GetGlobal (so that a missing SetGlobal effect is caught).
+					after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
+					res["after"], res["after_err"] = after, errStr(aerr)
+				}
 				if perr == nil {
 					_ = sv.SetGlobalFromHook(context.Background(), freshVars(svCtx{}), prev, false)
 				}
@@ -295,6 +397,23 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		}
 		res["fields"] = diff(f0, scalarDump(vars))
 		res["sys"] = diff(s0, systemsDump(vars))
+		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, err
+	case "set_global_hook":
+		resetSysvarAtomics()
+		defer resetSysvarAtomics()
+		vars := freshVars(svCtx{})
+		vars.StmtCtx.StmtType = "Set"
+		name, val := arg[string](args, 0), arg[string](args, 1)
+		sv := variable.GetSysVar(name)
+		res := map[string]any{}
+		v, err := sv.Validate(vars, val, variable.ScopeGlobal)
+		if err == nil {
+			err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+			if err == nil && sv.GetGlobal != nil {
+				after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
+				res["after"], res["after_err"] = after, errStr(aerr)
+			}
+		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, err
 	case "init":
 		resetSysvarAtomics()

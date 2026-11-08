@@ -30,11 +30,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	_ "unsafe" // go:linkname
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/tidb/pkg/config"
+	"github.com/pingcap/tidb/pkg/privilege/privileges/ldap"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
@@ -142,6 +145,8 @@ var initialRedactLog = errors.RedactLogEnabled.Load()
 //     upstream bug tidb-rs #62: the flag redacts the warnings of every session);
 //     tidb_constraint_check_in_place_pessimistic increments a metrics counter (not
 //     observed by any record);
+//   - SetGlobal hooks of GLOBAL-scope variables over variable-package atomics (D05.2 PR B):
+//     restored by processGlobalsRestore (captured at init);
 //   - SetGlobal hooks of the 27 INSTANCE-scope variables (log, slow log, plugin,
 //     memory/expensive-query thresholds, max_connections, DDL/stats owner, statement
 //     summary files, service scope…): the sessionvars domain's set_global op restores
@@ -157,6 +162,146 @@ func resetSysvarAtomics() {
 	variable.GOGCTunerThreshold.Store(variable.DefTiDBGOGCTunerThreshold)
 	variable.RunAutoAnalyze.Store(variable.DefTiDBEnableAutoAnalyze)
 	variable.EnableAutoAnalyzePriorityQueue.Store(variable.DefTiDBEnableAutoAnalyzePriorityQueue)
+	processGlobalsRestore()
+}
+
+// processGlobalsRestore restores the variable-package atomics written by SetGlobal hooks
+// (D05.2 PR B: the GLOBAL-scope set_global records run them) to their values after init.
+var processGlobalsRestore = func() func() {
+	vAccelerateUserCreationUpdate := variable.AccelerateUserCreationUpdate.Load()
+	vConnectAttrsSize := variable.ConnectAttrsSize.Load()
+	vEnableAutoAnalyzePriorityQueue := variable.EnableAutoAnalyzePriorityQueue.Load()
+	vEnableBatchDML := variable.EnableBatchDML.Load()
+	vEnableCheckConstraint := variable.EnableCheckConstraint.Load()
+	vEnableFastReorg := variable.EnableFastReorg.Load()
+	vEnableForeignKey := variable.EnableForeignKey.Load()
+	vEnableHistoricalStatsForCapture := variable.EnableHistoricalStatsForCapture.Load()
+	vEnableInstancePlanCache := variable.EnableInstancePlanCache.Load()
+	vEnableNoopVariables := variable.EnableNoopVariables.Load()
+	vEnableRCReadCheckTS := variable.EnableRCReadCheckTS.Load()
+	vEnableRowLevelChecksum := variable.EnableRowLevelChecksum.Load()
+	vEnableTTLJob := variable.EnableTTLJob.Load()
+	vEnableTmpStorageOnOOM := variable.EnableTmpStorageOnOOM.Load()
+	vGCMaxWaitTime := variable.GCMaxWaitTime.Load()
+	vIgnoreInlistPlanDigest := variable.IgnoreInlistPlanDigest.Load()
+	vMaxUserConnectionsValue := variable.MaxUserConnectionsValue.Load()
+	vMemQuotaBindingCache := variable.MemQuotaBindingCache.Load()
+	vMemoryUsageAlarmKeepRecordNum := variable.MemoryUsageAlarmKeepRecordNum.Load()
+	vMemoryUsageAlarmRatio := variable.MemoryUsageAlarmRatio.Load()
+	vOOMAction := variable.OOMAction.Load()
+	vPasswordHistory := variable.PasswordHistory.Load()
+	vPasswordReuseInterval := variable.PasswordReuseInterval.Load()
+	vPasswordValidationLength := variable.PasswordValidationLength.Load()
+	vPasswordValidationMixedCaseCount := variable.PasswordValidationMixedCaseCount.Load()
+	vPasswordValidtaionNumberCount := variable.PasswordValidtaionNumberCount.Load()
+	vPasswordValidationSpecialCharCount := variable.PasswordValidationSpecialCharCount.Load()
+	vProcessGeneralLog := variable.ProcessGeneralLog.Load()
+	vQueryLogMaxLen := variable.QueryLogMaxLen.Load()
+	vRunAutoAnalyze := variable.RunAutoAnalyze.Load()
+	vSchemaVersionCacheLimit := variable.SchemaVersionCacheLimit.Load()
+	vStatsLoadPseudoTimeout := variable.StatsLoadPseudoTimeout.Load()
+	vStatsLoadSyncWait := variable.StatsLoadSyncWait.Load()
+	vTiFlashEnablePipelineMode := variable.TiFlashEnablePipelineMode.Load()
+	vVarTiDBSuperReadOnly := variable.VarTiDBSuperReadOnly.Load()
+	vGOGCTunerThreshold := variable.GOGCTunerThreshold.Load()
+	vHistoricalStatsDuration := variable.HistoricalStatsDuration.Load()
+	vAdvancerCheckPointLagLimit := variable.AdvancerCheckPointLagLimit.Load()
+	vEnablePProfSQLCPU := variable.EnablePProfSQLCPU.Load()
+	vForcePriority := atomic.LoadInt32(&variable.ForcePriority)
+	vEnableGCAwareMemoryTrack := memory.EnableGCAwareMemoryTrack.Load()
+	vServerMemoryLimitSessMinSize := memory.ServerMemoryLimitSessMinSize.Load()
+	vServerMemoryLimitOriginText := memory.ServerMemoryLimitOriginText.Load()
+	vServerMemoryLimit := memory.ServerMemoryLimit.Load()
+	vConfig := *config.GetGlobalConfig()
+	vDDLSlowOprThreshold := atomic.LoadUint32(&variable.DDLSlowOprThreshold)
+	vExpensiveQueryTimeThreshold := atomic.LoadUint64(&variable.ExpensiveQueryTimeThreshold)
+	vExpensiveTxnTimeThreshold := atomic.LoadUint64(&variable.ExpensiveTxnTimeThreshold)
+	return func() {
+		variable.AccelerateUserCreationUpdate.Store(vAccelerateUserCreationUpdate)
+		variable.ConnectAttrsSize.Store(vConnectAttrsSize)
+		variable.EnableAutoAnalyzePriorityQueue.Store(vEnableAutoAnalyzePriorityQueue)
+		variable.EnableBatchDML.Store(vEnableBatchDML)
+		variable.EnableCheckConstraint.Store(vEnableCheckConstraint)
+		variable.EnableFastReorg.Store(vEnableFastReorg)
+		variable.EnableForeignKey.Store(vEnableForeignKey)
+		variable.EnableHistoricalStatsForCapture.Store(vEnableHistoricalStatsForCapture)
+		variable.EnableInstancePlanCache.Store(vEnableInstancePlanCache)
+		variable.EnableNoopVariables.Store(vEnableNoopVariables)
+		variable.EnableRCReadCheckTS.Store(vEnableRCReadCheckTS)
+		variable.EnableRowLevelChecksum.Store(vEnableRowLevelChecksum)
+		variable.EnableTTLJob.Store(vEnableTTLJob)
+		variable.EnableTmpStorageOnOOM.Store(vEnableTmpStorageOnOOM)
+		variable.GCMaxWaitTime.Store(vGCMaxWaitTime)
+		variable.IgnoreInlistPlanDigest.Store(vIgnoreInlistPlanDigest)
+		variable.MaxUserConnectionsValue.Store(vMaxUserConnectionsValue)
+		variable.MemQuotaBindingCache.Store(vMemQuotaBindingCache)
+		variable.MemoryUsageAlarmKeepRecordNum.Store(vMemoryUsageAlarmKeepRecordNum)
+		variable.MemoryUsageAlarmRatio.Store(vMemoryUsageAlarmRatio)
+		variable.OOMAction.Store(vOOMAction)
+		variable.PasswordHistory.Store(vPasswordHistory)
+		variable.PasswordReuseInterval.Store(vPasswordReuseInterval)
+		variable.PasswordValidationLength.Store(vPasswordValidationLength)
+		variable.PasswordValidationMixedCaseCount.Store(vPasswordValidationMixedCaseCount)
+		variable.PasswordValidtaionNumberCount.Store(vPasswordValidtaionNumberCount)
+		variable.PasswordValidationSpecialCharCount.Store(vPasswordValidationSpecialCharCount)
+		variable.ProcessGeneralLog.Store(vProcessGeneralLog)
+		variable.QueryLogMaxLen.Store(vQueryLogMaxLen)
+		variable.RunAutoAnalyze.Store(vRunAutoAnalyze)
+		variable.SchemaVersionCacheLimit.Store(vSchemaVersionCacheLimit)
+		variable.StatsLoadPseudoTimeout.Store(vStatsLoadPseudoTimeout)
+		variable.StatsLoadSyncWait.Store(vStatsLoadSyncWait)
+		variable.TiFlashEnablePipelineMode.Store(vTiFlashEnablePipelineMode)
+		variable.VarTiDBSuperReadOnly.Store(vVarTiDBSuperReadOnly)
+		variable.GOGCTunerThreshold.Store(vGOGCTunerThreshold)
+		variable.HistoricalStatsDuration.Store(vHistoricalStatsDuration)
+		variable.AdvancerCheckPointLagLimit.Store(vAdvancerCheckPointLagLimit)
+		variable.EnablePProfSQLCPU.Store(vEnablePProfSQLCPU)
+		atomic.StoreInt32(&variable.ForcePriority, vForcePriority)
+		memory.EnableGCAwareMemoryTrack.Store(vEnableGCAwareMemoryTrack)
+		memory.ServerMemoryLimitSessMinSize.Store(vServerMemoryLimitSessMinSize)
+		memory.ServerMemoryLimitOriginText.Store(vServerMemoryLimitOriginText)
+		memory.ServerMemoryLimit.Store(vServerMemoryLimit)
+		// The global config: INSTANCE hooks write it, other domains may store their own.
+		c := vConfig
+		config.StoreGlobalConfig(&c)
+		resetLDAP(ldap.LDAPSASLAuthImpl.SetSASLAuthMethod, ldap.LDAPSASLAuthImpl)
+		resetLDAP(nil, ldap.LDAPSimpleAuthImpl)
+		atomic.StoreUint32(&variable.DDLSlowOprThreshold, vDDLSlowOprThreshold)
+		atomic.StoreUint64(&variable.ExpensiveQueryTimeThreshold, vExpensiveQueryTimeThreshold)
+		atomic.StoreUint64(&variable.ExpensiveTxnTimeThreshold, vExpensiveTxnTimeThreshold)
+	}
+}()
+
+// ldapSettings is the setter set of the LDAP impls (ldap.ldapAuthImpl is unexported).
+type ldapSettings interface {
+	SetBindBaseDN(string)
+	SetBindRootDN(string)
+	SetBindRootPW(string)
+	SetSearchAttr(string)
+	SetLDAPServerHost(string)
+	SetLDAPServerPort(int)
+	SetEnableTLS(bool)
+	SetCAPath(string) error
+	SetInitCapacity(int)
+	SetMaxCapacity(int)
+}
+
+// resetLDAP puts an LDAP impl back to its zero value (written by the authentication_ldap_*
+// SetGlobal hooks).
+func resetLDAP(setMethod func(string), impl ldapSettings) {
+	if setMethod != nil {
+		setMethod("")
+	}
+	impl.SetInitCapacity(0)
+	impl.SetMaxCapacity(0)
+	impl.SetBindBaseDN("")
+	impl.SetBindRootDN("")
+	impl.SetBindRootPW("")
+	impl.SetSearchAttr("")
+	impl.SetLDAPServerHost("")
+	impl.SetLDAPServerPort(0)
+	impl.SetEnableTLS(false)
+	_ = impl.SetCAPath("")
 }
 
 // sysvarMemTotal is the MemTotal of the records (tidb_server_memory_limit accepts a

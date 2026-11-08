@@ -23,6 +23,7 @@ a copy of the module with the affected files replaced by the copies here
 | Fix | File | Change | Domains |
 |---|---|---|---|
 | [pingcap/tidb#67149](https://github.com/pingcap/tidb/pull/67149) (master `dfda1fd3e8`, 2026-10-19) | `pkg/util/collate/unicode_0900_ai_ci_impl.go` | `int(r) > len(MapTable4)` → `>=`: U+2CEA1 (= len) indexed past the 0900 table and panicked on user input | collate |
+| [pingcap/tidb#65884](https://github.com/pingcap/tidb/pull/65884) (master `811a10e115`, 2026-01-29) | `pkg/planner/util/fixcontrol/set.go` | `ParseToMap` guards `s[0]` after a value's colon: `SET tidb_opt_fix_control='123:'` panicked (index out of range); fixed: value `""`, no error | sessionvars |
 
 Adding a fix: copy the v8.5.8 file to `fixes/<path>.fixed`, apply the upstream
 change with a comment citing it, add the mapping to `scripts/govec-fixes.sh`,
