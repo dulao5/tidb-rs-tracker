@@ -59,6 +59,14 @@ var targetDiffs = []targetDiff{
 		Why: "hardware default NaN of an invalid operation: x86 0xFFC00000 (negative), ARM 0x7FC00000"},
 	{Domain: "vector", Op: "distance", Args: "*", Kind: "nan-payload", N: 544,
 		Why: "hardware NaN propagation with two NaN operands: x86 returns the first source, ARM the first SNaN then QNaN (addend, op1, op2)"},
+
+	// datum (D01.1/D01.4). Truncate(±0, dec >= 309): math.Pow10 is +Inf, 0*Inf is the
+	// hardware default NaN, so the "truncate" field of float_helper differs in sign.
+	{Domain: "datum", Op: "float_helper", Args: "*", N: 8,
+		Why: "hardware default NaN of 0*Inf in Truncate: x86 0xFFF8000000000000 (negative), ARM 0x7FF8000000000000"},
+	// ConvertFloatToInt(NaN): both bound checks are false, so int64(NaN) is returned.
+	{Domain: "datum", Op: "convert_num", Args: "*", N: 10,
+		Why: "M-F2I: ConvertFloatToInt(NaN) returns int64(NaN): MinInt64 on amd64, 0 on arm64"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far
