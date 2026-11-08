@@ -29,7 +29,6 @@ import (
 	"math/rand/v2"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -123,7 +122,6 @@ var kvCoverage = map[string]vec.Coverage{
 	"back_off":       {Min: 8, GoFuncs: []string{"BackOff"}},
 	"run_in_new_txn": {Min: 100, GoFuncs: []string{"RunInNewTxn", "setRequestSourceForInnerTxn", "innerTxnStartTsBox.storeInnerTxnTS", "innerTxnStartTsBox.deleteInnerTxnTS", "innerTxnStartTsBox.getMinStartTS", "GetMinInnerTxnStartTS", "IsTxnRetryableError", "BackOff"}},
 	"set_rg":         {Min: 3, GoFuncs: []string{"SetTxnResourceGroup"}},
-	"cache_db":       {Min: 50, GoFuncs: []string{"NewCacheDB", "cacheDB.UnionGet", "cacheDB.get", "cacheDB.set", "cacheDB.Delete", "GetValue"}},
 	"empty":          {Min: 1, GoFuncs: []string{"EmptyIterator.Valid", "EmptyIterator.Key", "EmptyIterator.Value", "EmptyIterator.Next", "EmptyIterator.Close", "EmptyRetriever.Get", "EmptyRetriever.Iter", "EmptyRetriever.IterReverse"}},
 	"next_until":     {Min: 50, GoFuncs: []string{"NextUntil"}},
 	"get_value":      {Min: 30, GoFuncs: []string{"GetValue", "BatchGetValue"}},
@@ -614,29 +612,6 @@ func kvGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("rand/set_rg", "set_rg", "default")
 	g.Add("rand/set_rg", "set_rg", "rg1")
 	g.Add("rand/set_rg", "set_rg", "")
-	// cache DB
-	for i := 0; i < 60; i++ {
-		var steps []map[string]any
-		for j := 0; j < 1+rng.IntN(12); j++ {
-			k := keys[rng.IntN(20)]
-			switch rng.IntN(6) {
-			case 0:
-				steps = append(steps, map[string]any{"op": "delete", "tid": rng.IntN(3)})
-			case 1:
-				steps = append(steps, map[string]any{"op": "get", "tid": rng.IntN(3), "k": hex.EncodeToString(k), "snap": "missing"})
-			case 2:
-				big := 102376 - len(k) + rng.IntN(3) - 1
-				steps = append(steps, map[string]any{"op": "get", "tid": rng.IntN(3), "k": hex.EncodeToString(k), "snap": "big", "n": big})
-			default:
-				steps = append(steps, map[string]any{"op": "get", "tid": rng.IntN(3), "k": hex.EncodeToString(k), "snap": hex.EncodeToString([]byte(fmt.Sprintf("v%d", rng.IntN(5))))})
-			}
-		}
-		if i == 0 {
-			// a key longer than 65535 bytes
-			steps = append(steps, map[string]any{"op": "get", "tid": 0, "k": strings.Repeat("ab", 65536), "snap": "00"})
-		}
-		g.Add("rand/cache_db", "cache_db", steps)
-	}
 	g.Add("rand/empty", "empty")
 	for i := 0; i < 60; i++ {
 		n := rng.IntN(6)
@@ -1039,39 +1014,6 @@ func kvExec(op string, args []json.RawMessage) (out any, err error) {
 		t := &kvMockTxn{opts: map[int]any{}}
 		kv.SetTxnResourceGroup(t, arg[string](args, 0))
 		return fmt.Sprint(t.opts[kv.ResourceGroupName]), nil
-	case "cache_db":
-		type step struct {
-			Op   string `json:"op"`
-			Tid  int64  `json:"tid"`
-			K    string `json:"k"`
-			Snap string `json:"snap"`
-			N    int    `json:"n"`
-		}
-		mm := kv.NewCacheDB()
-		var outs []any
-		for _, s := range arg[[]step](args, 0) {
-			if s.Op == "delete" {
-				mm.Delete(s.Tid)
-				outs = append(outs, "deleted")
-				continue
-			}
-			snap := &mockSnap{vals: map[string][]byte{}}
-			k := keyOf(s.K)
-			switch s.Snap {
-			case "missing":
-			case "big":
-				snap.vals[string(k)] = make([]byte, s.N)
-			default:
-				snap.vals[string(k)] = keyOf(s.Snap)
-			}
-			v, err := mm.UnionGet(goContext(), s.Tid, snap, k)
-			e := ""
-			if err != nil {
-				e = err.Error()
-			}
-			outs = append(outs, []any{len(v), hex.EncodeToString(v[:min(len(v), 8)]), snap.calls, vec.GoString(e)})
-		}
-		return outs, nil
 	case "empty":
 		it := &kv.EmptyIterator{}
 		nerr := it.Next()

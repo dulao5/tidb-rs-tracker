@@ -249,6 +249,9 @@ RULES = [
     # NewVariables, Version.Cmp: no caller). mpp.go belongs to the deferred MPP scope
     # except GetNewestMppVersion (SessionVars.ChooseMppVersion).
     ("X", r"pkg/kv/(keyflags|fault_injection)\.go$", None),
+    # cacheDB: no callers in v8.5.8; cached tables read through tables/cache.go MemBuffer
+    # (GetMemCache is only used by schema_validator to Delete). Lucky, tracker #22 review.
+    ("X", r"pkg/kv/cachedb\.go$", None),
     ("X", r"pkg/kv/error\.go$", r"^GenKeyExistsErr$"),
     ("X", r"pkg/kv/kv\.go$", r"^(FindKeysInStage|WithReturnCommitTS|KeyRanges\.(ForEachPartition|TotalRangeNum))$"),
     ("X", r"pkg/kv/key\.go$", r"^KeyRange\.IsPoint$"),

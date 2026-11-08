@@ -11471,11 +11471,11 @@ pkg/keyspace	pkg/keyspace/keyspace.go	IsKeyspaceNameEmpty	58	X
 pkg/keyspace	pkg/keyspace/keyspace.go	MakeKeyspaceEtcdNamespace	36	X
 pkg/keyspace	pkg/keyspace/keyspace.go	MakeKeyspaceEtcdNamespaceSlash	44	X
 pkg/keyspace	pkg/keyspace/keyspace.go	WrapZapcoreWithKeyspace	63	X
-pkg/kv	pkg/kv/cachedb.go	NewCacheDB	95	D07.0
-pkg/kv	pkg/kv/cachedb.go	cacheDB.Delete	85	D07.0
-pkg/kv	pkg/kv/cachedb.go	cacheDB.UnionGet	67	D07.0
-pkg/kv	pkg/kv/cachedb.go	cacheDB.get	55	D07.0
-pkg/kv	pkg/kv/cachedb.go	cacheDB.set	43	D07.0
+pkg/kv	pkg/kv/cachedb.go	NewCacheDB	95	X
+pkg/kv	pkg/kv/cachedb.go	cacheDB.Delete	85	X
+pkg/kv	pkg/kv/cachedb.go	cacheDB.UnionGet	67	X
+pkg/kv	pkg/kv/cachedb.go	cacheDB.get	55	X
+pkg/kv	pkg/kv/cachedb.go	cacheDB.set	43	X
 pkg/kv	pkg/kv/checker.go	RequestTypeSupportedChecker.IsRequestTypeSupported	25	D07.0
 pkg/kv	pkg/kv/checker.go	RequestTypeSupportedChecker.supportExpr	46	D07.0
 pkg/kv	pkg/kv/error.go	GenKeyExistsErr	99	X
