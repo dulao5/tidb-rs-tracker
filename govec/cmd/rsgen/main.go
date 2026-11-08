@@ -41,6 +41,7 @@ var (
 	typesOut       = flag.String("types", "", "tidb-rs crates/types/src directory (collate tables, block D01.9)")
 	parserOut      = flag.String("parser", "", "tidb-rs crates/parser/src directory (parser/charset tables)")
 	sysvarOut      = flag.String("sysvar", "", "tidb-rs crates/sessionctx/src directory: system variable table (D05.1)")
+	sessionVarsOut = flag.String("sessionvars", "", "tidb-rs crates/sessionctx/src directory: scalar SessionVars fields (D05.2)")
 	sysvarHooksOut = flag.String("sysvar-hooks", "", "TSV path: the D05.2 checklist of non-validation sysvar hooks (data/sysvar_hooks.tsv)")
 )
 
@@ -518,6 +519,10 @@ func main() {
 	if *modelOpt != "" {
 		*out = *modelOpt
 		genModel(filepath.Join(modDir("github.com/pingcap/tidb"), "pkg", "meta", "model"))
+		return
+	}
+	if *sessionVarsOut != "" {
+		genSessionVarsFields(*sessionVarsOut)
 		return
 	}
 	if *sysvarHooksOut != "" {
