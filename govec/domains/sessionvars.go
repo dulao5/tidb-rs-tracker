@@ -140,6 +140,11 @@ func errStr(err error) any {
 	return err.Error()
 }
 
+// sessionvarsVolatile are the variables whose read-back depends on the wall clock
+// (timestamp: time.Now when unset) or on the session's random generator (rand_seed1/2
+// state values): their read-back values are recorded as "<volatile>".
+var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true}
+
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("sys/fresh", "fresh")
 	all := sysvarNames()
@@ -206,11 +211,17 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			var old string
 			old, err = vars.SetSystemVarWithOldValAsRet(name, val)
 			res["old"] = old
+			if sessionvarsVolatile[name] {
+				res["old"] = "<volatile>"
+			}
 		}
 		res["fields"] = diff(f0, scalarDump(vars))
 		res["sys"] = diff(s0, systemsDump(vars))
 		if err == nil {
 			v, gerr := vars.GetSessionOrGlobalSystemVar(context.Background(), name)
+			if sessionvarsVolatile[name] {
+				v = "<volatile>"
+			}
 			res["get"] = v
 			res["get_err"] = errStr(gerr)
 		}
@@ -226,6 +237,9 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		res["glob"], res["glob_err"] = v, errStr(err)
 		v, keep, err := vars.GetSessionStatesSystemVar(name)
 		res["state"], res["keep"], res["state_err"] = v, keep, errStr(err)
+		if sessionvarsVolatile[name] {
+			res["sess"], res["glob"], res["state"] = "<volatile>", "<volatile>", "<volatile>"
+		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, nil
 	case "set_global":
 		resetSysvarAtomics()
@@ -238,7 +252,14 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		v, err := sv.Validate(vars, val, variable.ScopeGlobal)
 		if err == nil {
 			if sv.HasInstanceScope() {
+				// The hook changes process-wide state (the instance's config): put the
+				// previous value back afterwards so that later records, and a second
+				// generation, start from the same state.
+				prev, perr := sv.GetGlobalFromHook(context.Background(), vars)
 				err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+				if perr == nil {
+					_ = sv.SetGlobalFromHook(context.Background(), freshVars(svCtx{}), prev, false)
+				}
 			} else {
 				res["persist"] = true
 			}
