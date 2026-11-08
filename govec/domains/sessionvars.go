@@ -22,6 +22,8 @@ package domains
 //     two orders, so a hook that depends on the order shows up as a mismatch in one).
 // The Rust replay skips a record while a hook it exercises is still pending (tidb-rs
 // session_hooks.rs PENDING_*), so records start to count as hooks land.
+// Every op starts from resetSysvarAtomics (process-wide state the hooks write, listed
+// there), so a record never sees the state an earlier record left (tidb_redact_log: #62).
 
 import (
 	"context"
@@ -184,6 +186,11 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 			}
 			vals := sysvarValues(sv, rng)
 			pairs = append(pairs, [2]string{sv.Name, vals[rng.IntN(len(vals))]})
+		}
+		if len(pairs) == 0 {
+			// None of the 8 drawn variables has SESSION scope: nothing to apply (Go would
+			// record "args":[null]).
+			continue
 		}
 		g.Add("sys/init", "init", pairs)
 		rev := slices.Clone(pairs)
