@@ -19,6 +19,8 @@ import (
 // copied into the generator. Each must appear as a record src.
 var minedGoTests = map[string][]string{
 	"collate": domains.CollateMinedTests(),
+	// Scenarios of the pkg/util/chunk tests, as scripts (domains/chunk_gen.go).
+	"chunk": domains.ChunkMinedTests(),
 	"decimal": {
 		"TestFromInt", "TestFromUint", "TestToInt", "TestToUint", "TestFromFloat", "TestToFloat",
 		"TestToHashKey", "TestRemoveTrailingZeros", "TestRoundWithHalfEven", "TestRoundWithTruncate",
