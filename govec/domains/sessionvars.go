@@ -36,6 +36,8 @@ import (
 	"strconv"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/tidb/pkg/planner/util/fixcontrol"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 )
 
@@ -69,9 +71,10 @@ func init() {
 			"init":            {Min: 20},
 		},
 		Exempt:   exempt,
+		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}},
 		Gzip:     true,
 		Generate: sessionvarsGenerate,
-		Exec:     sessionvarsExec,
+		Exec:     sessionvarsExecClient,
 	})
 }
 
@@ -274,6 +277,40 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 			}
 		}
 	}
+	// tidb_opt_fix_control values with nothing after a colon (fix pingcap/tidb#65884: v8.5.8
+	// indexes s[0] and panics; with the fix the value is "", no error, no warning). Appended
+	// after the other records so that those are unchanged.
+	for _, v := range []string{"1:", "1: ", "1:,2:x", "123:", "44: ,45:on", "1:''"} {
+		g.Add("fix "+fix65884, "set", "set", variable.TiDBOptFixControl, v)
+		g.Add("fix "+fix65884, "set", "old", variable.TiDBOptFixControl, v)
+	}
+}
+
+// fix65884: fixcontrol.ParseToMap indexes s[0] after a value's colon without a length
+// check, so "123:" panics; master guards it (pingcap/tidb#65884, commit 811a10e115). tidb-rs
+// ports the fix; govec links the patched file (govec/fixes).
+const fix65884 = "pingcap/tidb#65884"
+
+func fix65884Applied() (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	m, warns, err := fixcontrol.ParseToMap("123:")
+	return err == nil && len(warns) == 0 && m[123] == ""
+}
+
+// sessionvarsExecClient records the error the client sees: the server writes
+// errors.Cause(err) (server/conn.go writeError), so a Wrap/Wrapf/Annotate prefix (e.g. the
+// LDAP ca_path hook's "read ca certificate at …") only reaches Go's log. tidb-rs ports the
+// wrappers away (M-ERR: Cause is the identity), returning the client-visible error.
+func sessionvarsExecClient(op string, args []json.RawMessage) (any, error) {
+	out, err := sessionvarsExec(op, args)
+	if err != nil {
+		err = errors.Cause(err)
+	}
+	return out, err
 }
 
 func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
