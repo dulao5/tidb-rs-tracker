@@ -203,6 +203,10 @@ RULES = [
     ("D01.3", r"pkg/types/(time|core_time|fsp)\.go$", None),
     ("D01.4", r"pkg/types/(convert|overflow|truncate)\.go$", None),
     ("D01.1", r"pkg/types/", None),
+    # M-POOL (A1): the chunk reuse pool is not ported; the allocator API stays in D01.7.
+    ("X", r"pkg/util/chunk/pool\.go$", None),
+    ("X", r"pkg/util/chunk/alloc\.go$", r"^(allocator|columnList|poolColumnAllocator|freeList)\.\w+$|^checkColumnType$"),
+    ("X", r"pkg/util/chunk/chunk\.go$", r"^Chunk\.resetForReuse$"),
     ("D01.10", r"pkg/util/chunk/(row_container|chunk_in_disk|row_in_disk|row_container_reader|disk)", None),
     ("D01.7", r"pkg/util/chunk/", None),
     ("D01.8", r"pkg/util/codec/", None),

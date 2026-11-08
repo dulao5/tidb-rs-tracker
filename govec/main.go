@@ -1,6 +1,7 @@
 // Command govec produces input/output test vectors by running Go TiDB code.
 //
 //	govec <domain> [-o file]       write the vector file for a domain (JSONL, or gzip for Gzip domains)
+//	govec <domain> -seed N [-o f]  same with another seed (robustness runs; never committed)
 //	govec <domain> --filename      print the committed file of this target (<target>/<domain>.jsonl[.gz])
 //	govec <domain> --check file    regenerate and compare with a committed file (content, header goos excluded)
 //	govec <domain> --oracle        read {"op","args"} lines on stdin, write records on stdout
@@ -47,7 +48,11 @@ func main() {
 	oracle := fs.Bool("oracle", false, "oracle mode: ops on stdin, records on stdout")
 	check := fs.String("check", "", "compare a fresh run with this committed file")
 	filename := fs.Bool("filename", false, "print the committed file name")
+	seed := fs.Uint64("seed", 0, "override the domain's seed (robustness runs; never commit the output)")
 	_ = fs.Parse(os.Args[2:])
+	if *seed != 0 {
+		d.Seed = *seed
+	}
 
 	if *filename {
 		fmt.Println(d.FilePath(vec.Target()))
