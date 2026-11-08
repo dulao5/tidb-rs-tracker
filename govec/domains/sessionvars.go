@@ -34,6 +34,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
@@ -50,7 +51,20 @@ var sessionVarsExcluded = map[string]bool{
 	"BatchInsert": true, "BatchDelete": true, "BatchCommit": true, "BulkDMLEnabled": true,
 }
 
+// sessionvarsExternalTS is the generator's stub of the external timestamp the domain keeps
+// in PD (variable.SetExternalTimestamp / GetExternalTimestamp are registered by the domain;
+// unregistered, tidb_external_ts's hooks call a nil func). The Rust replay registers the
+// same stub.
+var sessionvarsExternalTS atomic.Uint64
+
 func init() {
+	variable.SetExternalTimestamp = func(_ context.Context, ts uint64) error {
+		sessionvarsExternalTS.Store(ts)
+		return nil
+	}
+	variable.GetExternalTimestamp = func(context.Context) (uint64, error) {
+		return sessionvarsExternalTS.Load(), nil
+	}
 	exempt := map[string]string{}
 	for _, n := range sessionvarsPending {
 		exempt[n] = "pending: D05.2 T3-T7 (tidb-rs specs/D05.2-sessionvars/plan.md)"
