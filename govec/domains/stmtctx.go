@@ -18,13 +18,14 @@ package domains
 //   - "resolve": args [ignore, warn] -> ResolveErrLevel.
 //
 // Errors are given as small integers (stmtctxErr): e >= 0 is
-// dbterror.ClassTypes.NewStd(terror.ErrCode(stmtctxCodes[e])), -1 is errors.New("plain error"), -2 is
+// terror.ErrClass(stmtctxClasses[e]).NewStdErr(code, errno.MySQLErrName[code]), -1 is errors.New("plain error"), -2 is
 // errors.New(""). An error result is {"code": terror code or 0, "msg": Error()}; a
 // warning list is [[level, err], ...].
 
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"time"
 
@@ -36,7 +37,6 @@ import (
 	"github.com/pingcap/tidb/pkg/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/pkg/types"
 	contextutil "github.com/pingcap/tidb/pkg/util/context"
-	"github.com/pingcap/tidb/pkg/util/dbterror"
 )
 
 const stmtctxSeed = 20261109
@@ -52,6 +52,10 @@ var stmtctxCodes = []uint16{
 	errno.ErrDupEntry,
 	errno.ErrUnknown, errno.ErrParse, errno.ErrBadField, errno.ErrInternal,
 }
+
+// stmtctxClasses: the error class of each code, the smallest class whose registry
+// (terror.ErrClassToMySQLCodes of tidb-server v8.5.8) has the code.
+var stmtctxClasses = []int{2, 20, 19, 2, 20, 20, 6, 20, 2, 20, 2, 5, 19, 6, 1, 19, 19, 8, 6, 11, 2, 10}
 
 // StmtctxMinedTests lists the Go tests whose scenarios are scripts here.
 func StmtctxMinedTests() []string {
@@ -140,7 +144,7 @@ func stmtctxErr(e int) error {
 	case e == -2:
 		return errors.New("")
 	case e >= 0 && e < len(stmtctxCodes):
-		return dbterror.ClassTypes.NewStd(terror.ErrCode(stmtctxCodes[e]))
+		return terror.ErrClass(stmtctxClasses[e]).NewStdErr(terror.ErrCode(stmtctxCodes[e]), errno.MySQLErrName[stmtctxCodes[e]])
 	}
 	panic(fmt.Sprintf("stmtctx: bad error %d", e))
 }
@@ -426,7 +430,7 @@ func stmtctxStep(e *stmtctxEnv, s []json.RawMessage) (out any) {
 		e.sc.SetHintWarningFromError(stmtctxErr(iarg(1)))
 	case "sc_varhint":
 		e.sc.AddSetVarHintRestore(sarg(1), sarg(2))
-		return e.sc.SetVarHintRestore
+		return maps.Clone(e.sc.SetVarHintRestore) // the map is recorded as it is now
 	case "sc_plan":
 		e.sc.SetBinaryPlan(sarg(1))
 		e.sc.SetEncodedPlan(sarg(2))
