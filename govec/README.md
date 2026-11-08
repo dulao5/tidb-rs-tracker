@@ -109,6 +109,8 @@ go mod edit -replace github.com/pingcap/tidb=$HOME/src/pingcap/tidb-all-source-c
 
 macOS 上若 cgo 报找不到 `stdlib.h`（Homebrew 的 clang 在 PATH 前面），用 `CC=/usr/bin/clang scripts/govec.sh`。
 
+**上游修复**：v8.5.8 中有个别 bug 在 TiDB master 已修复、但没有回移到 release-8.5，tidb-rs 按宪章第一条第 2 项移植了这些修复。为了让向量记录修复后的行为，govec 链接的是打过这些修复的 TiDB 模块副本：`scripts/govec.sh` 和 CI 会设置 `GOFLAGS="$(scripts/govec-fixes.sh)"`。手动执行 `go build`、`go test`、`go run ./cmd/rsgen` 时也要先设置它。涉及修复的领域在 `vec.Domain.Fixes` 中登记，并带运行时探测；没有打修复的构建在生成时会直接 panic，文件头的 `fixes` 字段列出已应用的修复。清单见 [fixes/README.md](fixes/README.md)，目前只有 pingcap/tidb#67149（collate）。
+
 ## 确定性
 
 - 随机用例用固定种子（文件头 `seed`），PCG 生成器；生成顺序就是代码顺序，不遍历 map。新加的用例组追加在已有组之后，已有记录和它们消耗的随机数序列不变。
@@ -305,6 +307,25 @@ D02.2 标为 DONE，但 `parser/model`、`parser/types`、`auth.UserIdentity`、
 **NaN 位型**（Lucky 评审后放大，种子 31337，共 91,762 条）：`vectorBits` 包括带 payload 的 QNaN（`0x7fc12345`、`0xffd00001`）、SNaN（`0x7fbfffff`、`0x7f800abc`、`0x7f800001`）、负的 SNaN（`0xff800001`、`0xffbfffff`、`0xff812345`）、全 1（`0x7fffffff`、`0xffffffff`）、±Inf、最大值等；含特殊值的向量中每个元素有 3/10 的概率取这些位型；随机部分是放大前的 10 倍。
 
 **Rust 侧比对**：`out` 按 JSON 逐项相等，错误按消息比对（都是不带错误码的 `errors.Errorf`），`panic` 记录在 Rust 中也必须 panic。
+
+## collate（块 D01.9：`pkg/util/collate`、`pkg/parser/charset/charset.go`、`pkg/util/stringutil`）
+
+领域 `collate` 覆盖 D01.9 的 collate 包，加上整文件移植的 `pkg/parser/charset/charset.go`（D02.2）和 `pkg/util/stringutil/string_util.go`（D00.3），后两个通过 `vec.Domain.Files` 登记，`TestBlockCoverage` 要求这些文件的每个函数都被覆盖或豁免（`<file>:<Symbol>` 形式）。
+
+**全局状态**：大多数 op 的第一个参数是 `enabled`，回放前先调用 `SetNewCollationEnabledForTest`，所以每条记录都不依赖其他记录（oracle 抽样回放的前提）。
+
+**用例**
+- `key_digest`：对 binary、utf8mb4_bin、utf8mb4_0900_bin、utf8mb4_general_ci、utf8mb4_unicode_ci、utf8mb4_0900_ai_ci、gbk_bin、gbk_chinese_ci，在每 0x1000 个码位的区间上做 `Key`、`KeyWithoutTrimRightSpace` 和与前一个 rune 的 `Compare`，取 SHA-256；调用 panic 时记一个 0xFF 字节；surrogate 按 Go 的 `string(rune)` 变成 U+FFFD。这一类记录对生成的权重表做全码位校验。
+- 字面量：collate、stringutil、charset 的 20 个 Go 测试函数中的字符串（`cmd/minelits`，在 `minedGoTests` 中登记），在全部 13 个排序规则、新排序规则开和关两种状态下做 `key` / `compare` / `pattern`。
+- 随机字符串：从一张"零件表"中拼接，零件包括 ASCII 大小写、空格、Latin-1 与扩展拉丁字母（重音、ß、连字）、大小写折叠的特例（Kelvin K U+212A、Angstrom U+212B、长 s、大写 ß U+1E9E）、希腊文、西里尔文、组合附加符、GBK 内外的汉字、韩文、符号（customGBK 拒绝的 €）、U+FFFD、补充平面（emoji、CJK 扩展 B、0900 表越界的 U+2CEA1）、控制字符（UCA 中权重为零），以及无效 UTF-8（孤立的后续字节、超长编码、截断、surrogate、大于 U+10FFFF）。有 1/5 的概率在末尾加空格（PAD SPACE 与 NO PAD 的区别）。比较用的第二个串多数取第一个的近似变体（大小写翻转、增删一个零件、末尾加空格），使比较常常相等或很晚才分出大小。
+- `pattern`：随机模式（`_`、`%`、转义字符，包括 0、0x80、0xff 这类非 ASCII 的转义字节），同时记录 `CompilePattern` / `CompilePatternBinary` 的结果。
+- 其余：`collator`（Go 的 `%T` 和 Clone）、`collation_id` / `collation_name` / `compatible` / `supported`、`charset` / `charset_by_id` / `charsets`、`gbk_encode`，以及 stringutil 的各函数。
+
+字符串参数一律用 `vec.GoString`（无效 UTF-8 记为十六进制）。名字（排序规则名、字符集名）只用 UTF-8 字面量。
+
+**目标平台**：没有浮点运算，两个目标的记录相同。amd64 的文件取自 tracker CI 的产物。
+
+**Rust 侧比对**：单个 `#[test]` 顺序回放（排序规则开关是全局状态）；`key_digest` 在 Rust 中按同样的算法重算；`collator` 的 `%T` 按类型映射表比对；错误按错误码加消息比对；`panic` 记录在 Rust 中也必须 panic。
 
 ## 两个目标的差异（`TestTargetsDiffer`）
 
