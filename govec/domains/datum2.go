@@ -346,6 +346,28 @@ func goValueIn(p []json.RawMessage) any {
 	panic("goValueIn: " + arg[string](p, 0))
 }
 
+// ---------------------------------------------------------------- wall clock
+
+// clockMark replaces a converted value that depends on the wall clock.
+const clockMark = "<clock>"
+
+// convertReadsClock reports whether Datum.ConvertTo reads the wall clock: a Duration
+// converted to TIMESTAMP / DATETIME / DATE takes today's date (Duration.ConvertToTime:
+// gotime.Now()), and to YEAR the current year (Duration.ConvertToYear). The value is
+// recorded as clockMark (the replay masks it the same way); err and warnings are kept.
+// The date paths themselves are covered with a given instant by the time domain
+// (dur_to_time / dur_to_year: ConvertToTimeWithTimestamp, ConvertToYearFromNow).
+func convertReadsClock(d types.Datum, ft *types.FieldType) bool {
+	if d.Kind() != types.KindMysqlDuration {
+		return false
+	}
+	switch ft.GetType() {
+	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDate, mysql.TypeNewDate, mysql.TypeYear:
+		return true
+	}
+	return false
+}
+
 // ---------------------------------------------------------------- exec
 
 func datum2Exec(op string, args []json.RawMessage) (out any, err error, ok bool) {
@@ -354,16 +376,25 @@ func datum2Exec(op string, args []json.RawMessage) (out any, err error, ok bool)
 		ctx, w := datumCtx(args, 0)
 		d := d2DatumIn(arg[[]json.RawMessage](args, 1))
 		ft := d2FtIn(arg[[]json.RawMessage](args, 2))
+		clock := convertReadsClock(d, ft)
 		ret, err := d.ConvertTo(ctx, ft)
 		// errors.Wrap(ErrTruncated, msg) of the enum / set conversions is recorded as
 		// its cause (mapping rule M-ERR, as for the Enum parsers in part 1).
+		if clock {
+			return dw(w, clockMark), errors.Cause(err), true
+		}
 		return dw(w, d2DatumOut(ret)), errors.Cause(err), true
 	case "d_convert_recv":
 		ctx, w := datumCtx(args, 0)
 		d := d2DatumIn(arg[[]json.RawMessage](args, 1))
 		ft := d2FtIn(arg[[]json.RawMessage](args, 2))
+		clock := convertReadsClock(d, ft)
 		ret, err := d.ConvertTo(ctx, ft)
-		return dw(w, map[string]any{"ret": d2DatumOut(ret), "recv": d2DatumOut(d)}), errors.Cause(err), true
+		var retOut any = d2DatumOut(ret)
+		if clock {
+			retOut = clockMark
+		}
+		return dw(w, map[string]any{"ret": retOut, "recv": d2DatumOut(d)}), errors.Cause(err), true
 	case "d_compare":
 		ctx, w := datumCtx(args, 0)
 		a := d2DatumIn(arg[[]json.RawMessage](args, 1))
