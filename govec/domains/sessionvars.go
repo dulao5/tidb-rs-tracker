@@ -28,15 +28,19 @@ package domains
 import (
 	"context"
 	"encoding/json"
+	goerrors "errors"
 	"fmt"
 	"math"
 	"math/rand/v2"
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
+	"sync/atomic"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/planner/util/fixcontrol"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 )
@@ -50,7 +54,32 @@ var sessionVarsExcluded = map[string]bool{
 	"BatchInsert": true, "BatchDelete": true, "BatchCommit": true, "BulkDMLEnabled": true,
 }
 
+// sessionvarsExternalTS is the generator's stub of the external timestamp the domain keeps
+// in PD (variable.SetExternalTimestamp / GetExternalTimestamp are registered by the domain;
+// unregistered, tidb_external_ts's hooks call a nil func). The Rust replay registers the
+// same stub.
+var sessionvarsExternalTS atomic.Uint64
+
 func init() {
+	variable.SetExternalTimestamp = func(_ context.Context, ts uint64) error {
+		sessionvarsExternalTS.Store(ts)
+		return nil
+	}
+	variable.GetExternalTimestamp = func(context.Context) (uint64, error) {
+		return sessionvarsExternalTS.Load(), nil
+	}
+	// ValidateCloudStorageURI is registered by lightning / BR; the stub rejects two schemes,
+	// one with a plain error and one with a *terror.Error (which the SetGlobal hook turns into
+	// a plain error with the same text). The Rust replay registers the same stub.
+	variable.ValidateCloudStorageURI = func(_ context.Context, uri string) error {
+		switch {
+		case strings.HasPrefix(uri, "err://"):
+			return goerrors.New("unsupported storage: " + uri)
+		case strings.HasPrefix(uri, "terr://"):
+			return variable.ErrWrongValueForVar.GenWithStackByArgs(variable.TiDBCloudStorageURI, uri)
+		}
+		return nil
+	}
 	exempt := map[string]string{}
 	for _, n := range sessionvarsPending {
 		exempt[n] = "pending: D05.2 T3-T7 (tidb-rs specs/D05.2-sessionvars/plan.md)"
@@ -66,9 +95,12 @@ func init() {
 				"SysVar.SetSessionFromHook", "SessionVars.GetSystemVar"}},
 			"get": {Min: 900, GoFuncs: []string{"SessionVars.GetSessionOrGlobalSystemVar", "SessionVars.GetGlobalSystemVar",
 				"SessionVars.GetSessionStatesSystemVar", "SysVar.GetSessionFromHook", "SysVar.GetGlobalFromHook"}},
-			"set_global":      {Min: 100, GoFuncs: []string{"SysVar.SetGlobalFromHook"}},
-			"set_global_hook": {Min: 100},
-			"init":            {Min: 20},
+			"set_global": {Min: 100, GoFuncs: []string{"SysVar.SetGlobalFromHook"}},
+			"set_global_hook": {Min: 100, GoFuncs: []string{"ParseGlobalSlowLogRules", "ParseSessionSlowLogRules",
+				"ParseSlowLogFieldValue", "ParseString", "encodeRules", "parseBool", "parseFloat64", "parseInt64",
+				"parseSlowLogRuleEntry", "parseSlowLogRuleSet", "parseUint64"}},
+			"set_global_hook2": {Min: 8},
+			"init":             {Min: 20},
 		},
 		Exempt:   exempt,
 		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}},
@@ -122,6 +154,45 @@ func systemsDump(sv *variable.SessionVars) map[string]string {
 		out[it.Key().String()] = it.Value().String()
 	}
 	return out
+}
+
+// nonScalarDump renders the non-scalar SessionVars fields that SetSession hooks write
+// (D05.2 T6; D05.2 B3): key sets as sorted numbers / names, maps as sorted "k:v".
+func nonScalarDump(sv *variable.SessionVars) map[string]string {
+	keys := func(m map[kv.StoreType]struct{}) string {
+		var out []int
+		for k := range m {
+			out = append(out, int(k))
+		}
+		slices.Sort(out)
+		return fmt.Sprint(out)
+	}
+	var fix []string
+	for k, v := range sv.OptimizerFixControl {
+		fix = append(fix, fmt.Sprintf("%d:%s", k, v))
+	}
+	slices.Sort(fix)
+	var skip []string
+	for k := range sv.AnalyzeSkipColumnTypes {
+		skip = append(skip, k)
+	}
+	slices.Sort(skip)
+	tz := "<nil>"
+	if sv.TimeZone != nil {
+		tz = sv.TimeZone.String()
+	}
+	return map[string]string{
+		"kv_vars.backoff_lock_fast": strconv.Itoa(sv.KVVars.BackoffLockFast),
+		"kv_vars.back_off_weight":   strconv.Itoa(sv.KVVars.BackOffWeight),
+		"isolation_read_engines":    keys(sv.IsolationReadEngines),
+		"allow_fallback_to_tikv":    keys(sv.AllowFallbackToTiKV),
+		"partition_prune_mode":      sv.PartitionPruneMode.Load(),
+		"txn_scope":                 sv.TxnScope.GetVarValue() + "/" + sv.TxnScope.GetTxnScope(),
+		"stats_load_sync_wait":      strconv.FormatInt(sv.StatsLoadSyncWait.Load(), 10),
+		"optimizer_fix_control":     strings.Join(fix, ","),
+		"analyze_skip_column_types": strings.Join(skip, ","),
+		"time_zone":                 tz,
+	}
 }
 
 func diff(before, after map[string]string) map[string]string {
@@ -216,6 +287,45 @@ var sessionvarsGlobalHookVars = []string{
 	"validate_password.mixed_case_count",
 	"validate_password.number_count",
 	"validate_password.special_char_count",
+	// D05.2 B3: B2 SetGlobal hooks whose written state processGlobalsRestore restores.
+	"max_prepared_stmt_count",
+	"require_secure_transport",
+	"tidb_analyze_column_options",
+	"tidb_auto_analyze_concurrency",
+	"tidb_auto_analyze_partition_batch_size",
+	"tidb_committer_concurrency",
+	"tidb_ddl_disk_quota",
+	"tidb_ddl_error_count_limit",
+	"tidb_ddl_flashback_concurrency",
+	"tidb_ddl_reorg_batch_size",
+	"tidb_ddl_reorg_max_write_speed",
+	"tidb_ddl_reorg_worker_cnt",
+	"tidb_enable_dist_task",
+	"tidb_enable_fast_create_table",
+	"tidb_enable_paging",
+	"tidb_generate_binary_plan",
+	"tidb_instance_plan_cache_max_size",
+	"tidb_instance_plan_cache_reserved_percentage",
+	"tidb_load_binding_timeout",
+	"tidb_max_auto_analyze_time",
+	"tidb_max_delta_schema_count",
+	"tidb_opt_fix_control",
+	"tidb_partition_prune_mode",
+	"tidb_persist_analyze_options",
+	"tidb_prepared_plan_cache_memory_guard_ratio",
+	"tidb_row_format_version",
+	"tidb_store_limit",
+	"tidb_table_cache_lease",
+	"tidb_top_sql_max_meta_count",
+	"tidb_top_sql_max_time_series_count",
+	"tidb_ttl_delete_batch_size",
+	"tidb_ttl_delete_rate_limit",
+	"tidb_ttl_delete_worker_count",
+	"tidb_ttl_running_tasks",
+	"tidb_ttl_scan_batch_size",
+	"tidb_ttl_scan_worker_count",
+	"tidb_txn_commit_batch_size",
+	"tidb_txn_entry_size_limit",
 }
 
 var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true, "rand_seed2": true,
@@ -262,6 +372,39 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("sys/init", "init", rev)
 	}
 	// SetGlobal / GetGlobal hooks of GLOBAL-scope variables (their written state is reset).
+	// D05.2 B3: literals mined from the Go tests (testdata/sysvar_literals.tsv, cmd/minelits)
+	// against the variables a test names, through SetSystemVar (SESSION scope) or the
+	// SetGlobal hook (GLOBAL-only variables whose state is restored).
+	defer func() {
+		globalHook := map[string]bool{}
+		for _, n := range sessionvarsGlobalHookVars {
+			globalHook[n] = true
+		}
+		for _, c := range sysvarMinedPlan(all) {
+			sv := variable.GetSysVar(c.name)
+			switch {
+			case sv.HasSessionScope():
+				g.Add("sys/mined:"+c.fn, "set", "old", c.name, c.val)
+			case globalHook[c.name]:
+				g.Add("sys/mined:"+c.fn, "set_global_hook", c.name, c.val)
+			}
+		}
+	}()
+	// D05.2 B3: two-step records (Lucky's review of B1).
+	defer func() {
+		for _, p := range []string{"sasl", "simple"} {
+			g.Add("sys/two_step", "set_global_hook2", "authentication_ldap_"+p+"_init_pool_size", []string{"100", "5"})
+			g.Add("sys/two_step", "set_global_hook2", "authentication_ldap_"+p+"_max_pool_size", []string{"3", "500"})
+			g.Add("sys/two_step", "set_global_hook2", "authentication_ldap_"+p+"_ca_path", []string{"/nonexistent/ca.pem", "/nonexistent/ca.pem"})
+			g.Add("sys/two_step", "set_global_hook2", "authentication_ldap_"+p+"_ca_path", []string{"/nonexistent/ca.pem", ""})
+		}
+	}()
+	// D05.2 B3: NaN / Inf against Go's `v < lo || v > hi` range checks in SetGlobal hooks.
+	defer func() {
+		for _, v := range []string{"NaN", "+Inf", "-Inf", "1e309", "-0"} {
+			g.Add("sys/nan", "set_global_hook", "tidb_instance_plan_cache_reserved_percentage", v)
+		}
+	}()
 	for _, name := range sessionvarsGlobalHookVars {
 		sv := variable.GetSysVar(name)
 		for _, v := range sysvarValues(sv, rng) {
@@ -284,6 +427,42 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("fix "+fix65884, "set", "set", variable.TiDBOptFixControl, v)
 		g.Add("fix "+fix65884, "set", "old", variable.TiDBOptFixControl, v)
 	}
+	// D05.2 B2: tidb_cloud_storage_uri (ast.RedactURL in GetGlobal; ValidateCloudStorageURI in
+	// SetGlobal) and tidb_slow_log_rules (T7: the rule parser). Appended last.
+	for _, v := range sessionvarsCloudURIs {
+		g.Add("sys/cloud_storage_uri", "set_global_hook", variable.TiDBCloudStorageURI, v)
+	}
+	for _, v := range sessionvarsSlowLogRules {
+		g.Add("sys/slow_log_rules", "set", "set", variable.TiDBSlowLogRules, v)
+		g.Add("sys/slow_log_rules", "set", "old", variable.TiDBSlowLogRules, v)
+		g.Add("sys/slow_log_rules", "set_global_hook", variable.TiDBSlowLogRules, v)
+	}
+}
+
+var sessionvarsCloudURIs = []string{
+	"", "s3://bucket/prefix?access-key=AK&secret-access-key=SK&region=us-west-2",
+	"s3://b/p?access_key=AK&Session_Token=T&endpoint=http%3A%2F%2Fminio%3A9000",
+	"S3://b?x=1&ACCESS-KEY=k", "ks3://b?access-key=a&access-key=b",
+	"azure://c/p?sas-token=abc&foo=b%20c", "azblob://c?SAS_TOKEN=t&account-name=acct",
+	"gcs://b/p?credentials-file=/x/y.json", "local:///tmp/x", "file:///tmp/a%20b",
+	"s3://user:pass@host:80/p?a=1#frag", "s3://h:abc/p", "s3://[::1]:9000/b?access-key=x",
+	"s3://[1.2.3.4]/b", "s3://[fe80::1%25en0]/b?access-key=x", "not a url %zz", "s3://b/p?a=%zz&access-key=k",
+	"s3://b/p?;access-key=k&b=2", "s3://b/p?k=v+w&access-key=a+b", "s3://bücket/ä?access-key=ü",
+	"s3:opaque?access-key=k", "s3://b/p?", "s3://b/a%2Fb?access-key=k", "//host/p?access-key=k",
+	"err://bucket", "terr://bucket",
+}
+
+var sessionvarsSlowLogRules = []string{
+	"", "query_time:1", "Query_time: 1.5, Mem_max:100", "conn_id:5,query_time:2;query_time:3",
+	"conn_id:5", "db:'test', succ:true", `is_internal:t,resource_group:"rg"`, "unknown:1",
+	"query_time:-1", "query_time:nan", "query_time:1e400", "query_time:-0", "mem_max:-5", "total_keys:abc",
+	"a:1;b:1;c:1;d:1;e:1;f:1;g:1;h:1;i:1;j:1;k:1", "  ;  ;query_time:1", "no colon here",
+	"query_time:  ,mem_max:1", "query_time:1,query_time:2", "conn_id:1,db:x;conn_id:2,db:y;db:z",
+	"digest:abc def", "succ:yes", "write_sql_response_total:0.000001", "query_time:1000000",
+	"conn_id:18446744073709551615,db:x", "conn_id:18446744073709551616", "  query_time : 0x10",
+	"process_keys:1, total_keys:2, write_keys:3, write_size:4, prewrite_region:5, exec_retry_count:6",
+	"num_cop_tasks:1,disk_max:2,kv_total:0.5,pd_total:1e-3,backoff_time:2,commit_time:3",
+	"session_alias:abc,digest:'x'", ";;;", "query_time:1;", "query_time:1,,mem_max:2",
 }
 
 // fix65884: fixcontrol.ParseToMap indexes s[0] after a value's colon without a length
@@ -310,7 +489,55 @@ func sessionvarsExecClient(op string, args []json.RawMessage) (any, error) {
 	if err != nil {
 		err = errors.Cause(err)
 	}
+	canonSlowLogRulesOut(op, args, out)
 	return out, err
+}
+
+// canonSlowLogRulesOut canonicalises the tidb_slow_log_rules values a record reads back:
+// Go builds a rule's conditions and joins the global per-connection rule sets by ranging
+// over maps, so RawRules changes between runs (tidb-rs slow_log_rules.rs, M-MAPORDER).
+// The Rust replay applies the same canonicalisation to its output.
+func canonSlowLogRulesOut(op string, args []json.RawMessage, out any) {
+	var name string
+	switch op {
+	case "set":
+		name = arg[string](args, 1)
+	case "get", "set_global", "set_global_hook":
+		name = arg[string](args, 0)
+	default:
+		return
+	}
+	if name != variable.TiDBSlowLogRules {
+		return
+	}
+	w, ok := out.(vec.WithWarnings)
+	if !ok {
+		return
+	}
+	res, ok := w.Out.(map[string]any)
+	if !ok {
+		return
+	}
+	for _, k := range []string{"get", "sess", "glob", "state", "old", "after"} {
+		if v, ok := res[k].(string); ok {
+			res[k] = canonSlowLogRules(v)
+		}
+	}
+}
+
+// canonSlowLogRules sorts the conditions of every rule, then the rules.
+func canonSlowLogRules(s string) string {
+	if s == "" {
+		return s
+	}
+	rules := strings.Split(s, ";")
+	for i, r := range rules {
+		conds := strings.Split(r, ",")
+		slices.Sort(conds)
+		rules[i] = strings.Join(conds, ",")
+	}
+	slices.Sort(rules)
+	return strings.Join(rules, ";")
 }
 
 func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
@@ -322,7 +549,7 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		vars := freshVars(svCtx{})
 		vars.StmtCtx.StmtType = "Set"
 		kind, name, val := arg[string](args, 0), arg[string](args, 1), arg[string](args, 2)
-		f0, s0 := scalarDump(vars), systemsDump(vars)
+		f0, s0, n0 := scalarDump(vars), systemsDump(vars), nonScalarDump(vars)
 		var err error
 		res := map[string]any{}
 		switch kind {
@@ -342,6 +569,7 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		}
 		res["fields"] = diff(f0, scalarDump(vars))
 		res["sys"] = diff(s0, systemsDump(vars))
+		res["ns"] = diff(n0, nonScalarDump(vars))
 		if err == nil {
 			v, gerr := vars.GetSessionOrGlobalSystemVar(context.Background(), name)
 			if sessionvarsVolatile[name] {
@@ -415,6 +643,32 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			}
 		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, err
+	case "set_global_hook2":
+		// Two SET GLOBALs of one variable in a row (D05.2 B3, Lucky's review of B1):
+		// state left by the first call is visible to the second (LDAP pool capacities,
+		// authentication_ldap_*_ca_path, tidb-rs #64).
+		resetSysvarAtomics()
+		defer resetSysvarAtomics()
+		vars := freshVars(svCtx{})
+		vars.StmtCtx.StmtType = "Set"
+		name := arg[string](args, 0)
+		var steps []any
+		for _, val := range arg[[]string](args, 1) {
+			sv := variable.GetSysVar(name)
+			res := map[string]any{}
+			v, err := sv.Validate(vars, val, variable.ScopeGlobal)
+			if err == nil {
+				err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+				if err == nil && sv.GetGlobal != nil {
+					after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
+					res["after"], res["after_err"] = after, errStr(aerr)
+				}
+			}
+			// The client sees errors.Cause (server/conn.go writeError).
+			res["err"] = errStr(errors.Cause(err))
+			steps = append(steps, res)
+		}
+		return vec.WithWarnings{Out: steps, Warnings: sysvarWarnings(vars)}, nil
 	case "init":
 		resetSysvarAtomics()
 		vars := freshVars(svCtx{})

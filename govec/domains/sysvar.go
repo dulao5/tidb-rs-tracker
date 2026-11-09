@@ -38,10 +38,15 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/config"
 	"github.com/pingcap/tidb/pkg/privilege/privileges/ldap"
+	"github.com/pingcap/tidb/pkg/sessionctx/slowlogrule"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
 	"github.com/pingcap/tidb/pkg/util/memory"
+	"github.com/pingcap/tidb/pkg/util/tikvutil"
+	utiltls "github.com/pingcap/tidb/pkg/util/tls"
+	topsqlstate "github.com/pingcap/tidb/pkg/util/topsql/state"
+	tikvstore "github.com/tikv/client-go/v2/kv"
 )
 
 const sysvarSeed = 5051
@@ -162,6 +167,9 @@ func resetSysvarAtomics() {
 	variable.GOGCTunerThreshold.Store(variable.DefTiDBGOGCTunerThreshold)
 	variable.RunAutoAnalyze.Store(variable.DefTiDBEnableAutoAnalyze)
 	variable.EnableAutoAnalyzePriorityQueue.Store(variable.DefTiDBEnableAutoAnalyzePriorityQueue)
+	// D05.2 B2: tidb_cloud_storage_uri / tidb_slow_log_rules SetGlobal hooks.
+	variable.CloudStorageURI.Store("")
+	variable.GlobalSlowLogRules.Store(&slowlogrule.GlobalSlowLogRules{RulesMap: make(map[int64]*slowlogrule.SlowLogRules)})
 	processGlobalsRestore()
 }
 
@@ -216,6 +224,41 @@ var processGlobalsRestore = func() func() {
 	vDDLSlowOprThreshold := atomic.LoadUint32(&variable.DDLSlowOprThreshold)
 	vExpensiveQueryTimeThreshold := atomic.LoadUint64(&variable.ExpensiveQueryTimeThreshold)
 	vExpensiveTxnTimeThreshold := atomic.LoadUint64(&variable.ExpensiveTxnTimeThreshold)
+	// D05.2 B3: state written by the B2 SetGlobal hooks added to sessionvarsGlobalHookVars.
+	vMaxPreparedStmtCountValue := variable.MaxPreparedStmtCountValue.Load()
+	vDDLFlashbackConcurrency := variable.GetDDLFlashbackConcurrency()
+	vDDLReorgWorkerCounter := variable.GetDDLReorgWorkerCounter()
+	vDDLReorgBatchSize := variable.GetDDLReorgBatchSize()
+	vDDLReorgMaxWriteSpeed := variable.DDLReorgMaxWriteSpeed.Load()
+	vDDLErrorCountLimit := variable.GetDDLErrorCountLimit()
+	vMaxDeltaSchemaCount := variable.GetMaxDeltaSchemaCount()
+	vDDLReorgRowFormat := variable.GetDDLReorgRowFormat()
+	vStoreLimit := tikvstore.StoreLimit.Load()
+	vTxnCommitBatchSize := tikvstore.TxnCommitBatchSize.Load()
+	vTableCacheLease := variable.TableCacheLease.Load()
+	vAutoAnalyzePartitionBatchSize := variable.AutoAnalyzePartitionBatchSize.Load()
+	vTopSQLMaxStatementCount := topsqlstate.GlobalState.MaxStatementCount.Load()
+	vTopSQLMaxCollect := topsqlstate.GlobalState.MaxCollect.Load()
+	vPersistAnalyzeOptions := variable.PersistAnalyzeOptions.Load()
+	vAnalyzeColumnOptions := variable.AnalyzeColumnOptions.Load()
+	vPreparedPlanCacheMemoryGuardRatio := variable.PreparedPlanCacheMemoryGuardRatio.Load()
+	vInstancePlanCacheReservedPercentage := variable.InstancePlanCacheReservedPercentage.Load()
+	vInstancePlanCacheMaxMemSize := variable.InstancePlanCacheMaxMemSize.Load()
+	vMaxAutoAnalyzeTime := variable.MaxAutoAnalyzeTime.Load()
+	vAutoAnalyzeConcurrency := variable.AutoAnalyzeConcurrency.Load()
+	vEnableDistTask := variable.EnableDistTask.Load()
+	vEnableFastCreateTable := variable.EnableFastCreateTable.Load()
+	vTxnEntrySizeLimit := variable.TxnEntrySizeLimit.Load()
+	vGenerateBinaryPlan := variable.GenerateBinaryPlan.Load()
+	vDDLDiskQuota := variable.DDLDiskQuota.Load()
+	vTTLScanBatchSize := variable.TTLScanBatchSize.Load()
+	vTTLDeleteBatchSize := variable.TTLDeleteBatchSize.Load()
+	vTTLDeleteRateLimit := variable.TTLDeleteRateLimit.Load()
+	vTTLScanWorkerCount := variable.TTLScanWorkerCount.Load()
+	vTTLDeleteWorkerCount := variable.TTLDeleteWorkerCount.Load()
+	vTTLRunningTasks := variable.TTLRunningTasks.Load()
+	vRequireSecureTransport := utiltls.RequireSecureTransport.Load()
+	vCommitterConcurrency := tikvutil.CommitterConcurrency.Load()
 	return func() {
 		variable.AccelerateUserCreationUpdate.Store(vAccelerateUserCreationUpdate)
 		variable.ConnectAttrsSize.Store(vConnectAttrsSize)
@@ -269,6 +312,41 @@ var processGlobalsRestore = func() func() {
 		atomic.StoreUint32(&variable.DDLSlowOprThreshold, vDDLSlowOprThreshold)
 		atomic.StoreUint64(&variable.ExpensiveQueryTimeThreshold, vExpensiveQueryTimeThreshold)
 		atomic.StoreUint64(&variable.ExpensiveTxnTimeThreshold, vExpensiveTxnTimeThreshold)
+		// D05.2 B3.
+		variable.MaxPreparedStmtCountValue.Store(vMaxPreparedStmtCountValue)
+		variable.SetDDLFlashbackConcurrency(vDDLFlashbackConcurrency)
+		variable.SetDDLReorgWorkerCounter(vDDLReorgWorkerCounter)
+		variable.SetDDLReorgBatchSize(vDDLReorgBatchSize)
+		variable.DDLReorgMaxWriteSpeed.Store(vDDLReorgMaxWriteSpeed)
+		variable.SetDDLErrorCountLimit(vDDLErrorCountLimit)
+		variable.SetMaxDeltaSchemaCount(vMaxDeltaSchemaCount)
+		variable.SetDDLReorgRowFormat(vDDLReorgRowFormat)
+		tikvstore.StoreLimit.Store(vStoreLimit)
+		tikvstore.TxnCommitBatchSize.Store(vTxnCommitBatchSize)
+		variable.TableCacheLease.Store(vTableCacheLease)
+		variable.AutoAnalyzePartitionBatchSize.Store(vAutoAnalyzePartitionBatchSize)
+		topsqlstate.GlobalState.MaxStatementCount.Store(vTopSQLMaxStatementCount)
+		topsqlstate.GlobalState.MaxCollect.Store(vTopSQLMaxCollect)
+		variable.PersistAnalyzeOptions.Store(vPersistAnalyzeOptions)
+		variable.AnalyzeColumnOptions.Store(vAnalyzeColumnOptions)
+		variable.PreparedPlanCacheMemoryGuardRatio.Store(vPreparedPlanCacheMemoryGuardRatio)
+		variable.InstancePlanCacheReservedPercentage.Store(vInstancePlanCacheReservedPercentage)
+		variable.InstancePlanCacheMaxMemSize.Store(vInstancePlanCacheMaxMemSize)
+		variable.MaxAutoAnalyzeTime.Store(vMaxAutoAnalyzeTime)
+		variable.AutoAnalyzeConcurrency.Store(vAutoAnalyzeConcurrency)
+		variable.EnableDistTask.Store(vEnableDistTask)
+		variable.EnableFastCreateTable.Store(vEnableFastCreateTable)
+		variable.TxnEntrySizeLimit.Store(vTxnEntrySizeLimit)
+		variable.GenerateBinaryPlan.Store(vGenerateBinaryPlan)
+		variable.DDLDiskQuota.Store(vDDLDiskQuota)
+		variable.TTLScanBatchSize.Store(vTTLScanBatchSize)
+		variable.TTLDeleteBatchSize.Store(vTTLDeleteBatchSize)
+		variable.TTLDeleteRateLimit.Store(vTTLDeleteRateLimit)
+		variable.TTLScanWorkerCount.Store(vTTLScanWorkerCount)
+		variable.TTLDeleteWorkerCount.Store(vTTLDeleteWorkerCount)
+		variable.TTLRunningTasks.Store(vTTLRunningTasks)
+		utiltls.RequireSecureTransport.Store(vRequireSecureTransport)
+		tikvutil.CommitterConcurrency.Store(vCommitterConcurrency)
 	}
 }()
 
@@ -578,6 +656,11 @@ func sysvarGenerate(g *vec.Gen, rng *rand.Rand) {
 	g.Add("sys/status", "status_vars", false)
 	g.Add("sys/status", "status_vars", true)
 	sysvarWhitespace(g, all)
+	// D05.2 B3: NaN / Inf passes Go's `v < lo || v > hi` range checks (the Rust port had
+	// written them as RangeInclusive::contains, which rejects NaN).
+	for _, v := range []string{"NaN", "nan", "+Inf", "-Inf", "inf", "1e309", "0.51", "0.5099999"} {
+		g.Add("sys/nan", "validate", "tidb_server_memory_limit_gc_trigger", v, "global", svCtx{})
+	}
 }
 
 // sscanfSysvars are the variables whose values go through fmt.Sscanf (parseByteSize /
