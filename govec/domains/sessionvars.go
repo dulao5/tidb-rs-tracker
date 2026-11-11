@@ -112,6 +112,18 @@ func init() {
 			// D05.2 PR E (sessionvars_e.go).
 			"stmtvars":  {Min: 400, GoFuncs: sveFuncs},
 			"stmthints": {Min: 80, GoFuncs: []string{"StmtHints.Clone", "StmtHints.TaskMapNeedBackUp"}},
+			// D05.2 PR F (sessionvars_f.go); redact and lru cover D00.3 files (pkg/util/redact,
+			// pkg/util/kvcache) ported with this PR.
+			"redact":   {Min: 60},
+			"lazytext": {Min: 60, GoFuncs: []string{"LazyStmtText.SetText", "LazyStmtText.String", "LazyStmtText.Update"}},
+			"lru":      {Min: 100},
+			"stmtcache": {Min: 40, GoFuncs: []string{"SessionVars.AddNonPreparedPlanCacheStmt",
+				"SessionVars.GetNonPreparedPlanCacheStmt", "SessionVars.GetPrepareStmtDedupCache",
+				"SessionVars.SetPrepareStmtDedupCache", "planCacheStmtKey.Hash"}},
+			"parsecfg":   {Min: 30, GoFuncs: []string{"SessionVars.BuildParserConfig", "SessionVars.GetParseParams"}},
+			"slowwarn":   {Min: 40, GoFuncs: []string{"CollectWarningsForSlowLog", "extractMsgFromSQLWarn"}},
+			"matchers":   {Min: 100, GoFuncs: []string{"MatchEqual", "matchGE", "matchZero", "uint64FromNonNegative", "ParseString"}},
+			"sessstates": {Min: 40, GoFuncs: []string{"SessionVars.EncodeSessionStates", "SessionVars.DecodeSessionStates"}},
 			"svmisc": {Min: 30, GoFuncs: []string{"ConnectionInfo.IsSecureTransport", "RuntimeFilterType.String",
 				"RuntimeFilterMode.String", "ToTiPBTiFlashPreAggMode", "PrepareDedupCacheKey", "ReadConsistencyLevel.IsWeak",
 				"RewritePhaseInfo.Reset", "SetEnableAdaptiveReplicaRead", "IsAdaptiveReplicaReadEnabled"}},
@@ -349,6 +361,8 @@ var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true,
 	"tidb_slow_log_max_per_sec": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
+	// D05.2 PR F: deferred first of all, so appended after every earlier record (PR E's too).
+	defer svfGenerate(g, rng)
 	// D05.2 PR E: deferred first of all, so appended after every earlier record (PR D's too).
 	defer sveGenerate(g, rng)
 	// D05.2 PR D: deferred first of all, so appended after every earlier record.
@@ -622,6 +636,9 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		return out, err
 	}
 	if out, err, ok := sveExec(op, args); ok {
+		return out, err
+	}
+	if out, err, ok := svfExec(op, args); ok {
 		return out, err
 	}
 	switch op {
