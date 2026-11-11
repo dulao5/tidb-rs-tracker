@@ -468,6 +468,12 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
   - `withtps` 1,300 条：`newBaseBuiltinFuncWithTp`（参数类型为求值类型）与 `newBaseBuiltinFuncWithFieldTypes`（参数类型为字段类型，DECIMAL/时间类型不同时包 CAST）；叶子参数覆盖数值、7 种字符集的字符串、时间、JSON 列与常量、NULL 常量；输出包 CAST 之后的参数和 `baseBuiltinFunc` 的字段（collation 推导经过包 CAST 的构造函数，Lucky 评审 tidb-rs #80）。
   - `newfunc` 700 条：`NewFunction`/`NewFunctionBase`/`NewFunctionTryFold`/`NewFunctionWithInit`/`NewFunctionInternal`，函数名为 `newFunctionImpl` 自己构建的 cast/to_binary/from_binary 和不存在的函数名（有无当前库：`ErrNoDB` 与 `ErrFunctionNotExists`）；构建失败的 CAST 不生成（Go 记日志后返回无签名的节点）。
   - `nullinfer` 300 条：`typeInferForNull`（含 NOT NULL 的 NULL 常量）。
+- 第 2b-3c 部分 = D08.1 第 2b 部分（追加，`domains/cast2b3c.go`，之前的 19,680 条不变）：块上的求值入口，向量化打开和关闭、有无 `Sel()`、NULL、已移植 CAST 签名的 warning 和错误（含不可向量化、走逐行回退的 VECTOR → CHAR）。输入 chunk 有 1–3 列（数值/字符串、FLOAT 与 hybrid、时间/JSON/VECTOR，以及含空元素的 ENUM），表达式为列、常量、CAST 或 CAST 套 CAST。
+  - `evsuite` 1,500 条：`NewEvaluatorSuite` + `Run`（含 `avoidColumnEvaluator`），输出列各按自己的长度（换入的列保留物理行），以及之后输入列的长度。
+  - `evfilter` 1,500 条：`VectorizedFilter` / `VectorizedFilterConsiderNull`（isNull 为 nil 或非 nil）：selected、isNull、之后输入的 `Sel()`。
+  - `evbool` 700 条：`VecEvalBool`；`evexpr` 700 条：`EvalExpr`（hybrid 列可按 int 或 string 读）；`evexec` 300 条：`VectorizedExecute`。
+  - 值按列的类型输出：BIT 为 hex，ENUM/SET 为 [value, name]，FLOAT 为 float32 的位，其余同其他 cast op。nil 与空的 bool 切片都输出为空数组。
+  - **池化缓冲区的 warning**：`VecEvalBool` 把每个过滤条件求值到全局列池中的列，`toBool` 用 `Column.GetString`（`hack.String`，与列共享字节）做 `StrToFloat`，"Truncated incorrect DOUBLE value: '%s'" 保存这个字符串、在格式化时才读取；列放回池子并被重用后，warning 显示的是别的字节（甚至别的语句、别的会话的数据）。所以经过 `VecEvalBool` 的路径（`evbool`；`evfilter` 在向量化打开且全部可向量化时）把这条 warning 的参数记为 `'<pooled>'`。tidb-rs 复制字符串，不会出现这个问题。
 - `builtin_convert_charset.go` 从 D08.6 移到 D08.8（`scripts/blocks/rules.py`）：CAST 到 STRING 和 `newBaseBuiltinFuncWithTp` 都用 `HandleBinaryLiteral`。
 - 覆盖与豁免：D08.8 的 99 个函数被覆盖，其余在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`newBaseBuiltinCastFunc4String`、`newBaseBuiltinFuncWithTp`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
 
