@@ -417,3 +417,12 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 **首尾空白**（`sys/whitespace`，D05.1 评审）：经过 `fmt.Sscanf` 解析的变量（`parseByteSize` / `parsePercentage`：`sscanfSysvars`）和全部 TypeDuration 变量，基础输入各加上前后的空格、制表符和换行。来源是 #45：`tidb_server_memory_limit = '5 '` 被解析成 5%，而 `'5'` 是 5 字节。
 
 **非校验 hook 的清单**：`data/sysvar_hooks.tsv`（`go run ./cmd/rsgen -sysvar-hooks ../data/sysvar_hooks.tsv`）列出每个带 SetSession / SetGlobal / GetSession / GetGlobal / GetStateValue 的变量。这些 hook 是表字面量中的闭包，不在 `func_blocks.tsv` 里，由这份清单归给 D05.2，作为 D05.2 的验收清单。
+
+## expr（块 D08.1 第 1 部分：`pkg/expression` 的 Column、CorrelatedColumn、Constant、Schema）
+
+- **输入**：列的类型和值沿用 chunk 领域的 `chunkTypeSpec` 与生成器（另加 BIT(8)、BIT(64)）；常量的值和 `RetType` 沿用 datum 领域的 datum 与字段类型格式，值的类型和 `RetType` 可以不同（类型推导后 Go 的计划中会出现）；`tbl` 用 model 领域的 856 份集群导出表结构（跳过含虚拟生成列的表：`BuildSimpleExpr` 由 planner 注册）。
+- **调用哪些 Eval 方法**：按节点的求值类型和值的种类，只调用 Go 的调用方会调用的（`exEvalSet`），避免对不匹配的类型读出未定义的内容。
+- **ParamMarker**：`order` 字段未导出，用 reflect 设置；`order` 越界时 `GetParamValue` 报错，`GetType` 返回 nil（记录为 null）。
+- **豁免**：`expr_pending.go`，共 220 个：向量化方法（由第 2 部分的向量驱动取代，N4 M-EVAL）、cascades 的 `Hash64`/`Equals`（EXC.B）、`errors.go`/`context.go` 的未导出辅助函数（tidb-rs 单元测试）、第 2 部分（ScalarFunction 等）和第 3 部分（VECTOR 函数）。
+- **两个目标**：3 条 `const` 记录不同（M-F2I：NaN 浮点值在 hybrid `RetType` 下走 `int64(NaN)`），登记在 `targetDiffs`。
+- **固定的偏离**：`corr` 记录带 `dmem`（Data 的 `MemUsage`），tidb-rs 中关联列的值不在节点里（spec D08.1 §3.2）。

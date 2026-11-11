@@ -15,6 +15,10 @@ type targetDiff struct {
 }
 
 var targetDiffs = []targetDiff{
+	// expr (D08.1 part 1): Constant.EvalInt of a NaN float datum with a hybrid RetType
+	// goes through Datum.ToInt64, i.e. int64(NaN).
+	{Domain: "expr", Op: "const", Args: "*", N: 3,
+		Why: "M-F2I: Constant.EvalInt of a NaN float datum (hybrid RetType) reaches int64(NaN): MinInt64 on amd64, 0 on arm64"},
 	// M-FMA: gc fuses the two word sums of MyDecimal.ToFloat64 (mydecimal.go:1118,
 	// 1125) into FMA on arm64, not on amd64 (GOAMD64=v1); domains.decimalFMA
 	// generates the 44 records whose result depends on it (README "目标平台").
