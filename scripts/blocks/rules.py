@@ -306,6 +306,7 @@ RULES = [
     # RestartSequenceValue, the *NotExists / Update-side existence checks, attachMagicByte,
     # DDLTableVersion.Bytes, the autoid accessors' Put/Inc/Del/CopyTo) and the test helper
     # DefaultGroupMeta4Test, and getDDLJob (no caller in v8.5.8). The readers (meta.Reader and what it calls) stay in D06.2.
+    # When the write path is ported, loadHashValue comes back with updateHash/HDel (Lucky, tidb-rs #85).
     ("X", r"pkg/structure/string\.go$", r"^TxStructure\.(Set|Inc|Clear)$"),
     ("X", r"pkg/structure/hash\.go$", r"^TxStructure\.(HSet|HInc|HDel|HClear|updateHash|loadHashValue|hashFieldIntegerVal|EncodeHashAutoIDKeyValue)$"),
     ("X", r"pkg/structure/list\.go$", r"^(TxStructure\.(LPush|RPush|listPush|LPop|RPop|listPop|LSet|LClear)|listMeta\.Value)$"),
