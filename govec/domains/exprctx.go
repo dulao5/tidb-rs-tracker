@@ -11,7 +11,8 @@ package domains
 //   expr options: ["charset", cs, col], ["defcoll", s], ["block", s], ["sysdate", b], ["noop", n],
 //     ["connid", n], ["window", b], ["gcml", n], ["alloc", offset], ["rng", seed]
 // A Go panic is {"panic": true}; an error is {"err": msg}. Every record runs with new
-// collations enabled and restores errors.RedactLogEnabled (tidb_redact_log, #62).
+// collations enabled. (With fix pingcap/tidb#62892 a session can no longer change the
+// process-wide errors.RedactLogEnabled, so records need not restore it; tidb-rs #62.)
 //
 // Records:
 //   - "keyset": args [set, key] -> AsPropKeySet / String / Desc / Add / Remove / Contains /
@@ -55,6 +56,7 @@ func init() {
 		Exempt: map[string]string{
 			"AssertLocationWithSessionVars": "an intest.Assert only: no effect in production builds",
 		},
+		Fixes:    []vec.Fix{{ID: fix62892, Applied: fix62892Applied}},
 		Gzip:     true,
 		Generate: exprctxGenerate,
 		Exec:     exprctxExec,
@@ -485,9 +487,6 @@ func exprctxExec(op string, p []json.RawMessage) (out any, err error) {
 		m["nr_gcml"] = exprctx.WithNullRejectCheck(ctx).GetGroupConcatMaxLen()
 		return m, nil
 	case "load":
-		// tidb_redact_log's SetSession hook writes the process-wide errors.RedactLogEnabled
-		// (upstream bug tidb-rs #62): restore it so it cannot leak into later records/domains.
-		defer errors.RedactLogEnabled.Store(initialRedactLog)
 		var kvs [][]string
 		if err := json.Unmarshal(p[0], &kvs); err != nil {
 			panic(err)
@@ -661,6 +660,9 @@ var ecLoadPool = [][][2]string{
 var ecLoadBad = map[[2]string]bool{
 	{"time_zone", "bad zone"}: true, {"sql_mode", "no_such_mode"}: true, {"timestamp", "abc"}: true,
 	{"max_allowed_packet", "x"}: true, {"no_such_variable", "1"}: true,
+	// With fix pingcap/tidb#62892 tidb_redact_log is GLOBAL only, so every value fails (1229).
+	// Same rng draws as before: only the records that also drew another bad value change.
+	{"tidb_redact_log", "ON"}: true, {"tidb_redact_log", "MARKER"}: true, {"tidb_redact_log", "OFF"}: true,
 }
 
 func exprctxGenerate(g *vec.Gen, rng *rand.Rand) {

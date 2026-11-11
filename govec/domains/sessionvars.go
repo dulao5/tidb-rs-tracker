@@ -104,7 +104,7 @@ func init() {
 			"init":             {Min: 20},
 		},
 		Exempt:   exempt,
-		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}},
+		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}, {ID: fix62892, Applied: fix62892Applied}},
 		Gzip:     true,
 		Generate: sessionvarsGenerate,
 		Exec:     sessionvarsExecClient,
@@ -336,6 +336,15 @@ var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true,
 	"tidb_slow_log_max_per_sec": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
+	// tidb_redact_log (fix pingcap/tidb#62892: GLOBAL only, the process-wide flag is stored by
+	// SetGlobal). Deferred before the T10 group, so these run last of all and every earlier
+	// record keeps its position.
+	defer func() {
+		for _, v := range []string{"ON", "MARKER", "OFF", "1", "marker"} {
+			g.Add("fix "+fix62892, "set", "set", variable.TiDBRedactLog, v)
+			g.Add("fix "+fix62892, "set_global_hook", variable.TiDBRedactLog, v)
+		}
+	}()
 	// D05.2 PR C (T10): the tidb_gc_* hooks against mysql.tidb (the generator's in-memory
 	// table, tidbTableAccessor), from several table contents. Deferred first, so appended
 	// after every other record (the deferred groups below included).

@@ -24,6 +24,7 @@ a copy of the module with the affected files replaced by the copies here
 |---|---|---|---|
 | [pingcap/tidb#67149](https://github.com/pingcap/tidb/pull/67149) (master `dfda1fd3e8`, 2026-10-19) | `pkg/util/collate/unicode_0900_ai_ci_impl.go` | `int(r) > len(MapTable4)` → `>=`: U+2CEA1 (= len) indexed past the 0900 table and panicked on user input | collate |
 | [pingcap/tidb#65884](https://github.com/pingcap/tidb/pull/65884) (master `811a10e115`, 2026-01-29) | `pkg/planner/util/fixcontrol/set.go` | `ParseToMap` guards `s[0]` after a value's colon: `SET tidb_opt_fix_control='123:'` panicked (index out of range); fixed: value `""`, no error | sessionvars |
+| [pingcap/tidb#62892](https://github.com/pingcap/tidb/pull/62892) (master `bc0d97a44d`, 2025-08-16; issue pingcap/tidb#62890) | `pkg/sessionctx/variable/sysvar.go` | `tidb_redact_log` becomes GLOBAL only and stores the process-wide `errors.RedactLogEnabled` in `SetGlobal` instead of `SetSession`: in v8.5.8 one session's `SET SESSION tidb_redact_log=ON` redacted the errors and warnings of every session on the instance (tidb-rs #62). `SET SESSION` now fails with 1229 | sessionvars, sysvar, exprctx |
 
 Adding a fix: copy the v8.5.8 file to `fixes/<path>.fixed`, apply the upstream
 change with a comment citing it, add the mapping to `scripts/govec-fixes.sh`,

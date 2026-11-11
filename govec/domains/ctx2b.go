@@ -7,7 +7,8 @@ package domains
 // StatsLoadResult (pkg/sessionctx/stmtctx).
 //
 // A Go panic is {"panic": true}; an error is {"err": msg}. Every record runs with new
-// collations enabled and restores errors.RedactLogEnabled (tidb_redact_log, #62).
+// collations enabled. (With fix pingcap/tidb#62892 a session can no longer change the
+// process-wide errors.RedactLogEnabled, so records need not restore it; tidb-rs #62.)
 //
 // Records:
 //   - "plancounter": args [init, [x...]] -> IsForce / Empty, then [value, Empty, IsForce]
@@ -104,7 +105,6 @@ var ctx2bCoverage = map[string]vec.Coverage{
 
 func ctx2bExec(op string, p []json.RawMessage) (out any, err error) {
 	collate.SetNewCollationEnabledForTest(true)
-	defer errors.RedactLogEnabled.Store(errors.RedactLogEnabled.Load())
 	switch op {
 	case "plancounter":
 		c := base.PlanCounterTp(arg[int64](p, 0))
