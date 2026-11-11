@@ -20300,7 +20300,7 @@ pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.CheckAndG
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.CheckPlanReplayerFinishedTaskKey	1818	D05.2
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.ChooseMppExchangeCompressionMode	1948	D05.2
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.ChooseMppVersion	1940	D05.2
-pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.CleanBuffers	2531	D05.2
+pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.CleanBuffers	2531	X
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.CleanupTxnReadTSIfUsed	3418	D05.2
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.ClearAlloc	1878	D05.2
 pkg/sessionctx/variable	pkg/sessionctx/variable/session.go	SessionVars.ClearDiskFullOpt	3590	X
@@ -25253,7 +25253,7 @@ pkg/util/chunk	pkg/util/chunk/alloc.go	NewEmptyAllocator	329	D01.7
 pkg/util/chunk	pkg/util/chunk/alloc.go	NewReuseHookAllocator	296	D01.7
 pkg/util/chunk	pkg/util/chunk/alloc.go	NewSyncAllocator	255	D01.7
 pkg/util/chunk	pkg/util/chunk/alloc.go	allocator.Alloc	93	X
-pkg/util/chunk	pkg/util/chunk/alloc.go	allocator.CheckReuseAllocSize	88	X
+pkg/util/chunk	pkg/util/chunk/alloc.go	allocator.CheckReuseAllocSize	88	D01.7
 pkg/util/chunk	pkg/util/chunk/alloc.go	allocator.Reset	120	X
 pkg/util/chunk	pkg/util/chunk/alloc.go	checkColumnType	145	X
 pkg/util/chunk	pkg/util/chunk/alloc.go	columnList.Len	83	X
@@ -26505,8 +26505,8 @@ pkg/util/hint	pkg/util/hint/hint.go	RemoveDuplicatedHints	991	D13.3
 pkg/util/hint	pkg/util/hint/hint.go	Restore2IndexHint	1078	D13.3
 pkg/util/hint	pkg/util/hint/hint.go	Restore2JoinHint	1065	D13.3
 pkg/util/hint	pkg/util/hint/hint.go	Restore2StorageHint	1100	D13.3
-pkg/util/hint	pkg/util/hint/hint.go	StmtHints.Clone	250	D13.3
-pkg/util/hint	pkg/util/hint/hint.go	StmtHints.TaskMapNeedBackUp	245	D13.3
+pkg/util/hint	pkg/util/hint/hint.go	StmtHints.Clone	250	D13.0
+pkg/util/hint	pkg/util/hint/hint.go	StmtHints.TaskMapNeedBackUp	245	D13.0
 pkg/util/hint	pkg/util/hint/hint.go	StmtHints.addHypoIndex	287	D13.3
 pkg/util/hint	pkg/util/hint/hint.go	collectUnmatchedIndexHintWarning	1150	D13.3
 pkg/util/hint	pkg/util/hint/hint.go	collectUnmatchedJoinHintWarning	1171	D13.3

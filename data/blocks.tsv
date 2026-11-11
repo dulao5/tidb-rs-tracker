@@ -95,6 +95,7 @@ D12.6	D12 执行器	hash join（v1/v2）与 joiner	P4
 D12.7	D12 执行器	index join 系列	P4
 D12.8	D12 执行器	merge join	P4
 D12.9	D12 执行器	window	P4
+D13.0	D13 Plan Cache、绑定、Hint	hint 的数据类型 StmtHints（D13.3 的第一步；StatementContext 内嵌它，所以放在 tidb-sessionctx，D05.2 PR E）	P1
 D13.1	D13 Plan Cache、绑定、Hint	Plan Cache（A3）	EXC
 D13.2	D13 Plan Cache、绑定、Hint	SQL binding	P5
 D13.3	D13 Plan Cache、绑定、Hint	hint 处理	P3
