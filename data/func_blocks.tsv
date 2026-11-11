@@ -23558,9 +23558,9 @@ pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeHandleInUniqueIndexValue	1807	
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeIndexSeekKey	715	D01.11
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeMetaKey	221	X
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeMetaKeyPrefix	231	X
-pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeOldRow	376	X
+pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeOldRow	376	D01.11
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeRecordKey	124	D01.11
-pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeRow	361	X
+pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeRow	361	D01.11
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeRowKey	106	D01.11
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeRowKeyWithHandle	114	D01.11
 pkg/tablecodec	pkg/tablecodec/tablecodec.go	EncodeTableIndexPrefix	1105	D01.11

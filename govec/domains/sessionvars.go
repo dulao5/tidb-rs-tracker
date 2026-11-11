@@ -725,6 +725,7 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 		// its SetGlobal hook and GetGlobal again, on a session whose accessor holds the given
 		// mysql.tidb rows; the output includes mysql.tidb afterwards.
 		resetSysvarAtomics()
+		defer resetSysvarAtomics()
 		name, val := arg[string](args, 0), arg[string](args, 1)
 		vars := freshVars(svCtx{StmtType: "Set", TiDB: arg[map[string]string](args, 2)})
 		sv := variable.GetSysVar(name)

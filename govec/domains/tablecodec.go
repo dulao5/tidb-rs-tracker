@@ -65,6 +65,8 @@ func init() {
 }
 
 var tablecodecExempt = map[string]string{
+	"EncodeRow":                "covered by the systable domain (replace records: rf 1 writes through EncodeOldRow, rf 2 through rowcodec.Encoder)",
+	"EncodeOldRow":             "covered by the systable domain (replace records with rf 1, Go's sysSessionPool session)",
 	"init":                     "sets kv.DecodeTableIDFunc; tidb-rs returns the function from tablecodec::init() (covered through key_decode \"tid_func\")",
 	"RowData.Len":              "sort.Interface method; callers sort RowData by column ID before Checksum (covered: checksum op sorts)",
 	"RowData.Less":             "sort.Interface method (covered: checksum op sorts)",

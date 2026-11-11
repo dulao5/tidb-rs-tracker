@@ -1,13 +1,15 @@
 package domains
 
-// Domain "systable": block D06.7, the system-table writes behind SET GLOBAL (tidb-rs
+// Domain "write_systable": block D06.7, the system-table writes behind SET GLOBAL (tidb-rs
 // specs/D05.2-sessionvars/spec.md §6, owner decision tidb-rs #58 (c)).
 //
 // The oracle is Go itself on a bootstrapped mockstore (session.BootstrapSession): the
 // records hold what the real REPLACE executor writes, not a re-implementation of it.
 //   - tableinfo: the TableInfo (JSON, as stored in meta) of mysql.global_variables and
 //     mysql.tidb, with the database and table IDs.
-//   - replace: REPLACE INTO mysql.<table> of one row inside BEGIN OPTIMISTIC, after the
+//   - replace: REPLACE INTO mysql.<table> of one row inside BEGIN OPTIMISTIC (rf 1: on a
+//     session of the domain's sysSessionPool, Go's real path, which writes row format 1;
+//     rf 2: on a normal session, row format 2), after the
 //     given rows were written (committed). The output is the table's rows the statement
 //     can read (the index entries of every name it can collide with and their records:
 //     "before"), and the transaction's memory buffer over the table's key range before
@@ -19,6 +21,12 @@ package domains
 //     its result and the counter afterwards (alloc4Signed).
 //   - next_step: autoid.NextStep (the dynamic step of a non-custom allocator).
 // tidb-rs replays them with the D06.7 crate (tidb-systable) over an in-memory snapshot.
+//
+// The name sorts after every other domain on purpose: the records bootstrap a domain in
+// the process, whose sysvar cache rebuild runs every SetGlobal hook and keeps running in the
+// background (process-wide state other domains read: e.g. the GC tuner's memory-limit
+// trigger seen by sysvar's tidb_gogc_tuner_threshold validation). govec_test runs all
+// domains in one process in name order; scripts/govec.sh runs one domain per process.
 
 import (
 	"context"
@@ -39,6 +47,7 @@ import (
 	pmodel "github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/session"
 	sessiontypes "github.com/pingcap/tidb/pkg/session/types"
+	"github.com/pingcap/tidb/pkg/sessionctx"
 	"github.com/pingcap/tidb/pkg/store/mockstore"
 	"github.com/pingcap/tidb/pkg/tablecodec"
 )
@@ -47,7 +56,7 @@ const systableSeed = 5067
 
 func init() {
 	vec.Register(&vec.Domain{
-		Name:   "systable",
+		Name:   "write_systable",
 		Seed:   systableSeed,
 		Blocks: []string{"D06.7"},
 		Coverage: map[string]vec.Coverage{
@@ -301,16 +310,37 @@ func systableExec(op string, args []json.RawMessage) (any, error) {
 			names = append(names, r[0])
 		}
 		res := map[string]any{"before": systableBefore(tblID, names)}
-		e.exec("BEGIN OPTIMISTIC")
-		q, a := systableReplaceSQL(table, row)
-		ctx := kv.WithInternalSourceType(context.Background(), kv.InternalTxnSysVar)
-		rs, err := e.se.ExecuteInternal(ctx, q, a...)
-		if rs != nil {
-			_ = rs.Close()
+		// rf 1 (the real path): a session of the domain's sysSessionPool, as
+		// replaceGlobalVariablesTableValue / SetTiDBTableValue use (ExecRestrictedSQL). It
+		// never loads the global tidb_row_format_version, so it writes row format 1 with no
+		// checksum. rf 2: the test session (row format 2), for the format-2 branch.
+		opts := arg[map[string]int64](args, 3)
+		var sctx sessionctx.Context = e.se
+		if opts["rf"] == 1 {
+			res, perr := e.dom.SysSessionPool().Get()
+			if perr != nil {
+				panic(perr)
+			}
+			defer e.dom.SysSessionPool().Put(res)
+			sctx = res.(sessionctx.Context)
 		}
+		exec := sctx.GetSQLExecutor()
+		ctx := kv.WithInternalSourceType(context.Background(), kv.InternalTxnSysVar)
+		run := func(q string, a ...any) error {
+			rs, err := exec.ExecuteInternal(ctx, q, a...)
+			if rs != nil {
+				_ = rs.Close()
+			}
+			return err
+		}
+		if err := run("BEGIN OPTIMISTIC"); err != nil {
+			panic(err)
+		}
+		q, a := systableReplaceSQL(table, row)
+		err := run(q, a...)
 		var muts []systableMut
 		if err == nil {
-			txn, terr := e.se.Txn(false)
+			txn, terr := sctx.Txn(false)
 			if terr != nil {
 				panic(terr)
 			}
@@ -341,7 +371,9 @@ func systableExec(op string, args []json.RawMessage) (any, error) {
 			it.Close()
 		}
 		res["muts"] = muts
-		e.exec("ROLLBACK")
+		if err := run("ROLLBACK"); err != nil {
+			panic(err)
+		}
 		for _, r := range init {
 			e.exec("DELETE FROM %n.%n WHERE variable_name = %?", "mysql", table, r[0])
 		}
@@ -417,8 +449,27 @@ func systableGenerate(g *vec.Gen, rng *rand.Rand) {
 	systableReset()
 	g.Add("sys/tableinfo", "tableinfo", "global_variables")
 	g.Add("sys/tableinfo", "tableinfo", "tidb")
-	gv := func(init [][]string, row []string) { g.Add("sys/replace", "replace", "global_variables", init, row) }
-	td := func(init [][]string, row []string) { g.Add("sys/replace", "replace", "tidb", init, row) }
+	rf1 := map[string]int64{"rf": 1}
+	gv := func(init [][]string, row []string) {
+		g.Add("sys/replace", "replace", "global_variables", init, row, rf1)
+	}
+	td := func(init [][]string, row []string) { g.Add("sys/replace", "replace", "tidb", init, row, rf1) }
+	// Row format 2 (a session that loaded the global tidb_row_format_version).
+	for _, c := range []struct {
+		t    string
+		init [][]string
+		row  []string
+	}{
+		{"global_variables", nil, []string{"govec_a", "1"}},
+		{"global_variables", [][]string{{"govec_a", "1"}}, []string{"govec_a", "2"}},
+		{"global_variables", [][]string{{"govec_a", "1"}}, []string{"govec_a", "1"}},
+		{"tidb", [][]string{{"govec_t", "true", "c"}}, []string{"govec_t", "false", "c"}},
+	} {
+		if c.init == nil {
+			c.init = [][]string{}
+		}
+		g.Add("sys/replace_rf2", "replace", c.t, c.init, c.row, map[string]int64{"rf": 2})
+	}
 	none := [][]string{}
 	// New name, existing name (same value: unchanged, no write; other value), case and
 	// trailing-space variants of the name (utf8mb4_bin, PAD SPACE) and of the value

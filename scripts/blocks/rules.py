@@ -260,6 +260,10 @@ RULES = [
     # the batch / step helpers alloc4Signed calls come with it from D06.2 (tidb-systable
     # autoid.rs; rebase4Signed, only reached with offset > 1, stays in D06.2).
     ("D06.7", r"pkg/meta/autoid/autoid\.go$", r"^(allocator\.(alloc4Signed|Alloc)|CalcNeededBatchSize|SeekToFirstAutoIDSigned|SeekToFirstAutoIDUnSigned|NextStep|validIncrementAndOffset)$"),
+    # EncodeRow / EncodeOldRow come back to D01.11 (2026-11-11, PR C round 3): Go's
+    # SET GLOBAL writes mysql.global_variables through an internal session of sysSessionPool,
+    # which never loads the global tidb_row_format_version: row format 1 (EncodeOldRow).
+    ("D01.11", r"pkg/tablecodec/tablecodec\.go$", r"^(EncodeRow|EncodeOldRow)$"),
     # tablecodec / rowcodec scoping (D01.11, 2026-11-08): tidb-rs is read-only. Reachability
     # over the function-level reference graph (work/go_refs.tsv) from the read-path blocks,
     # judged per function. X: "写路径，由 Go TiDB 承担" — the row encoders (EncodeRow,
@@ -271,7 +275,7 @@ RULES = [
     # DecodeIndexID, EncodeMetaKeyPrefix, TruncateToRowKeyLen, IsRowKey, row.ColumnIsNull,
     # row.CalculateRawChecksum); no caller in v8.5.8 (CutIndexKey, CutIndexPrefix,
     # CutRowKeyPrefix, EncodeMetaKey, MetaPrefix, UnflattenDatums, RowData.Encode).
-    ("X", r"pkg/tablecodec/tablecodec\.go$", r"^(EncodeRow|EncodeOldRow|DecodeTempIndexValue|TempIndexValue\.\w+|TempIndexValueElem\.\w+|TempIndexValueIsUntouched|IsUntouchedIndexKValue|IndexKVIsUnique|TempIndexKey2IndexKey|CutCommonHandle|DecodeIndexID|EncodeMetaKeyPrefix|TruncateToRowKeyLen|CutIndexKey|CutIndexPrefix|CutRowKeyPrefix|EncodeMetaKey|MetaPrefix|UnflattenDatums)$"),
+    ("X", r"pkg/tablecodec/tablecodec\.go$", r"^(DecodeTempIndexValue|TempIndexValue\.\w+|TempIndexValueElem\.\w+|TempIndexValueIsUntouched|IsUntouchedIndexKValue|IndexKVIsUnique|TempIndexKey2IndexKey|CutCommonHandle|DecodeIndexID|EncodeMetaKeyPrefix|TruncateToRowKeyLen|CutIndexKey|CutIndexPrefix|CutRowKeyPrefix|EncodeMetaKey|MetaPrefix|UnflattenDatums)$"),
     ("X", r"pkg/util/rowcodec/common\.go$", r"^(IsRowKey|RowData\.Encode)$"),
     ("X", r"pkg/util/rowcodec/row\.go$", r"^row\.(ColumnIsNull|CalculateRawChecksum)$"),
     ("D01.11", r"pkg/(tablecodec|util/rowcodec)/", None),

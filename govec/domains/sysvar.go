@@ -155,6 +155,12 @@ func (a *tidbTableAccessor) GetTiDBTableValue(name string) (string, error) {
 	if r, ok := a.tbl[name]; ok {
 		return r[0], nil
 	}
+	if name == "tikv_gc_life_time" {
+		// The test accessor's answer (the registered tidb_gc_life_time value, which other
+		// domains of the same process may have changed with variable.SetSysVar): the
+		// records generated before mysql.tidb was modelled depend on it.
+		return a.MockGlobalAccessor.GetTiDBTableValue(name)
+	}
 	return "", tidbResultIsEmpty
 }
 
