@@ -701,6 +701,10 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 				after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
 				res["after"], res["after_err"] = after, errStr(aerr)
 			}
+			if name == variable.TiDBRedactLog {
+				// fix pingcap/tidb#62892: SetGlobal stores the process-wide flag.
+				res["redact"] = errors.RedactLogEnabled.Load()
+			}
 		}
 		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, err
 	case "set_global_hook2":

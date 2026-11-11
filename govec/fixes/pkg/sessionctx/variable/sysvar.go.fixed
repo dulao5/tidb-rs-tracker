@@ -2568,13 +2568,9 @@ var defaultSysVars = []*SysVar{
 		}
 		return nil
 	}},
-	// govec fix: pingcap/tidb#62892 (master bc0d97a44d, 2025-08-16): tidb_redact_log is GLOBAL only;
-	// the process-wide errors.RedactLogEnabled is stored by SetGlobal, so one session's
-	// SET SESSION can no longer redact every other session's errors (tidb-rs #62).
-	{Scope: ScopeGlobal, Name: TiDBRedactLog, Value: DefTiDBRedactLog, Type: TypeEnum, PossibleValues: []string{Off, On, Marker}, SetGlobal: func(_ context.Context, s *SessionVars, val string) error {
+	{Scope: ScopeGlobal, Name: TiDBRedactLog, Value: DefTiDBRedactLog, Type: TypeEnum, PossibleValues: []string{Off, On, Marker}, SetGlobal: func(_ context.Context, s *SessionVars, val string) error { // govec fix: pingcap/tidb#62892 (master bc0d97a44d): GLOBAL only, the process-wide flag is stored by SetGlobal (tidb-rs #62); same line count as v8.5.8
 		s.EnableRedactLog = val
-		// NOTE: switch of errors is a singleton, thus we can not set it for different sessions
-		errors.RedactLogEnabled.Store(val)
+		errors.RedactLogEnabled.Store(val) // NOTE: switch of errors is a singleton, thus we can not set it for different sessions
 		return nil
 	}},
 	{Scope: ScopeGlobal | ScopeSession, Name: TiDBShardAllocateStep, Value: strconv.Itoa(DefTiDBShardAllocateStep), Type: TypeInt, MinValue: 1, MaxValue: uint64(math.MaxInt64), SetSession: func(s *SessionVars, val string) error {
