@@ -297,6 +297,20 @@ RULES = [
     ("D06.1", r"pkg/meta/model/job_args\.go$", r"^AutoIDGroup$"),
     ("X", r"pkg/meta/model/job_args\.go$", None),
     ("D06.1", r"pkg/meta/model/", None),
+    # meta / structure scoping (D06.2, 2026-11-11): tidb-rs is read-only and DDL / meta writes
+    # run in Go TiDB. X: "DDL 与元数据写入由 Go TiDB 承担" — the structure writers (string
+    # Set/Inc/Clear, hash HSet/HInc/HDel/HClear/updateHash/loadHashValue (read only by those
+    # writers) and the autoid key-value helper,
+    # list push/pop/set/clear and listMeta.Value) and the meta.Mutator writers (Create*,
+    # Update*, Drop*, Add*, Gen*, Set*, Clear*, FinishBootstrap, EnQueue / history writes,
+    # RestartSequenceValue, the *NotExists / Update-side existence checks, attachMagicByte,
+    # DDLTableVersion.Bytes, the autoid accessors' Put/Inc/Del/CopyTo) and the test helper
+    # DefaultGroupMeta4Test, and getDDLJob (no caller in v8.5.8). The readers (meta.Reader and what it calls) stay in D06.2.
+    ("X", r"pkg/structure/string\.go$", r"^TxStructure\.(Set|Inc|Clear)$"),
+    ("X", r"pkg/structure/hash\.go$", r"^TxStructure\.(HSet|HInc|HDel|HClear|updateHash|loadHashValue|hashFieldIntegerVal|EncodeHashAutoIDKeyValue)$"),
+    ("X", r"pkg/structure/list\.go$", r"^(TxStructure\.(LPush|RPush|listPush|LPop|RPop|listPop|LSet|LClear)|listMeta\.Value)$"),
+    ("X", r"pkg/meta/meta\.go$", r"^(Mutator\.(GenGlobalID|AdvanceGlobalIDs|GenGlobalIDs|GenPlacementPolicyID|GenAutoTableIDKeyValue|GenSchemaVersion|GenSchemaVersions|checkPolicyExists|checkPolicyNotExists|checkResourceGroupNotExists|checkResourceGroupExists|checkDBNotExists|checkTableExists|checkTableNotExists|CreatePolicy|UpdatePolicy|AddResourceGroup|UpdateResourceGroup|DropResourceGroup|CreateDatabase|UpdateDatabase|CreateTableOrView|SetBDRRole|ClearBDRRole|SetDDLTables|CreateMySQLDatabaseIfNotExists|SetMetadataLock|SetSchemaCacheSize|CreateTableAndSetAutoID|CreateSequenceAndSetSeqValue|RestartSequenceValue|DropPolicy|DropDatabase|DropSequence|DropTableOrView|UpdateTable|enQueueDDLJob|EnQueueDDLJob|addHistoryDDLJob|AddHistoryDDLJob|SetIngestMaxBatchSplitRanges|SetIngestMaxSplitRangesPerSec|SetIngestMaxInflight|SetIngestMaxPerSec|FinishBootstrap|SetSchemaDiff|SetRUStats|getDDLJob)|DefaultGroupMeta4Test|attachMagicByte|DDLTableVersion\.Bytes)$"),
+    ("X", r"pkg/meta/meta_autoid\.go$", r"^(autoIDAccessor\.(Put|Inc|Del|CopyTo)|autoIDAccessors\.(Put|Del))$"),
     ("D06.2", r"pkg/(meta|structure)/", None),
     ("D06.6", r"pkg/infoschema/(tables|cluster|metrics_schema|perfschema/|metrics)\.?", None),
     ("D06.3", r"pkg/infoschema/", None),

@@ -452,3 +452,14 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - 参数类型：INT/BIGINT/TINYINT/MEDIUMINT/SMALLINT [UNSIGNED]、DOUBLE、DECIMAL(p,s)、VARCHAR（utf8mb4 或 binary）。不生成 FLOAT 和 hybrid（BIT/ENUM/SET）参数：tidb-rs 的向量驱动把这类列原样交给签名（D08.8 第 2 部分）。
 - 另有 60 条 `union-neg` 记录：UNSIGNED 目标、`inUnion`、负数字符串（含单独的 `-`），Go 的行版本与向量版本在这里不同。
 - 覆盖与豁免：D08.8 的 61 个函数被覆盖，其余 189 个在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
+
+## meta（块 D06.2 第 1 部分：`pkg/structure`、`pkg/meta` 的读取、`pkg/meta/metadef`）
+
+tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/blocks/rules.py`）。这里只用它们构造存储状态：
+
+- `struct`：参数是前缀、存储状态（Go 的 `TxStructure` 写入函数在 mockstore 事务上写，`dumpTxn` 取出 memdb 中的键值对并回滚，再注入不属于 hash 的 key、类型标志错误的 key、坏的 list meta、缺失的 list 元素、不是整数的值）和一串读取调用；输出每个调用的 `{"r": 结果, "e": {code, msg}}`。
+- `meta`：同样的形式，读取经 `meta.NewReader`。状态由 `meta.Mutator` 写入（数据库、各种 must-load 属性的表、autoid、sequence、policy、resource group、schema version 与 diff、DDL 历史与队列、BDR role、MDL、schema cache size、bootstrap version、ingest 参数），再注入非法 JSON、错误的 magic byte、坏的 list meta、越界数字等。`GetAllNameToIDAndTheMustLoadedTableInfo` 遇到正则匹配不上的值会 panic，所以单独成一条记录。
+- `keys`：meta key 的构造与解析、`IsTableInfoMustLoad`、`Unescape`、`Element`；`metadef`：系统库名的判断。
+- 读取在内存 snapshot `memSnap` 上进行（有序键值对，`Iter` / `IterReverse` 的语义与 client-go 的 scanner 相同，用完后 `Key()` 为 nil；Go 的 `ReverseHashIterator.Next` 在 `Next` 之后不检查 `Valid` 就读 `Key()`）。Rust 回放用同样语义的 map。
+- autoid accessor：Go 的各个 picker 共享一个 accessor，先取的会跟着后取的变。所有 Go 调用方都是取到后立刻使用，`autoids` 调用也这样做（tidb-rs spec §4）。
+- 第 2 部分（partialjson、`IterAllTables`、`GetRUStats`、`GetOldestSchemaVersion`、`NewMutator`、`pkg/meta/autoid`、`pkg/meta/metabuild`）列在 `Exempt` 中。
