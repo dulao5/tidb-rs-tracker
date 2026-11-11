@@ -9,7 +9,6 @@ func stmtctxExempt() map[string]string {
 		"AllocateTaskID":                                  "a process-wide counter; covered by unit tests",                           // pkg/sessionctx/stmtctx/stmtctx.go
 		"GetStmtLabel":                                    "ast.GetStmtLabel (parser AST, D02.2)",                                    // pkg/sessionctx/stmtctx/stmtctx.go
 		"StatementContext.CtxID":                          "a process-wide counter (GenContextID); covered by unit tests",            // pkg/sessionctx/stmtctx/stmtctx.go
-		"StatementContext.GetExecDetails":                 "execdetails.ExecDetails (D14.0)",                                         // pkg/sessionctx/stmtctx/stmtctx.go
 		"StatementContext.GetFlatPlan":                    "opaque any values (plan, ranger and pb contexts); covered by unit tests", // pkg/sessionctx/stmtctx/stmtctx.go
 		"StatementContext.GetLockWaitStartTime":           "reads the wall clock; covered by unit tests",                             // pkg/sessionctx/stmtctx/stmtctx.go
 		"StatementContext.GetOrInitBuildPBCtxFromCache":   "opaque any values (plan, ranger and pb contexts); covered by unit tests", // pkg/sessionctx/stmtctx/stmtctx.go
