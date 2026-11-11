@@ -435,3 +435,11 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **`bcop`**：`basicCopRuntimeStats` 未导出，通过 `go:linkname` 调用它的 `Clone`（`CopRuntimeStats.stats` 是第一个字段）。Go 的 `Clone` 与原对象共享百分位数的切片和 t-digest（tidb-rs 深拷贝，spec D14.0 §4 第 4 条），所以 `bcop` 步骤总在记录的最后。
 - **panic**：Go 解引用 nil 或越界的地方（缺字段的 summary、nil detail 的合并、无当前规则时追加步骤、nil map、空百分位数取值）记为 panic，Rust 侧也必须 panic。分数权重下 tdigest 的 `Quantile(1)` 会越界（`processedWeight` 与累积权重按不同顺序求和），这类记录不取 q = 1。
 - **豁免**：`tracing/util.go` 的 11 个函数（opentracing / `runtime/trace`，承载方式随 D05.3 与 TRACE 执行器），`MergeTiFlashRUConsumption`（DEF.MPP，需要 kvproto `resource_manager`）。
+
+## funcs（块 D08.2 第 1 部分：`pkg/expression` 的函数注册表、`baseBuiltinFunc` 的构造、collation 推导）
+
+- **未导出的函数**：`deriveCollation`、`newBaseBuiltinFunc`、`newBaseBuiltinFuncWithFieldType`、`newReturnFieldTypeForBaseBuiltinFunc`、`baseFunctionClass.verifyArgs`、`baseBuiltinFunc` 的 `setDecimalAndFlenFor*` 和 `evalXxx`/`vecEvalXxx` 等通过 `go:linkname` 调用。`baseBuiltinFunc` 是未导出的结构体，用布局相同的镜像 `fnBaseMirror` 接收（`init` 中核对大小为 152 字节，与 D08.1 测得的 `emptyBaseBuiltinFunc` 相同）。
+- **参数**：expr_sf.go 的配方（列、常量、`NewFunctionBase` 建的小函数树），可选地覆盖 coercibility/repertoire（显式 COLLATE 即 `CoercibilityExplicit`）。输出带上 Go 建出的参数 dump，tidb-rs 用只有描述的签名重建。生成时只保留在该连接字符集下能建出的配方。
+- **new collation**：每条 `derive`/`newbase` 记录自己设置并恢复 new collation 开关；collator 用探测字符串的 key 比对。
+- **panic**：`deriveCollation` 中 `args[i]` 或 `argTps[i]` 越界（例如 `newBaseBuiltinFunc` 只传 `[retType]`，`case` 读 `argTps[1]`）记为 panic，Rust 侧也必须 panic。
+- **豁免**：`funcs_pending.go`，共 94 个：第 2 部分（给参数包 CAST 的构造、CAST 签名的 base、常量折叠与传播、REGEXP/ILIKE 的参数辅助函数）、第 3 部分（grouping sets）、`ParseSimpleExpr`（D09.2）、cascades 的 `Hash64`/`Equals`（EXC.B）、泛型的 `builtinFuncCache`（tidb-rs 单元测试）、由 `expr` 领域 `sf` 记录覆盖的 `baseBuiltinFunc` 方法。
