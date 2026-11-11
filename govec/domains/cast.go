@@ -24,22 +24,31 @@ package domains
 // TIME ("to", "to-const", "to-fsp") and WrapWithCastAsTime/Duration ("wrap-time").
 //
 // Records:
-//   - "cast": [arg, tpIn, inUnion, ctx, rows, isExplicitCharset?] -> build (sfDump or error),
+// Part 2b-2b-ii (appended, govec/domains/cast2b2c.go): CAST to JSON, JSON ARRAY and VECTOR
+// ("to-json", "to-json-const", "to-array", "to-vec"), WrapWithCastAsJSON/VectorFloat32
+// ("wrap-json") and ConvertJSON2Tp ("json2tp").
+//
+// Records:
+//   - "cast": [arg, tpIn, inUnion, ctx, rows, isExplicitCharset?, isArray?] -> build (sfDump or error),
 //     meta (inUnion of a baseBuiltinCastFunc), bwarns (warnings of building, i.e. of
 //     folding), rows (row-mode value and warnings per row), vec (vector-mode values, or the
 //     error, and warnings). arg = ["col", ftIn] | ["const", datumIn, ftIn] |
 //     ["cast", tpIn, colArg] (the argument is CAST(column AS tp));
 //     ctx = [typeFlags, [7]errLevels, maxAllowedPacket?, sqlMode?, stmtTimeUnixNano?].
 //     Time values are [raw packed CoreTime, String()]; durations [nanoseconds, fsp] row by
-//     row and nanoseconds in the vector (the column keeps no fsp).
+//     row and nanoseconds in the vector (the column keeps no fsp); JSON values
+//     [TypeCode, hex(Value)]; vectors hex(serialized bytes).
+//   - "json2tp": [jsonDatumIn, tpIn] -> ConvertJSON2Tp: the value as CreateBinaryJSON of it
+//     ([TypeCode, hex]) or the error.
 //   - "wrap": [which, arg, ctx, tpIn?] -> WrapWithCastAsInt/Real/Decimal/String/Time (tpIn)/
-//     Duration: sfDump, bwarns.
+//     Duration/JSON/VectorFloat32: sfDump, bwarns.
 //   - "binlit": [arg, charset, collation, funcName, explicitCast, ctx, rows] ->
 //     HandleBinaryLiteral: build, bwarns, rows, vec (as "cast").
 //   - "collcast": [arg, charset, collation, enumOrSetRealTypeIsStr, ctx] ->
 //     BuildCastCollationFunction: sfDump, bwarns.
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -225,6 +234,18 @@ func castRowVal(ctx expression.EvalContext, e expression.Expression, row chunk.R
 			return exVal(nil, n, err)
 		}
 		return exVal([]any{int64(v.Duration), v.Fsp}, false, nil)
+	case types.ETJson:
+		v, n, err := e.EvalJSON(ctx, row)
+		if err != nil || n {
+			return exVal(nil, n, err)
+		}
+		return exVal(castJSONOut(v), false, nil)
+	case types.ETVectorFloat32:
+		v, n, err := e.EvalVectorFloat32(ctx, row)
+		if err != nil || n {
+			return exVal(nil, n, err)
+		}
+		return exVal(hex.EncodeToString(v.ZeroCopySerialize()), false, nil)
 	}
 	panic("castRowVal")
 }
@@ -253,6 +274,12 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 	case types.ETDuration:
 		col = chunk.NewColumn(types.NewFieldType(mysql.TypeDuration), n)
 		err = e.VecEvalDuration(ctx, chk, col)
+	case types.ETJson:
+		col = chunk.NewColumn(types.NewFieldType(mysql.TypeJSON), n)
+		err = e.VecEvalJSON(ctx, chk, col)
+	case types.ETVectorFloat32:
+		col = chunk.NewColumn(types.NewFieldType(mysql.TypeTiDBVectorFloat32), n)
+		err = e.VecEvalVectorFloat32(ctx, chk, col)
 	}
 	warns := ecWarns(ctx.TruncateWarnings(0))
 	if err != nil {
@@ -278,6 +305,10 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 		case types.ETDuration:
 			// The column keeps the nanoseconds only.
 			vals = append(vals, int64(col.GetDuration(i, 0).Duration))
+		case types.ETJson:
+			vals = append(vals, castJSONOut(col.GetJSON(i)))
+		case types.ETVectorFloat32:
+			vals = append(vals, hex.EncodeToString(col.GetVectorFloat32(i).ZeroCopySerialize()))
 		}
 	}
 	return map[string]any{"v": vals, "warns": warns}
@@ -301,6 +332,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 			ev.TruncateWarnings(0)
 		}
 		tp := d2FtIn(exArr(p[1]))
+		if len(p) > 6 && arg[bool](p, 6) {
+			tp.SetArray(true) // CAST(.. AS type ARRAY) (part 2b-2b-ii)
+		}
 		var res expression.Expression
 		m["build"] = exTry(func() any {
 			explicit := len(p) > 5 && arg[bool](p, 5)
@@ -345,6 +379,10 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 				return sfDump(expression.WrapWithCastAsTime(ctx, argE, d2FtIn(exArr(p[3]))))
 			case "duration":
 				return sfDump(expression.WrapWithCastAsDuration(ctx, argE))
+			case "json":
+				return sfDump(expression.WrapWithCastAsJSON(ctx, argE))
+			case "vector":
+				return sfDump(expression.WrapWithCastAsVectorFloat32(ctx, argE))
 			default:
 				return sfDump(expression.WrapWithCastAsDecimal(ctx, argE))
 			}
@@ -367,6 +405,19 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 				castEvalRows(m, ev, res, chk)
 			}
 		}
+		return m, nil
+	case "json2tp":
+		m := map[string]any{}
+		d := d2DatumIn(exArr(p[0]))
+		j := d.GetMysqlJSON()
+		ft := d2FtIn(exArr(p[1]))
+		m["res"] = exTry(func() any {
+			v, err := expression.ConvertJSON2Tp(j, ft)
+			if err != nil {
+				return exErr(err)
+			}
+			return castJSONOut(types.CreateBinaryJSON(v))
+		})
 		return m, nil
 	case "collcast":
 		ctx, ev := castCtx(p[4])
@@ -636,6 +687,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerate2b1(vg, g)
 	castGenerate2b2(vg, g)
 	castGenerate2b2b(vg, g)
+	castGenerate2b2c(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
