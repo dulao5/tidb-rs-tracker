@@ -20,13 +20,20 @@ package domains
 // Part 2b-2a (appended, govec/domains/cast2b2.go): CAST from DATE/DATETIME/TIMESTAMP, TIME,
 // JSON and VECTOR columns ("from", "from-fsp").
 //
+// Part 2b-2b-i (appended, govec/domains/cast2b2b.go): CAST to DATETIME, DATE, TIMESTAMP and
+// TIME ("to", "to-const", "to-fsp") and WrapWithCastAsTime/Duration ("wrap-time").
+//
 // Records:
 //   - "cast": [arg, tpIn, inUnion, ctx, rows, isExplicitCharset?] -> build (sfDump or error),
 //     meta (inUnion of a baseBuiltinCastFunc), bwarns (warnings of building, i.e. of
 //     folding), rows (row-mode value and warnings per row), vec (vector-mode values, or the
-//     error, and warnings). arg = ["col", ftIn] | ["const", datumIn, ftIn];
-//     ctx = [typeFlags, [7]errLevels, maxAllowedPacket?, sqlMode?].
-//   - "wrap": [which, arg, ctx] -> WrapWithCastAsInt/Real/Decimal/String: sfDump, bwarns.
+//     error, and warnings). arg = ["col", ftIn] | ["const", datumIn, ftIn] |
+//     ["cast", tpIn, colArg] (the argument is CAST(column AS tp));
+//     ctx = [typeFlags, [7]errLevels, maxAllowedPacket?, sqlMode?, stmtTimeUnixNano?].
+//     Time values are [raw packed CoreTime, String()]; durations [nanoseconds, fsp] row by
+//     row and nanoseconds in the vector (the column keeps no fsp).
+//   - "wrap": [which, arg, ctx, tpIn?] -> WrapWithCastAsInt/Real/Decimal/String/Time (tpIn)/
+//     Duration: sfDump, bwarns.
 //   - "binlit": [arg, charset, collation, funcName, explicitCast, ctx, rows] ->
 //     HandleBinaryLiteral: build, bwarns, rows, vec (as "cast").
 //   - "collcast": [arg, charset, collation, enumOrSetRealTypeIsStr, ctx] ->
@@ -39,6 +46,7 @@ import (
 	"math/rand/v2"
 	"reflect"
 	"strconv"
+	gotime "time"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/errctx"
@@ -139,6 +147,11 @@ func castCtx(raw json.RawMessage) (*exprstatic.ExprContext, *exprstatic.EvalCont
 		opts = append(opts, exprstatic.WithMaxAllowedPacket(arg[uint64](a, 2)),
 			exprstatic.WithSQLMode(mysql.SQLMode(arg[uint64](a, 3))))
 	}
+	if len(a) > 4 {
+		// The statement time (unix nanoseconds, UTC): CAST(TIME AS DATETIME) reads it.
+		ns := arg[int64](a, 4)
+		opts = append(opts, exprstatic.WithCurrentTime(func() (gotime.Time, error) { return gotime.Unix(0, ns).UTC(), nil }))
+	}
 	ev := exprstatic.NewEvalContext(opts...)
 	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(ev)), ev
 }
@@ -147,6 +160,8 @@ func castCtx(raw json.RawMessage) (*exprstatic.ExprContext, *exprstatic.EvalCont
 func castArg(raw json.RawMessage, rowsRaw json.RawMessage) (expression.Expression, *chunk.Chunk) {
 	a := exArr(raw)
 	switch arg[string](a, 0) {
+	case "cast":
+		return nil, nil // built by castExec with the context
 	case "col":
 		ft := d2FtIn(exArr(a[1]))
 		var rows []json.RawMessage
@@ -198,6 +213,18 @@ func castRowVal(ctx expression.EvalContext, e expression.Expression, row chunk.R
 			return exVal(nil, n, err)
 		}
 		return exVal(vec.GoString(v), false, nil)
+	case types.ETDatetime, types.ETTimestamp:
+		v, n, err := e.EvalTime(ctx, row)
+		if err != nil || n {
+			return exVal(nil, n, err)
+		}
+		return exVal(castTimeOut(v), false, nil)
+	case types.ETDuration:
+		v, n, err := e.EvalDuration(ctx, row)
+		if err != nil || n {
+			return exVal(nil, n, err)
+		}
+		return exVal([]any{int64(v.Duration), v.Fsp}, false, nil)
 	}
 	panic("castRowVal")
 }
@@ -220,6 +247,12 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 	case types.ETString:
 		col = chunk.NewColumn(types.NewFieldType(mysql.TypeVarString), n)
 		err = e.VecEvalString(ctx, chk, col)
+	case types.ETDatetime, types.ETTimestamp:
+		col = chunk.NewColumn(types.NewFieldType(mysql.TypeDatetime), n)
+		err = e.VecEvalTime(ctx, chk, col)
+	case types.ETDuration:
+		col = chunk.NewColumn(types.NewFieldType(mysql.TypeDuration), n)
+		err = e.VecEvalDuration(ctx, chk, col)
 	}
 	warns := ecWarns(ctx.TruncateWarnings(0))
 	if err != nil {
@@ -240,6 +273,11 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 			vals = append(vals, decOut(col.GetDecimal(i)))
 		case types.ETString:
 			vals = append(vals, vec.GoString(col.GetString(i)))
+		case types.ETDatetime, types.ETTimestamp:
+			vals = append(vals, castTimeOut(col.GetTime(i)))
+		case types.ETDuration:
+			// The column keeps the nanoseconds only.
+			vals = append(vals, int64(col.GetDuration(i, 0).Duration))
 		}
 	}
 	return map[string]any{"v": vals, "warns": warns}
@@ -251,6 +289,17 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 		m := map[string]any{}
 		ctx, ev := castCtx(p[3])
 		argE, chk := castArg(p[0], p[4])
+		if a := exArr(p[0]); arg[string](a, 0) == "cast" {
+			// ["cast", tpIn, colArg]: the argument is CAST(column AS tp) (part 2b-2b: a
+			// function whose values carry another fsp than its declared one).
+			inner, c := castArg(a[2], p[4])
+			e, err := expression.BuildCastFunctionWithCheck(ctx, inner, d2FtIn(exArr(a[1])), false, false)
+			if err != nil {
+				panic(err)
+			}
+			argE, chk = e, c
+			ev.TruncateWarnings(0)
+		}
 		tp := d2FtIn(exArr(p[1]))
 		var res expression.Expression
 		m["build"] = exTry(func() any {
@@ -292,6 +341,10 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 				return sfDump(expression.WrapWithCastAsReal(ctx, argE))
 			case "string":
 				return sfDump(expression.WrapWithCastAsString(ctx, argE))
+			case "time":
+				return sfDump(expression.WrapWithCastAsTime(ctx, argE, d2FtIn(exArr(p[3]))))
+			case "duration":
+				return sfDump(expression.WrapWithCastAsDuration(ctx, argE))
 			default:
 				return sfDump(expression.WrapWithCastAsDecimal(ctx, argE))
 			}
@@ -327,6 +380,11 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 		return m, nil
 	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
+}
+
+// castTimeOut: a time value as [raw (the packed CoreTime), String()].
+func castTimeOut(t types.Time) any {
+	return []any{strconv.FormatUint(rawOfTime(t), 10), vec.GoString(t.String())}
 }
 
 // castEvalRows: the row-mode values and warnings per row, then the vector-mode values.
@@ -577,6 +635,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	}
 	castGenerate2b1(vg, g)
 	castGenerate2b2(vg, g)
+	castGenerate2b2b(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1

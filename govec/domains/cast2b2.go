@@ -4,8 +4,9 @@ package domains
 // from TIME (DATE, DATETIME, TIMESTAMP), DURATION (TIME), JSON and VECTOR columns to INT,
 // REAL, DECIMAL and STRING ("from" records), evaluated row by row and over a chunk like the
 // other "cast" records. Durations are read by Go's vector versions with the column's
-// declared fsp. CAST(TIME AS YEAR) reads the clock unless FlagCastTimeToYearThroughConcat
-// is set, so YEAR targets of TIME columns always set it (the clock path is masked).
+// declared fsp. CAST(DURATION AS YEAR) reads the clock unless FlagCastTimeToYearThroughConcat
+// is set, so YEAR targets of DURATION (TIME type) columns always set it (the clock path is
+// masked).
 
 import (
 	"encoding/hex"

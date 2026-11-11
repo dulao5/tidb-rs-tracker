@@ -166,6 +166,16 @@ func d2DatumInOf(d types.Datum) any {
 		return []any{d.Kind(), d.GetMysqlDecimal().String()}
 	case types.KindBytes:
 		return []any{d.Kind(), hex.EncodeToString(d.GetBytes())}
+	case types.KindMysqlTime:
+		return []any{d.Kind(), rawOfTime(d.GetMysqlTime())}
+	case types.KindMysqlDuration:
+		dur := d.GetMysqlDuration()
+		return []any{d.Kind(), int64(dur.Duration), dur.Fsp}
+	case types.KindMysqlJSON:
+		j := d.GetMysqlJSON()
+		return []any{d.Kind(), j.TypeCode, hex.EncodeToString(j.Value)}
+	case types.KindVectorFloat32:
+		return []any{d.Kind(), d.GetVectorFloat32().String()}
 	}
 	panic(fmt.Sprintf("d2DatumInOf kind %d", d.Kind()))
 }
