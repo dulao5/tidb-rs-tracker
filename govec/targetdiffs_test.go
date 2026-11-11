@@ -15,6 +15,20 @@ type targetDiff struct {
 }
 
 var targetDiffs = []targetDiff{
+	// execdetails (D14.0). M-FMA in the dependencies (not in the TiDB packages, which
+	// fuse nothing): influxdata/tdigest's Quantile / weightedAverage (tdigest.go:173,
+	// 181, 182, 260) and Go's math.Sin / math.Asin (sin.go:227-238, asin.go:40,
+	// atan.go:69-70) are fused on arm64 only. A Percentile switches to the t-digest at
+	// 1000 values, so the P80 / P90 / P95 of cop tasks (EXPLAIN ANALYZE, slow log,
+	// statement summary) differ in the last bits between platforms.
+	{Domain: "execdetails", Op: "tdigest", Args: "*", N: 58,
+		Why: "M-FMA: tdigest Quantile / weightedAverage and math.Sin / math.Asin (scale function) fused on arm64 only"},
+	{Domain: "execdetails", Op: "percentile", Args: "*", N: 64,
+		Why: "M-FMA: Percentile.GetPercentile through the t-digest (>= 1000 values), fused on arm64 only"},
+	{Domain: "execdetails", Op: "sync", Args: "*", N: 18,
+		Why: "M-FMA: SyncExecDetails.CopTasksDetails P90 through the t-digest (>= 1000 cop tasks), fused on arm64 only"},
+	{Domain: "execdetails", Op: "gomath", Args: "*", N: 12,
+		Why: "M-FMA: math.Sin / math.Asin polynomial and reduction steps fused on arm64 only"},
 	// expr (D08.1 part 1): Constant.EvalInt of a NaN float datum with a hybrid RetType
 	// goes through Datum.ToInt64, i.e. int64(NaN).
 	{Domain: "expr", Op: "const", Args: "*", N: 3,
