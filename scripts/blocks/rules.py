@@ -256,7 +256,10 @@ RULES = [
     ("D06.7", r"pkg/session/session\.go$", r"^session\.(replaceGlobalVariablesTableValue|getTableValue|GetTiDBTableValue|SetTiDBTableValue)$"),
     ("D06.7", r"pkg/domain/domain\.go$", r"^Domain\.(LoadSysVarCacheLoop|NotifyUpdateSysVarCache|NotifyGlobalConfigChange)$"),
     ("D06.7", r"pkg/domain/sysvar_cache\.go$", r"^Domain\.(fetchTableValues|rebuildSysVarCache|rebuildSysVarCacheIfNeeded)$"),
-    ("D06.7", r"pkg/meta/autoid/autoid\.go$", r"^allocator\.alloc4Signed$"),
+    # The row-ID allocation path of AllocHandle (2026-11-11, PR C round 3): Alloc's checks and
+    # the batch / step helpers alloc4Signed calls come with it from D06.2 (tidb-systable
+    # autoid.rs; rebase4Signed, only reached with offset > 1, stays in D06.2).
+    ("D06.7", r"pkg/meta/autoid/autoid\.go$", r"^(allocator\.(alloc4Signed|Alloc)|CalcNeededBatchSize|SeekToFirstAutoIDSigned|SeekToFirstAutoIDUnSigned|NextStep|validIncrementAndOffset)$"),
     # tablecodec / rowcodec scoping (D01.11, 2026-11-08): tidb-rs is read-only. Reachability
     # over the function-level reference graph (work/go_refs.tsv) from the read-path blocks,
     # judged per function. X: "写路径，由 Go TiDB 承担" — the row encoders (EncodeRow,

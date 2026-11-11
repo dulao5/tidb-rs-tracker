@@ -100,7 +100,7 @@ func init() {
 				"ParseSlowLogFieldValue", "ParseString", "encodeRules", "parseBool", "parseFloat64", "parseInt64",
 				"parseSlowLogRuleEntry", "parseSlowLogRuleSet", "parseUint64"}},
 			"set_global_hook2": {Min: 8},
-			"tidb_table":       {Min: 300, GoFuncs: []string{"getTiDBTableValue", "setTiDBTableValue", "trueFalseToOnOff"}},
+			"tidb_table":       {Min: 300, GoFuncs: []string{"getTiDBTableValue", "setTiDBTableValue"}},
 			"init":             {Min: 20},
 		},
 		Exempt:   exempt,
