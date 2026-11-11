@@ -46,7 +46,9 @@ jobs:
       # Upstream fixes applied to the linked TiDB code (govec/fixes/README.md):
       # every later go command uses the patched TiDB module.
       - name: govec modfile (upstream fixes)
-        run: echo "GOFLAGS=$(scripts/govec-fixes.sh)" >> "$GITHUB_ENV"
+        run: |
+          flags=$(scripts/govec-fixes.sh)
+          echo "GOFLAGS=$flags" >> "$GITHUB_ENV"
       - name: govec vet and test (header, coverage, oracle, determinism, FMA model)
         working-directory: govec
         run: go vet ./... && go test ./...
@@ -106,6 +108,10 @@ jobs:
         run: |
           mkdir -p seeds
           for s in 1 2 3 4 5 6 7 8; do bin/govec expr -seed "$s" -o "seeds/expr-seed$s.jsonl.gz"; done
+      - name: Extra seeds generate (ctx2b)
+        run: |
+          mkdir -p seeds
+          for s in 1 2 3 4 5 6 7 8; do bin/govec ctx2b -seed "$s" -o "seeds/ctx2b-seed$s.jsonl.gz"; done
       - uses: actions/upload-artifact@v4
         with:
           name: govec-extra-seeds-${{ matrix.runner }}
