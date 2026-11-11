@@ -445,7 +445,7 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **豁免**：`funcs_pending.go`，共 94 个：第 2 部分（给参数包 CAST 的构造、CAST 签名的 base、常量折叠与传播、REGEXP/ILIKE 的参数辅助函数）、第 3 部分（grouping sets）、`ParseSimpleExpr`（D09.2）、cascades 的 `Hash64`/`Equals`（EXC.B）、泛型的 `builtinFuncCache`（tidb-rs 单元测试）、由 `expr` 领域 `sf` 记录覆盖的 `baseBuiltinFunc` 方法。
 
 
-## cast（D08.8 第 1、2a、2b-1 部分）
+## cast（D08.8 第 1、2a、2b-1、2b-2、2b-2b 部分）
 
 `domains/cast.go`：CAST 到 INT、REAL、DECIMAL。`cast` 记录用 `BuildCastFunctionWithCheck` 构建 CAST（参数是一列——记录带着它的各行——或一个常量，常量会被折叠），在随机的类型标志（`FlagIgnoreTruncateErr`、`FlagTruncateAsWarning`、`FlagAllowNegativeToUnsigned`）和 7 个错误组的随机级别下，记录构建结果（`sfDump`）、构建时的 warning、`inUnion` 元数据，以及 Go 两种求值方式的结果：逐行（每行的值或错误与 warning）和整块（`VecEvalXxx`：各行的值，或第一个错误，以及 warning）。`wrap` 记录调用 `WrapWithCastAsInt/Real/Decimal`。
 
@@ -457,6 +457,13 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
   - `dbl`（op `cast`）120 条：FLOAT → DOUBLE，值包括 0.1f、16777217f、次正规数、float32 最大值和随机位模式，按 `Float64bits` 逐位比较（Lucky 评审 tidb-rs #84）。
   - `binlit` 500 条：`HandleBinaryLiteral`（hex/length/concat/cast/like/lower/bin 和不存在的函数名）以及它构建的 to_binary/from_binary 的两种求值。
   - `collcast` 300 条：`BuildCastCollationFunction`；`wrapstr`（op `wrap`）300 条：`WrapWithCastAsString`。
+- 第 2b-2b-ii 部分（追加，`domains/cast2b2c.go`，之前的 13,880 条不变）：
+  - `to-json`（op `cast`）1,500 条：各种参数（含 BOOLEAN、UNSIGNED、不带 UNSIGNED 的 YEAR、二进制字符串——BINARY(n) 的填充保留在 opaque 值中——和 JSON 文本）CAST 到 JSON；`to-json-const` 200 条（常量参数，CAST 到 JSON 不折叠）。
+  - `to-array` 600 条：`CAST(json AS type ARRAY)`（`cast` 的第 7 个参数 `isArray`）：数组元素和标量的各种 JSON 类型码，支持和不支持的元素类型，非 JSON 参数（`verifyArgs`）。
+  - `to-vec` 600 条：字符串、VECTOR 列和不支持的参数类型 CAST 到 VECTOR(n)。
+  - `wrap-json`（op `wrap`）300 条：`WrapWithCastAsJSON/VectorFloat32`（含带 `ParseToJSONFlag` 的 JSON 参数）。
+  - `json2tp` 300 条：`ConvertJSON2Tp`（结果按 `CreateBinaryJSON` 输出）。
+  - JSON 值输出为 `[TypeCode, hex(Value)]`，向量输出为序列化字节的 hex。
 - `builtin_convert_charset.go` 从 D08.6 移到 D08.8（`scripts/blocks/rules.py`）：CAST 到 STRING 和 `newBaseBuiltinFuncWithTp` 都用 `HandleBinaryLiteral`。
 - 覆盖与豁免：D08.8 的 99 个函数被覆盖，其余在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`newBaseBuiltinCastFunc4String`、`newBaseBuiltinFuncWithTp`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
 
