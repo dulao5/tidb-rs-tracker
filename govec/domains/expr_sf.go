@@ -423,8 +423,9 @@ func (g *sfGen) pair() (any, any) {
 	return x, y
 }
 
-func exprSfGenerate(g *vec.Gen) {
-	sg := &sfGen{rng: rand.New(rand.NewPCG(exprSeed, 2))}
+func exprSfGenerate(g *vec.Gen, rng *rand.Rand) {
+	// Its own stream, seeded from the domain's (so -seed N varies these records too).
+	sg := &sfGen{rng: rand.New(rand.NewPCG(rng.Uint64(), 2))}
 	g.Add("sys/sizes", "sizes")
 	for range 2000 {
 		uids := []int64{}

@@ -684,7 +684,7 @@ func exprGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("rand/evalbool", "evalbool", ds, exprEvalOpts[rng.IntN(len(exprEvalOpts))])
 	}
 	// Part 2 records come after part 1's, from their own random stream.
-	exprSfGenerate(g)
+	exprSfGenerate(g, rng)
 }
 
 // exprGenerateTables: the TableInfo texts exported from a v8.5.8 cluster (model domain).
