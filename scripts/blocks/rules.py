@@ -9,6 +9,7 @@ on the Go file path (relative to repo root) and the symbol from go_funcs.tsv.
 BLOCKS = {
     # ---- D00 interfaces / contexts / constants (foundation layer) ----
     "D00.1": ("D00 接口与上下文", "上下文接口骨架（sessionctx、planctx、exprctx、stmtctx、errctx、base 接口）", "P1"),
+    "D00.4": ("D00 接口与上下文", "contextutil（pkg/util/context：warning、plan cache 跟踪、context ID）；位于 tidb-base（D00.1 评审：types.Context 也要用）", "P1"),
     "D00.2": ("D00 接口与上下文", "常量、错误码与配置（parser/mysql、terror、errno、dbterror、config）", "P1"),
     "D00.3": ("D00 接口与上下文", "通用工具（util/*）：不单独排期，被已排期的块用到时整文件移植（宪章 4.4）", "ON-DEMAND"),
     # ---- D01 types & encoding ----
@@ -182,6 +183,9 @@ RULES = [
     ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---
     ("D05.2", r"pkg/sessionctx/sessionstates/", None),
+    # pkg/util/context (contextutil) lives in tidb-base, rank 0: tidb-types' types.Context uses
+    # its WarnAppender and handlers (D00.1 part 1 review, tidb-rs #65).
+    ("D00.4", r"pkg/util/context/", None),
     ("D00.1", r"pkg/(sessionctx/[^/]+\.go$|errctx/|planner/planctx/|planner/core/base/|expression/exprctx/|expression/sessionexpr/|expression/exprstatic/|expression/expropt/|util/context/|sessionctx/stmtctx/)", None),
     # pkg/sessionctx/variable scoping (D05.1, 2026-11-08; N8): every variable keeps Go's
     # name / default / scope / validation (SET and SHOW behave the same). X: writes done by

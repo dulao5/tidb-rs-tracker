@@ -69,7 +69,7 @@ func init() {
 		Name:     "stmtctx",
 		Seed:     stmtctxSeed,
 		Coverage: stmtctxCoverage,
-		Blocks:   []string{"D00.1"},
+		Blocks:   []string{"D00.1", "D00.4"},
 		Exempt:   stmtctxExempt(),
 		Gzip:     true,
 		Generate: stmtctxGenerate,
