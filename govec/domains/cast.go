@@ -77,7 +77,9 @@ var castCoverage = map[string]vec.Coverage{
 		"castAsDecimalFunctionClass.getFunction", "BuildCastFunctionWithCheck", "BuildCastFunction",
 		"TryPushCastIntoControlFunctionForHybridType", "setDataTypeDouble", "floatLength", "PropagateType",
 		"newBaseBuiltinCastFunc", "baseBuiltinCastFunc.metadata", "baseBuiltinCastFunc.cloneFrom",
-		"FoldConstant", "foldConstant")},
+		"FoldConstant", "foldConstant",
+		// "conv" records: the converting branches of the column's vector evaluation
+		"Column.VecEvalInt", "Column.VecEvalReal", "Column.VecEvalString")},
 	"wrap": {Min: 600, GoFuncs: []string{"WrapWithCastAsInt", "WrapWithCastAsReal", "WrapWithCastAsDecimal",
 		"minimalDecimalLenForHoldingInteger"}},
 }
