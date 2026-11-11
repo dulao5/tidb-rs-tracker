@@ -87,7 +87,7 @@ func init() {
 	vec.Register(&vec.Domain{
 		Name:   "sessionvars",
 		Seed:   sessionvarsSeed,
-		Blocks: []string{"D05.2"},
+		Blocks: []string{"D05.2", "D13.0"},
 		Coverage: map[string]vec.Coverage{
 			"fresh": {Min: 1, GoFuncs: []string{"NewSessionVars", "NewUserVars", "NewPlanCacheParamList"}},
 			"set": {Min: 1000, GoFuncs: []string{"SessionVars.SetSystemVar", "SessionVars.SetSystemVarWithOldValAsRet",
@@ -109,6 +109,9 @@ func init() {
 			"paramlist": {Min: 150, GoFuncs: []string{"PlanCacheParamList.Reset", "PlanCacheParamList.String",
 				"PlanCacheParamList.Append", "PlanCacheParamList.SetForNonPrepCache", "PlanCacheParamList.GetParamValue",
 				"PlanCacheParamList.AllParamValues"}},
+			// D05.2 PR E (sessionvars_e.go).
+			"stmtvars":  {Min: 400, GoFuncs: sveFuncs},
+			"stmthints": {Min: 80, GoFuncs: []string{"StmtHints.Clone", "StmtHints.TaskMapNeedBackUp"}},
 			"svmisc": {Min: 30, GoFuncs: []string{"ConnectionInfo.IsSecureTransport", "RuntimeFilterType.String",
 				"RuntimeFilterMode.String", "ToTiPBTiFlashPreAggMode", "PrepareDedupCacheKey", "ReadConsistencyLevel.IsWeak",
 				"RewritePhaseInfo.Reset", "SetEnableAdaptiveReplicaRead", "IsAdaptiveReplicaReadEnabled"}},
@@ -346,6 +349,8 @@ var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true,
 	"tidb_slow_log_max_per_sec": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
+	// D05.2 PR E: deferred first of all, so appended after every earlier record (PR D's too).
+	defer sveGenerate(g, rng)
 	// D05.2 PR D: deferred first of all, so appended after every earlier record.
 	defer svdGenerate(g, rng)
 	// tidb_redact_log (fix pingcap/tidb#62892: GLOBAL only, the process-wide flag is stored by
@@ -614,6 +619,9 @@ func canonSlowLogRules(s string) string {
 
 func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 	if out, err, ok := svdExec(op, args); ok {
+		return out, err
+	}
+	if out, err, ok := sveExec(op, args); ok {
 		return out, err
 	}
 	switch op {

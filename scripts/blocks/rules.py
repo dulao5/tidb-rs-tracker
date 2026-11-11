@@ -119,6 +119,7 @@ BLOCKS = {
     # ---- D13 plan cache / binding / hint ----
     "D13.1": ("D13 Plan Cache、绑定、Hint", "Plan Cache（A3）", "EXC"),
     "D13.2": ("D13 Plan Cache、绑定、Hint", "SQL binding", "P5"),
+    "D13.0": ("D13 Plan Cache、绑定、Hint", "hint 的数据类型 StmtHints（D13.3 的第一步；StatementContext 内嵌它，所以放在 tidb-sessionctx，D05.2 PR E）", "P1"),
     "D13.3": ("D13 Plan Cache、绑定、Hint", "hint 处理", "P3"),
     # ---- D14 observability ----
     "D14.1": ("D14 可观测性", "metrics", "DONE"),
@@ -217,7 +218,9 @@ RULES = [
     # tidb-rs takes no locks). Savepoints, for-update TS, user variables, prepared
     # statements, txn read TS and the session-state encoding stay (they are reachable from
     # read-only SQL or the server).
-    ("X", r"pkg/sessionctx/variable/session\.go$", r"^(RetryInfo\.|retryInfoAutoIDs\.|NewRowIDShardGenerator$|RowIDShardGenerator\.|SessionVars\.GetRowIDShardGenerator$|TableDelta\.|NewTemporaryTableData$|temporaryTableData\.|SessionVars\.GetTemporaryTable$|WriteStmtBufs\.|SessionVars\.GetWriteStmtBufs$|SessionVars\.(Set|Get|Clear)DiskFullOpt$|SessionVars\.setDDLReorgPriority$|TransactionContext\.(AddUnchangedKeyForLock|CollectUnchangedKeysForSLock|CollectUnchangedKeysForXLock|ResetUnchangedKeysForLock|FlushStmtPessimisticLockCache|GetKeyInPessimisticLockCache|SetPessimisticLockCache|UpdateDeltaForTable|ClearDelta)$|SessionVars\.PessimisticLockEligible$)"),
+    # SessionVars.CleanBuffers only clears the reusable write buffers (called at insert.go:69,
+    # memory only): X with WriteStmtBufs (Lucky's review of tidb-rs #81).
+    ("X", r"pkg/sessionctx/variable/session\.go$", r"^(RetryInfo\.|retryInfoAutoIDs\.|NewRowIDShardGenerator$|RowIDShardGenerator\.|SessionVars\.GetRowIDShardGenerator$|TableDelta\.|NewTemporaryTableData$|temporaryTableData\.|SessionVars\.GetTemporaryTable$|WriteStmtBufs\.|SessionVars\.GetWriteStmtBufs$|SessionVars\.CleanBuffers$|SessionVars\.(Set|Get|Clear)DiskFullOpt$|SessionVars\.setDDLReorgPriority$|TransactionContext\.(AddUnchangedKeyForLock|CollectUnchangedKeysForSLock|CollectUnchangedKeysForXLock|ResetUnchangedKeysForLock|FlushStmtPessimisticLockCache|GetKeyInPessimisticLockCache|SetPessimisticLockCache|UpdateDeltaForTable|ClearDelta)$|SessionVars\.PessimisticLockEligible$)"),
     ("D05.2", r"pkg/sessionctx/variable/variable\.go$", r"^SysVar\.(Get|Set)(Global|Session)FromHook$"),
     ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|setTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
     ("D05.2", r"pkg/sessionctx/variable/sysvar\.go$", r"^setTiFlashComputeDispatchPolicy$"),
@@ -243,6 +246,9 @@ RULES = [
     ("D01.1", r"pkg/types/", None),
     # M-POOL (A1): the chunk reuse pool is not ported; the allocator API stays in D01.7.
     ("X", r"pkg/util/chunk/pool\.go$", None),
+    # allocator.CheckReuseAllocSize only reads the configured pool sizes, and its answer is
+    # visible through the reuse hook and @@last_sql_use_alloc (D05.2 PR E): ported in D01.7.
+    ("D01.7", r"pkg/util/chunk/alloc\.go$", r"^allocator\.CheckReuseAllocSize$"),
     ("X", r"pkg/util/chunk/alloc\.go$", r"^(allocator|columnList|poolColumnAllocator|freeList)\.\w+$|^checkColumnType$"),
     ("X", r"pkg/util/chunk/chunk\.go$", r"^Chunk\.resetForReuse$"),
     ("D01.10", r"pkg/util/chunk/(row_container|chunk_in_disk|row_in_disk|row_container_reader|disk)", None),
@@ -453,6 +459,10 @@ RULES = [
     ("D12.14", r"pkg/executor/", None),
     # --- D13-D15 ---
     ("D13.2", r"pkg/bindinfo/", None),
+    # StmtHints is embedded in stmtctx.StatementContext (rank 7, below tidb-planner): the data
+    # type and its two data-only methods are D13.0 in tidb-sessionctx (D05.2 PR E, Lucky's
+    # review of tidb-rs #81). Parsing (ParseStmtHints, addHypoIndex) stays in D13.3.
+    ("D13.0", r"pkg/util/hint/hint\.go$", r"^StmtHints\.(Clone|TaskMapNeedBackUp)$"),
     ("D13.3", r"pkg/util/hint/", None),
     ("D14.1", r"pkg/metrics/", None),
     ("D00.3", r"pkg/util/logutil/", None),
