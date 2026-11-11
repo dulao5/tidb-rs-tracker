@@ -146,6 +146,9 @@ var chunkCoverage = map[string]vec.Coverage{
 }
 
 var chunkExempt = map[string]string{
+	// Covered through SessionVars.SetAlloc's reuse hook and @@last_sql_use_alloc (domain
+	// sessionvars, op stmtvars, D05.2 PR E): the answer only depends on the configured pool sizes.
+	"allocator.CheckReuseAllocSize": "covered by sessionvars op stmtvars (reuse hook, @@last_sql_use_alloc)",
 	"Column.DestroyDataForTest":  "test helper writing math/rand bytes; Rust unit test",
 	"Chunk.Destroy":              "M-POOL: puts the chunk into a sync.Pool (nondeterministic reuse); a no-op in Rust",
 	"init":                       "package init: fills allNotNullBitmap (a constant table in Rust)",
