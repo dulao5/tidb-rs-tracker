@@ -443,3 +443,12 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **new collation**：每条 `derive`/`newbase` 记录自己设置并恢复 new collation 开关；collator 用探测字符串的 key 比对。
 - **panic**：`deriveCollation` 中 `args[i]` 或 `argTps[i]` 越界（例如 `newBaseBuiltinFunc` 只传 `[retType]`，`case` 读 `argTps[1]`）记为 panic，Rust 侧也必须 panic。
 - **豁免**：`funcs_pending.go`，共 94 个：第 2 部分（给参数包 CAST 的构造、CAST 签名的 base、常量折叠与传播、REGEXP/ILIKE 的参数辅助函数）、第 3 部分（grouping sets）、`ParseSimpleExpr`（D09.2）、cascades 的 `Hash64`/`Equals`（EXC.B）、泛型的 `builtinFuncCache`（tidb-rs 单元测试）、由 `expr` 领域 `sf` 记录覆盖的 `baseBuiltinFunc` 方法。
+
+
+## cast（D08.8 第 1 部分）
+
+`domains/cast.go`：CAST 到 INT、REAL、DECIMAL。`cast` 记录用 `BuildCastFunctionWithCheck` 构建 CAST（参数是一列——记录带着它的各行——或一个常量，常量会被折叠），在随机的类型标志（`FlagIgnoreTruncateErr`、`FlagTruncateAsWarning`、`FlagAllowNegativeToUnsigned`）和 7 个错误组的随机级别下，记录构建结果（`sfDump`）、构建时的 warning、`inUnion` 元数据，以及 Go 两种求值方式的结果：逐行（每行的值或错误与 warning）和整块（`VecEvalXxx`：各行的值，或第一个错误，以及 warning）。`wrap` 记录调用 `WrapWithCastAsInt/Real/Decimal`。
+
+- 参数类型：INT/BIGINT/TINYINT/MEDIUMINT/SMALLINT [UNSIGNED]、DOUBLE、DECIMAL(p,s)、VARCHAR（utf8mb4 或 binary）。不生成 FLOAT 和 hybrid（BIT/ENUM/SET）参数：tidb-rs 的向量驱动把这类列原样交给签名（D08.8 第 2 部分）。
+- 另有 60 条 `union-neg` 记录：UNSIGNED 目标、`inUnion`、负数字符串（含单独的 `-`），Go 的行版本与向量版本在这里不同。
+- 覆盖与豁免：D08.8 的 61 个函数被覆盖，其余 189 个在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
