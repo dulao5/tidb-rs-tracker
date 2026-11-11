@@ -50,7 +50,7 @@ func init() {
 	vec.Register(&vec.Domain{
 		Name:     "expr",
 		Seed:     exprSeed,
-		Coverage: exprCoverage,
+		Coverage: exprCoverageAll(),
 		Blocks:   []string{"D08.1"},
 		Exempt:   exprExempt(),
 		Gzip:     true,
@@ -93,6 +93,17 @@ var exprCoverage = map[string]vec.Coverage{
 		"Column.ResolveIndices", "Column.resolveIndices", "Column.RemapColumn", "Column.InColumnArray", "SortColumns"}},
 	"tbl":      {Min: 300, GoFuncs: []string{"TableInfo2SchemaAndNames", "ColumnInfos2ColumnsAndNames"}},
 	"evalbool": {Min: 200, GoFuncs: []string{"EvalBool", "IsEQCondFromIn"}},
+}
+
+func exprCoverageAll() map[string]vec.Coverage {
+	m := map[string]vec.Coverage{}
+	for k, v := range exprCoverage {
+		m[k] = v
+	}
+	for k, v := range exprSfCoverage {
+		m[k] = v
+	}
+	return m
 }
 
 func exTry(f func() any) (out any) {
@@ -304,6 +315,8 @@ func exUIDs(cols []*expression.Column) []int64 {
 func exprExec(op string, p []json.RawMessage) (out any, err error) {
 	collate.SetNewCollationEnabledForTest(true)
 	switch op {
+	case "sf", "sfpair", "vcol", "sizes":
+		return exprSfExec(op, p)
 	case "col", "corr":
 		var spec chunkTypeSpec
 		must(json.Unmarshal(p[0], &spec))
@@ -670,6 +683,8 @@ func exprGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add("rand/evalbool", "evalbool", ds, exprEvalOpts[rng.IntN(len(exprEvalOpts))])
 	}
+	// Part 2 records come after part 1's, from their own random stream.
+	exprSfGenerate(g)
 }
 
 // exprGenerateTables: the TableInfo texts exported from a v8.5.8 cluster (model domain).
