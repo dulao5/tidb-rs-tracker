@@ -3,7 +3,10 @@ package domains
 // Domain "stmtctx": block D00.1 part 1 — pkg/errctx, pkg/util/context (warn.go,
 // plancache.go, context.go) and the core of pkg/sessionctx/stmtctx (warnings, error
 // levels, type flags, push-down flags, row counters, statement cache, stale TSO,
-// reference count, reserved row IDs). The other D00.1 files (exprctx, exprstatic,
+// reference count, reserved row IDs; since the D14.0 follow-up also the exec details:
+// MergeExecDetails / lock-keys details, LockKeysDuration, GetExecDetails, CopTasksDetails,
+// their reset by ResetForRetry and Reset, ops sc_ed_*, sc_lkd, appended after the other
+// records). The other D00.1 files (exprctx, exprstatic,
 // expropt, sessionexpr, planctx, ranger types, ...) are part 2 (stmtctx_pending.go).
 //
 // Records:
@@ -37,6 +40,8 @@ import (
 	"github.com/pingcap/tidb/pkg/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/pkg/types"
 	contextutil "github.com/pingcap/tidb/pkg/util/context"
+	"github.com/pingcap/tidb/pkg/util/execdetails"
+	"github.com/tikv/client-go/v2/util"
 )
 
 const stmtctxSeed = 20261109
@@ -127,6 +132,7 @@ var stmtctxCoverage = map[string]vec.Coverage{
 		"StatementContext.AppendError", "StatementContext.GetExtraWarnings", "StatementContext.SetExtraWarnings",
 		"StatementContext.AppendExtraWarning", "StatementContext.AppendExtraNote", "StatementContext.AppendExtraError",
 		"StatementContext.resetMuForRetry", "StatementContext.ResetForRetry", "StatementContext.PushDownFlags",
+		"StatementContext.GetExecDetails",
 		"StatementContext.InitFromPBFlagAndTz", "StatementContext.UseDynamicPartitionPrune",
 		"StatementContext.SetStaleTSOProviderIfNotExist", "StatementContext.GetStaleTSO",
 		"StatementContext.AddSetVarHintRestore", "StatementContext.TypeCtxOrDefault", "newErrCtx",
@@ -487,6 +493,60 @@ func stmtctxStep(e *stmtctxEnv, s []json.RawMessage) (out any) {
 		return []any{v, stmtctxErrOut(err)}
 	case "sc_retry":
 		e.sc.ResetForRetry()
+	// Exec details (D14.0 follow-up). Durations are inputs, never the clock.
+	case "sc_ed_merge": // MergeExecDetails(cop task i: process, wait, backoff ms (<0: none); commit keys (<0: nil))
+		i, bo, ck := iarg(1), iarg(4), iarg(5)
+		d := &execdetails.ExecDetails{
+			DetailsNeedP90: execdetails.DetailsNeedP90{
+				CalleeAddress: fmt.Sprintf("%d", i),
+				BackoffSleep:  map[string]time.Duration{},
+				BackoffTimes:  map[string]int{},
+				TimeDetail:    util.TimeDetail{ProcessTime: time.Duration(iarg(2)), WaitTime: time.Duration(iarg(3))},
+			},
+			CopTime: time.Duration(iarg(2) + iarg(3)),
+		}
+		if bo >= 0 {
+			d.BackoffTime = time.Duration(bo) * time.Millisecond
+			d.BackoffSleep["tikvRPC"] = time.Duration(bo) * time.Millisecond
+			d.BackoffTimes["tikvRPC"] = 1 + bo%3
+		}
+		var cd *util.CommitDetails
+		if ck >= 0 {
+			cd = &util.CommitDetails{WriteKeys: ck, WriteSize: ck * 10, GetCommitTsTime: time.Duration(ck) * time.Microsecond}
+		}
+		e.sc.MergeExecDetails(d, cd)
+	case "sc_ed_nil": // MergeExecDetails(nil, nil)
+		e.sc.MergeExecDetails(nil, nil)
+	case "sc_ed_lock": // MergeLockKeysExecDetails / MergeSharedLockKeysExecDetails
+		ld := &util.LockKeysDetails{LockKeys: int32(iarg(2)), TotalTime: time.Duration(iarg(3)), RegionNum: int32(1 + iarg(2)%4)}
+		if iarg(1) == 0 {
+			e.sc.MergeLockKeysExecDetails(ld)
+		} else {
+			e.sc.MergeSharedLockKeysExecDetails(ld)
+		}
+	case "sc_lkd": // atomic.AddInt64(&sc.LockKeysDuration, v), as the executor does
+		e.sc.LockKeysDuration += int64(iarg(1))
+	case "sc_ed_get": // GetExecDetails
+		d := e.sc.GetExecDetails()
+		ck := -1
+		if d.CommitDetail != nil {
+			ck = d.CommitDetail.WriteKeys
+		}
+		lk := func(l *util.LockKeysDetails) any {
+			if l == nil {
+				return nil
+			}
+			return []any{l.LockKeys, int64(l.TotalTime), l.RegionNum}
+		}
+		return []any{d.String(), d.RequestCount, int64(d.CopTime), int64(d.BackoffTime), int64(d.LockKeysDuration), ck,
+			lk(d.LockKeysDetail), lk(d.SharedLockKeysDetail)}
+	case "sc_ed_cop": // CopTasksDetails summary
+		c := e.sc.CopTasksDetails()
+		if c == nil {
+			return nil
+		}
+		return []any{c.NumCopTasks, int64(c.AvgProcessTime), int64(c.P90ProcessTime), int64(c.MaxProcessTime),
+			c.MaxProcessAddress, int64(c.AvgWaitTime), int64(c.P90WaitTime), int64(c.MaxWaitTime), c.MaxWaitAddress}
 	case "sc_pct": // the embedded plan cache tracker and range fallback handler of sc
 		e.sc.EnablePlanCache()
 		e.sc.SetCacheType(contextutil.PlanCacheType(iarg(1)))
@@ -746,6 +806,49 @@ func stmtctxGenerate(g *vec.Gen, rng *rand.Rand) {
 		}
 		steps = append(steps, st("h_get"), st("sc_dump"), st("pct_state"))
 		script("rand/script", steps...)
+	}
+
+	// Exec details (D14.0 follow-up), appended after the records above so they are unchanged.
+	stmtctxGenerateExecDetails(script, rng)
+}
+
+func stmtctxGenerateExecDetails(script func(string, ...[]any), rng *rand.Rand) {
+	// Go TestCopTasksDetails (process i+1 s, wait i+1 ms, one backoff type).
+	{
+		steps := [][]any{}
+		for i := 0; i < 100; i++ {
+			steps = append(steps, st("sc_ed_merge", i+1, (i+1)*1000000000, (i+1)*1000000, 100*(i+1), -1))
+		}
+		steps = append(steps, st("sc_ed_cop"), st("sc_ed_get"))
+		script("TestCopTasksDetails", steps...)
+	}
+	script("ed/empty", st("sc_ed_get"), st("sc_ed_cop"), st("sc_ed_nil"), st("sc_ed_get"), st("sc_ed_cop"))
+	script("ed/commit-lock",
+		st("sc_ed_merge", 1, 5, 7, -1, 3), st("sc_ed_merge", 2, 11, 13, 2, 4), st("sc_ed_lock", 0, 2, 900),
+		st("sc_ed_lock", 1, 5, 1100), st("sc_ed_lock", 0, 3, 50), st("sc_lkd", 12345), st("sc_ed_get"),
+		st("sc_retry"), st("sc_ed_get"), st("sc_ed_cop"), st("sc_lkd", 7), st("sc_reset"), st("sc_ed_get"))
+	ops := []func() []any{
+		func() []any {
+			ck := rng.IntN(6) - 2
+			bo := rng.IntN(500) - 100
+			return st("sc_ed_merge", rng.IntN(50), rng.IntN(3000000000), rng.IntN(5000000), bo, ck)
+		},
+		func() []any { return st("sc_ed_nil") },
+		func() []any { return st("sc_ed_lock", rng.IntN(2), rng.IntN(100), rng.IntN(2000000000)) },
+		func() []any { return st("sc_lkd", rng.IntN(1000000000)) },
+		func() []any { return st("sc_ed_get") },
+		func() []any { return st("sc_ed_cop") },
+		func() []any { return st("sc_retry") },
+		func() []any { return st("sc_reset") },
+	}
+	for i := 0; i < 200; i++ {
+		n := 3 + rng.IntN(30)
+		steps := make([][]any, 0, n+2)
+		for j := 0; j < n; j++ {
+			steps = append(steps, ops[rng.IntN(len(ops))]())
+		}
+		steps = append(steps, st("sc_ed_get"), st("sc_ed_cop"))
+		script("rand/ed", steps...)
 	}
 }
 
