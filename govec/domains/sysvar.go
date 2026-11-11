@@ -96,6 +96,7 @@ func init() {
 			"RegisterStatistics":   "registration of status providers (server, D12); covered through status_vars with the default provider",
 			"UnregisterStatistics": "only used in tests",
 		},
+		Fixes:    []vec.Fix{{ID: fix62892, Applied: fix62892Applied}},
 		Gzip:     true,
 		Generate: sysvarGenerate,
 		Exec:     sysvarExec,
@@ -177,8 +178,9 @@ func tidbTableDump(vars *variable.SessionVars) map[string][2]string {
 // tidbResultIsEmpty is session.errResultIsEmpty (session.go:3384).
 var tidbResultIsEmpty = dbterror.ClassExecutor.NewStd(errno.ErrResultIsEmpty)
 
-// initialRedactLog is errors.RedactLogEnabled after init (tidb_redact_log's SetSession
-// hook stores the session value into this process-wide flag: tidb-rs #62).
+// initialRedactLog is errors.RedactLogEnabled after init. In v8.5.8 tidb_redact_log's
+// SetSession hook stored the session value into this process-wide flag (tidb-rs #62);
+// with fix pingcap/tidb#62892 only its SetGlobal hook does.
 var initialRedactLog = errors.RedactLogEnabled.Load()
 
 // resetSysvarAtomics puts the process-wide state the hooks read or write back to its
@@ -186,12 +188,11 @@ var initialRedactLog = errors.RedactLogEnabled.Load()
 // written by hooks of variable/sysvar.go (v8.5.8):
 //   - Validation hooks: the password-validation atomics, GOGCTunerThreshold,
 //     RunAutoAnalyze, EnableAutoAnalyzePriorityQueue (reset below);
-//   - SetSession hooks: tidb_redact_log stores errors.RedactLogEnabled (reset below;
-//     upstream bug tidb-rs #62: the flag redacts the warnings of every session);
-//     tidb_constraint_check_in_place_pessimistic increments a metrics counter (not
+//   - SetSession hooks: tidb_constraint_check_in_place_pessimistic increments a metrics counter (not
 //     observed by any record);
 //   - SetGlobal hooks of GLOBAL-scope variables over variable-package atomics (D05.2 PR B):
-//     restored by processGlobalsRestore (captured at init);
+//     restored by processGlobalsRestore (captured at init); tidb_redact_log's SetGlobal hook
+//     (fix pingcap/tidb#62892) stores errors.RedactLogEnabled (reset below);
 //   - SetGlobal hooks of the 27 INSTANCE-scope variables (log, slow log, plugin,
 //     memory/expensive-query thresholds, max_connections, DDL/stats owner, statement
 //     summary files, service scope…): the sessionvars domain's set_global op restores
@@ -1113,3 +1114,15 @@ func svServerMemoryLimitDefaultValue() string
 
 //go:linkname svMustParseDuration github.com/pingcap/tidb/pkg/sessionctx/variable.mustParseDuration
 func svMustParseDuration(str string) time.Duration
+
+// fix62892: in v8.5.8 tidb_redact_log has SESSION scope and its SetSession hook stores the
+// process-wide errors.RedactLogEnabled, so one session's SET SESSION redacts the errors of
+// every session (tidb-rs #62). Master makes it GLOBAL only and stores the flag in SetGlobal
+// (pingcap/tidb#62892, commit bc0d97a44d). tidb-rs ports the fix; govec links the patched
+// variable/sysvar.go (govec/fixes).
+const fix62892 = "pingcap/tidb#62892"
+
+func fix62892Applied() bool {
+	sv := variable.GetSysVar(variable.TiDBRedactLog)
+	return sv != nil && !sv.HasSessionScope() && sv.SetSession == nil && sv.SetGlobal != nil
+}
