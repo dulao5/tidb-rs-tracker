@@ -184,6 +184,9 @@ RULES = [
     # pkg/util/tikvutil is one variable (CommitterConcurrency) read by config.GetTiKVConfig.
     ("D00.2", r"pkg/util/tikvutil/", None),
     # --- D00 ---
+    # session_token.go (signed session tokens for session migration: TLS cert/key loading,
+    # signing, validation) is authentication: D04.1 (proposal in tidb-rs PR F).
+    ("D04.1", r"pkg/sessionctx/sessionstates/session_token\.go$", None),
     ("D05.2", r"pkg/sessionctx/sessionstates/", None),
     # pkg/util/context (contextutil) lives in tidb-base, rank 0: tidb-types' types.Context uses
     # its WarnAppender and handlers (D00.1 part 1 review, tidb-rs #65).
@@ -221,6 +224,14 @@ RULES = [
     # SessionVars.CleanBuffers only clears the reusable write buffers (called at insert.go:69,
     # memory only): X with WriteStmtBufs (Lucky's review of tidb-rs #81).
     ("X", r"pkg/sessionctx/variable/session\.go$", r"^(RetryInfo\.|retryInfoAutoIDs\.|NewRowIDShardGenerator$|RowIDShardGenerator\.|SessionVars\.GetRowIDShardGenerator$|TableDelta\.|NewTemporaryTableData$|temporaryTableData\.|SessionVars\.GetTemporaryTable$|WriteStmtBufs\.|SessionVars\.GetWriteStmtBufs$|SessionVars\.CleanBuffers$|SessionVars\.(Set|Get|Clear)DiskFullOpt$|SessionVars\.setDDLReorgPriority$|TransactionContext\.(AddUnchangedKeyForLock|CollectUnchangedKeysForSLock|CollectUnchangedKeysForXLock|ResetUnchangedKeysForLock|FlushStmtPessimisticLockCache|GetKeyInPessimisticLockCache|SetPessimisticLockCache|UpdateDeltaForTable|ClearDelta)$|SessionVars\.PessimisticLockEligible$)"),
+    # D05.2 PR F (2026-11-11): the slow log writer (SlowLogFormat and its helpers) and the
+    # Setter/Match accessors (makeExecDetailAccessor / makeKVExecDetailAccessor) need the
+    # statement's UsedStatsInfo (D11), client-go util.ExecDetails from the request context,
+    # ProcessInfo's user/connection info and the RU/CPU details: they go with the slow log
+    # writer (D14.2). The warning collection and the threshold matchers stay in D05.2.
+    ("D14.2", r"pkg/sessionctx/variable/slow_log\.go$", r"^(SessionVars\.SlowLogFormat|writeSlowLogItem|kvExecDetailFormat|makeExecDetailAccessor|makeKVExecDetailAccessor)$"),
+    # redact.TaskInfoRedacted formats BR's StreamBackupTaskInfo (kvproto brpb): X with BR.
+    ("X", r"pkg/util/redact/redact\.go$", r"^TaskInfoRedacted\.String$"),
     ("D05.2", r"pkg/sessionctx/variable/variable\.go$", r"^SysVar\.(Get|Set)(Global|Session)FromHook$"),
     ("D05.2", r"pkg/sessionctx/variable/varsutil\.go$", r"^(getTiDBTableValue|setTiDBTableValue|parseTSFromNumberOrTime|setReadStaleness|setSnapshotTS|setTxnReadTS)$"),
     ("D05.2", r"pkg/sessionctx/variable/sysvar\.go$", r"^setTiFlashComputeDispatchPolicy$"),
