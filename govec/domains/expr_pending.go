@@ -78,10 +78,7 @@ func exprExempt() map[string]string {
 		"Column.Hash64":                                "cascades HashEquals only (pkg/planner/cascades/base is EXC.B)",                                                                    // pkg/expression/column.go
 		"Column.VecEvalDecimal":                        "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
 		"Column.VecEvalDuration":                       "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
-		"Column.VecEvalInt":                            "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
 		"Column.VecEvalJSON":                           "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
-		"Column.VecEvalReal":                           "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
-		"Column.VecEvalString":                         "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
 		"Column.VecEvalTime":                           "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
 		"Column.VecEvalVectorFloat32":                  "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/column.go
 		"CorrelatedColumn.Equals":                      "cascades HashEquals only (pkg/planner/cascades/base is EXC.B)",                                                                    // pkg/expression/column.go
