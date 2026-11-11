@@ -116,6 +116,10 @@ jobs:
         run: |
           mkdir -p seeds
           for s in 1 2 3 4 5 6 7 8; do bin/govec execdetails -seed "$s" -o "seeds/execdetails-seed$s.jsonl.gz"; done
+      - name: Extra seeds generate (funcs)
+        run: |
+          mkdir -p seeds
+          for s in 1 2 3 4 5 6 7 8; do bin/govec funcs -seed "$s" -o "seeds/funcs-seed$s.jsonl.gz"; done
       - uses: actions/upload-artifact@v4
         with:
           name: govec-extra-seeds-${{ matrix.runner }}
