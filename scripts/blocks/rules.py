@@ -352,7 +352,11 @@ RULES = [
     ("D08.3", r"pkg/expression/(infer_pushdown|expr_to_pb|distsql_builtin|expression_codec)", None),
     ("D08.4", r"pkg/expression/builtin_compare", None),
     ("D08.5", r"pkg/expression/builtin_(arithmetic|math|op)", None),
-    ("D08.6", r"pkg/expression/builtin_(string|like|ilike|regexp|convert_charset)", None),
+    # builtin_convert_charset.go (to_binary/from_binary, HandleBinaryLiteral): CAST to STRING
+    # wraps its argument with them (castAsStringFunctionClass), and newBaseBuiltinFuncWithTp
+    # does for every string argument, so the file comes with CAST (D08.8 part 2b-1).
+    ("D08.8", r"pkg/expression/builtin_convert_charset\.go$", None),
+    ("D08.6", r"pkg/expression/builtin_(string|like|ilike|regexp)", None),
     ("D08.7", r"pkg/expression/builtin_time", None),
     ("D08.8", r"pkg/expression/builtin_cast", None),
     ("D08.9", r"pkg/expression/builtin_(control|other|info|miscellaneous|encryption|grouping)", None),

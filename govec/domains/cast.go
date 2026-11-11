@@ -11,12 +11,23 @@ package domains
 // (appended in part 2) use FLOAT and hybrid (BIT, ENUM, SET) columns, which Go's
 // Column.VecEvalInt/Real/String convert before the signature reads them.
 //
+// Part 2b-1 (appended): CAST to STRING ("str": INT/REAL/DECIMAL/STRING/FLOAT/hybrid
+// arguments, CHAR/BINARY/VARCHAR targets of several charsets, explicit charsets, a small
+// max_allowed_packet, strict SQL mode), FLOAT -> DOUBLE bit for bit ("dbl", Lucky's #84
+// review), the internal to_binary/from_binary functions of HandleBinaryLiteral ("binlit"),
+// BuildCastCollationFunction ("collcast") and WrapWithCastAsString ("wrap" string).
+//
 // Records:
-//   - "cast": [arg, tpIn, inUnion, ctx, rows] -> build (sfDump or error), meta (inUnion of a
-//     baseBuiltinCastFunc), bwarns (warnings of building, i.e. of folding), rows (row-mode
-//     value and warnings per row), vec (vector-mode values, or the error, and warnings).
-//     arg = ["col", ftIn] | ["const", datumIn, ftIn]; ctx = [typeFlags, [7]errLevels].
-//   - "wrap": [which, arg, ctx] -> WrapWithCastAsInt/Real/Decimal: sfDump, bwarns.
+//   - "cast": [arg, tpIn, inUnion, ctx, rows, isExplicitCharset?] -> build (sfDump or error),
+//     meta (inUnion of a baseBuiltinCastFunc), bwarns (warnings of building, i.e. of
+//     folding), rows (row-mode value and warnings per row), vec (vector-mode values, or the
+//     error, and warnings). arg = ["col", ftIn] | ["const", datumIn, ftIn];
+//     ctx = [typeFlags, [7]errLevels, maxAllowedPacket?, sqlMode?].
+//   - "wrap": [which, arg, ctx] -> WrapWithCastAsInt/Real/Decimal/String: sfDump, bwarns.
+//   - "binlit": [arg, charset, collation, funcName, explicitCast, ctx, rows] ->
+//     HandleBinaryLiteral: build, bwarns, rows, vec (as "cast").
+//   - "collcast": [arg, charset, collation, enumOrSetRealTypeIsStr, ctx] ->
+//     BuildCastCollationFunction: sfDump, bwarns.
 
 import (
 	"encoding/json"
@@ -71,17 +82,39 @@ func castSigFuncs() []string {
 	return append(out, "builtinCastStringAsIntSig.handleOverflow")
 }
 
+var castStrSigs = []string{"IntAsString", "RealAsString", "DecimalAsString", "StringAsString"}
+
+func castStrSigFuncs() []string {
+	out := []string{}
+	for _, s := range castStrSigs {
+		out = append(out, "builtinCast"+s+"Sig.evalString", "builtinCast"+s+"Sig.vecEvalString",
+			"builtinCast"+s+"Sig.vectorized", "builtinCast"+s+"Sig.Clone")
+	}
+	return out
+}
+
 var castCoverage = map[string]vec.Coverage{
-	"cast": {Min: 2500, GoFuncs: append(castSigFuncs(),
+	"cast": {Min: 2500, GoFuncs: append(append(castSigFuncs(), castStrSigFuncs()...),
 		"castAsIntFunctionClass.getFunction", "castAsRealFunctionClass.getFunction",
 		"castAsDecimalFunctionClass.getFunction", "BuildCastFunctionWithCheck", "BuildCastFunction",
 		"TryPushCastIntoControlFunctionForHybridType", "setDataTypeDouble", "floatLength", "PropagateType",
 		"newBaseBuiltinCastFunc", "baseBuiltinCastFunc.metadata", "baseBuiltinCastFunc.cloneFrom",
 		"FoldConstant", "foldConstant",
 		// "conv" records: the converting branches of the column's vector evaluation
-		"Column.VecEvalInt", "Column.VecEvalReal", "Column.VecEvalString")},
+		"Column.VecEvalInt", "Column.VecEvalReal", "Column.VecEvalString",
+		// part 2b-1: CAST to STRING (and the from_binary it builds over a binary string)
+		"castAsStringFunctionClass.getFunction", "newBaseBuiltinCastFunc4String", "adjustRetFtForCastString",
+		"decimalPrecisionToLength", "padZeroForBinaryType", "newBaseBuiltinFuncWithTp")},
 	"wrap": {Min: 600, GoFuncs: []string{"WrapWithCastAsInt", "WrapWithCastAsReal", "WrapWithCastAsDecimal",
-		"minimalDecimalLenForHoldingInteger"}},
+		"minimalDecimalLenForHoldingInteger", "WrapWithCastAsString"}},
+	"binlit": {Min: 400, GoFuncs: []string{"HandleBinaryLiteral", "isLegacyCharset", "init",
+		"BuildToBinaryFunction", "BuildFromBinaryFunction", "tidbToBinaryFunctionClass.getFunction",
+		"tidbFromBinaryFunctionClass.getFunction", "formatInvalidChars",
+		"builtinInternalToBinarySig.evalString", "builtinInternalToBinarySig.vecEvalString",
+		"builtinInternalToBinarySig.vectorized", "builtinInternalToBinarySig.Clone",
+		"builtinInternalFromBinarySig.evalString", "builtinInternalFromBinarySig.vecEvalString",
+		"builtinInternalFromBinarySig.vectorized", "builtinInternalFromBinarySig.Clone"}},
+	"collcast": {Min: 300, GoFuncs: []string{"BuildCastCollationFunction"}},
 }
 
 // ---------------------------------------------------------------- execution
@@ -94,11 +127,16 @@ func castCtx(raw json.RawMessage) (*exprstatic.ExprContext, *exprstatic.EvalCont
 	for i := range lm {
 		lm[i] = errctx.Level(lv[i])
 	}
-	ev := exprstatic.NewEvalContext(
+	opts := []exprstatic.EvalCtxOption{
 		exprstatic.WithTypeFlags(types.Flags(arg[uint16](a, 0))),
 		exprstatic.WithErrLevelMap(lm),
 		exprstatic.WithWarnHandler(contextutil.NewStaticWarnHandler(0)),
-	)
+	}
+	if len(a) > 2 {
+		opts = append(opts, exprstatic.WithMaxAllowedPacket(arg[uint64](a, 2)),
+			exprstatic.WithSQLMode(mysql.SQLMode(arg[uint64](a, 3))))
+	}
+	ev := exprstatic.NewEvalContext(opts...)
 	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(ev)), ev
 }
 
@@ -151,6 +189,12 @@ func castRowVal(ctx expression.EvalContext, e expression.Expression, row chunk.R
 			return exVal(nil, n, err)
 		}
 		return exVal(decOut(v), false, nil)
+	case types.ETString:
+		v, n, err := e.EvalString(ctx, row)
+		if err != nil || n {
+			return exVal(nil, n, err)
+		}
+		return exVal(vec.GoString(v), false, nil)
 	}
 	panic("castRowVal")
 }
@@ -170,6 +214,9 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 	case types.ETDecimal:
 		col = chunk.NewColumn(types.NewFieldType(mysql.TypeNewDecimal), n)
 		err = e.VecEvalDecimal(ctx, chk, col)
+	case types.ETString:
+		col = chunk.NewColumn(types.NewFieldType(mysql.TypeVarString), n)
+		err = e.VecEvalString(ctx, chk, col)
 	}
 	warns := ecWarns(ctx.TruncateWarnings(0))
 	if err != nil {
@@ -188,6 +235,8 @@ func castVec(ctx *exprstatic.EvalContext, e expression.Expression, chk *chunk.Ch
 			vals = append(vals, strconv.FormatUint(math.Float64bits(col.GetFloat64(i)), 10))
 		case types.ETDecimal:
 			vals = append(vals, decOut(col.GetDecimal(i)))
+		case types.ETString:
+			vals = append(vals, vec.GoString(col.GetString(i)))
 		}
 	}
 	return map[string]any{"v": vals, "warns": warns}
@@ -202,7 +251,8 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 		tp := d2FtIn(exArr(p[1]))
 		var res expression.Expression
 		m["build"] = exTry(func() any {
-			r, err := expression.BuildCastFunctionWithCheck(ctx, argE, tp, arg[bool](p, 2), false)
+			explicit := len(p) > 5 && arg[bool](p, 5)
+			r, err := expression.BuildCastFunctionWithCheck(ctx, argE, tp, arg[bool](p, 2), explicit)
 			if err != nil {
 				return exErr(err)
 			}
@@ -237,14 +287,55 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 				return sfDump(expression.WrapWithCastAsInt(ctx, argE))
 			case "real":
 				return sfDump(expression.WrapWithCastAsReal(ctx, argE))
+			case "string":
+				return sfDump(expression.WrapWithCastAsString(ctx, argE))
 			default:
 				return sfDump(expression.WrapWithCastAsDecimal(ctx, argE))
 			}
 		})
 		m["bwarns"] = ecWarns(ev.TruncateWarnings(0))
 		return m, nil
+	case "binlit":
+		ctx, ev := castCtx(p[5])
+		argE, chk := castArg(p[0], p[6])
+		m := map[string]any{}
+		var res expression.Expression
+		m["build"] = exTry(func() any {
+			ec := &expression.ExprCollation{Charset: arg[string](p, 1), Collation: arg[string](p, 2)}
+			res = expression.HandleBinaryLiteral(ctx, argE, ec, arg[string](p, 3), arg[bool](p, 4))
+			return sfDump(res)
+		})
+		m["bwarns"] = ecWarns(ev.TruncateWarnings(0))
+		if res != nil && chk != nil {
+			if _, ok := res.(*expression.ScalarFunction); ok {
+				castEvalRows(m, ev, res, chk)
+			}
+		}
+		return m, nil
+	case "collcast":
+		ctx, ev := castCtx(p[4])
+		argE, _ := castArg(p[0], nil)
+		m := map[string]any{}
+		m["res"] = exTry(func() any {
+			ec := &expression.ExprCollation{Charset: arg[string](p, 1), Collation: arg[string](p, 2)}
+			return sfDump(expression.BuildCastCollationFunction(ctx, argE, ec, arg[bool](p, 3)))
+		})
+		m["bwarns"] = ecWarns(ev.TruncateWarnings(0))
+		return m, nil
 	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
+}
+
+// castEvalRows: the row-mode values and warnings per row, then the vector-mode values.
+func castEvalRows(m map[string]any, ev *exprstatic.EvalContext, res expression.Expression, chk *chunk.Chunk) {
+	rows := make([]any, 0, chk.NumRows())
+	for i := 0; i < chk.NumRows(); i++ {
+		v := exTry(func() any { return castRowVal(ev, res, chk.GetRow(i)) })
+		rows = append(rows, []any{v, ecWarns(ev.TruncateWarnings(0))})
+	}
+	m["rows"] = rows
+	m["vec"] = exTry(func() any { return castVec(ev, res, chk) })
+	ev.TruncateWarnings(0)
 }
 
 // ---------------------------------------------------------------- generation
@@ -480,6 +571,202 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 			}
 		}
 		vg.Add("conv", "cast", []any{"col", sfFtIn(ft)}, sfFtIn(g.target()), g.pick(4) == 0, g.ctx(), rows)
+	}
+	castGenerate2b1(vg, g)
+}
+
+// ---------------------------------------------------------------- part 2b-1
+
+// castCharsets: [charset, collation] pairs of string targets and arguments.
+var castCharsets = [][2]string{
+	{charset.CharsetUTF8MB4, charset.CollationUTF8MB4},
+	{charset.CharsetUTF8MB4, "utf8mb4_general_ci"},
+	{charset.CharsetBin, charset.CollationBin},
+	{charset.CharsetGBK, "gbk_chinese_ci"},
+	{charset.CharsetLatin1, charset.CollationLatin1},
+	{charset.CharsetASCII, charset.CollationASCII},
+	{charset.CharsetUTF8, charset.CollationUTF8},
+}
+
+func (g *castGen) charset() [2]string { return castCharsets[g.pick(len(castCharsets))] }
+
+// strTarget: a CAST(.. AS CHAR/BINARY/VARCHAR ..) type.
+func (g *castGen) strTarget() *types.FieldType {
+	var flag uint
+	if g.pick(4) == 0 {
+		flag |= mysql.NotNullFlag
+	}
+	cs := g.charset()
+	tp := []byte{mysql.TypeVarString, mysql.TypeVarString, mysql.TypeString, mysql.TypeVarchar}[g.pick(4)]
+	flen := []int{-1, -1, 0, 1, 3, 5, 8, 20, 64}[g.pick(9)]
+	ft := types.NewFieldTypeBuilder().SetType(tp).SetFlag(flag).SetFlen(flen).SetDecimal(-1).BuildP()
+	ft.SetCharset(cs[0])
+	ft.SetCollate(cs[1])
+	if cs[0] == charset.CharsetBin {
+		ft.AddFlag(mysql.BinaryFlag)
+	}
+	return ft
+}
+
+// castStrsMB: strings for string columns of the charsets above (valid UTF-8 internally).
+var castStrsMB = []string{"中文", "a中b", "é", "ü€", "𝄞", "\xff", "ÿ", "abc", "", " x ", "汉字汉字汉字", "ABCdef"}
+
+// strColFt: a string column of a random charset.
+func (g *castGen) strColFt() *types.FieldType {
+	var flag uint
+	if g.pick(3) == 0 {
+		flag |= mysql.NotNullFlag
+	}
+	cs := g.charset()
+	tp := []byte{mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString, mysql.TypeBlob, mysql.TypeTinyBlob,
+		mysql.TypeMediumBlob, mysql.TypeLongBlob}[g.pick(7)]
+	flen := []int{64, 10, 3, -1, 255}[g.pick(5)]
+	ft := types.NewFieldTypeBuilder().SetType(tp).SetFlag(flag).SetFlen(flen).SetDecimal(0).BuildP()
+	ft.SetCharset(cs[0])
+	ft.SetCollate(cs[1])
+	if cs[0] == charset.CharsetBin {
+		ft.AddFlag(mysql.BinaryFlag)
+	}
+	return ft
+}
+
+// strColVal: a value of a string column (bytes for binary, possibly invalid in the target).
+func (g *castGen) strColVal(ft *types.FieldType) []any {
+	if g.pick(8) == 0 {
+		return []any{types.KindNull}
+	}
+	var s string
+	switch g.pick(3) {
+	case 0:
+		s = castStrs[g.pick(len(castStrs))]
+	case 1:
+		s = castStrsMB[g.pick(len(castStrsMB))]
+	default:
+		b := make([]byte, g.pick(9))
+		for i := range b {
+			b[i] = byte(g.rng.IntN(256))
+		}
+		s = string(b)
+	}
+	if ft.GetCharset() == charset.CharsetBin {
+		return []any{types.KindBytes, fmt.Sprintf("%x", s)}
+	}
+	return []any{types.KindString, vec.GoString(s), ft.GetCollate()}
+}
+
+// strCtx: castCtx with max_allowed_packet and the SQL mode.
+func (g *castGen) strCtx() any {
+	c := g.ctx().([]any)
+	packet := uint64(67108864)
+	if g.pick(5) == 0 {
+		packet = uint64([]int{0, 1, 4, 7}[g.pick(4)])
+	}
+	var mode mysql.SQLMode
+	if g.pick(2) == 0 {
+		mode = mysql.ModeStrictTransTables
+	}
+	return append(c, packet, uint64(mode))
+}
+
+func castGenerate2b1(vg *vec.Gen, g *castGen) {
+	// FLOAT -> DOUBLE: the widening must keep every bit (Lucky, tidb-rs #84).
+	f32s := []float32{0.1, 16777217, math.MaxFloat32, -math.MaxFloat32, math.SmallestNonzeroFloat32,
+		1.1754942e-38, -1.4e-45, 3.4028235e38, 0.3, 1.0 / 3}
+	for i := 0; i < 120; i++ {
+		ft := castFt(mysql.TypeFloat, 0, []int{12, -1}[g.pick(2)], -1)
+		n := 1 + g.pick(12)
+		rows := make([]any, 0, n)
+		for j := 0; j < n; j++ {
+			f := f32s[g.pick(len(f32s))]
+			if g.pick(3) == 0 {
+				f = math.Float32frombits(g.rng.Uint32() & 0x7f7fffff)
+				if g.pick(2) == 0 {
+					f = -f
+				}
+			}
+			rows = append(rows, []any{types.KindFloat32, math.Float64bits(float64(f))})
+		}
+		vg.Add("dbl", "cast", []any{"col", sfFtIn(ft)}, sfFtIn(castFt(mysql.TypeDouble, 0, -1, -1)), false, g.ctx(), rows)
+	}
+	// CAST to STRING.
+	for i := 0; i < 1600; i++ {
+		var a any
+		var gen func() []any
+		switch g.pick(5) {
+		case 0:
+			ft, gf := g.convCol()
+			a, gen = []any{"col", sfFtIn(ft)}, gf
+		case 1, 2:
+			ft := g.strColFt()
+			a, gen = []any{"col", sfFtIn(ft)}, func() []any { return g.strColVal(ft) }
+			if g.pick(5) == 0 {
+				a, gen = []any{"const", g.strColVal(ft), sfFtIn(ft)}, nil
+			}
+		default:
+			var ft *types.FieldType
+			a, ft = g.arg(true)
+			if ft.GetType() == mysql.TypeLonglong && g.pick(4) == 0 {
+				ft = castFt(mysql.TypeYear, mysql.UnsignedFlag, 4, 0)
+				a = []any{"col", sfFtIn(ft)}
+			}
+			if a.([]any)[0] == "col" {
+				gen = func() []any { return g.val(ft) }
+			}
+		}
+		var rows []any
+		if gen != nil {
+			n := 1 + g.pick(16)
+			for j := 0; j < n; j++ {
+				rows = append(rows, gen())
+			}
+		}
+		vg.Add("str", "cast", a, sfFtIn(g.strTarget()), g.pick(8) == 0, g.strCtx(), rows, g.pick(4) == 0)
+	}
+	// HandleBinaryLiteral: to_binary / from_binary.
+	funcs := []string{"hex", "hex", "length", "concat", "concat", "cast", "cast", "cast", "like", "lower", "bin", "no_such_func"}
+	for i := 0; i < 500; i++ {
+		ft := g.strColFt()
+		if g.pick(3) == 0 {
+			ft = castFt(mysql.TypeNull, 0, 0, 0)
+		}
+		cs := g.charset()
+		n := 1 + g.pick(12)
+		rows := make([]any, 0, n)
+		for j := 0; j < n; j++ {
+			if ft.GetType() == mysql.TypeNull {
+				rows = append(rows, []any{types.KindNull})
+			} else {
+				rows = append(rows, g.strColVal(ft))
+			}
+		}
+		vg.Add("binlit", "binlit", []any{"col", sfFtIn(ft)}, cs[0], cs[1], funcs[g.pick(len(funcs))],
+			g.pick(2) == 0, g.strCtx(), rows)
+	}
+	// BuildCastCollationFunction.
+	for i := 0; i < 300; i++ {
+		var a any
+		switch g.pick(3) {
+		case 0:
+			ft, _ := g.convCol()
+			a = []any{"col", sfFtIn(ft)}
+		case 1:
+			a, _ = g.arg(true)
+		default:
+			a = []any{"col", sfFtIn(g.strColFt())}
+		}
+		cs := g.charset()
+		vg.Add("collcast", "collcast", a, cs[0], cs[1], g.pick(2) == 0, g.ctx())
+	}
+	// WrapWithCastAsString.
+	for i := 0; i < 300; i++ {
+		var a any
+		if g.pick(3) == 0 {
+			ft, _ := g.convCol()
+			a = []any{"col", sfFtIn(ft)}
+		} else {
+			a, _ = g.arg(true)
+		}
+		vg.Add("wrapstr", "wrap", "string", a, g.ctx())
 	}
 }
 
