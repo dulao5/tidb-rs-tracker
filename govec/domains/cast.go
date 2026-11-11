@@ -17,6 +17,9 @@ package domains
 // review), the internal to_binary/from_binary functions of HandleBinaryLiteral ("binlit"),
 // BuildCastCollationFunction ("collcast") and WrapWithCastAsString ("wrap" string).
 //
+// Part 2b-2a (appended, govec/domains/cast2b2.go): CAST from DATE/DATETIME/TIMESTAMP, TIME,
+// JSON and VECTOR columns ("from", "from-fsp").
+//
 // Records:
 //   - "cast": [arg, tpIn, inUnion, ctx, rows, isExplicitCharset?] -> build (sfDump or error),
 //     meta (inUnion of a baseBuiltinCastFunc), bwarns (warnings of building, i.e. of
@@ -573,6 +576,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 		vg.Add("conv", "cast", []any{"col", sfFtIn(ft)}, sfFtIn(g.target()), g.pick(4) == 0, g.ctx(), rows)
 	}
 	castGenerate2b1(vg, g)
+	castGenerate2b2(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
