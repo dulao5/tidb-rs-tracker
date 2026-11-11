@@ -12,8 +12,15 @@
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 mod=github.com/pingcap/tidb
+# `go list -m -f {{.Dir}}` prints nothing when the module is not in the module cache yet
+# (fresh CI cache), so download it first and refuse to go on without a directory.
+(cd "$root/govec" && GOFLAGS= go mod download $mod)
 src=$(cd "$root/govec" && GOFLAGS= go list -m -f '{{.Dir}}' $mod)
 ver=$(cd "$root/govec" && GOFLAGS= go list -m -f '{{.Version}}' $mod)
+if [[ -z "$src" || ! -d "$src" ]]; then
+  echo "govec-fixes.sh: no module directory for $mod" >&2
+  exit 1
+fi
 dst=$root/work/govec-tidb
 mf=$root/work/govec-modfile
 stamp=$( { echo "$ver"; find "$root/govec/fixes" -name '*.fixed' -print0 | sort -z | xargs -0 shasum; } | shasum | cut -c1-16)
