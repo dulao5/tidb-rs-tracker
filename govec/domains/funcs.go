@@ -29,8 +29,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"reflect"
 	"sync"
-	"unsafe"
+	_ "unsafe" // go:linkname
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/expression"
@@ -48,8 +49,8 @@ import (
 const funcsSeed = 20261113
 
 func init() {
-	if unsafe.Sizeof(fnBaseMirror{}) != 152 {
-		panic("funcs: fnBaseMirror does not match baseBuiltinFunc (152 bytes)")
+	if err := fnCheckMirror(); err != nil {
+		panic("funcs: " + err.Error())
 	}
 	vec.Register(&vec.Domain{
 		Name:     "funcs",
@@ -88,7 +89,11 @@ var funcsCoverage = map[string]vec.Coverage{
 
 // ---------------------------------------------------------------- unexported TiDB code
 
-// fnBaseMirror has the layout of expression.baseBuiltinFunc (checked by size in init).
+// fnBaseMirror has the layout of expression.baseBuiltinFunc, checked field by field in init
+// (fnCheckMirror). Field 0 is the one listed exception: Go's bufAllocator is a non-empty
+// interface (columnBufferAllocator: itab + data) and the mirror's is `any` (type + data);
+// same size, different meaning of the first word. The mirror must never read it: no %v,
+// ==, reflect.DeepEqual or type switch on a mirror value.
 type fnBaseMirror struct {
 	bufAllocator           any
 	args                   []expression.Expression
@@ -103,6 +108,57 @@ type fnBaseMirror struct {
 	charset                string
 	collation              string
 	isExplicitCharset      bool
+}
+
+// fnCheckMirror compares fnBaseMirror with the baseBuiltinFunc embedded in a real signature
+// (built through the exported API): every field's name, offset and type, embedded structs of
+// pkg/expression flattened, and the size (Lucky, review of tidb-rs #80). bufAllocator is the
+// only allowed difference (see fnBaseMirror).
+func fnCheckMirror() error {
+	ctx := exprstatic.NewExprContext()
+	a := &expression.Column{RetType: types.NewFieldType(mysql.TypeLonglong), UniqueID: 1}
+	sf, err := expression.NewFunction(ctx, ast.Plus, types.NewFieldType(mysql.TypeLonglong), a, a)
+	if err != nil {
+		return err
+	}
+	sig := reflect.ValueOf(sf.(*expression.ScalarFunction).Function).Elem().Type()
+	f, ok := sig.FieldByName("baseBuiltinFunc")
+	if !ok {
+		return fmt.Errorf("%v has no baseBuiltinFunc", sig)
+	}
+	type field struct {
+		name string
+		tp   reflect.Type
+		off  uintptr
+	}
+	var flat func(t reflect.Type, base uintptr) []field
+	flat = func(t reflect.Type, base uintptr) []field {
+		var out []field
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if f.Anonymous && f.Type.Kind() == reflect.Struct && f.Type.PkgPath() == "github.com/pingcap/tidb/pkg/expression" {
+				out = append(out, flat(f.Type, base+f.Offset)...)
+				continue
+			}
+			out = append(out, field{f.Name, f.Type, base + f.Offset})
+		}
+		return out
+	}
+	mt := reflect.TypeOf(fnBaseMirror{})
+	real, mir := flat(f.Type, 0), flat(mt, 0)
+	if len(real) != len(mir) || f.Type.Size() != mt.Size() {
+		return fmt.Errorf("fnBaseMirror: %d fields/%d bytes, baseBuiltinFunc %d fields/%d bytes", len(mir), mt.Size(), len(real), f.Type.Size())
+	}
+	for i := range real {
+		r, m := real[i], mir[i]
+		if r.name != m.name || r.off != m.off {
+			return fmt.Errorf("fnBaseMirror field %d: %s@%d, baseBuiltinFunc %s@%d", i, m.name, m.off, r.name, r.off)
+		}
+		if r.tp.String() != m.tp.String() && !(r.name == "bufAllocator" && r.tp.Kind() == reflect.Interface && m.tp.Kind() == reflect.Interface && r.tp.Size() == m.tp.Size()) {
+			return fmt.Errorf("fnBaseMirror field %s: %v, baseBuiltinFunc %v", r.name, m.tp, r.tp)
+		}
+	}
+	return nil
 }
 
 // fnClassMirror has the layout of expression.baseFunctionClass.

@@ -438,7 +438,7 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 
 ## funcs（块 D08.2 第 1 部分：`pkg/expression` 的函数注册表、`baseBuiltinFunc` 的构造、collation 推导）
 
-- **未导出的函数**：`deriveCollation`、`newBaseBuiltinFunc`、`newBaseBuiltinFuncWithFieldType`、`newReturnFieldTypeForBaseBuiltinFunc`、`baseFunctionClass.verifyArgs`、`baseBuiltinFunc` 的 `setDecimalAndFlenFor*` 和 `evalXxx`/`vecEvalXxx` 等通过 `go:linkname` 调用。`baseBuiltinFunc` 是未导出的结构体，用布局相同的镜像 `fnBaseMirror` 接收（`init` 中核对大小为 152 字节，与 D08.1 测得的 `emptyBaseBuiltinFunc` 相同）。
+- **未导出的函数**：`deriveCollation`、`newBaseBuiltinFunc`、`newBaseBuiltinFuncWithFieldType`、`newReturnFieldTypeForBaseBuiltinFunc`、`baseFunctionClass.verifyArgs`、`baseBuiltinFunc` 的 `setDecimalAndFlenFor*` 和 `evalXxx`/`vecEvalXxx` 等通过 `go:linkname` 调用。`baseBuiltinFunc` 是未导出的结构体，用布局相同的镜像 `fnBaseMirror` 接收。`init` 中的 `fnCheckMirror` 用 `reflect` 逐个字段核对：用导出的 API 建一个真实签名，取它的 `baseBuiltinFunc`，展开内嵌的结构体，比较每个字段的名字、偏移和类型，以及总大小（152 字节，与 D08.1 测得的 `emptyBaseBuiltinFunc` 相同）。唯一允许的差别是第 0 个字段 `bufAllocator`：Go 中是非空接口（itab + data），镜像中是 `any`（type + data），大小相同但第一个字的含义不同，所以镜像**绝不能读取它**（不能 `%v` 打印、`==` 比较、`DeepEqual` 或对它做类型判断）。Go 1.23 起只限制对**标准库**的 pull linkname，`pkg/expression` 的符号仍然可用；如果以后的 Go 版本对非标准库也加上 `-checklinkname`，这个领域会最先坏掉。
 - **参数**：expr_sf.go 的配方（列、常量、`NewFunctionBase` 建的小函数树），可选地覆盖 coercibility/repertoire（显式 COLLATE 即 `CoercibilityExplicit`）。输出带上 Go 建出的参数 dump，tidb-rs 用只有描述的签名重建。生成时只保留在该连接字符集下能建出的配方。
 - **new collation**：每条 `derive`/`newbase` 记录自己设置并恢复 new collation 开关；collator 用探测字符串的 key 比对。
 - **panic**：`deriveCollation` 中 `args[i]` 或 `argTps[i]` 越界（例如 `newBaseBuiltinFunc` 只传 `[retType]`，`case` 读 `argTps[1]`）记为 panic，Rust 侧也必须 panic。
