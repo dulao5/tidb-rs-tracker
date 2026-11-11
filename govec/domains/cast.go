@@ -7,9 +7,9 @@ package domains
 // constant argument and PropagateType (D08.1) on DECIMAL -> REAL.
 //
 // The argument is a column (index 0) of an INT/BIGINT/TINYINT [UNSIGNED], DOUBLE, DECIMAL(p,s)
-// or VARCHAR type with the rows of the record, or a constant. FLOAT and hybrid (BIT, ENUM, SET)
-// arguments are not generated: tidb-rs's vector driver reads such columns as stored (part 2,
-// see tidb-rs specs/D08.8-cast/plan.md).
+// or VARCHAR type with the rows of the record, or a constant. Records with source "conv"
+// (appended in part 2) use FLOAT and hybrid (BIT, ENUM, SET) columns, which Go's
+// Column.VecEvalInt/Real/String convert before the signature reads them.
 //
 // Records:
 //   - "cast": [arg, tpIn, inUnion, ctx, rows] -> build (sfDump or error), meta (inUnion of a
@@ -464,5 +464,92 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 			a = []any{"const", g.val(ft), sfFtIn(ft)}
 		}
 		vg.Add("sys", "wrap", []string{"int", "real", "decimal"}[g.pick(3)], a, g.ctx())
+	}
+	// Part 2: FLOAT and hybrid columns (appended; the records above are unchanged).
+	for i := 0; i < 800; i++ {
+		ft, gen := g.convCol()
+		n := 1 + g.pick(24)
+		rows := make([]any, 0, n)
+		for j := 0; j < n; j++ {
+			if g.pick(8) == 0 {
+				rows = append(rows, []any{types.KindNull})
+			} else {
+				rows = append(rows, gen())
+			}
+		}
+		vg.Add("conv", "cast", []any{"col", sfFtIn(ft)}, sfFtIn(g.target()), g.pick(4) == 0, g.ctx(), rows)
+	}
+}
+
+var castEnumElems = []string{"a", "b", "10", "-1", "1.5", " 7 ", "x9"}
+
+// convCol: a FLOAT, BIT, ENUM or SET column type and a generator of its values.
+func (g *castGen) convCol() (*types.FieldType, func() []any) {
+	var flag uint
+	if g.pick(3) == 0 {
+		flag |= mysql.NotNullFlag
+	}
+	switch g.pick(4) {
+	case 0:
+		if g.pick(3) == 0 {
+			flag |= mysql.UnsignedFlag
+		}
+		ft := castFt(mysql.TypeFloat, flag, []int{12, -1, 10}[g.pick(3)], []int{-1, 2, 31}[g.pick(3)])
+		return ft, func() []any {
+			edges := []float32{0, 0.5, -0.5, 1.5, 2.5, -2.5, 1e10, 3.4e38, -3.4e38, 1.1754944e-38, 16777217, 0.1, 123.456,
+				float32(math.Inf(1)), float32(math.Inf(-1)), 9.2233720e18, 1.8446744e19}
+			f := edges[g.pick(len(edges))]
+			if g.pick(2) == 0 {
+				f = float32((g.rng.Float64() - 0.5) * math.Pow(10, float64(g.pick(30)-8)))
+			}
+			return []any{types.KindFloat32, math.Float64bits(float64(f))}
+		}
+	case 1:
+		bits := []int{1, 8, 16, 63, 64, 5}[g.pick(6)]
+		ft := castFt(mysql.TypeBit, flag|mysql.UnsignedFlag, bits, 0)
+		return ft, func() []any {
+			nb := (bits + 7) / 8
+			b := make([]byte, nb)
+			v := g.rng.Uint64()
+			if bits < 64 {
+				v &= (uint64(1) << bits) - 1
+			}
+			if g.pick(4) == 0 {
+				v = []uint64{0, 1}[g.pick(2)]
+			}
+			for k := nb - 1; k >= 0; k-- {
+				b[k] = byte(v)
+				v >>= 8
+			}
+			return []any{types.KindMysqlBit, fmt.Sprintf("%x", b)}
+		}
+	case 2:
+		ft := castFt(mysql.TypeEnum, flag, -1, 0)
+		ft.SetCharset(charset.CharsetUTF8MB4)
+		ft.SetCollate(charset.CollationUTF8MB4)
+		ft.SetElems(castEnumElems)
+		return ft, func() []any {
+			v := 1 + g.pick(len(castEnumElems))
+			return []any{types.KindMysqlEnum, uint64(v), vec.GoString(castEnumElems[v-1]), charset.CollationUTF8MB4}
+		}
+	default:
+		elems := []string{"a", "b", "1", "2"}
+		ft := castFt(mysql.TypeSet, flag, -1, 0)
+		ft.SetCharset(charset.CharsetUTF8MB4)
+		ft.SetCollate(charset.CollationUTF8MB4)
+		ft.SetElems(elems)
+		return ft, func() []any {
+			v := uint64(g.pick(16))
+			name := ""
+			for k, e := range elems {
+				if v&(1<<k) != 0 {
+					if name != "" {
+						name += ","
+					}
+					name += e
+				}
+			}
+			return []any{types.KindMysqlSet, v, vec.GoString(name), charset.CollationUTF8MB4}
+		}
 	}
 }

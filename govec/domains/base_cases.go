@@ -2,6 +2,7 @@ package domains
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -416,7 +417,117 @@ func baseGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, t := range []int{0, 1, 2, 3, 254, 255} {
 		g.Add("sys/store_type", "store_type", t)
 	}
+	// Appended last, with its own generator, so the records above are unchanged.
+	sprintfComposite(g, rand.New(rand.NewPCG(20261111, 8)))
 }
+
+// sprintfComposite: fmt.Sprintf of struct and array values printed by reflection
+// (tidb-rs gofmt::Arg::Struct / Arg::Array, review of tidb-rs #82): fields and elements of
+// basic types and nested arrays, with %v, %s, %d, %x, %q, widths and precisions. Not
+// covered (unsupported by the port): field names (%+v, %#v), pointers, maps, and values
+// whose types have methods (String, Error, Format).
+func sprintfComposite(g *vec.Gen, rng *rand.Rand) {
+	var basic func(kind int) typedArg
+	basic = func(kind int) typedArg {
+		switch kind {
+		case 0:
+			return ta("int", int64(rng.IntN(2001)-1000))
+		case 1:
+			return ta("int8", int64(int8(rng.IntN(256)-128)))
+		case 2:
+			return ta("uint64", rng.Uint64()>>uint(rng.IntN(64)))
+		case 3:
+			f := (rng.Float64() - 0.5) * math.Pow10(rng.IntN(12)-4)
+			if rng.IntN(6) == 0 {
+				f = []float64{0, math.Copysign(0, -1), math.Inf(1), math.NaN(), 0.5, 1e21}[rng.IntN(6)]
+			}
+			return ta("float64", strconv.FormatFloat(f, 'g', -1, 64))
+		case 4:
+			return ta("string", []string{"", "a", "ab c", "日本", "x\"y", "\xff"}[rng.IntN(6)])
+		case 5:
+			return ta("bool", rng.IntN(2) == 0)
+		case 6:
+			return ta("float32", strconv.FormatFloat(float64(float32(rng.Float64()*100-50)), 'g', -1, 32))
+		}
+		bs := make([]byte, rng.IntN(4))
+		for i := range bs {
+			bs[i] = byte(rng.IntN(256))
+		}
+		return ta("bytes", hex.EncodeToString(bs))
+	}
+	var array func(depth int) typedArg
+	array = func(depth int) typedArg {
+		n := 1 + rng.IntN(4)
+		els := make([]typedArg, n)
+		if depth < 2 && rng.IntN(3) == 0 {
+			// nested arrays: every element has the same type (length and element kind)
+			inner := array(depth + 1)
+			for i := range els {
+				els[i] = sameShape(inner, basic)
+			}
+		} else {
+			k := rng.IntN(8)
+			for i := range els {
+				els[i] = basic(k)
+			}
+		}
+		return typedArg{T: "array", V: vec.MustJSON(els)}
+	}
+	strct := func() typedArg {
+		n := 1 + rng.IntN(4)
+		fs := make([]typedArg, n)
+		for i := range fs {
+			if rng.IntN(4) == 0 {
+				fs[i] = array(1)
+			} else {
+				fs[i] = basic(rng.IntN(8))
+			}
+		}
+		return typedArg{T: "struct", V: vec.MustJSON(fs)}
+	}
+	spec := func() string {
+		s := "%"
+		for _, f := range []string{"-", " ", "0"} {
+			if rng.IntN(6) == 0 {
+				s += f
+			}
+		}
+		if rng.IntN(3) == 0 {
+			s += strconv.Itoa(rng.IntN(12))
+		}
+		if rng.IntN(3) == 0 {
+			s += "." + strconv.Itoa(rng.IntN(6))
+		}
+		return s + string("vvvsdxq"[rng.IntN(7)])
+	}
+	for i := 0; i < 1500; i++ {
+		var a typedArg
+		if rng.IntN(2) == 0 {
+			a = strct()
+		} else {
+			a = array(0)
+		}
+		g.Add("rand/sprintf_composite", "sprintf_rand", "<"+spec()+">", []typedArg{a})
+	}
+}
+
+// sameShape: a value of the same Go type as t (an array of the same length and element
+// type, or a basic value of the same type), with new random contents.
+func sameShape(t typedArg, basic func(int) typedArg) typedArg {
+	switch t.T {
+	case "array":
+		var els []typedArg
+		must(json.Unmarshal(t.V, &els))
+		out := make([]typedArg, len(els))
+		for i := range els {
+			out[i] = sameShape(els[0], basic)
+		}
+		return typedArg{T: "array", V: vec.MustJSON(out)}
+	}
+	return basic(basicKind[t.T])
+}
+
+var basicKind = map[string]int{"int": 0, "int8": 1, "uint64": 2, "float64": 3, "string": 4, "bool": 5, "float32": 6, "bytes": 7}
 
 // ---------------------------------------------------------------- random fmt
 

@@ -235,8 +235,43 @@ func decodeArg(a typedArg) any {
 		return b
 	case "error":
 		return errors.New(str())
+	case "array", "struct":
+		return compositeVal(a).Interface()
 	}
 	panic("base: unknown typed arg " + a.T)
+}
+
+// compositeVal: an array (reflect.ArrayOf) or a struct with exported fields F0, F1, ...
+// (reflect.StructOf; fmt prints exported and unexported fields alike for values whose
+// field types have no methods) of the decoded elements.
+func compositeVal(a typedArg) reflect.Value {
+	var els []typedArg
+	must(json.Unmarshal(a.V, &els))
+	vals := make([]reflect.Value, len(els))
+	for i, e := range els {
+		if e.T == "array" || e.T == "struct" {
+			vals[i] = compositeVal(e)
+		} else {
+			vals[i] = reflect.ValueOf(decodeArg(e))
+		}
+	}
+	var v reflect.Value
+	if a.T == "array" {
+		v = reflect.New(reflect.ArrayOf(len(vals), vals[0].Type())).Elem()
+		for i, x := range vals {
+			v.Index(i).Set(x)
+		}
+		return v
+	}
+	fs := make([]reflect.StructField, len(vals))
+	for i, x := range vals {
+		fs[i] = reflect.StructField{Name: fmt.Sprintf("F%d", i), Type: x.Type()}
+	}
+	v = reflect.New(reflect.StructOf(fs)).Elem()
+	for i, x := range vals {
+		v.Field(i).Set(x)
+	}
+	return v
 }
 
 func must(err error) {
