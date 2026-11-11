@@ -144,6 +144,8 @@ func svdGetters(sv *variable.SessionVars) map[string]any {
 	for _, t := range sv.GetRuntimeFilterTypes() {
 		rfTypes = append(rfTypes, t.String())
 	}
+	// ToRuntimeFilterType builds the list by ranging over a map (M-MAPORDER): sorted.
+	sort.Strings(rfTypes)
 	tmp := &model.TableInfo{TempTableType: model.TempTableLocal}
 	cs, coll := sv.GetCharsetInfo()
 	m := map[string]any{
