@@ -424,4 +424,5 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **调用哪些 Eval 方法**：按节点的求值类型和值的种类，只调用 Go 的调用方会调用的（`exEvalSet`），避免对不匹配的类型读出未定义的内容。
 - **ParamMarker**：`order` 字段未导出，用 reflect 设置；`order` 越界时 `GetParamValue` 报错，`GetType` 返回 nil（记录为 null）。
 - **豁免**：`expr_pending.go`，共 220 个：向量化方法（由第 2 部分的向量驱动取代，N4 M-EVAL）、cascades 的 `Hash64`/`Equals`（EXC.B）、`errors.go`/`context.go` 的未导出辅助函数（tidb-rs 单元测试）、第 2 部分（ScalarFunction 等）和第 3 部分（VECTOR 函数）。
+- **两个目标**：3 条 `const` 记录不同（M-F2I：NaN 浮点值在 hybrid `RetType` 下走 `int64(NaN)`），登记在 `targetDiffs`。
 - **固定的偏离**：`corr` 记录带 `dmem`（Data 的 `MemUsage`），tidb-rs 中关联列的值不在节点里（spec D08.1 §3.2）。
