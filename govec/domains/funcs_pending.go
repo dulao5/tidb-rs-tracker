@@ -18,7 +18,6 @@ func funcsExempt() map[string]string {
 		"builtinFuncCache.getOrInitCache":      "generic method (no linkname); Rust unit test; exercised by the LIKE/REGEXP records when those families land",
 		"collationInfo.Hash64":                 "cascades only (base.HashEquals, EXC.B)",
 		"collationInfo.Equals":                 "cascades only (base.HashEquals, EXC.B)",
-		"newBaseBuiltinFuncWithFieldTypes":     "D08.2 part 2: wraps arguments in CAST (BuildCastFunction, D08.8)",
 		"baseBuiltinCastFunc.metadata":         "D08.2 part 2: the CAST signatures' base (D08.8)",
 		"baseBuiltinCastFunc.cloneFrom":        "D08.2 part 2: the CAST signatures' base (D08.8)",
 		"newBaseBuiltinCastFunc":               "D08.2 part 2: the CAST signatures' base (D08.8)",
