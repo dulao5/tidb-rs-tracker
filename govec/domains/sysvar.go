@@ -37,11 +37,13 @@ import (
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/config"
+	"github.com/pingcap/tidb/pkg/errno"
 	"github.com/pingcap/tidb/pkg/privilege/privileges/ldap"
 	"github.com/pingcap/tidb/pkg/sessionctx/slowlogrule"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/collate"
+	"github.com/pingcap/tidb/pkg/util/dbterror"
 	"github.com/pingcap/tidb/pkg/util/memory"
 	"github.com/pingcap/tidb/pkg/util/tikvutil"
 	utiltls "github.com/pingcap/tidb/pkg/util/tls"
@@ -135,7 +137,45 @@ type svCtx struct {
 	Systems  map[string]string `json:"s,omitempty"`     // session values (SessionVars.systems)
 	TLS      bool              `json:"tls,omitempty"`   // TLSConnectionState != nil
 	NoMPP    bool              `json:"nompp,omitempty"` // allowMPPExecution = false
+	TiDB     map[string]string `json:"tidb,omitempty"`  // rows of mysql.tidb (variable_name -> variable_value)
 }
+
+// tidbTableAccessor is the generator's GlobalVarAccessor: the test accessor plus an
+// in-memory mysql.tidb (variable_name -> value, comment), read and written by the
+// tidb_gc_* hooks through GetTiDBTableValue / SetTiDBTableValue (the test accessor panics
+// on both). A missing row is the error session.getTableValue returns for an empty result,
+// so getTiDBTableValue falls back to the default as it does on a cluster. The Rust replay
+// uses the same accessor (D05.2 PR C, T10).
+type tidbTableAccessor struct {
+	*variable.MockGlobalAccessor
+	tbl map[string][2]string
+}
+
+func (a *tidbTableAccessor) GetTiDBTableValue(name string) (string, error) {
+	if r, ok := a.tbl[name]; ok {
+		return r[0], nil
+	}
+	if name == "tikv_gc_life_time" {
+		// The test accessor's answer (the registered tidb_gc_life_time value, which other
+		// domains of the same process may have changed with variable.SetSysVar): the
+		// records generated before mysql.tidb was modelled depend on it.
+		return a.MockGlobalAccessor.GetTiDBTableValue(name)
+	}
+	return "", tidbResultIsEmpty
+}
+
+func (a *tidbTableAccessor) SetTiDBTableValue(name, value, comment string) error {
+	a.tbl[name] = [2]string{value, comment}
+	return nil
+}
+
+// tidbTableDump is the mysql.tidb of the accessor: name -> [value, comment].
+func tidbTableDump(vars *variable.SessionVars) map[string][2]string {
+	return vars.GlobalVarsAccessor.(*tidbTableAccessor).tbl
+}
+
+// tidbResultIsEmpty is session.errResultIsEmpty (session.go:3384).
+var tidbResultIsEmpty = dbterror.ClassExecutor.NewStd(errno.ErrResultIsEmpty)
 
 // initialRedactLog is errors.RedactLogEnabled after init (tidb_redact_log's SetSession
 // hook stores the session value into this process-wide flag: tidb-rs #62).
@@ -395,7 +435,11 @@ func freshVars(c svCtx) *variable.SessionVars {
 			panic(err)
 		}
 	}
-	vars.GlobalVarsAccessor = acc
+	tbl := map[string][2]string{}
+	for k, v := range c.TiDB {
+		tbl[k] = [2]string{v, ""}
+	}
+	vars.GlobalVarsAccessor = &tidbTableAccessor{MockGlobalAccessor: acc, tbl: tbl}
 	vars.TimeZone = time.UTC
 	vars.StmtCtx.StmtType = c.StmtType
 	if c.Noop != nil {
@@ -452,6 +496,9 @@ func sysvarValues(sv *variable.SysVar, rng *rand.Rand) []string {
 		def = "linux"
 	}
 	vals := []string{def, "", "ON", "OFF", "on", "1", "0", "-1", "abc"}
+	// Special float inputs for every variable (Lucky, review of tidb-rs #69: Go's range
+	// checks `v < lo || v > hi` let NaN through; ParseFloat accepts these spellings).
+	vals = append(vals, "NaN", "Inf", "-Inf", "infinity", "-0", "1e-400", "0x1p-2", "1e400", "-1e400")
 	switch sv.Type {
 	case variable.TypeBool:
 		vals = append(vals, "off", "On", "2", "-2", "true", "TRUE", "false", "01", " 1", "1 ", "+1", "9223372036854775808")

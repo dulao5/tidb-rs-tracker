@@ -100,6 +100,7 @@ func init() {
 				"ParseSlowLogFieldValue", "ParseString", "encodeRules", "parseBool", "parseFloat64", "parseInt64",
 				"parseSlowLogRuleEntry", "parseSlowLogRuleSet", "parseUint64"}},
 			"set_global_hook2": {Min: 8},
+			"tidb_table":       {Min: 300, GoFuncs: []string{"getTiDBTableValue", "setTiDBTableValue"}},
 			"init":             {Min: 20},
 		},
 		Exempt:   exempt,
@@ -335,6 +336,21 @@ var sessionvarsVolatile = map[string]bool{"timestamp": true, "rand_seed1": true,
 	"tidb_slow_log_max_per_sec": true}
 
 func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
+	// D05.2 PR C (T10): the tidb_gc_* hooks against mysql.tidb (the generator's in-memory
+	// table, tidbTableAccessor), from several table contents. Deferred first, so appended
+	// after every other record (the deferred groups below included).
+	defer func() {
+		for _, c := range sessionvarsGCVars {
+			sv := variable.GetSysVar(c.name)
+			vals := append([]string{""}, sysvarValues(sv, rng)...)
+			vals = append(vals, c.extra...)
+			for _, seed := range sessionvarsGCSeeds(c.keys) {
+				for _, v := range vals {
+					g.Add("sys/tidb_table", "tidb_table", c.name, v, seed)
+				}
+			}
+		}
+	}()
 	g.Add("sys/fresh", "fresh")
 	all := sysvarNames()
 	kinds := []string{"set", "relaxed", "noval", "old"}
@@ -437,6 +453,41 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("sys/slow_log_rules", "set", "old", variable.TiDBSlowLogRules, v)
 		g.Add("sys/slow_log_rules", "set_global_hook", variable.TiDBSlowLogRules, v)
 	}
+}
+
+// sessionvarsGCVars are the variables whose hooks read and write mysql.tidb, with the
+// mysql.tidb keys they use and values beyond sysvarValues.
+var sessionvarsGCVars = []struct {
+	name  string
+	keys  []string
+	extra []string
+}{
+	{variable.TiDBGCEnable, []string{"tikv_gc_enable"}, []string{"true", "FALSE", "on", "Off", "1", "0"}},
+	{variable.TiDBGCRunInterval, []string{"tikv_gc_run_interval"}, []string{"10m", "1h30m", "24h", "8760h", "5m"}},
+	{variable.TiDBGCLifetime, []string{"tikv_gc_life_time"}, []string{"10m", "72h", "1h0m0s", "9m59s"}},
+	{variable.TiDBGCConcurrency, []string{"tikv_gc_auto_concurrency", "tikv_gc_concurrency"}, []string{"-1", "1", "2", "256", "0", "AUTO"}},
+	{variable.TiDBGCScanLockMode, []string{"tikv_gc_scan_lock_mode"}, []string{"physical", "LEGACY", "Physical", "x"}},
+}
+
+// sessionvarsGCSeeds are the mysql.tidb contents a tidb_gc_* record starts from: empty
+// (the default), "true" / "false" in several cases (trueFalseToOnOff), a duration, an
+// arbitrary string; for tidb_gc_concurrency the combinations of the auto flag and the
+// concurrency.
+func sessionvarsGCSeeds(keys []string) []map[string]string {
+	if len(keys) == 2 {
+		return []map[string]string{
+			{},
+			{keys[0]: "true"},
+			{keys[0]: "false"},
+			{keys[0]: "false", keys[1]: "5"},
+			{keys[0]: "TRUE", keys[1]: "5"},
+			{keys[0]: "ON", keys[1]: "7"},
+			{keys[0]: "off", keys[1]: "x"},
+			{keys[1]: "3"},
+		}
+	}
+	k := keys[0]
+	return []map[string]string{{}, {k: "true"}, {k: "False"}, {k: "TrUe"}, {k: "20m0s"}, {k: "PHYSICAL"}, {k: ""}, {k: "garbage"}}
 }
 
 var sessionvarsCloudURIs = []string{
@@ -669,6 +720,32 @@ func sessionvarsExec(op string, args []json.RawMessage) (any, error) {
 			steps = append(steps, res)
 		}
 		return vec.WithWarnings{Out: steps, Warnings: sysvarWarnings(vars)}, nil
+	case "tidb_table":
+		// D05.2 PR C (T10): GetGlobal of a tidb_gc_* variable, then (val != "") Validate and
+		// its SetGlobal hook and GetGlobal again, on a session whose accessor holds the given
+		// mysql.tidb rows; the output includes mysql.tidb afterwards.
+		resetSysvarAtomics()
+		defer resetSysvarAtomics()
+		name, val := arg[string](args, 0), arg[string](args, 1)
+		vars := freshVars(svCtx{StmtType: "Set", TiDB: arg[map[string]string](args, 2)})
+		sv := variable.GetSysVar(name)
+		res := map[string]any{}
+		before, berr := sv.GetGlobalFromHook(context.Background(), vars)
+		res["before"], res["before_err"] = before, errStr(berr)
+		var err error
+		if val != "" {
+			var v string
+			v, err = sv.Validate(vars, val, variable.ScopeGlobal)
+			if err == nil {
+				err = sv.SetGlobalFromHook(context.Background(), vars, v, false)
+				if err == nil {
+					after, aerr := sv.GetGlobalFromHook(context.Background(), vars)
+					res["after"], res["after_err"] = after, errStr(aerr)
+				}
+			}
+		}
+		res["tidb"] = tidbTableDump(vars)
+		return vec.WithWarnings{Out: res, Warnings: sysvarWarnings(vars)}, err
 	case "init":
 		resetSysvarAtomics()
 		vars := freshVars(svCtx{})

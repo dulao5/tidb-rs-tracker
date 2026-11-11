@@ -194,7 +194,6 @@ var sessionvarsPending = []string{
 	"cursorTracker.remove",
 	"extractMsgFromSQLWarn",
 	"getNow",
-	"getTiDBTableValue",
 	"kvExecDetailFormat",
 	"makeExecDetailAccessor",
 	"makeKVExecDetailAccessor",

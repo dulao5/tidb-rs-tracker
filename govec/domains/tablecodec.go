@@ -65,6 +65,8 @@ func init() {
 }
 
 var tablecodecExempt = map[string]string{
+	"EncodeRow":                "covered by the systable domain (replace records: rf 1 writes through EncodeOldRow, rf 2 through rowcodec.Encoder)",
+	"EncodeOldRow":             "covered by the systable domain (replace records with rf 1, Go's sysSessionPool session)",
 	"init":                     "sets kv.DecodeTableIDFunc; tidb-rs returns the function from tablecodec::init() (covered through key_decode \"tid_func\")",
 	"RowData.Len":              "sort.Interface method; callers sort RowData by column ID before Checksum (covered: checksum op sorts)",
 	"RowData.Less":             "sort.Interface method (covered: checksum op sorts)",
@@ -106,6 +108,17 @@ var tablecodecCoverage = map[string]vec.Coverage{
 	"index_raw":     {Min: 1500, GoFuncs: []string{"DecodeIndexKV", "DecodeIndexHandle", "SplitIndexValue"}},
 	"truncate":      {Min: 300, GoFuncs: []string{"TruncateIndexValue"}},
 	"verify_ranges": {Min: 100, GoFuncs: []string{"VerifyTableIDForRanges"}},
+	// D06.7 brings the write-path encoders back from X (D05.2 spec §6: the system-table writer).
+	"encode_row": {Min: 900, GoFuncs: []string{"Encoder.Encode", "Encoder.appendColVal", "Encoder.appendColVals",
+		"Encoder.encodeRowCols", "Encoder.reformatCols", "Encoder.reset", "NoChecksum.encode", "RawChecksum.encode",
+		"encodeValueDatum", "encodeInt", "encodeUint", "largeNotNullSorter.Len", "largeNotNullSorter.Less",
+		"largeNotNullSorter.Swap", "largeNullSorter.Len", "largeNullSorter.Less", "largeNullSorter.Swap",
+		"smallNotNullSorter.Len", "smallNotNullSorter.Less", "smallNotNullSorter.Swap", "smallNullSorter.Len",
+		"smallNullSorter.Less", "smallNullSorter.Swap", "u16SliceToBytes", "u32SliceToBytes",
+		"row.initColIDs", "row.initColIDs32", "row.initOffsets", "row.initOffsets32", "row.toBytes"}},
+	"index_value": {Min: 1200, GoFuncs: []string{"GenIndexValuePortal", "GenIndexValueForClusteredIndexVersion1",
+		"genIndexValueVersion0", "TryGetCommonPkColumnRestoredIds", "EncodeHandleInUniqueIndexValue",
+		"encodeCommonHandle", "encodePartitionID"}},
 }
 
 // TablecodecMinedTests: the Go test functions whose literals are in testdata/tablecodec_literals.tsv.
@@ -373,6 +386,22 @@ func tablecodecExec(op string, p []json.RawMessage) (out any, err error) {
 		return map[string]any{"encs": encs, "sum": sum}, nil
 	case "index":
 		return tcIndex(p), nil
+	case "encode_row":
+		// [ids, datums, loc, checksum handle spec or null]
+		ids := arg[[]int64](p, 0)
+		ds := datumsArg(p, 1)
+		loc := tcLocNil(p, 2)
+		var cs rowcodec.Checksum
+		if string(p[3]) != "null" {
+			cs = rowcodec.RawChecksum{Handle: tcHandle(p, 3)}
+		}
+		return tcTry(func() any {
+			enc := rowcodec.Encoder{Enable: true}
+			b, err := enc.Encode(loc, ids, ds, cs, nil)
+			return map[string]any{"b": hx(b), "err": tcErr(err)}
+		}), nil
+	case "index_value":
+		return tcIndexValue(p), nil
 	case "index_raw":
 		return tcIndexDecode(hexArg(p, 0), hexArg(p, 1), arg[int](p, 2), tcColInfos(p, 3), arg[bool](p, 4)), nil
 	case "truncate":
@@ -561,6 +590,42 @@ func tcIndex(p []json.RawMessage) any {
 	}
 	o["dec"] = tcIndexDecode(key, value, colsLen, cols, idx.Unique)
 	return o
+}
+
+// tcIndexValue: [table JSON, index offset, physical ID, row datums, handle spec, untouched, loc,
+// needRestored] → the index key (GenIndexKey) and value (GenIndexValuePortal) as
+// tables.index.create builds them. needRestored (tables.NeedRestoredData, D06.4) is an input;
+// the generator only emits rows whose handle restored data (TryGetHandleRestoredDataWrapper)
+// is empty, so the value needs no D06.4 code.
+func tcIndexValue(p []json.RawMessage) any {
+	var tbl model.TableInfo
+	if err := json.Unmarshal([]byte(arg[string](p, 0)), &tbl); err != nil {
+		panic(err)
+	}
+	idx := tbl.Indices[arg[int](p, 1)]
+	phy := arg[int64](p, 2)
+	row := datumsArg(p, 3)
+	h := tcHandle(p, 4)
+	untouched := arg[bool](p, 5)
+	loc := tcLoc(p, 6)
+	return tcTry(func() any {
+		var vals []types.Datum
+		for _, ic := range idx.Columns {
+			vals = append(vals, row[ic.Offset])
+		}
+		k, distinct, err := tablecodec.GenIndexKey(loc, &tbl, idx, phy, append([]types.Datum(nil), vals...), h, nil)
+		if err != nil {
+			return map[string]any{"err": tcErr(err)}
+		}
+		tablecodec.TruncateIndexValues(&tbl, idx, vals)
+		needRestored := arg[bool](p, 7)
+		pid := int64(0)
+		if idx.Global {
+			pid = phy
+		}
+		v, err := tablecodec.GenIndexValuePortal(loc, &tbl, idx, needRestored, distinct, untouched, vals, h, pid, nil, nil)
+		return map[string]any{"k": hx(k), "distinct": distinct, "v": hx(v), "err": tcErr(err)}
+	})
 }
 
 func tcIndexDecode(key, value []byte, colsLen int, cols []rowcodec.ColInfo, unique bool) any {
@@ -1194,6 +1259,11 @@ func tcGenerateRows(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit, a
 			}
 			cs = rowcodec.RawChecksum{Handle: ch}
 		}
+		var csSpec any
+		if rc2, ok := cs.(rowcodec.RawChecksum); ok {
+			csSpec = specOrNil(rc2.Handle)
+		}
+		g.Add("rand/encode_row", "encode_row", rc.ids, rc.raw, loc, csSpec)
 		enc := rowcodec.Encoder{Enable: true}
 		b, err := enc.Encode(lc, rc.ids, rc.ds, cs, nil)
 		if err != nil {
@@ -1433,6 +1503,10 @@ func tcGenerateIndexes(g *vec.Gen, rng *rand.Rand, cols []tcCol, lits []datumLit
 		}
 		loc := locs[i%len(locs)]
 		lc := tcLoc(rawsOf([]any{loc}), 0)
+		if len(tables.TryGetHandleRestoredDataWrapper(tbl, row, nil, idx)) == 0 {
+			g.Add("rand/index_value", "index_value", string(tblJSON), idxOff, phy, rawRow, specOrNil(h), i%6 == 0, loc,
+				tables.NeedRestoredData(idx.Columns, tbl.Columns))
+		}
 		key, distinct, err := tablecodec.GenIndexKey(lc, tbl, idx, phy, append([]types.Datum(nil), idxVals...), h, nil)
 		if err != nil {
 			g.Add("rand/index", "index", string(tblJSON), idxOff, phy, rawIdx, specOrNil(h), "", len(idx.Columns), []any{}, loc)
