@@ -52,6 +52,8 @@ var minedGoTests = map[string][]string{
 	"ranger": domains.RangerMinedTests(),
 	// Scenario of pkg/expression/expropt/optional_test.go (D00.1 part 2b), as records.
 	"ctx2b": domains.Ctx2bMinedTests(),
+	// Scenarios of pkg/util/execdetails/execdetails_test.go (D14.0), as records.
+	"execdetails": domains.ExecdetailsMinedTests(),
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",

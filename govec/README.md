@@ -426,3 +426,12 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **豁免**：`expr_pending.go`，共 220 个：向量化方法（由第 2 部分的向量驱动取代，N4 M-EVAL）、cascades 的 `Hash64`/`Equals`（EXC.B）、`errors.go`/`context.go` 的未导出辅助函数（tidb-rs 单元测试）、第 2 部分（ScalarFunction 等）和第 3 部分（VECTOR 函数）。
 - **两个目标**：3 条 `const` 记录不同（M-F2I：NaN 浮点值在 hybrid `RetType` 下走 `int64(NaN)`），登记在 `targetDiffs`。
 - **固定的偏离**：`corr` 记录带 `dmem`（Data 的 `MemUsage`），tidb-rs 中关联列的值不在节点里（spec D08.1 §3.2）。
+
+## execdetails（块 D14.0：`pkg/util/execdetails`、`pkg/util/tracing/opt_trace.go`）
+
+- **依赖一起比对**：client-go `util` 的 detail 类型（`String` / `Merge` / `Clone`、`FormatBytes`），`influxdata/tdigest`（`Percentile` 超过 1000 个值后使用），Go 的 `math.Sin` / `math.Asin`（tdigest 的 scale 函数；`gomath` 记录比较结果位）。tdigest 和 `math` 在 arm64 上有融合乘加（`go tool objdump` 读出，tidb-rs spec D14.0 §3.1），所以两个目标的文件可能不同。
+- **批量输入**：`tdigest`、`percentile`、`sync`、`coll` 的批量步骤（`gen`、`copgen`、`cops`）由 splitmix64 在两侧生成（`edSplitMix`），记录本身很小。
+- **时间**：所有 duration 都是输入，不读时钟。
+- **`bcop`**：`basicCopRuntimeStats` 未导出，通过 `go:linkname` 调用它的 `Clone`（`CopRuntimeStats.stats` 是第一个字段）。Go 的 `Clone` 与原对象共享百分位数的切片和 t-digest（tidb-rs 深拷贝，spec D14.0 §4 第 4 条），所以 `bcop` 步骤总在记录的最后。
+- **panic**：Go 解引用 nil 或越界的地方（缺字段的 summary、nil detail 的合并、无当前规则时追加步骤、nil map、空百分位数取值）记为 panic，Rust 侧也必须 panic。分数权重下 tdigest 的 `Quantile(1)` 会越界（`processedWeight` 与累积权重按不同顺序求和），这类记录不取 q = 1。
+- **豁免**：`tracing/util.go` 的 11 个函数（opentracing / `runtime/trace`，承载方式随 D05.3 与 TRACE 执行器），`MergeTiFlashRUConsumption`（DEF.MPP，需要 kvproto `resource_manager`）。
