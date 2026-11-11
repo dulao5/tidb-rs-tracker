@@ -139,7 +139,7 @@ var castCoverage = map[string]vec.Coverage{
 
 // ---------------------------------------------------------------- execution
 
-func castCtx(raw json.RawMessage) (*exprstatic.ExprContext, *exprstatic.EvalContext) {
+func castCtx(raw json.RawMessage, extra ...exprstatic.EvalCtxOption) (*exprstatic.ExprContext, *exprstatic.EvalContext) {
 	a := exArr(raw)
 	var lv []int
 	must(json.Unmarshal(a[1], &lv))
@@ -161,7 +161,7 @@ func castCtx(raw json.RawMessage) (*exprstatic.ExprContext, *exprstatic.EvalCont
 		ns := arg[int64](a, 4)
 		opts = append(opts, exprstatic.WithCurrentTime(func() (gotime.Time, error) { return gotime.Unix(0, ns).UTC(), nil }))
 	}
-	ev := exprstatic.NewEvalContext(opts...)
+	ev := exprstatic.NewEvalContext(append(opts, extra...)...)
 	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(ev)), ev
 }
 
@@ -430,6 +430,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 		m["bwarns"] = ecWarns(ev.TruncateWarnings(0))
 		return m, nil
 	}
+	if out := castExec2b3(op, p); out != nil {
+		return out, nil
+	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
 }
 
@@ -688,6 +691,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerate2b2(vg, g)
 	castGenerate2b2b(vg, g)
 	castGenerate2b2c(vg, g)
+	castGenerate2b3(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
