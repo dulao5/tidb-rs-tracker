@@ -464,6 +464,10 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
   - `wrap-json`（op `wrap`）300 条：`WrapWithCastAsJSON/VectorFloat32`（含带 `ParseToJSONFlag` 的 JSON 参数）。
   - `json2tp` 300 条：`ConvertJSON2Tp`（结果按 `CreateBinaryJSON` 输出）。
   - JSON 值输出为 `[TypeCode, hex(Value)]`，向量输出为序列化字节的 hex。
+- 第 2b-3a 部分（追加，`domains/cast2b3.go`，之前的 17,380 条不变）：
+  - `withtps` 1,300 条：`newBaseBuiltinFuncWithTp`（参数类型为求值类型）与 `newBaseBuiltinFuncWithFieldTypes`（参数类型为字段类型，DECIMAL/时间类型不同时包 CAST）；叶子参数覆盖数值、7 种字符集的字符串、时间、JSON 列与常量、NULL 常量；输出包 CAST 之后的参数和 `baseBuiltinFunc` 的字段（collation 推导经过包 CAST 的构造函数，Lucky 评审 tidb-rs #80）。
+  - `newfunc` 700 条：`NewFunction`/`NewFunctionBase`/`NewFunctionTryFold`/`NewFunctionWithInit`/`NewFunctionInternal`，函数名为 `newFunctionImpl` 自己构建的 cast/to_binary/from_binary 和不存在的函数名（有无当前库：`ErrNoDB` 与 `ErrFunctionNotExists`）；构建失败的 CAST 不生成（Go 记日志后返回无签名的节点）。
+  - `nullinfer` 300 条：`typeInferForNull`（含 NOT NULL 的 NULL 常量）。
 - `builtin_convert_charset.go` 从 D08.6 移到 D08.8（`scripts/blocks/rules.py`）：CAST 到 STRING 和 `newBaseBuiltinFuncWithTp` 都用 `HandleBinaryLiteral`。
 - 覆盖与豁免：D08.8 的 99 个函数被覆盖，其余在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`newBaseBuiltinCastFunc4String`、`newBaseBuiltinFuncWithTp`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
 
