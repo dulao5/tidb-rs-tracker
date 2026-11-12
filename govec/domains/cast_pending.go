@@ -3,6 +3,15 @@
 
 package domains
 
+// castExemptAll: the exemptions of every block of the domain.
+func castExemptAll() map[string]string {
+	m := castExempt()
+	for k, v := range castExemptD084() {
+		m[k] = v
+	}
+	return m
+}
+
 func castExempt() map[string]string {
 	return map[string]string{
 		"BuildCastFunction4Union":                             "ported; same path as BuildCastFunctionWithCheck with inUnion (the cast records set inUnion)",

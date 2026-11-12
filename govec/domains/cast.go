@@ -75,8 +75,8 @@ func init() {
 		Name:     "cast",
 		Seed:     castSeed,
 		Coverage: castCoverage,
-		Blocks:   []string{"D08.8", "D08.2", "D08.1"},
-		Exempt:   castExempt(),
+		Blocks:   []string{"D08.8", "D08.2", "D08.1", "D08.4"},
+		Exempt:   castExemptAll(),
 		Gzip:     true,
 		Generate: castGenerate,
 		Exec:     castExec,
@@ -436,6 +436,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 	if out := castExec2b3c(op, p); out != nil {
 		return out, nil
 	}
+	if out := castExecD084(op, p); out != nil {
+		return out, nil
+	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
 }
 
@@ -696,6 +699,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerate2b2c(vg, g)
 	castGenerate2b3(vg, g)
 	castGenerate2b3c(vg, g)
+	castGenerateD084(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1

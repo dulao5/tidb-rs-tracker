@@ -98,6 +98,14 @@ func evExpr(ctx *exprstatic.ExprContext, raw json.RawMessage, fts []*types.Field
 			panic(err)
 		}
 		return e
+	case "fn":
+		// D08.4 batch 1: ["fn", name, [recipes]] -> NewFunctionBase (no folding).
+		args := evExprs(ctx, a[2], fts)
+		e, err := expression.NewFunctionBase(ctx, arg[string](a, 1), types.NewFieldType(mysql.TypeUnspecified), args...)
+		if err != nil {
+			panic(err)
+		}
+		return e
 	}
 	panic("evExpr")
 }
