@@ -14,6 +14,9 @@ package domains
 //     TRUE / FALSE items. Column i is UniqueID i+1 (as in the "arbuild" recipes).
 //   - "arbuild" (D08.5 op), source "isnull": IS NULL over every argument type, evaluated with
 //     vectorization off and on (the signatures BuildNotNullExpr builds).
+//   - "cprop", source "ccast" (after "isnull"): `s1 = 'a' AND CAST(s1 AS CHAR) <op> s2` over
+//     string columns / CAST targets of several collations (ColumnSubstitute restoring the
+//     CAST's coercibility decides whether the substituted condition keeps its collation).
 
 import (
 	"encoding/json"
@@ -115,7 +118,8 @@ func castExecD082c(op string, p []json.RawMessage) any {
 	// them (the YEAR constant of RefineComparedConstant, PropagateType on a DECIMAL
 	// argument, BuildCastFunction clearing NotNullFlag on the CAST's type); every holder of
 	// the node sees the change. tidb-rs changes copies (D08.1 spec §4, D08.4 §4 item 1), so
-	// these records are marked "known_deviation" and skipped by the replay (D08.2 spec §4).
+	// these records are marked "known_deviation"; the replay compares them and counts a
+	// difference as a deviation (D08.2 spec §4 item 7, tidb-rs #104).
 	snap := map[expression.Expression]string{}
 	for _, c := range append(append([]expression.Expression{}, conds...), filters...) {
 		cpWalk(c, func(e expression.Expression) { snap[e] = cpDumpString(e) })
@@ -363,5 +367,32 @@ func castGenerateD082c(vg *vec.Gen, g *castGen) {
 		}
 		vg.Add("isnull", "arbuild", []int{0, 0, 1, 2}[g.pick(4)], ast.IsNull, []any{a}, g.arCtx(),
 			[]any{sfFtIn(ft)}, g.arRows([]func() []any{gen}, n), g.arSel(n))
+	}
+	// A string CAST over a column, compared with a column of another collation
+	// (`s1 = 'a' AND CAST(s1 AS CHAR) = s2`): ColumnSubstitute rebuilds the CAST over the
+	// constant and restores its coercibility, which decides whether the substituted
+	// condition keeps the CAST's collation (appended after "isnull"; earlier records unchanged).
+	for i := 0; i < 300; i++ {
+		c0 := cpColls[g.pick(len(cpColls))]
+		c1 := cpColls[g.pick(len(cpColls))]
+		ct := cpColls[g.pick(len(cpColls))]
+		fts := []*types.FieldType{strFt(c0), strFt(c1)}
+		cols := []any{sfFtIn(fts[0]), sfFtIn(fts[1])}
+		var cast any = []any{"cast", sfFtIn(strFt(ct)), []any{"col", 0}}
+		var other any = []any{"col", 1}
+		if g.pick(4) == 0 {
+			other = strConst(cpColls[g.pick(len(cpColls))])
+		}
+		cmp := []any{"fn", []string{ast.EQ, ast.EQ, ast.LT, ast.NE}[g.pick(4)], []any{cast, other}}
+		if g.pick(2) == 0 {
+			cmp = []any{"fn", ast.EQ, []any{other, cast}}
+		}
+		con := strConst(c0)
+		if g.pick(3) == 0 {
+			con = strConst(cpColls[g.pick(len(cpColls))])
+		}
+		conds := []any{[]any{"fn", ast.EQ, []any{[]any{"col", 0}, con}}, cmp}
+		g.rng.Shuffle(len(conds), func(a, b int) { conds[a], conds[b] = conds[b], conds[a] })
+		vg.Add("ccast", "cprop", 0, conds, []any{}, g.timeCtx(), cols, 0, false)
 	}
 }
