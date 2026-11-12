@@ -123,7 +123,6 @@ func exprExempt() map[string]string {
 		"implicitEvalReal":                             "ported (tidb-rs expression.rs): reached only through CanImplicitEvalReal (DAYNAME, D08.7)",                                        // pkg/expression/expression.go
 		"isColumnInOperand":                            "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"splitNormalFormItems":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
-		"wrapWithIsTrue":                               "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"ScalarFunction.Equals":                        "cascades HashEquals only (pkg/planner/cascades/base is EXC.B)",                                                                    // pkg/expression/scalar_function.go
 		"ScalarFunction.Eval":                          "ported (dispatch to the signature's drivers); records come with the first signatures (D08.2/D08.8)",                               // pkg/expression/scalar_function.go
 		"ScalarFunction.EvalDecimal":                   "ported (dispatch to the signature's drivers); records come with the first signatures (D08.2/D08.8)",                               // pkg/expression/scalar_function.go
