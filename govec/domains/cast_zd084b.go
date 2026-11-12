@@ -26,9 +26,11 @@ import (
 )
 
 func coalGoFuncs() []string {
-	out := []string{"coalesceFunctionClass.getFunction", "InferType4ControlFuncs",
-		"setFlenFromArgs", "setDecimalFromArgs", "addCollateAndCharsetAndFlagFromArgs",
-		"maxlen", "hasNonBinaryStr", "hasBinaryStr"}
+	// InferType4ControlFuncs and its helpers (setFlenFromArgs, setDecimalFromArgs,
+	// addCollateAndCharsetAndFlagFromArgs, maxlen, hasNonBinaryStr, hasBinaryStr) are run by
+	// every record here too, but they belong to block D08.9, which is not a block of this
+	// domain; they are listed when D08.9 gets its records.
+	out := []string{"coalesceFunctionClass.getFunction"}
 	for _, k := range []struct{ sig, et string }{{"Int", "Int"}, {"Real", "Real"},
 		{"Decimal", "Decimal"}, {"String", "String"}, {"Time", "Time"},
 		{"Duration", "Duration"}, {"JSON", "JSON"}} {
