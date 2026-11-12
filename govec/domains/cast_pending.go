@@ -9,6 +9,9 @@ func castExemptAll() map[string]string {
 	for k, v := range castExemptD084() {
 		m[k] = v
 	}
+	for k, v := range castExemptD085() {
+		m[k] = v
+	}
 	return m
 }
 

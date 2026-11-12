@@ -31,6 +31,11 @@ var targetDiffs = []targetDiff{
 		Why: "M-FMA: math.Sin / math.Asin polynomial and reduction steps fused on arm64 only"},
 	// expr (D08.1 part 1): Constant.EvalInt of a NaN float datum with a hybrid RetType
 	// goes through Datum.ToInt64, i.e. int64(NaN).
+	// Hardware default NaN of an invalid DOUBLE operation (Inf/Inf, Inf-Inf, 0*Inf in the
+	// D08.5 arithmetic records): x86 0xFFF8000000000000 (negative), ARM 0x7FF8000000000000.
+	// Go and Rust both use the hardware operation, so each target replays its own file.
+	{Domain: "cast", Op: "arbuild", Args: "*", N: 5,
+		Why: "hardware default NaN of an invalid operation (Inf/Inf, 0*Inf): x86 negative, ARM positive"},
 	{Domain: "expr", Op: "const", Args: "*", N: 3,
 		Why: "M-F2I: Constant.EvalInt of a NaN float datum (hybrid RetType) reaches int64(NaN): MinInt64 on amd64, 0 on arm64"},
 	// M-FMA: gc fuses the two word sums of MyDecimal.ToFloat64 (mydecimal.go:1118,
