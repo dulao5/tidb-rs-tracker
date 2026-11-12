@@ -1,21 +1,9 @@
-// Block D08.5 functions of later batches, with the reason: after batch 4 (the math functions)
-// only CONV and CRC32 are left (specs/D08.5-arith/plan.md, handoff). Shrinks as the batches
-// of D08.5 land (generated from data/func_blocks.tsv).
+// Block D08.5 functions without vectors after batch 5 (CONV, CRC32), with the reason.
 
 package domains
 
 func castExemptD085() map[string]string {
 	return map[string]string{
-		"builtinCRC32Sig.Clone":          "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinCRC32Sig.evalInt":        "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinCRC32Sig.vecEvalInt":     "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinCRC32Sig.vectorized":     "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinConvSig.Clone":           "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinConvSig.conv":            "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinConvSig.evalString":      "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinConvSig.vecEvalString":   "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"builtinConvSig.vectorized":      "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"convFunctionClass.getFunction":  "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
-		"crc32FunctionClass.getFunction": "D08.5 later batch (CONV / CRC32, handoff after batch 4), specs/D08.5-arith/plan.md",
+		"builtinConvSig.vecEvalString": "unreachable in v8.5.8: builtinConvSig.vectorized() is false, so ScalarFunction.Vectorized() never calls isChildrenVectorized and bufAllocator stays nil; a direct VecEvalString nil-dereferences it (D08.5 spec §3.2). tidb-rs ports it as `novec` (the vector driver returns the baseBuiltinFunc error), so Rust has no untested vector path",
 	}
 }
