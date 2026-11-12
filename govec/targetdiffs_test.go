@@ -34,8 +34,10 @@ var targetDiffs = []targetDiff{
 	// Hardware default NaN of an invalid DOUBLE operation (Inf/Inf, Inf-Inf, 0*Inf in the
 	// D08.5 arithmetic records): x86 0xFFF8000000000000 (negative), ARM 0x7FF8000000000000.
 	// Go and Rust both use the hardware operation, so each target replays its own file.
-	{Domain: "cast", Op: "arbuild", Args: "*", N: 5,
-		Why: "hardware default NaN of an invalid operation (Inf/Inf, 0*Inf): x86 negative, ARM positive"},
+	// D08.5 batch 3 (bit operators): 8 "bitop" records CAST a NaN DOUBLE argument to INT
+	// (builtinCastRealAsIntSig), i.e. M-F2I: the conversion of NaN differs by target.
+	{Domain: "cast", Op: "arbuild", Args: "*", N: 13,
+		Why: "5: hardware default NaN of an invalid operation (Inf/Inf, 0*Inf): x86 negative, ARM positive; 8: M-F2I, a NaN DOUBLE cast to INT (bit operators)"},
 	{Domain: "expr", Op: "const", Args: "*", N: 3,
 		Why: "M-F2I: Constant.EvalInt of a NaN float datum (hybrid RetType) reaches int64(NaN): MinInt64 on amd64, 0 on arm64"},
 	// M-FMA: gc fuses the two word sums of MyDecimal.ToFloat64 (mydecimal.go:1118,
