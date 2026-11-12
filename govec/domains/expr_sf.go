@@ -176,6 +176,17 @@ func d2DatumInOf(d types.Datum) any {
 		return []any{d.Kind(), j.TypeCode, hex.EncodeToString(j.Value)}
 	case types.KindVectorFloat32:
 		return []any{d.Kind(), d.GetVectorFloat32().String()}
+	// constant propagation (D08.2) builds constants of these kinds
+	case types.KindFloat32:
+		return []any{d.Kind(), math.Float64bits(float64(d.GetFloat32()))}
+	case types.KindBinaryLiteral, types.KindMysqlBit:
+		return []any{d.Kind(), hex.EncodeToString(d.GetBytes())}
+	case types.KindMysqlEnum:
+		e := d.GetMysqlEnum()
+		return []any{d.Kind(), e.Value, vec.GoString(e.Name), d.Collation()}
+	case types.KindMysqlSet:
+		st := d.GetMysqlSet()
+		return []any{d.Kind(), st.Value, vec.GoString(st.Name), d.Collation()}
 	}
 	panic(fmt.Sprintf("d2DatumInOf kind %d", d.Kind()))
 }
