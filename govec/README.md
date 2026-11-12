@@ -474,6 +474,10 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
   - `evbool` 700 条：`VecEvalBool`；`evexpr` 700 条：`EvalExpr`（hybrid 列可按 int 或 string 读）；`evexec` 300 条：`VectorizedExecute`。
   - 值按列的类型输出：BIT 为 hex，ENUM/SET 为 [value, name]，FLOAT 为 float32 的位，其余同其他 cast op。nil 与空的 bool 切片都输出为空数组。
   - **池化缓冲区的 warning**：`VecEvalBool` 把每个过滤条件求值到全局列池中的列，`toBool` 用 `Column.GetString`（`hack.String`，与列共享字节）做 `StrToFloat`，"Truncated incorrect DOUBLE value: '%s'" 保存这个字符串、在格式化时才读取；列放回池子并被重用后，warning 显示的是别的字节（甚至别的语句、别的会话的数据）。所以经过 `VecEvalBool` 的路径（`evbool`；`evfilter` 在向量化打开且全部可向量化时）把这条 warning 的参数记为 `'<pooled>'`。tidb-rs 复制字符串，不会出现这个问题。
+- D08.4 第 1 批：比较运算符（追加，`domains/cast_d084.go`，之前的 24,380 条不变，合计 29,264 条）。领域的 `Blocks` 加上 D08.4，后续批次的 120 个函数豁免在 `cast_pending_d084.go`。
+  - `cmpbuild` 3,984 条：用 `NewFunctionBase`（不折叠）或 `NewFunction`（折叠）构建 `name(lhs, rhs)`，输出 `sfDump`（改写后的参数与签名）或错误、构建 warning；`GetAccurateCmpType`；两个参数都按比较类型求值时，`GetCmpFunction` 的 CompareFunc 在每个物理行上的结果（列按自己的类型读，`CompareReal` 读 int 列在 Go 中是读垃圾值，所以只在类型一致时记录）；再用 `EvalExpr` 关闭/打开向量化求值。来源：`sys` 3,000（列、特殊常量、CAST、嵌套比较，表达式配方加了 `["fn", name, [args]]`）、`same` 500（同类型两列）、`sign` 400（有符号/无符号 BIGINT 列与常量）、`json-parse` 84（`CAST(s AS JSON) <op> s`，`DisableParseJSONFlag4Expr`）。
+  - `newfunc` 900 条（第 2b-3a 部分的 op，比较函数名）：`cmp` 700（5 种入口）、`tryfold` 200（构建时有 warning 的常量比较：TryFold 的 warning 分支比较走不到，warning 在构建 CAST 包装时已产生）。
+  - 不生成 `int 非常量 <,<=,>,>= 非 int 常量`：Go 用 `NewFunctionInternal(Ceil/Floor)` 改写常量，tidb-rs 在数学函数（D08.5）之前构建不出来（`cmpCeilPath`）。
 - `builtin_convert_charset.go` 从 D08.6 移到 D08.8（`scripts/blocks/rules.py`）：CAST 到 STRING 和 `newBaseBuiltinFuncWithTp` 都用 `HandleBinaryLiteral`。
 - 覆盖与豁免：D08.8 的 99 个函数被覆盖，其余在 `cast_pending.go`（由 `data/func_blocks.tsv` 生成，理由手写）。领域同时列出 D08.2、D08.1，覆盖 `FoldConstant`、`newBaseBuiltinCastFunc`、`newBaseBuiltinCastFunc4String`、`newBaseBuiltinFuncWithTp`、`baseBuiltinCastFunc.metadata/cloneFrom`、`PropagateType`。
 
