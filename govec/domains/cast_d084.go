@@ -17,8 +17,9 @@ package domains
 //              input (values, warnings, error).
 //   - "newfunc" (part 2b-3a op) with the comparison names: NewFunction / NewFunctionTryFold
 //     fold the comparison of two constants (fold 1 / -1: the TryFold truncation warning).
-// Not generated: `int non-constant <cmp> non-int constant` with < <= > >=, which refines the
-// constant through NewFunctionInternal(Ceil / Floor) (math functions, D08.5; spec §4).
+// Not generated: the `int non-constant <cmp> non-int constant` comparisons with < <= > >= that
+// reach RefineComparedConstant's NewFunctionInternal(Ceil / Floor) (math functions, D08.5;
+// spec §4 item 2; cmpReachesCeil). The branches before it are generated.
 
 import (
 	"encoding/json"
@@ -26,11 +27,13 @@ import (
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/expression"
+	"github.com/pingcap/tidb/pkg/expression/exprstatic"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/charset"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/chunk"
+	"github.com/pingcap/tidb/pkg/util/collate"
 )
 
 var cmpNames = []string{ast.LT, ast.LE, ast.GT, ast.GE, ast.EQ, ast.NE, ast.NullEQ}
@@ -223,7 +226,7 @@ func (g *castGen) cmpConst() (any, *types.FieldType) {
 
 // cmpLeaf: an argument recipe over the columns, its evaluation type and whether it is a
 // constant.
-func (g *castGen) cmpLeaf(fts []*types.FieldType, depth int) (any, types.EvalType, bool) {
+func (g *castGen) cmpLeaf(fts []*types.FieldType, depth int, reaches func(name string, a, b any) bool) (any, types.EvalType, bool) {
 	switch k := g.pick(10); {
 	case k < 4:
 		i := g.pick(len(fts))
@@ -247,26 +250,100 @@ func (g *castGen) cmpLeaf(fts []*types.FieldType, depth int) (any, types.EvalTyp
 		return []any{"cast", sfFtIn(tgt), []any{"col", i}}, tgt.EvalType(), false
 	default:
 		name := cmpNames[g.pick(len(cmpNames))]
-		a, aet, ac := g.cmpLeaf(fts, depth+1)
-		b, bet, bc := g.cmpLeaf(fts, depth+1)
-		if cmpCeilPath(name, aet, ac, bet, bc) {
+		a, _, _ := g.cmpLeaf(fts, depth+1, reaches)
+		b, _, _ := g.cmpLeaf(fts, depth+1, reaches)
+		if reaches(name, a, b) {
 			name = ast.EQ
 		}
 		return []any{"fn", name, []any{a, b}}, types.ETInt, false
 	}
 }
 
-// cmpCeilPath: whether refineArgs would refine a constant through Ceil / Floor
-// (`int non-constant <cmp> non-int constant` with < <= > >=), which tidb-rs cannot build
-// before the math functions (D08.5).
-func cmpCeilPath(name string, aet types.EvalType, ac bool, bet types.EvalType, bc bool) bool {
+// cmpReachesCeil: whether refineArgs refines a constant through NewFunctionInternal(Ceil /
+// Floor), which tidb-rs cannot build before the math functions (D08.5): `int non-constant
+// <, <=, >, >= non-int constant` where RefineComparedConstant gets past the evaluation, the
+// conversion to the int type (no error, no overflow) and the comparison with the original
+// value (not equal). The other branches (NULL constant, conversion error, overflow, exact
+// equality such as `int_col < 2.0`) are generated: tidb-rs implements them. Decided by
+// running the same steps on the built arguments (Lucky, review of tidb-rs #98).
+func cmpReachesCeil(ev *exprstatic.EvalContext, name string, l, r expression.Expression) bool {
 	switch name {
 	case ast.LT, ast.LE, ast.GT, ast.GE:
 	default:
 		return false
 	}
-	return (aet == types.ETInt && !ac && bet != types.ETInt && bc) ||
-		(bet == types.ETInt && !bc && aet != types.ETInt && ac)
+	lt, rt := l.GetType(ev), r.GetType(ev)
+	lc, lIsCon := l.(*expression.Constant)
+	rc, rIsCon := r.(*expression.Constant)
+	if lt.EvalType() == types.ETInt && !lIsCon && rt.EvalType() != types.ETInt && rIsCon {
+		return cmpRefineReachesCeil(ev, *lt, rc)
+	}
+	if rt.EvalType() == types.ETInt && !rIsCon && lt.EvalType() != types.ETInt && lIsCon {
+		return cmpRefineReachesCeil(ev, *rt, lc)
+	}
+	return false
+}
+
+// cmpRefineReachesCeil: RefineComparedConstant up to its Ceil / Floor call.
+func cmpRefineReachesCeil(ev *exprstatic.EvalContext, target types.FieldType, con *expression.Constant) bool {
+	dt, err := con.Eval(ev, chunk.Row{})
+	if err != nil {
+		return false
+	}
+	if target.GetType() == mysql.TypeBit {
+		target = *types.NewFieldType(mysql.TypeLonglong)
+	}
+	tc := ev.TypeCtx()
+	intDatum, err := dt.ConvertTo(tc.WithFlags(tc.Flags().WithAllowNegativeToUnsigned(false)), &target)
+	if err != nil {
+		return false
+	}
+	c, err := intDatum.Compare(tc, &con.Value, collate.GetBinaryCollator())
+	return err == nil && c != 0
+}
+
+// cmpReachesCeilRecipes: cmpReachesCeil on expression recipes over the columns (an argument
+// that cannot be built does not reach it).
+func cmpReachesCeilRecipes(ctxRaw, colsRaw any, name string, a, b any) (reached bool) {
+	switch name {
+	case ast.LT, ast.LE, ast.GT, ast.GE:
+	default:
+		return false
+	}
+	defer func() {
+		if recover() != nil {
+			reached = false
+		}
+	}()
+	ctx, ev := castCtx(cmpJSON(ctxRaw))
+	fts, _ := evInput(cmpJSON(colsRaw), json.RawMessage("[]"), json.RawMessage("null"))
+	l := evExpr(ctx, cmpJSON(a), fts)
+	r := evExpr(ctx, cmpJSON(b), fts)
+	return cmpReachesCeil(ev, name, l, r)
+}
+
+// cmpReachesCeilLeaves: cmpReachesCeil on castArg leaves (the newfunc records).
+func cmpReachesCeilLeaves(ctxRaw any, name string, a, b any) (reached bool) {
+	switch name {
+	case ast.LT, ast.LE, ast.GT, ast.GE:
+	default:
+		return false
+	}
+	defer func() {
+		if recover() != nil {
+			reached = false
+		}
+	}()
+	_, ev := castCtx(cmpJSON(ctxRaw))
+	l, _ := castArg(cmpJSON(a), nil)
+	r, _ := castArg(cmpJSON(b), nil)
+	return cmpReachesCeil(ev, name, l, r)
+}
+
+func cmpJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	must(err)
+	return b
 }
 
 // cmpRows: the input columns, rows and Sel() for the comparisons.
@@ -307,13 +384,15 @@ func castGenerateD084(vg *vec.Gen, g *castGen) {
 	for i := 0; i < 3000; {
 		fts, cols, rows, sel := g.cmpRows()
 		name := cmpNames[g.pick(len(cmpNames))]
-		a, aet, ac := g.cmpLeaf(fts, 0)
-		b, bet, bc := g.cmpLeaf(fts, 0)
-		if cmpCeilPath(name, aet, ac, bet, bc) {
+		ctx := g.timeCtx()
+		reaches := func(n string, x, y any) bool { return cmpReachesCeilRecipes(ctx, cols, n, x, y) }
+		a, _, _ := g.cmpLeaf(fts, 0, reaches)
+		b, _, _ := g.cmpLeaf(fts, 0, reaches)
+		if reaches(name, a, b) {
 			continue
 		}
 		i++
-		vg.Add("sys", "cmpbuild", g.pick(3)/2, name, a, b, g.timeCtx(), cols, rows, sel)
+		vg.Add("sys", "cmpbuild", g.pick(3)/2, name, a, b, ctx, cols, rows, sel)
 	}
 	// Two columns of the same kind (the CompareFunc rows; equal values; NULL-safe equality).
 	for i := 0; i < 500; i++ {
@@ -382,6 +461,68 @@ func castGenerateD084(vg *vec.Gen, g *castGen) {
 		}
 		vg.Add("sign", "cmpbuild", 0, cmpNames[g.pick(len(cmpNames))], a, b, g.timeCtx(), cols, rows, nil)
 	}
+	// The refining branches before Ceil / Floor (Lucky, review of tidb-rs #98): integer, YEAR
+	// and unsigned columns against NULL, overflowing, unconvertible and exactly-integral
+	// DOUBLE / DECIMAL / string constants with < <= > >= (the ones that reach Ceil / Floor
+	// are skipped, cmpReachesCeil).
+	for i := 0; i < 600; {
+		var ft *types.FieldType
+		var gen func() []any
+		switch g.pick(3) {
+		case 0:
+			ft, gen = g.cmpYearCol()
+		case 1:
+			var flag uint
+			if g.pick(2) == 0 {
+				flag |= mysql.NotNullFlag
+			}
+			if g.pick(2) == 0 {
+				flag |= mysql.UnsignedFlag
+			}
+			ft = castFt([]byte{mysql.TypeLonglong, mysql.TypeTiny, mysql.TypeLong}[g.pick(3)], flag, 11, 0)
+			gen = func() []any { return g.intVal(mysql.HasUnsignedFlag(ft.GetFlag())) }
+		default:
+			ft = castFt(mysql.TypeLonglong, 0, 20, 0)
+			gen = func() []any { return []any{types.KindInt64, int64([]int{-1, 0, 1, 2, 7, 2019, 2002}[g.pick(7)])} }
+		}
+		n := g.pick(10)
+		rows := []any{}
+		for r := 0; r < n; r++ {
+			if !mysql.HasNotNullFlag(ft.GetFlag()) && g.pick(6) == 0 {
+				rows = append(rows, []any{[]any{types.KindNull}})
+			} else {
+				rows = append(rows, []any{gen()})
+			}
+		}
+		cols := []any{sfFtIn(ft)}
+		var c any
+		switch g.pick(5) {
+		case 0:
+			v := []float64{2.0, 2019.0, 1e30, -1e30, 0, -1, 7.0, 1977.0}[g.pick(8)]
+			c = []any{"const", []any{types.KindFloat64, math.Float64bits(v)}, sfFtIn(castFt(mysql.TypeDouble, 0, 22, -1))}
+		case 1:
+			v := []string{"2.0", "2019.000", "99999999999999999999", "-1", "7", "1977"}[g.pick(6)]
+			c = []any{"const", []any{types.KindMysqlDecimal, v}, sfFtIn(castFt(mysql.TypeNewDecimal, 0, 30, 5))}
+		case 2:
+			v := []string{"2", "2019", "abc", "12abc", "99999999999999999999", "", "7", "1977"}[g.pick(8)]
+			c = []any{"const", []any{types.KindString, vec.GoString(v), charset.CollationUTF8MB4}, sfFtIn(castFt(mysql.TypeVarchar, 0, 64, 0))}
+		case 3:
+			c = []any{"const", []any{types.KindNull}, sfFtIn(types.NewFieldType(mysql.TypeNull))}
+		default:
+			c = []any{"const", []any{types.KindNull}, sfFtIn(castFt(mysql.TypeDouble, 0, 22, -1))}
+		}
+		var a, b any = []any{"col", 0}, c
+		if g.pick(2) == 0 {
+			a, b = b, a
+		}
+		name := []string{ast.LT, ast.LE, ast.GT, ast.GE}[g.pick(4)]
+		ctx := g.timeCtx()
+		if cmpReachesCeilRecipes(ctx, cols, name, a, b) {
+			continue
+		}
+		i++
+		vg.Add("refine", "cmpbuild", g.pick(2), name, a, b, ctx, cols, rows, nil)
+	}
 	// CAST('[1]' AS JSON) = '[1]': 0 in v8.5.8 (generateCmpSigs disables the JSON parsing
 	// of the string argument; D08.12 DisableParseJSONFlag4Expr).
 	jsonFt := castFt(mysql.TypeJSON, mysql.BinaryFlag, -1, 0)
@@ -434,13 +575,14 @@ func castGenerateD084(vg *vec.Gen, g *castGen) {
 			c, ft := g.cmpConst()
 			b, bft = c, ft
 		}
-		isConst := func(x any) bool { return x.([]any)[0] == "const" }
-		if cmpCeilPath(name, aft.EvalType(), isConst(a), bft.EvalType(), isConst(b)) {
+		_, _ = aft, bft
+		ctx := g.strCtx()
+		if cmpReachesCeilLeaves(ctx, name, a, b) {
 			continue
 		}
 		i++
 		variant := []int{0, 0, 2, 2, 1, 3, 4}[g.pick(7)]
 		vg.Add("cmp", "newfunc", variant, name, sfFtIn(types.NewFieldType(mysql.TypeUnspecified)),
-			[]any{a, b}, g.strCtx(), "")
+			[]any{a, b}, ctx, "")
 	}
 }
