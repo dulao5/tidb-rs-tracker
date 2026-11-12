@@ -99,8 +99,8 @@ func exprExempt() map[string]string {
 		"CNFExprs.Clone":                               "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"CNFExprs.Shallow":                             "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"EvaluateExprWithNull":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
-		"FlattenCNFConditions":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
-		"FlattenDNFConditions":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
+		"FlattenCNFConditions":                         "covered by the cast domain (util records, D08.12 batch 1)",                                                                        // pkg/expression/expression.go
+		"FlattenDNFConditions":                         "covered by the cast domain (util records, D08.12 batch 1)",                                                                        // pkg/expression/expression.go
 		"NewValuesFunc":                                "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"PropagateType":                                "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"StringifyExpressionsWithCtx":                  "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
@@ -114,7 +114,7 @@ func exprExempt() map[string]string {
 		"deallocateZeroSlice":                          "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"evaluateExprWithNull":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"evaluateExprWithNullInNullRejectCheck":        "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
-		"extractBinaryOpItems":                         "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
+		"extractBinaryOpItems":                         "covered by the cast domain (util records, D08.12 batch 1)",                                                                        // pkg/expression/expression.go
 		"implicitEvalReal":                             "ported (tidb-rs expression.rs): reached only through CanImplicitEvalReal (DAYNAME, D08.7)",                                        // pkg/expression/expression.go
 		"isColumnInOperand":                            "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/expression.go
 		"ScalarFunction.Equals":                        "cascades HashEquals only (pkg/planner/cascades/base is EXC.B)",                                                                    // pkg/expression/scalar_function.go
