@@ -66,6 +66,7 @@ import (
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/chunk"
 	contextutil "github.com/pingcap/tidb/pkg/util/context"
+	"github.com/pingcap/tidb/pkg/util/mathutil"
 )
 
 const castSeed = 20261114
@@ -166,7 +167,12 @@ func castCtx(raw json.RawMessage, extra ...exprstatic.EvalCtxOption) (*exprstati
 		opts = append(opts, exprstatic.WithDivPrecisionIncrement(arg[int](a, 5)))
 	}
 	ev := exprstatic.NewEvalContext(append(opts, extra...)...)
-	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(ev)), ev
+	copts := []exprstatic.ExprCtxOption{exprstatic.WithEvalCtx(ev)}
+	if len(a) > 6 {
+		// The seed of the MysqlRng RAND() reads (D08.5 batch 4): never the clock.
+		copts = append(copts, exprstatic.WithRng(mathutil.NewWithSeed(arg[int64](a, 6))))
+	}
+	return exprstatic.NewExprContext(copts...), ev
 }
 
 // castArg: the argument node, its type, and the chunk of the rows (column arguments).
@@ -449,6 +455,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 	if out := castExecD082c(op, p); out != nil {
 		return out, nil
 	}
+	if out := castExecD085d(op, p); out != nil {
+		return out, nil
+	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
 }
 
@@ -714,6 +723,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerateD085b(vg, g)
 	castGenerateD082c(vg, g)
 	castGenerateD085c(vg, g)
+	castGenerateD085d(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
