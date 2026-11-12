@@ -71,7 +71,6 @@ func castExemptD0812() map[string]string {
 		"extensionFuncSig.evalString":                 "pkg/extension functions: tidb-rs does not support extensions (D08.2 spec §4, GetBuiltinList)",
 		"getStmtTimestamp":                            "D08.12 batch 2 (current-time helpers used by the time functions, D08.7), specs/D08.12-util/plan.md",
 		"getTimeCurrentTimeStamp":                     "D08.12 batch 2 (current-time helpers used by the time functions, D08.7), specs/D08.12-util/plan.md",
-		"getValidPrefix":                              "helper of CONV (D08.5 batch 5, specs/D08.5-arith/tasks.md T5b)",
 		"locateStringWithCollation":                   "helper of LOCATE / INSTR (string functions, D08.6)",
 		"newExtensionFnContext":                       "pkg/extension functions: tidb-rs does not support extensions (D08.2 spec §4, GetBuiltinList)",
 		"newExtensionFuncClass":                       "pkg/extension functions: tidb-rs does not support extensions (D08.2 spec §4, GetBuiltinList)",
