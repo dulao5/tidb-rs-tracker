@@ -733,6 +733,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerateD0812(vg, g)
 	castGenerateD084b(vg, g)
 	castGenerateD084c(vg, g)
+	castGenerateD084cNullConv(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1

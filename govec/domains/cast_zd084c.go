@@ -341,6 +341,55 @@ func castGenerateD084c(vg *vec.Gen, g *castGen) {
 	}
 }
 
+// castGenerateD084cNullConv: GREATEST/LEAST of DATE / DATETIME columns holding invalid dates
+// (zero month / day) where a later argument is NULL on some rows, in a strict context. Go's
+// vector version converts the extremum kept so far also on the rows that became NULL (and
+// fails there), the row version returns NULL at the NULL argument (Lucky, review of #109).
+func castGenerateD084cNullConv(vg *vec.Gen, g *castGen) {
+	names := []string{ast.Greatest, ast.Least}
+	dates := [][3]int{{1000, 3, 0}, {2024, 0, 5}, {0, 0, 0}, {2024, 1, 2}, {1999, 12, 31}, {2024, 2, 30}, {9999, 12, 31}}
+	tcol := func(tp byte, nullPct int) (*types.FieldType, func() []any) {
+		ft := castFt(tp, 0, -1, 0)
+		return ft, func() []any {
+			if g.pick(100) < nullPct {
+				return []any{types.KindNull}
+			}
+			d := dates[g.pick(len(dates))]
+			ct := types.FromDate(d[0], d[1], d[2], g.pick(24), g.pick(60), 0, 0)
+			if tp == mysql.TypeDate {
+				ct = types.FromDate(d[0], d[1], d[2], 0, 0, 0, 0)
+			}
+			return []any{types.KindMysqlTime, rawOfTime(types.NewTime(ct, tp, 0))}
+		}
+	}
+	tps := []byte{mysql.TypeDate, mysql.TypeDatetime}
+	for i := 0; i < 400; i++ {
+		ft0, gen0 := tcol(tps[g.pick(2)], 10)
+		ft1, gen1 := tcol(tps[g.pick(2)], 50)
+		ft2, gen2 := tcol(tps[g.pick(2)], 0)
+		args := []any{[]any{"col", 0}}
+		nullAt := 1 + g.pick(3)
+		for a := 1; a <= nullAt || a < 2; a++ {
+			if a == nullAt {
+				args = append(args, []any{"col", 1})
+			} else {
+				args = append(args, []any{"col", []int{0, 2}[g.pick(2)]})
+			}
+		}
+		if g.pick(2) == 0 {
+			args = append(args, []any{"col", 2})
+		}
+		c := g.arCtx()
+		if g.pick(4) != 0 {
+			c[0] = uint16(0)
+			c[3] = c[3].(uint64) | uint64(mysql.ModeStrictTransTables|mysql.ModeNoZeroInDate|mysql.ModeNoZeroDate)
+		}
+		n := 1 + g.pick(10)
+		vg.Add("gltnull", "arbuild", []int{0, 1}[g.pick(2)], names[g.pick(2)], args, c,
+			[]any{sfFtIn(ft0), sfFtIn(ft1), sfFtIn(ft2)}, g.arRows([]func() []any{gen0, gen1, gen2}, n), g.arSel(n))
+	}
+}
+
 // fromColTemporal: a DATE / DATETIME / TIMESTAMP column (fromCol's temporal case).
 func (g *castGen) fromColTemporal() (*types.FieldType, func() []any) {
 	for {
