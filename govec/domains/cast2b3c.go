@@ -98,6 +98,17 @@ func evExpr(ctx *exprstatic.ExprContext, raw json.RawMessage, fts []*types.Field
 			panic(err)
 		}
 		return e
+	case "corcol":
+		// D08.12: ["corcol", i] -> a correlated column over column i (UniqueID 101+i).
+		i := arg[int](a, 1)
+		return &expression.CorrelatedColumn{Column: expression.Column{UniqueID: int64(101 + i), Index: i,
+			RetType: fts[i], OrigName: "c"}, Data: new(types.Datum)}
+	case "vcol":
+		// D08.12: ["vcol", i, recipe] -> a virtual (generated) column of column i's type
+		// (UniqueID 201+i).
+		i := arg[int](a, 1)
+		return &expression.Column{UniqueID: int64(201 + i), Index: i, RetType: fts[i], OrigName: "c",
+			VirtualExpr: evExpr(ctx, a[2], fts)}
 	case "fn":
 		// D08.4 batch 1: ["fn", name, [recipes]] -> NewFunctionBase (no folding).
 		args := evExprs(ctx, a[2], fts)
