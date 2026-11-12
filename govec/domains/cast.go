@@ -75,7 +75,7 @@ func init() {
 		Name:     "cast",
 		Seed:     castSeed,
 		Coverage: castCoverage,
-		Blocks:   []string{"D08.8", "D08.2", "D08.1", "D08.4"},
+		Blocks:   []string{"D08.8", "D08.2", "D08.1", "D08.4", "D08.5"},
 		Exempt:   castExemptAll(),
 		Gzip:     true,
 		Generate: castGenerate,
@@ -160,6 +160,10 @@ func castCtx(raw json.RawMessage, extra ...exprstatic.EvalCtxOption) (*exprstati
 		// The statement time (unix nanoseconds, UTC): CAST(TIME AS DATETIME) reads it.
 		ns := arg[int64](a, 4)
 		opts = append(opts, exprstatic.WithCurrentTime(func() (gotime.Time, error) { return gotime.Unix(0, ns).UTC(), nil }))
+	}
+	if len(a) > 5 {
+		// div_precision_increment (D08.5).
+		opts = append(opts, exprstatic.WithDivPrecisionIncrement(arg[int](a, 5)))
 	}
 	ev := exprstatic.NewEvalContext(append(opts, extra...)...)
 	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(ev)), ev
@@ -439,6 +443,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 	if out := castExecD084(op, p); out != nil {
 		return out, nil
 	}
+	if out := castExecD085(op, p); out != nil {
+		return out, nil
+	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
 }
 
@@ -700,6 +707,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerate2b3(vg, g)
 	castGenerate2b3c(vg, g)
 	castGenerateD084(vg, g)
+	castGenerateD085(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
