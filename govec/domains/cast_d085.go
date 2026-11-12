@@ -79,7 +79,7 @@ func arSigFuncs() []string {
 }
 
 func init() {
-	castCoverage["arbuild"] = vec.Coverage{Min: 3000, GoFuncs: arSigFuncs()}
+	castCoverage["arbuild"] = vec.Coverage{Min: 3000, GoFuncs: append(arSigFuncs(), isNullGoFuncs()...)}
 }
 
 func castExecD085(op string, p []json.RawMessage) any {
