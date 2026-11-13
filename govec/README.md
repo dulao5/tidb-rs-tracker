@@ -77,6 +77,8 @@ op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`
 - "<块> spec §n"、"<块> plan §n" 是引用设计决定，不算指向；
 - 某个领域的 op 已经覆盖的函数不能再豁免（理由会过期），要删掉豁免。
 
+移交要在接收块的 tasks.md 中登记（`TestRehomedListedInTasks`，`TestRehomeMissing` 是它的用例）：理由中写 "owned by Dxx.y" 的每个豁免，其符号（`<file>:` 之后的部分）必须以反引号形式出现在 tidb-rs `specs/Dxx.y-*/tasks.md` 的"## 从 P1 继承"一节中。测试读 `$TIDB_RS_DIR`（默认是与 tracker 并列的 `../tidb-rs`）；本地没有 tidb-rs 时跳过，CI 中失败。CI 取 tidb-rs 中与本分支同名的分支（存在时），否则取 main：移交同时改两个仓库时，两边用同一个分支名。
+
 
 | 函数 | 理由 |
 |---|---|
