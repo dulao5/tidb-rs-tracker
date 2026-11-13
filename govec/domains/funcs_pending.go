@@ -36,7 +36,7 @@ func funcsExempt() map[string]string {
 	}
 	for _, f := range []string{"init", "FoldConstant", "isNullHandler", "ifFoldHandler", "ifNullFoldHandler",
 		"caseWhenHandler", "foldConstant"} {
-		m[f] = "D08.2 part 2: constant folding evaluates real signatures (NewFunction, D08.4-D08.9)"
+		m[f] = "covered by the cast domain (cast / evnull records); the IF / IFNULL / CASE handlers with D08.9"
 	}
 	for _, f := range []string{"NewGroupingSets", "GroupingSets.Merge", "GroupingSets.MergeOne", "GroupingSets.TargetOne",
 		"GroupingSets.NeedCloneColumn", "GroupingSet.IsEmpty", "GroupingSet.AllColIDs", "GroupingSet.ExtractCols",
