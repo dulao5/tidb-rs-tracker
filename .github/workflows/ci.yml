@@ -49,8 +49,29 @@ jobs:
         run: |
           flags=$(scripts/govec-fixes.sh)
           echo "GOFLAGS=$flags" >> "$GITHUB_ENV"
-      - name: govec vet and test (header, coverage, oracle, determinism, FMA model)
+      # TestRehomedListedInTasks reads tidb-rs specs/<block>/tasks.md: every exemption
+      # "owned by <block>" must be listed in that block's "从 P1 继承" section. A hand-off
+      # changes both repositories: the tidb-rs branch of the same name is used when it
+      # exists (tasks.md updated there), otherwise tidb-rs main.
+      - name: tidb-rs ref for the tasks.md check
+        id: tidbrs
+        run: |
+          b="${{ github.head_ref || github.ref_name }}"
+          if git ls-remote --exit-code --heads https://github.com/dulao5/tidb-rs "$b" >/dev/null; then
+            echo "ref=$b" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        with:
+          repository: dulao5/tidb-rs
+          ref: ${{ steps.tidbrs.outputs.ref }}
+          path: tidb-rs
+          sparse-checkout: specs
+      - name: govec vet and test (header, coverage, oracle, determinism, FMA model, re-homed tasks.md)
         working-directory: govec
+        env:
+          TIDB_RS_DIR: ${{ github.workspace }}/tidb-rs
         run: go vet ./... && go test ./...
       - name: Committed vectors of this target are up to date
         run: scripts/govec.sh --check
