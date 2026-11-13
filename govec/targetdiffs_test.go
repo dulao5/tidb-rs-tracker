@@ -52,11 +52,12 @@ var targetDiffs = []targetDiff{
 		Why: "M-FMA and Go's math assembly (Exp amd64/arm64, Log amd64) in the cloned functions"},
 	{Domain: "cast", Op: "gomath", Args: "*", N: 306,
 		Why: "Go math: 162 Sqrt and 10 Pow hardware default NaN; Exp / Log assembly (amd64 Log of subnormals); arm64 FMA fusing"},
-	// D08.1 part 3 (VECTOR functions): the distance functions sum in float64 over
-	// float32 elements (types/vector_functions.go), fused on arm64 only (M-FMA, as the
-	// "vector" domain); a NaN result is NULL, so only the rounding shows.
+	// D08.1 part 3 (VECTOR functions): the distance functions accumulate in float32
+	// (types/vector_functions.go), fused on arm64 only (FMADDS, M-FMA, as the "vector"
+	// domain); a NaN result is NULL, so only the rounding shows. VEC_L2_NORM sums float64
+	// squares of float32 elements, which are exact, so it does not differ.
 	{Domain: "cast", Op: "vecbuild", Args: "*", N: 14,
-		Why: "M-FMA: VEC_*_DISTANCE / VEC_NEGATIVE_INNER_PRODUCT sums fused on arm64 only (rounding)"},
+		Why: "M-FMA: VEC_*_DISTANCE / VEC_NEGATIVE_INNER_PRODUCT float32 sums fused on arm64 only (FMADDS rounding)"},
 	{Domain: "expr", Op: "const", Args: "*", N: 3,
 		Why: "M-F2I: Constant.EvalInt of a NaN float datum (hybrid RetType) reaches int64(NaN): MinInt64 on amd64, 0 on arm64"},
 	// M-FMA: gc fuses the two word sums of MyDecimal.ToFloat64 (mydecimal.go:1118,

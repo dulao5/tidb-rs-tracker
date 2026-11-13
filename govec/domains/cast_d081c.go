@@ -290,4 +290,34 @@ func castGenerateD081c(vg *vec.Gen, g *castGen) {
 		}
 		vg.Add("vsh", "vsh", recipes, g.arCtx(), cols)
 	}
+	// NULL vector constants (appended): a distance of one vector column and one NULL
+	// constant reaches GetVectorFloat32 on the NULL datum, which panics ("bad
+	// VectorFloat32 value header"); from SQL, ORDER BY vec_l2_distance(a, NULL) LIMIT 1
+	// fails with ERROR 1105 (tidb-rs#117). Two NULL constants or two columns stop at the count.
+	vft := castFt(mysql.TypeTiDBVectorFloat32, 0, -1, 0)
+	null := []any{"const", []any{types.KindNull}, sfFtIn(vft)}
+	for i := 0; i < 300; i++ {
+		cols := []any{sfFtIn(vft), sfFtIn(vft)}
+		dims := g.pick(4)
+		recipes := []any{}
+		for k := 0; k < 1+g.pick(3); k++ {
+			name := vecDistNames[g.pick(4)]
+			c := []any{"col", g.pick(2)}
+			var r any
+			switch g.pick(6) {
+			case 0:
+				r = []any{"fn", name, []any{null, c}}
+			case 1:
+				r = []any{"fn", name, []any{null, null}}
+			case 2:
+				r = []any{"fn", name, []any{null, g.vecConst(dims)}}
+			case 3:
+				r = []any{"fn", name, []any{c, g.vecConst(dims)}}
+			default:
+				r = []any{"fn", name, []any{c, null}}
+			}
+			recipes = append(recipes, r)
+		}
+		vg.Add("vshnull", "vsh", recipes, g.arCtx(), cols)
+	}
 }
