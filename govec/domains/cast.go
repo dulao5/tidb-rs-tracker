@@ -467,6 +467,9 @@ func castExec(op string, p []json.RawMessage) (out any, err error) {
 	if out := castExecD085e(op, p); out != nil {
 		return out, nil
 	}
+	if out := castExecD081c(op, p); out != nil {
+		return out, nil
+	}
 	return nil, fmt.Errorf("cast: unknown op %q", op)
 }
 
@@ -738,6 +741,7 @@ func castGenerate(vg *vec.Gen, rng *rand.Rand) {
 	castGenerateD084c(vg, g)
 	castGenerateD084cNullConv(vg, g)
 	castGenerateD085e(vg, g)
+	castGenerateD081c(vg, g)
 }
 
 // ---------------------------------------------------------------- part 2b-1
