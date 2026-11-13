@@ -41,10 +41,10 @@ func datum2Literals() []datumLit { return parseDatumLiterals(datum2LiteralsTSV) 
 
 // The D01.1 functions part 2 leaves to other blocks or does not port.
 var datum2Exempt = map[string]string{
-	"Datum.Hash64":                "calls Hash64ForDatum, set by the codec package (D01.8); covered there",
+	"Datum.Hash64":                "calls the Hash64ForDatum hook that pkg/util/codec installs; the hook's body is covered by the codec domain",
 	"FieldTypeBuilder.SetElems":   "covered through NewFieldType / the ft decoder (elems are set on every field type input)",
-	"FieldTypeBuilder.SetArray":   "a one-line setter of FieldType.SetArray (D02.3)",
-	"FieldTypeBuilder.ToggleFlag": "a one-line setter of FieldType.ToggleFlag (D02.3)",
+	"FieldTypeBuilder.SetArray":   "a one-line setter of the parser's FieldType.SetArray (covered by the parser_types domain)",
+	"FieldTypeBuilder.ToggleFlag": "a one-line setter of the parser's FieldType.ToggleFlag (covered by the parser_types domain)",
 	"FieldTypeBuilder.Build":      "returns the built FieldType; covered by ft_builder",
 	"datumsSorter.Len":            "sort.Interface method; covered by d_list sort",
 	"datumsSorter.Swap":           "sort.Interface method; covered by d_list sort",

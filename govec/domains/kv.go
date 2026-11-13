@@ -92,7 +92,7 @@ func init() {
 			"ResourceGroupTagBuilder.SetPlanDigest":    "parser.Digest (D02.2 digester) not ported",
 			"ResourceGroupTagBuilder.BuildProtoTagger": "tikvrpc.Request (store driver, D07.1)",
 			"ResourceGroupTagBuilder.Build":            "tikvrpc.Request (store driver, D07.1)",
-			"ResourceGroupTagBuilder.EncodeTagWithKey": "resourcegrouptag.GetResourceGroupLabelByKey needs rowindexcodec (D01.11) and parser.Digest",
+			"ResourceGroupTagBuilder.EncodeTagWithKey": "owned by D14.2: the Top SQL resource group tag needs the SQL / plan digests (parser.Digest, not ported); listed in tidb-rs specs/D14.2-stmtsummary/tasks.md",
 			"decodeTableID":                            "only called by EncodeTagWithKey",
 			"PrintLongTimeInternalTxn":                 "only logs; called by GetMinInnerTxnStartTS (covered)",
 		},

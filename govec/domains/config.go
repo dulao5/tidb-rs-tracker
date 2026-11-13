@@ -75,7 +75,7 @@ func init() {
 
 var configCoverage = map[string]vec.Coverage{
 	// args: []   out: dump of NewConfig() (the global config at start-up is the same)
-	"default_conf": {Min: 1, GoFuncs: []string{"NewConfig", "init", "initByLDFlags", "GetGlobalConfig"}},
+	"default_conf": {Min: 1, GoFuncs: []string{"NewConfig", "pkg/config/config.go:init", "initByLDFlags", "GetGlobalConfig"}},
 	// args: []   out: {pessimistic, trx}: dumps of DefaultPessimisticTxn(), DefaultTrxSummary()
 	"defaults": {Min: 1, GoFuncs: []string{"DefaultPessimisticTxn", "DefaultTrxSummary", "NewAtomicBool"}},
 	// args: [toml]   out: see the domain doc

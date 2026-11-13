@@ -128,7 +128,7 @@ var castCoverage = map[string]vec.Coverage{
 		"decimalPrecisionToLength", "padZeroForBinaryType", "newBaseBuiltinFuncWithTp")},
 	"wrap": {Min: 600, GoFuncs: []string{"WrapWithCastAsInt", "WrapWithCastAsReal", "WrapWithCastAsDecimal",
 		"minimalDecimalLenForHoldingInteger", "WrapWithCastAsString"}},
-	"binlit": {Min: 400, GoFuncs: []string{"HandleBinaryLiteral", "isLegacyCharset", "init",
+	"binlit": {Min: 400, GoFuncs: []string{"HandleBinaryLiteral", "isLegacyCharset", "pkg/expression/builtin_convert_charset.go:init",
 		"BuildToBinaryFunction", "BuildFromBinaryFunction", "tidbToBinaryFunctionClass.getFunction",
 		"tidbFromBinaryFunctionClass.getFunction", "formatInvalidChars",
 		"builtinInternalToBinarySig.evalString", "builtinInternalToBinarySig.vecEvalString",

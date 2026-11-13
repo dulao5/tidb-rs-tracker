@@ -81,10 +81,7 @@ func init() {
 		}
 		return nil
 	}
-	exempt := map[string]string{}
-	for _, n := range sessionvarsPending {
-		exempt[n] = "pending: D05.2 T3-T7 (tidb-rs specs/D05.2-sessionvars/plan.md)"
-	}
+	exempt := sessionvarsExempt()
 	vec.Register(&vec.Domain{
 		Name:   "sessionvars",
 		Seed:   sessionvarsSeed,

@@ -87,7 +87,7 @@ var stmtctxCoverage = map[string]vec.Coverage{
 		// errctx
 		"Context.LevelMap", "Context.LevelForGroup", "Context.WithStrictErrGroupLevel", "Context.WithErrGroupLevel",
 		"Context.WithErrGroupLevels", "Context.AppendWarning", "Context.AppendNote", "Context.HandleError",
-		"Context.HandleErrorWithAlias", "NewContext", "NewContextWithLevels", "init",
+		"Context.HandleErrorWithAlias", "NewContext", "NewContextWithLevels", "pkg/errctx/context.go:init",
 		// warn.go
 		"NewStaticWarnHandler", "NewStaticWarnHandlerWithHandler", "StaticWarnHandler.Reset",
 		"StaticWarnHandler.AppendWarning", "StaticWarnHandler.AppendWarnings", "StaticWarnHandler.AppendNote",

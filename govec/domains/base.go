@@ -72,10 +72,10 @@ var baseCoverage = map[string]vec.Coverage{
 	// args: [code, format, [redact pos], [typed args], mode]   out: SQLError
 	"new_errf": {Min: 50, GoFuncs: []string{"NewErrf", "SQLError.Error"}},
 	// args: [class, code, [typed args], mode]   out: Terr (terror.ErrClass.NewStd + GenWithStackByArgs)
-	"terror_new_std": {Min: 300, GoFuncs: []string{"ErrClass.NewStd", "ErrClass.NewStdErr", "ErrClass.initError",
-		"code2ErrClassMap.Put", "frozen", "ErrClass.String", "RegisterErrorClass", "newCode2ErrClassMap", "init"}},
+	"terror_new_std": {Min: 300, GoFuncs: []string{"pkg/parser/terror/terror.go:ErrClass.NewStd", "ErrClass.NewStdErr", "ErrClass.initError",
+		"code2ErrClassMap.Put", "frozen", "ErrClass.String", "RegisterErrorClass", "newCode2ErrClassMap", "pkg/parser/terror/terror.go:init"}},
 	// args: [class, code, [typed args], mode]   out: Terr (dbterror.ErrClass.NewStd)
-	"dbterror_new_std": {Min: 300, GoFuncs: []string{"ErrClass.NewStd"}},
+	"dbterror_new_std": {Min: 300, GoFuncs: []string{"pkg/util/dbterror/terror.go:ErrClass.NewStd"}},
 	// args: ["<go file>:<name>", [typed args], mode]   out: Terr of the prototype with args
 	"prototype": {Min: 395},
 	// args: [class, code, message]   out: Terr
@@ -128,7 +128,7 @@ var baseCoverage = map[string]vec.Coverage{
 	// args: [locale, number, precision]   out: string (err / panic)
 	"format_locale": {Min: 200, GoFuncs: []string{"GetLocaleFormatFunction", "formatENUS", "formatZHCN", "formatNotSupport"}},
 	// args: [[[op, code, user, host], ...]]   out: {global, users, hosts} counts (times dropped)
-	"errno_stats": {Min: 10, GoFuncs: []string{"FlushStats", "GlobalStats", "UserStats", "HostStats", "copyMap",
+	"errno_stats": {Min: 10, GoFuncs: []string{"pkg/errno/infoschema.go:init", "FlushStats", "GlobalStats", "UserStats", "HostStats", "copyMap",
 		"initCounters", "IncrementError", "IncrementWarning"}},
 	// args: [store type byte]   out: name
 	"store_type": {Min: 5, GoFuncs: []string{"StoreType.Name"}},

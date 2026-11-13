@@ -167,6 +167,7 @@ The split is maintained here:
 
 - `scripts/blocks/rules.py`: block definitions (domain, title, phase) and ordered matching rules on Go file path + function symbol. Large hub files are split per function, and a logical rule's methods on every operator belong to the rule's block.
 - `data/blocks.tsv`, `data/func_blocks.tsv` (every `go_funcs.tsv` row → block), `data/block_edges.tsv` (block → block reference counts from the reference graph).
+- `data/blocks_done.tsv` (hand-maintained): the blocks whose port is closed — every function ported, exempt for good, or owned by another block and listed in that block's `tasks.md` in tidb-rs. Columns `block`, `converge` (tidb-rs `scripts/converge.py` matched/total at closing, or `done`), `evidence` (PRs). A block is added here when it is ticked in its milestone issue; govec `TestBlockCoverage` then rejects exemption reasons that park work on the block itself or on any done block (govec README, "Go 函数覆盖与豁免表").
 
 Regenerate after changing the rules (needs `work/go_refs.tsv` from `scripts/refgraph.sh`):
 
