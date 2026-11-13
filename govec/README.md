@@ -68,6 +68,16 @@ op 一览（参数和输出见 `domains/decimal.go` 中的 `decimalBaseCoverage`
 
 `Coverage.GoFuncs` 使用 tracker 的符号格式（与 `data/go_funcs.tsv`、`data/func_blocks.tsv` 一致）：`MyDecimal.FromString`、`DecimalAdd`，不写指针接收者。未导出的辅助函数列在实际调用到它们的 op 下（如 `add` 列出 `validateArgs doAdd doSub add sub`）。每个领域声明自己对应的块（decimal 为 `D01.2`），`TestBlockCoverage` 检查：块内每个函数要么出现在某个 op 的 `GoFuncs` 中，要么在豁免表 `Exempt` 里写明理由；`GoFuncs` 和豁免表中的每个符号都必须是块内的函数（防止拼错或过期）。D01.2 的 58 个函数中 56 个被覆盖（用 `go test -coverpkg` 核对过，这 56 个都确实被执行到），豁免表：
 
+函数按（文件，符号）识别：一个符号在领域的块中对应几个文件的函数时（sessionexpr 与 exprstatic 的 `EvalContext.AppendNote`、各文件的 `init` 等），`GoFuncs` 和豁免表必须写成 `<file>:<Symbol>`，只写符号的报错——否则覆盖了一个文件的函数会把另一个文件的同名函数也算作覆盖（P1 收尾时发现 sessionexpr 的 42 个函数就是这样被 exprstatic 的记录"覆盖"的）。
+
+豁免理由也要检查（`reasonProblems`，`TestReasonProblems` 是它的用例）。`data/blocks_done.tsv` 登记已完成的块：
+
+- 块完成后，豁免理由不能再指向本块（"D08.1 part 2b"、"D00.1 T9"，以及没有块号的"part 2"、"batch 2"）：要么移植，要么写明永久豁免的理由，要么移交给真正使用它的块（理由写 "owned by Dxx.y: …; listed in tidb-rs specs/<块>/tasks.md"，并在那个块的 tasks.md 中登记）。进行中的块可以暂时指向自己的后续部分；
+- 任何豁免理由都不能指向已完成的块（如 D08.8 完成后仍写"等 D08.8"）；
+- "<块> spec §n"、"<块> plan §n" 是引用设计决定，不算指向；
+- 某个领域的 op 已经覆盖的函数不能再豁免（理由会过期），要删掉豁免。
+
+
 | 函数 | 理由 |
 |---|---|
 | `NewDecFromFloatForTest` | 测试用构造函数：`FromFloat64` 加上出错时 `log.Panic`，取值路径即 `from_float64` |
@@ -423,7 +433,7 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **输入**：列的类型和值沿用 chunk 领域的 `chunkTypeSpec` 与生成器（另加 BIT(8)、BIT(64)）；常量的值和 `RetType` 沿用 datum 领域的 datum 与字段类型格式，值的类型和 `RetType` 可以不同（类型推导后 Go 的计划中会出现）；`tbl` 用 model 领域的 856 份集群导出表结构（跳过含虚拟生成列的表：`BuildSimpleExpr` 由 planner 注册）。
 - **调用哪些 Eval 方法**：按节点的求值类型和值的种类，只调用 Go 的调用方会调用的（`exEvalSet`），避免对不匹配的类型读出未定义的内容。
 - **ParamMarker**：`order` 字段未导出，用 reflect 设置；`order` 越界时 `GetParamValue` 报错，`GetType` 返回 nil（记录为 null）。
-- **豁免**：`expr_pending.go`，共 220 个：向量化方法（由第 2 部分的向量驱动取代，N4 M-EVAL）、cascades 的 `Hash64`/`Equals`（EXC.B）、`errors.go`/`context.go` 的未导出辅助函数（tidb-rs 单元测试）、第 2 部分（ScalarFunction 等）和第 3 部分（VECTOR 函数）。
+- **豁免**：`expr_pending.go`（P1 收尾后 59 个）：`Column`/`CorrelatedColumn`/`Constant` 的 `VecEval*`、`genVecFromConstExpr`、`vecEval*ByRows`（M-EVAL）、列池与 sel/isZero 池（M-POOL）、cascades 的 `Hash64`/`Equals`（EXC.B）、intest 与测试辅助、写路径的 `Assignment`，`With*` 与 `NewValuesFunc` 归 D09.2，其余是已移植、由单元测试覆盖的函数。`ScalarFunction` 的 `Eval*`/`VecEval*` 和 `errors.go`/`context.go` 的辅助函数早已被 cast 领域的记录执行，收尾时补进 cast 的覆盖清单（`cast_zp1close.go`，用 `go test -coverpkg` 逐个 op 核对）。
 - **两个目标**：3 条 `const` 记录不同（M-F2I：NaN 浮点值在 hybrid `RetType` 下走 `int64(NaN)`），登记在 `targetDiffs`。
 - **固定的偏离**：`corr` 记录带 `dmem`（Data 的 `MemUsage`），tidb-rs 中关联列的值不在节点里（spec D08.1 §3.2）。
 
@@ -442,7 +452,7 @@ meta/model 的结构体以 `encoding/json` 的形式存在 TiKV，Go TiDB 与 ti
 - **参数**：expr_sf.go 的配方（列、常量、`NewFunctionBase` 建的小函数树），可选地覆盖 coercibility/repertoire（显式 COLLATE 即 `CoercibilityExplicit`）。输出带上 Go 建出的参数 dump，tidb-rs 用只有描述的签名重建。生成时只保留在该连接字符集下能建出的配方。
 - **new collation**：每条 `derive`/`newbase` 记录自己设置并恢复 new collation 开关；collator 用探测字符串的 key 比对。
 - **panic**：`deriveCollation` 中 `args[i]` 或 `argTps[i]` 越界（例如 `newBaseBuiltinFunc` 只传 `[retType]`，`case` 读 `argTps[1]`）记为 panic，Rust 侧也必须 panic。
-- **豁免**：`funcs_pending.go`，共 94 个：第 2 部分（给参数包 CAST 的构造、CAST 签名的 base、常量折叠与传播、REGEXP/ILIKE 的参数辅助函数）、第 3 部分（grouping sets）、`ParseSimpleExpr`（D09.2）、cascades 的 `Hash64`/`Equals`（EXC.B）、泛型的 `builtinFuncCache`（tidb-rs 单元测试）、由 `expr` 领域 `sf` 记录覆盖的 `baseBuiltinFunc` 方法。
+- **豁免**：`funcs_pending.go`（P1 收尾后 52 个）：grouping sets 29 个归 D09.4，REGEXP/ILIKE 的参数辅助 8 个归 D08.6，`ParseSimpleExpr` 等 4 个归 D09.2，IF/IFNULL/CASE 的折叠处理（已移植，随 D08.9 覆盖），cascades 的 `Hash64`/`Equals`（EXC.B），只会 panic 的 2 个，泛型的 `builtinFuncCache` 与 `baseBuiltinFunc.getArgs`/`MemoryUsage`（已移植）。
 
 
 ## cast（D08.8 第 1、2a、2b-1、2b-2、2b-2b 部分）

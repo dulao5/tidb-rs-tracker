@@ -92,9 +92,10 @@ func init() {
 			{Name: "ErrInvalidDefaultUTF8MB4Collation", Err: variable.ErrInvalidDefaultUTF8MB4Collation},
 		},
 		Exempt: map[string]string{
-			"init":                 "variable.go init (registry construction) and statusvar.go init (cipher list); covered through registry / status_vars",
-			"RegisterStatistics":   "registration of status providers (server, D12); covered through status_vars with the default provider",
-			"UnregisterStatistics": "only used in tests",
+			"pkg/sessionctx/variable/variable.go:init":  "registry construction; covered through registry / status_vars",
+			"pkg/sessionctx/variable/statusvar.go:init": "cipher list; covered through registry / status_vars",
+			"RegisterStatistics":                        "registration of status providers (server, D12); covered through status_vars with the default provider",
+			"UnregisterStatistics":                      "only used in tests",
 		},
 		Fixes:    []vec.Fix{{ID: fix62892, Applied: fix62892Applied}},
 		Gzip:     true,
