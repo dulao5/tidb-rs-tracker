@@ -25,6 +25,6 @@ func castExempt() map[string]string {
 		"CanImplicitEvalReal":                                 "ported; true only for DAYNAME (D08.7), which tidb-rs cannot build yet",
 		"builtinCastVectorFloat32AsUnsupportedSig.evalString": "unreachable: castAsStringFunctionClass maps a VECTOR argument to builtinCastVectorFloat32AsStringSig",
 		"newFakeSctx":                                         "initializer of the package variable fakeSctx; the Rust port uses types.StrictContext (covered through to-array/json2tp)",
-		"inCastContext.String":                                "session key of the union cast context (planner, D09)",
+		"inCastContext.String":                                "ported (tidb-rs builtin_cast.rs, unit test): nothing sets or reads the key in v8.5.8",
 	}
 }

@@ -109,6 +109,10 @@ func evExpr(ctx *exprstatic.ExprContext, raw json.RawMessage, fts []*types.Field
 		i := arg[int](a, 1)
 		return &expression.Column{UniqueID: int64(201 + i), Index: i, RetType: fts[i], OrigName: "c",
 			VirtualExpr: evExpr(ctx, a[2], fts)}
+	case "defer":
+		// D08.2 part 2 ("evnull"): ["defer", recipe(, stale datum)] -> a deferred constant
+		// over the recipe.
+		return evDeferred(ctx, a, fts)
 	case "fn":
 		// D08.4 batch 1: ["fn", name, [recipes]] -> NewFunctionBase (no folding).
 		args := evExprs(ctx, a[2], fts)
