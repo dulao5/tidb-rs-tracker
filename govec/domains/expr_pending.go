@@ -5,46 +5,6 @@ package domains
 // exprExempt: D08.1 functions no op of the expr domain covers, with the reason.
 func exprExempt() map[string]string {
 	return map[string]string{
-		"builtinVecAsTextSig.Clone":                        "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecAsTextSig.evalString":                   "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecCosineDistanceSig.Clone":                "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecCosineDistanceSig.evalReal":             "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecDimsSig.Clone":                          "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecDimsSig.evalInt":                        "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecFromTextSig.Clone":                      "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecFromTextSig.evalVectorFloat32":          "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL1DistanceSig.Clone":                    "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL1DistanceSig.evalReal":                 "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL2DistanceSig.Clone":                    "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL2DistanceSig.evalReal":                 "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL2NormSig.Clone":                        "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecL2NormSig.evalReal":                     "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecNegativeInnerProductSig.Clone":          "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecNegativeInnerProductSig.evalReal":       "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecAsTextFunctionClass.getFunction":               "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecCosineDistanceFunctionClass.getFunction":       "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecDimsFunctionClass.getFunction":                 "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecFromTextFunctionClass.getFunction":             "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecL1DistanceFunctionClass.getFunction":           "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecL2DistanceFunctionClass.getFunction":           "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecL2NormFunctionClass.getFunction":               "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"vecNegativeInnerProductFunctionClass.getFunction": "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec.go
-		"builtinVecAsTextSig.vecEvalString":                "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecAsTextSig.vectorized":                   "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecCosineDistanceSig.vecEvalReal":          "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecCosineDistanceSig.vectorized":           "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecDimsSig.vecEvalInt":                     "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecDimsSig.vectorized":                     "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecFromTextSig.vecEvalVectorFloat32":       "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecFromTextSig.vectorized":                 "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL1DistanceSig.vecEvalReal":              "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL1DistanceSig.vectorized":               "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL2DistanceSig.vecEvalReal":              "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL2DistanceSig.vectorized":               "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL2NormSig.vecEvalReal":                  "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecL2NormSig.vectorized":                   "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecNegativeInnerProductSig.vecEvalReal":    "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
-		"builtinVecNegativeInnerProductSig.vectorized":     "D08.1 part 3 (VECTOR functions, with D08.2 function registration)", // pkg/expression/builtin_vec_vec.go
 		"GetColumn":                                    "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/builtin_vectorized.go
 		"PutColumn":                                    "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/builtin_vectorized.go
 		"localColumnPool.MemoryUsage":                  "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/builtin_vectorized.go
@@ -138,6 +98,5 @@ func exprExempt() map[string]string {
 		"ScalarFunction.VecEvalVectorFloat32":          "vectorized evaluation: replaced by the vector driver of part 2 (N4 §3.3 M-EVAL)",                                                  // pkg/expression/scalar_function.go
 		"Schema.MemoryUsage":                           "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/schema.go
 		"genVecFromConstExpr":                          "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/vectorized.go
-		"ExtractVectorHelper":                          "D08.1 part 2b (evaluation entry points: EvaluatorSuite, VectorizedFilter/VecEvalBool, chunk_executor; with the first signatures)", // pkg/expression/vs_helper.go
 	}
 }
