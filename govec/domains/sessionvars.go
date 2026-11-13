@@ -41,6 +41,7 @@ import (
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/pkg/kv"
+	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/planner/util/fixcontrol"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 )
@@ -128,8 +129,9 @@ func init() {
 				"RuntimeFilterMode.String", "ToTiPBTiFlashPreAggMode", "PrepareDedupCacheKey", "ReadConsistencyLevel.IsWeak",
 				"RewritePhaseInfo.Reset", "SetEnableAdaptiveReplicaRead", "IsAdaptiveReplicaReadEnabled"}},
 		},
-		Exempt:   exempt,
-		Fixes:    []vec.Fix{{ID: fix65884, Applied: fix65884Applied}, {ID: fix62892, Applied: fix62892Applied}},
+		Exempt: exempt,
+		Fixes: []vec.Fix{{ID: fix65884, Applied: fix65884Applied}, {ID: fix62892, Applied: fix62892Applied},
+			{ID: fix71844, Applied: fix71844Applied}, {ID: fix72214, Applied: fix72214Applied}},
 		Gzip:     true,
 		Generate: sessionvarsGenerate,
 		Exec:     sessionvarsExecClient,
@@ -483,8 +485,9 @@ func sessionvarsGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("fix "+fix65884, "set", "set", variable.TiDBOptFixControl, v)
 		g.Add("fix "+fix65884, "set", "old", variable.TiDBOptFixControl, v)
 	}
-	// D05.2 B2: tidb_cloud_storage_uri (ast.RedactURL in GetGlobal; ValidateCloudStorageURI in
-	// SetGlobal) and tidb_slow_log_rules (T7: the rule parser). Appended last.
+	// D05.2 B2: tidb_cloud_storage_uri (ast.RedactURL in GetGlobal, with fixes
+	// pingcap/tidb#71844 and #72214; ValidateCloudStorageURI in SetGlobal) and
+	// tidb_slow_log_rules (T7: the rule parser). Appended last.
 	for _, v := range sessionvarsCloudURIs {
 		g.Add("sys/cloud_storage_uri", "set_global_hook", variable.TiDBCloudStorageURI, v)
 	}
@@ -569,6 +572,29 @@ func fix65884Applied() (ok bool) {
 	}()
 	m, warns, err := fixcontrol.ParseToMap("123:")
 	return err == nil && len(warns) == 0 && m[123] == ""
+}
+
+// fix71844 and fix72214: ast.RedactURL (pkg/parser/ast/misc.go), which tidb_cloud_storage_uri's
+// GetGlobal hook applies, leaks credentials in v8.5.8: it redacts only s3/ks3 access keys and
+// azure sas-token, keeps userinfo, fragments and unknown query options, and returns an
+// unparsable URL unchanged. release-8.5 fixes it after v8.5.8 in two steps:
+// pingcap/tidb#71844 (commit 4f61995df8: oss, azure account-key / encryption-key / endpoint)
+// and pingcap/tidb#72214 (commit 84040e1f0a, issue pingcap/tidb#71858: per-scheme option
+// allowlist, gcs, userinfo and fragment removal, "(invalid URL)"). tidb-rs ports both; govec
+// links the patched misc.go (govec/fixes/pkg/parser, a module of its own).
+const (
+	fix71844 = "pingcap/tidb#71844"
+	fix72214 = "pingcap/tidb#72214"
+)
+
+func fix71844Applied() bool {
+	return ast.RedactURL("oss://b?access-key=k") == "oss://b?access-key=xxxxxx" &&
+		ast.RedactURL("azure://c?account-key=k") == "azure://c?account-key=xxxxxx"
+}
+
+func fix72214Applied() bool {
+	return ast.RedactURL("s3://u:p@b/p?x=1#f") == "s3://b/p" &&
+		ast.RedactURL("s3://h:abc/p") == "(invalid URL)" // ast.InvalidURLPlaceholder, not in v8.5.8
 }
 
 // sessionvarsExecClient records the error the client sees: the server writes
