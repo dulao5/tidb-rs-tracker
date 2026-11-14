@@ -17,6 +17,28 @@ jobs:
         run: go vet ./... && go test ./...
       - name: Validate data and check reports are up to date
         run: python3 scripts/tracker.py check
+      # Blocks ported in parts and the boundary-stub registry (scripts/blocks/parts.py):
+      # data/stubs.tsv must list exactly the stubs in tidb-rs. A change that adds or removes a
+      # stub updates both repositories on branches of the same name; otherwise tidb-rs main.
+      - name: tidb-rs ref for the stub registry
+        id: tidbrs
+        run: |
+          b="${{ github.head_ref || github.ref_name }}"
+          if git ls-remote --exit-code --heads https://github.com/dulao5/tidb-rs "$b" >/dev/null; then
+            echo "ref=$b" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        with:
+          repository: dulao5/tidb-rs
+          ref: ${{ steps.tidbrs.outputs.ref }}
+          path: tidb-rs
+          sparse-checkout: crates
+      - name: Block parts and boundary stubs
+        run: |
+          python3 scripts/blocks/parts.py check
+          python3 scripts/blocks/parts.py scan tidb-rs
       - name: Build tracker.db
         run: python3 scripts/tracker.py build -o tracker.db
       - uses: actions/upload-artifact@v4
