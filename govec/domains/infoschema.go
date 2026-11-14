@@ -37,6 +37,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"sort"
+	"strings"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/infoschema"
@@ -72,7 +73,44 @@ func init() {
 		Gzip:     true,
 		Generate: infoschemaGenerate,
 		Exec:     infoschemaExec,
+		Fixes:    []vec.Fix{{ID: fix195, Applied: fix195Applied}},
 	})
+}
+
+// fix195 is tidb-rs's deliberate deviation tidb-rs#195 (govec/fixes/README.md): Data's GC
+// keeps, per table, the newest item at or below the cut (v8.5.8 also deleted it when a
+// newer item above the cut existed, so readers at the cut lost the table).
+const fix195 = "tidb-rs#195"
+
+// fix195Applied builds table t at v2, alters it at v5, GCs with cut 3 and asks the v2
+// InfoSchema for t: v8.5.8 has deleted the v2 item.
+func fix195Applied() (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	s := &isSim{rng: rand.New(rand.NewPCG(1, 2)), tables: map[int64][]*model.TableInfo{}}
+	db := &model.DBInfo{ID: 1, Name: pmodel.NewCIStr("d1"), State: model.StatePublic}
+	t := s.newTable(1, "t")
+	t.ID, t.Partition, t.ForeignKeys = 2, nil, nil
+	s.write(func(m *meta.Mutator) {
+		must(m.CreateDatabase(db))
+		must(m.CreateTableOrView(1, t))
+	})
+	full := isStep{K: "full", TS: 10, Ver: 2, Pairs: s.pairs}
+	n := cloneTbl(t)
+	n.Comment = "altered"
+	s.write(func(m *meta.Mutator) { must(m.UpdateTable(1, n)) })
+	d, err := json.Marshal(&model.SchemaDiff{Version: 5, Type: model.ActionAddColumn, SchemaID: 1, TableID: 2})
+	must(err)
+	steps := []isStep{full, {K: "diffs", TS: 20, Pairs: s.pairs, Diffs: []json.RawMessage{d}},
+		{K: "gc", Ver: 3}, {K: "query", At: 0}}
+	out, err := infoschemaExec("build", []json.RawMessage{vec.MustJSON(steps)})
+	must(err)
+	q := out.([]isStepOut)[3].Q.(map[string]any)
+	items, _ := q["items"].([]any)
+	return len(items) == 1
 }
 
 var infoschemaCoverage = map[string]vec.Coverage{
@@ -889,7 +927,18 @@ func (s *isSim) op() []*model.SchemaDiff {
 		from := s.dbOf(t.ID)
 		to := metaPick(rng, s.dbs)
 		n := cloneTbl(t)
-		name := s.freeName(to.ID)
+		// Within one schema the table's own name is free: a case-only rename (t -> T)
+		// is generated on purpose (D06.3 spec §9 item 4: CIStr-wide dedup).
+		except := int64(0)
+		if from.ID == to.ID {
+			except = t.ID
+		}
+		name := s.freeNameExcept(to.ID, except)
+		if from.ID == to.ID && rng.IntN(3) == 0 {
+			if sw := swapCase(t.Name.O); sw != t.Name.O {
+				name = sw
+			}
+		}
 		if name == "" {
 			return nil
 		}
@@ -1125,8 +1174,13 @@ func (s *isSim) op() []*model.SchemaDiff {
 // Table names are unique in a schema, case-insensitively (as in TiDB). Duplicates would
 // also make a full load depend on Go's map order (TableName2ID, M-MAPORDER).
 func (s *isSim) nameTaken(dbID int64, l string) bool {
+	return s.nameTakenExcept(dbID, l, 0)
+}
+
+// nameTakenExcept ignores the table except (a rename within its own schema).
+func (s *isSim) nameTakenExcept(dbID int64, l string, except int64) bool {
 	for _, t := range s.tables[dbID] {
-		if t.Name.L == l {
+		if t.Name.L == l && t.ID != except {
 			return true
 		}
 	}
@@ -1134,13 +1188,25 @@ func (s *isSim) nameTaken(dbID int64, l string) bool {
 }
 
 func (s *isSim) freeName(dbID int64) string {
+	return s.freeNameExcept(dbID, 0)
+}
+
+func (s *isSim) freeNameExcept(dbID, except int64) string {
 	for i := 0; i < 4; i++ {
 		n := metaPick(s.rng, isProbeTables)
-		if !s.nameTaken(dbID, pmodel.NewCIStr(n).L) {
+		if !s.nameTakenExcept(dbID, pmodel.NewCIStr(n).L, except) {
 			return n
 		}
 	}
 	return ""
+}
+
+// swapCase upper-cases a lower-case ASCII name and lower-cases any other.
+func swapCase(n string) string {
+	if l := strings.ToLower(n); l != n {
+		return l
+	}
+	return strings.ToUpper(n)
 }
 
 func (s *isSim) remove(dbID, tid int64) {
