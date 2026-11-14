@@ -44,12 +44,15 @@ import (
 	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/meta/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/sessionctx"
 	"github.com/pingcap/tidb/pkg/tablecodec"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/chunk"
 	"github.com/pingcap/tidb/pkg/util/codec"
 	"github.com/pingcap/tidb/pkg/util/mock"
 	"github.com/pingcap/tidb/pkg/util/rowcodec"
+
+	_ "unsafe" // go:linkname
 )
 
 const pointgetSeed = 20261116
@@ -71,7 +74,15 @@ func init() {
 var pointgetCoverage = map[string]vec.Coverage{
 	"decode_row_val": {Min: 3000, GoFuncs: []string{"NewRowDecoder", "DecodeRowValToChunk", "decodeOldRowValToChunk",
 		"tryDecodeFromHandle", "notPKPrefixCol", "getColInfoByID"}},
+	"row_checksum": {Min: 1500, GoFuncs: []string{"fillRowChecksum", "shouldFillRowChecksum"}},
 }
+
+// pgFillRowChecksum is executor.fillRowChecksum (unexported; Go 1.23+ restricts pull
+// linknames only for the standard library).
+//
+//go:linkname pgFillRowChecksum github.com/pingcap/tidb/pkg/executor.fillRowChecksum
+func pgFillRowChecksum(sctx sessionctx.Context, start, end int, schema *expression.Schema, tblInfo *model.TableInfo,
+	values [][]byte, handles []kv.Handle, req *chunk.Chunk, buf []byte) error
 
 // pgCtx: a mock session whose GetExprCtx is the record's static expression context.
 type pgCtx struct {
@@ -82,7 +93,9 @@ type pgCtx struct {
 func (c pgCtx) GetExprCtx() exprctx.ExprContext { return c.ectx }
 
 // pgCol: one schema column. off >= 0 is the table column at that offset (virtual: a
-// virtual generated column, VirtualExpr set); off == -1 is _tidb_rowid (ExtraHandleID).
+// virtual generated column, VirtualExpr set); off == -1 is _tidb_rowid (ExtraHandleID);
+// off == -2 is _tidb_row_checksum (ExtraRowChecksumID, the planner's column of
+// buildPointGetChecksumCol: CHAR(MaxBlobWidth) in the default charset).
 type pgCol struct {
 	Off     int  `json:"off"`
 	Virtual bool `json:"virtual,omitempty"`
@@ -93,6 +106,21 @@ type pgCol struct {
 func pgSchema(tbl *model.TableInfo, cols []pgCol) *expression.Schema {
 	var ecols []*expression.Column
 	for i, c := range cols {
+		if c.Off == -2 {
+			cs, cl := types.DefaultCharsetForType(mysql.TypeString)
+			ft := types.NewFieldType(mysql.TypeString)
+			ft.SetCharset(cs)
+			ft.SetCollate(cl)
+			ft.SetFlen(mysql.MaxBlobWidth)
+			ft.SetDecimal(0)
+			ecols = append(ecols, &expression.Column{
+				RetType:  ft,
+				ID:       model.ExtraRowChecksumID,
+				UniqueID: model.ExtraRowChecksumID,
+				Index:    i,
+			})
+			continue
+		}
 		if c.Off < 0 {
 			ecols = append(ecols, &expression.Column{
 				RetType:  types.NewFieldType(mysql.TypeLonglong),
@@ -168,6 +196,54 @@ func pointgetExec(op string, args []json.RawMessage) (out any, err error) {
 				}
 				res["row"] = ds
 			}
+			r = res
+		}()
+		return map[string]any{"r": r, "w": ecWarns(ev.TruncateWarnings(0))}, nil
+	case "row_checksum":
+		// args: [ctx, session time zone (offset s), table, schema, handle, row value]. The
+		// checksum column alone, as fillRowChecksum fills it into a fresh chunk (Next
+		// calls it after DecodeRowValToChunk, which the decode_row_val op covers).
+		ectx, ev := tblCtx(args[0])
+		tz := gotime.FixedZone("Z", arg[int](args, 1))
+		tbl := tblIn(args[2])
+		var cols []pgCol
+		must(json.Unmarshal(args[3], &cols))
+		h := handleOfSpec(arg[handleSpec](args, 4))
+		val, _ := hex.DecodeString(arg[string](args, 5))
+		sctx := pgCtx{Context: mock.NewContext(), ectx: ectx}
+		sctx.GetSessionVars().TimeZone = tz
+		schema := pgSchema(tbl, cols)
+		var r any
+		func() {
+			defer func() {
+				if p := recover(); p != nil {
+					r = map[string]any{"panic": true}
+				}
+			}()
+			fts := make([]*types.FieldType, len(schema.Columns))
+			for i, c := range schema.Columns {
+				fts[i] = c.RetType
+			}
+			chk := chunk.NewChunkWithCapacity(fts, 1)
+			e := pgFillRowChecksum(sctx, 0, 1, schema, tbl, [][]byte{val}, []kv.Handle{h}, chk, nil)
+			res := map[string]any{}
+			if e != nil {
+				res["err"] = vec.GoString(errors.Cause(e).Error())
+			}
+			// The checksum column (the others are untouched, empty).
+			var out []any
+			for i := range schema.Columns {
+				c := chk.Column(i)
+				switch {
+				case c.Rows() == 0:
+					out = append(out, "-")
+				case c.IsNull(0):
+					out = append(out, nil)
+				default:
+					out = append(out, c.GetString(0))
+				}
+			}
+			res["cols"] = out
 			r = res
 		}()
 		return map[string]any{"r": r, "w": ecWarns(ev.TruncateWarnings(0))}, nil
@@ -295,6 +371,54 @@ func pointgetGenerate(g *vec.Gen, rng *rand.Rand) {
 				continue
 			}
 			g.Add(src, "decode_row_val", ctxArg, js, pgGenSchema(rng, t), specOf(h), hex.EncodeToString(value))
+		}
+	}
+	pgGenChecksum(g, rng)
+}
+
+// pgGenChecksum: row_checksum records, and decode_row_val records whose schema has
+// _tidb_row_checksum (the decoders append NULL for it in v2; v1 rows reach Go's
+// getColInfoByID(-4) == nil and panic). Int handles and clustered tables, rows that hold
+// part of the columns (added columns: origin defaults), v1 rows (checksum NULL), and the
+// session time zone UTC or not (TIMESTAMP values are decoded into it and converted back
+// to UTC for the checksum).
+func pgGenChecksum(g *vec.Gen, rng *rand.Rand) {
+	zones := []int{0, 8 * 3600, -3 * 3600, 5*3600 + 1800, -(9*3600 + 1800)}
+	for i := 0; i < 450; i++ {
+		t := tblRandTable(rng, int64(20000+i*10))
+		t.State = model.StatePublic
+		if rng.IntN(3) == 0 {
+			// A TIMESTAMP column with a non-zero value in most rows.
+			c := tblColumn(rng, len(t.Columns))
+			c.FieldType = *types.NewFieldType(mysql.TypeTimestamp)
+			c.SetDecimal(rng.IntN(7))
+			c.Version = model.ColumnInfoVersion2
+			c.State = model.StatePublic
+			c.Hidden = false
+			c.ID = int64(len(t.Columns) + 1)
+			c.OriginDefaultValue = tblPick(rng, []any{nil, "2019-05-06 12:48:49", "0000-00-00 00:00:00"})
+			c.DefaultValue = c.OriginDefaultValue
+			t.Columns = append(t.Columns, c)
+		}
+		js := tblJSON(t)
+		src := fmt.Sprintf("rand/checksum%d", i)
+		for k := 0; k < 4; k++ {
+			ctxArg := tblCtxArg(rng)
+			tz := tblPick(rng, zones)
+			value, h := pgGenRow(rng, t, gotime.FixedZone("Z", tz))
+			if value == nil {
+				continue
+			}
+			cols := pgGenSchema(rng, t)
+			pos := rng.IntN(len(cols) + 1)
+			cols = append(cols[:pos], append([]pgCol{{Off: -2}}, cols[pos:]...)...)
+			// The session zone of the checksum is the record's: ctxArg's location is the
+			// expression context's (origin defaults), tz the session's.
+			ctxArg[1] = tz
+			g.Add(src, "row_checksum", ctxArg, tz, js, cols, specOf(h), hex.EncodeToString(value))
+			if k == 0 {
+				g.Add(src, "decode_row_val", ctxArg, js, cols, specOf(h), hex.EncodeToString(value))
+			}
 		}
 	}
 }

@@ -553,6 +553,7 @@ tidb-rs 是只读节点：写路径（记录的增删改、自增 / 行 ID 分�
 
 op `decode_row_val`：`executor.NewRowDecoder` 与 `executor.DecodeRowValToChunk`。表沿用 table 领域的随机表（列类型、默认值、状态、生成列、int / 公共 handle、前缀主键），约五分之一的表把列 ID 加 300（行格式 v2 的 large 形式）。schema 是公开列的随机子集和顺序（`colInfoToColumn`：`RetType` 为列类型的副本；非存储生成列带 `VirtualExpr` 标记），没有聚簇键的表有时再加 `_tidb_rowid`。存储的行只含部分列（其余是"新增列"，按 origin default 读），部分值为 NULL；行格式 v1（`EncodeOldRow`）、v2（`rowcodec.Encoder{Enable: true}`）、带 handle checksum 的 v2。会话是 mock context，`GetExprCtx` 换成记录的静态上下文，时区相同。输出：每列追加的行数、错误、各列 datum（`GetDatum`）和 warning。
 
+- op `row_checksum`：`executor.fillRowChecksum`（未导出，经 `go:linkname`；`shouldFillRowChecksum` 随之覆盖）写进新 chunk 的 `_tidb_row_checksum` 列（planner 的 `CHAR(MaxBlobWidth)` 列，schema 中位置随机）。int handle、`_tidb_rowid` 与聚簇表，行只含部分列（新增列取 origin default），行格式 v1（checksum 为 NULL），约一半的表加一个 TIMESTAMP 列；会话时区（`SessionVars.TimeZone`）取 UTC、+8、-3、+5:30、-9:30（TIMESTAMP 解码到会话时区，checksum 前换回 UTC）。输出每列：`"-"`（没有行）、null 或 checksum 字符串，以及错误。另有 `decode_row_val` 记录的 schema 含 checksum 列（v1 行在 Go 中 `getColInfoByID(-4)` 为 nil 而 panic）。
 - record key 不在本领域重复：tablecodec 领域 `keys` 的 `rowh`（`EncodeRowKeyWithHandle`）由 tidb-rs 经点查执行器回放（handle 编码只用一套向量）。
 - 聚簇表不生成 `_tidb_rowid`：SQL 层没有这种列；Go 会把 common handle 的第一列按自己的类型解码进 BIGINT 列，`chunk.Column.AppendMyDecimal` 等经 unsafe 越界写，破坏生成进程的堆（同一次运行中其他记录的字符串被清零，结果不确定）。
 - 块内其余函数（BatchPointGet、TableReader、IndexLookUp 等）以及 VS1-12 中由 tidb-rs 单测覆盖的函数列在 `pointget_exempt.go`。
