@@ -18,10 +18,10 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.0 | VS1-10 | VS1-10 | planned | 97 / 214 | 1748 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.13 | VS1-10 | VS1-10 | planned | 10 / 211 | 547 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
 | D09.13 | VS1-24 | VS1-24 | planned | 57 / 211 | 1334 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.14 | VS1-23 | VS1-23 | planned | 91 / 111 | 1352 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -50,38 +50,42 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-87 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+114 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D02.1 | 2 | 0 | 0 |
+| D02.2 | 5 | 0 | 0 |
 | D03.1 | 3 | 0 | 0 |
-| D04.1 | 1 | 0 | 0 |
-| D05.3 | 4 | 0 | 0 |
-| D05.4 | 7 | 0 | 0 |
+| D04.1 | 2 | 0 | 0 |
+| D05.3 | 5 | 0 | 0 |
+| D05.4 | 11 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
+| D06.3 | 1 | 0 | 0 |
 | D06.4 | 12 | 0 | 0 |
-| D06.5 | 6 | 0 | 0 |
+| D06.5 | 7 | 0 | 0 |
 | D07.1 | 2 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 1 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
-| D09.13 | 3 | 0 | 0 |
+| D09.1 | 2 | 0 | 0 |
+| D09.13 | 4 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |
 | D09.2 | 3 | 0 | 0 |
-| D10.1 | 5 | 0 | 0 |
-| D10.8 | 1 | 0 | 0 |
-| D10.9 | 2 | 0 | 0 |
+| D09.5 | 1 | 0 | 0 |
+| D10.1 | 7 | 0 | 0 |
+| D10.8 | 2 | 0 | 0 |
+| D10.9 | 3 | 0 | 0 |
 | D11.2 | 1 | 0 | 0 |
 | D12.0 | 1 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
-| D12.12 | 1 | 0 | 0 |
+| D12.12 | 2 | 0 | 0 |
 | D12.2 | 5 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 1 | 0 | 0 |
-| D13.3 | 1 | 0 | 0 |
+| D13.1 | 3 | 0 | 0 |
+| D13.3 | 4 | 0 | 0 |
 | D14.1 | 2 | 0 | 0 |
 | D14.2 | 3 | 0 | 0 |
 | X | 0 | 3 | 0 |
