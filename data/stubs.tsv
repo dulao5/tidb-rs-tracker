@@ -45,6 +45,13 @@ crates/infoschema/src/autoid.rs	new_allocator	D06.2	temporary	D06.2 part 2: allo
 crates/infoschema/src/autoid.rs	new_allocators_from_tbl_info	D06.2	temporary	D06.2 part 2: allocators
 crates/infoschema/src/infoschema_v2.rs	apply_recover_schema	D06.2	temporary	D06.2 part 2: Mutator.ListSimpleTables
 crates/infoschema/src/table.rs	table_from_meta	D06.4	temporary	VS1-12: TableFromMeta (D06.4 table part)
+crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
+crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.8	temporary	VS1-11: the PointGetPlan check of IsPointGetWithPKOrUniqueKeyByAutoCommit
+crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
+crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
+crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
+crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
+crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
 crates/poc/session/src/router/newstack.rs	execute	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
 crates/poc/session/src/router/newstack.rs	execute_prepared	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
 crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
