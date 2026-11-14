@@ -519,4 +519,5 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 - **全局状态**：每条记录自己设置并恢复 new collation 开关与 `DefaultExprPushDownBlacklist`。
 - **输出**：`ExprToPB` 等的结果是 gogoproto 序列化的字节（hex）：tidb-rs 用 Rust 的 tipb 消息，要求逐字节相同（gogoproto 的 non-nullable 字段总是序列化）。
 - **未导出的函数**：`canFuncBePushed`、`scalarExprSupportedByTiKV/Flash/TiDB`、`canEnumPushdownPreliminarily` 通过 `go:linkname` 调用；CAST 签名的 `inUnion` 用 `reflect` 读。
-- **豁免**：第 2 部分 `distsql_builtin.go` 的 16 个函数（`PBToExpr` 方向）。GROUPING（`BuiltinGroupingImplSig` 的 metadata，D08.9）不在配方中。
+- **第 2 部分**（`pushdown_pb.go`，`PBToExpr`）：`pbtps` 给出列引用的字段类型；`pbexpr` 把第 1 部分的配方经 `ExprToPB` 转成 pb，再 `PBToExpr`（往返）；`pbraw` 是手工构造的消息（各种常量的合法与错误值、缺 `FieldType`、`ValueList`、未知签名与表达式类型）。输出的表达式含签名类型与 `baseBuiltinFunc` 以外的字段（`inUnion`、`keepNull` 等，用 `reflect` 读）。tidb-rs 中未移植函数族的签名是边界桩，回放检查桩名与 Go 的结果一致。
+- **豁免**：无。GROUPING（`BuiltinGroupingImplSig` 的 metadata，D08.9）不在配方中。

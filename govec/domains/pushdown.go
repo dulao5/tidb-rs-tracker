@@ -86,21 +86,20 @@ var pushdownCoverage = map[string]vec.Coverage{
 	"ft":      {Min: 300, GoFuncs: []string{"ToPBFieldType", "ToPBFieldTypeWithCheck", "FieldTypeFromPB"}},
 	"ftpb":    {Min: 200, GoFuncs: []string{"FieldTypeFromPB"}},
 	"enabled": {Min: 300, GoFuncs: []string{"IsPushDownEnabled", "storeTypeMask", "init"}},
+	"pbtps": {Min: 1},
+	"pbexpr": {Min: 2000, GoFuncs: []string{"PBToExpr", "PbTypeToFieldType", "getSignatureByPB",
+		"newDistSQLFunctionBySig", "convertTime", "convertInt", "convertUint", "convertString", "convertFloat",
+		"convertDecimal", "convertDuration", "convertEnum", "convertVectorFloat32"}},
+	"pbraw": {Min: 140, GoFuncs: []string{"PBToExprs", "PBToExpr", "decodeValueList", "convertJSON", "convertTime",
+		"convertInt", "convertUint", "convertString", "convertFloat", "convertDecimal", "convertDuration",
+		"convertEnum", "convertVectorFloat32", "getSignatureByPB", "newDistSQLFunctionBySig", "PbTypeToFieldType"}},
 	"ctx": {Min: 10, GoFuncs: []string{"NewPushDownContextFromSessionVars", "NewPushDownContext",
 		"PushDownContext.Client", "PushDownContext.GetGroupConcatMaxLen", "PushDownContext.AppendWarning",
 		"PushDownContext.EvalCtx"}},
 }
 
 func pushdownExempt() map[string]string {
-	const part2 = "D08.3 part 2: the PBToExpr direction (distsql_builtin.go), which builds signatures of every " +
-		"family by pb code"
-	m := map[string]string{}
-	for _, f := range []string{"PbTypeToFieldType", "getSignatureByPB", "newDistSQLFunctionBySig", "PBToExprs",
-		"PBToExpr", "convertTime", "decodeValueList", "convertInt", "convertUint", "convertString", "convertFloat",
-		"convertDecimal", "convertDuration", "convertJSON", "convertVectorFloat32", "convertEnum"} {
-		m[f] = part2
-	}
-	return m
+	return map[string]string{}
 }
 
 // ---------------------------------------------------------------- unexported TiDB code
@@ -433,6 +432,9 @@ func pushdownExec(op string, p []json.RawMessage) (out any, err error) {
 		pctx.AppendWarning(errors.NewNoStackError("pushdown warning"))
 		return map[string]any{"gcml": pctx.GetGroupConcatMaxLen(), "client": pctx.Client() == kv.Client(client),
 			"ectx": pctx.EvalCtx() == expression.EvalContext(ectx), "w": ecWarns(ws()), "x": ecWarns(xs())}, nil
+	}
+	if out, ok := pdPbExec(op, p); ok {
+		return out, nil
 	}
 	panic("pushdown: unknown op " + op)
 }
@@ -920,4 +922,5 @@ func pushdownGenerate(g *vec.Gen, rng *rand.Rand) {
 			}
 		}
 	}
+	pdPbGenerate(g, rng, consts, names)
 }
