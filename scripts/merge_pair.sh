@@ -59,12 +59,12 @@ check_pr() {
   echo "ok: $repo#$pr open, mergeable, checks green"
 }
 
-merge_pr() {
+merge_pr() {  # returns 1 on failure; callers decide whether to exit
   local repo=$1 pr=$2 head=$3 state oid
-  gh pr merge "$pr" -R "$repo" --merge --match-head-commit "$head"
-  state=$(gh pr view "$pr" -R "$repo" --json state --jq .state)
-  [ "$state" = MERGED ] || { echo "$repo#$pr is $state after merge" >&2; exit 1; }
-  oid=$(gh pr view "$pr" -R "$repo" --json mergeCommit --jq .mergeCommit.oid)
+  gh pr merge "$pr" -R "$repo" --merge --match-head-commit "$head" || return 1
+  state=$(gh pr view "$pr" -R "$repo" --json state --jq .state) || return 1
+  [ "$state" = MERGED ] || { echo "$repo#$pr is $state after merge" >&2; return 1; }
+  oid=$(gh pr view "$pr" -R "$repo" --json mergeCommit --jq .mergeCommit.oid) || return 1
   echo "merged: $repo#$pr -> ${oid:0:7}"
 }
 
@@ -96,7 +96,7 @@ if [ "${DRY_RUN:-0}" = 1 ]; then
   echo "dry run: not merging"
   exit 0
 fi
-merge_pr "$T_REPO" "$T_PR" "$t_head"
+merge_pr "$T_REPO" "$T_PR" "$t_head" || exit 1
 if ! merge_pr "$R_REPO" "$R_PR" "$r_head"; then
   echo "!!! $T_REPO#$T_PR IS MERGED BUT $R_REPO#$R_PR IS NOT." >&2
   echo "!!! tracker main and tidb-rs main now disagree: fix and merge $R_REPO#$R_PR right away." >&2
