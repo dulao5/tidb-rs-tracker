@@ -51,6 +51,8 @@ var minedGoTests = map[string][]string{
 	"stmtctx": domains.StmtctxMinedTests(),
 	// Scenarios of pkg/util/ranger/types_test.go (D00.1 part 2a), as records.
 	"ranger": domains.RangerMinedTests(),
+	// Cases of pkg/planner/util/path_test.go and column_test.go (D10.10, VS1-19), as records.
+	"planutil": domains.PlanutilMinedTests(),
 	// Scenario of pkg/expression/expropt/optional_test.go (D00.1 part 2b), as records.
 	"ctx2b": domains.Ctx2bMinedTests(),
 	// Scenarios of pkg/util/execdetails/execdetails_test.go (D14.0), as records.

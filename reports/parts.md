@@ -28,9 +28,9 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.4 | VS1-21 | VS1-21 | planned | 6 / 116 | 313 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.7 | VS1-23 | VS1-23 | planned | 21 / 33 | 428 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.8 | VS1-23 | VS1-23 | planned | 34 / 51 | 539 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.1 | VS1-19 | VS1-19 | planned | 47 / 354 | 322 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | planned | 110 / 354 | 1830 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.10 | VS1-19 | VS1-19 | planned | 142 / 168 | 1387 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-28 | VS1-28 | planned | 98 / 181 | 3127 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.3 | VS1-27 | VS1-27 | planned | 22 / 103 | 368 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.4 | VS1-25 | VS1-25 | planned | 95 / 95 | 3309 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -50,7 +50,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-57 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+64 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -67,7 +67,9 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.9 | 1 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
 | D09.13 | 3 | 0 | 0 |
-| D10.1 | 1 | 0 | 0 |
+| D09.15 | 1 | 0 | 0 |
+| D10.1 | 5 | 0 | 0 |
+| D10.8 | 1 | 0 | 0 |
 | D10.9 | 2 | 0 | 0 |
 | D11.2 | 1 | 0 | 0 |
 | D12.0 | 1 | 0 | 0 |
@@ -76,6 +78,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.2 | 5 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
 | D13.1 | 1 | 0 | 0 |
+| D13.3 | 1 | 0 | 0 |
 | D14.1 | 2 | 0 | 0 |
 | D14.2 | 3 | 0 | 0 |
 | X | 0 | 3 | 0 |
