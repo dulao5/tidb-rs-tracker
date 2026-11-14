@@ -696,6 +696,12 @@ func tblColumn(rng *rand.Rand, i int) *model.ColumnInfo {
 	if rng.IntN(4) == 0 {
 		c.Version = uint64(rng.IntN(3))
 	}
+	if ft.GetType() == mysql.TypeTimestamp && c.Version < model.ColumnInfoVersion1 {
+		// A version-0 TIMESTAMP default is read in timeutil.SystemLocation(), the process
+		// time zone: the records would depend on the generating host (tidb-rs#217 review,
+		// the replay runs in a non-UTC TZ too). tidb-rs covers that branch with a unit test.
+		c.Version = model.ColumnInfoVersion1
+	}
 	dv := tblDefault(rng, ft)
 	if ft.GetType() == mysql.TypeBit && dv != nil {
 		must(c.SetDefaultValue(dv))
@@ -809,7 +815,7 @@ func tblRandTable(rng *rand.Rand, id int64) *model.TableInfo {
 	case 0:
 		// newPartitionExpr builds the partition (and generated column) expressions, which the
 		// part-1 stub does not: only tables whose expression Go builds without error.
-		if !types.IsTypeInteger(t.Columns[0].GetType()) || t.Columns[0].State != model.StatePublic {
+		if !types.IsTypeInteger(t.Columns[0].GetType()) || t.Columns[0].State != model.StatePublic || t.Columns[0].Hidden {
 			break
 		}
 		gen := false
