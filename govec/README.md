@@ -549,3 +549,12 @@ tidb-rs 是只读节点：写路径（记录的增删改、自增 / 行 ID 分�
 - `find_cols`、`can_skip`、`restored`（`TryGetHandleRestoredDataWrapper`）、`table_scan`（`BuildTableScanFromInfos` 的 protobuf 字节与 `SetPBColumnsDefaultValue` 的默认值字节）、`zero_value`、`optional_fsp`。
 - 错误只记录 cause（映射规则 M-ERR：tidb-rs 不移植 `errors.Wrap`）。解析错误（1064）的文本是 Rust parser 的，tidb-rs 回放只比较错误码。
 - `util/generatedexpr`、`util.ColumnsToProto`（D00.3）经 `table_from_meta`、`table_scan` 覆盖，不在块内，不列入 `GoFuncs`。
+## copr（块 D07.2 第 1 部分：`pkg/store/copr` 的 key_ranges.go、region_cache.go、coprocessor.go 的建任务部分；`pkg/util/paging`）
+
+- 记录格式见 `domains/copr.go` 文件头：`kr`（KeyRanges 的 first/mid/last 形状与 Split、Slice、At、String、ToPBRanges）、`bkr`、`calc`（paging 的 calculateRemain / calculateRetry）、`split`（按 region / bucket 切分）、`build`（buildCopTasks，含 store batch 与 row count hint）、`small`、`reqflags`、`pb`、`paging`。
+- 未导出的函数用 `go:linkname` 调用；未导出的字段（`KeyRanges.first/last`、`copTask` 的各字段、`batchedCopTask`）用 `reflect` + `unsafe` 读写；`copTask` 的反射类型取自 `CopClient.BuildCopIterator` → `copIterator.GetTasks` 的签名。`buildCopTaskOpt` 用同布局的镜像结构体传入（v8.5.8 的字段顺序）。
+- `split` / `build` 在 mocktikv 上运行（`testutils.NewMockTiKV` + `BootstrapWithMultiRegions`，bucket 用 `SplitRegionBuckets`，版本号取 region id，与 Go 测试相同）。记录的 `out.layout` 是另一个冷的 region cache 读回的 region 布局（id、epoch、边界、bucket、leader），Rust 回放按这个布局实现 client-go `BatchLocateKeyRanges` 的结果（起始 key 所在的 region，之后逐个 region 直到某个 region `ContainsByEnd(end)`）。
+- 随机区间互不重叠、有序（coprocessor 请求的前提）；开放的结束 key 只出现在单个区间的记录中：多个区间里含开放区间时，mocktikv 的批量 region 扫描返回 "PD server timeout"（mock 的限制，不是 TiDB 的行为）。
+- `copTask.requestSource` 记为 `GetRequestSource()` 的字符串；Rust 回放不比较它，改为检查每个 task 的 request source 与请求的相同（Go 中就是原样复制）。
+- `batchTaskList` 是 map，按 task id 排序后记录（M-MAPORDER）。
+- 第 2 部分（iterator、worker、响应处理、store 包装）的函数在豁免表中写明 "D07.2 part 2"。
