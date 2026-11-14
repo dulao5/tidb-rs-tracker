@@ -36,6 +36,7 @@ crates/executor/src/internal/exec/executor.rs	top_sql_enabled	D14.2	temporary	D1
 crates/executor/src/internal/exec/executor.rs	update_delta_for_table_id	X	permanent	not ported (write path: pessimistic locks, table delta)
 crates/executor/src/internal/exec/indexusage.rs	get_table_row_count	D11.2	temporary	D11.2: statement used statistics (index usage)
 crates/executor/src/metrics.rs	observe	D14.1	temporary	D14.1: metric vectors of pkg/metrics
+crates/executor/src/select.rs	reset_context_of_stmt	D02.2	temporary	VS1-14: ResetContextOfStmt of statements outside the Rust AST (INSERT/UPDATE/DELETE/EXPLAIN...)
 crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
@@ -95,10 +96,42 @@ crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	V
 crates/poc/session/src/router/newstack.rs	prepare	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
 crates/poc/session/src/router/newstack.rs	set_global_sys_var_only	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
-crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
-crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
-crates/session/src/session.rs	execute_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
-crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/session/src/glue.rs	batch_get	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	begin	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	current_version	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	get	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	get_client	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	get_low_resolution_timestamp_async	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	get_snapshot	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	get_stmt_label	D12.0	temporary	VS1-14: stmtctx.GetStmtLabel (inherited from D00.1) for non-SELECT statements
+crates/session/src/glue.rs	get_timestamp_async	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	is_read_only	D02.2	temporary	VS1-14: planner IsReadOnly (ast.IsReadOnly) as sessiontxn StmtInfo; blocked answers false
+crates/session/src/glue.rs	iter	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/glue.rs	iter_reverse	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
+crates/session/src/metrics.rs	init	D14.1	temporary	VS1-14: session metric vectors
+crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session metric vectors
+crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
+crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
+crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
+crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
+crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
+crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
+crates/session/src/session.rs	get_expr_ctx	D05.3	temporary	VS1-14: sessionexpr ExprContext (D05.3 tasks P1-1)
+crates/session/src/session.rs	get_plan_ctx	D05.3	temporary	VS1-14: the session's PlanContext over sessionexpr (D05.3 tasks P1-1)
+crates/session/src/session.rs	get_ranger_ctx	D05.3	temporary	VS1-14: the session's RangerContext over sessionexpr (D05.3 tasks P1-1)
+crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the server's session manager
+crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
+crates/session/src/session.rs	get_table_ctx	D06.4	temporary	VS1-14: tblctx table context
+crates/session/src/session.rs	load_common_global_variables_if_needed	D06.5	temporary	VS1-14: domain.GetSessionCache (the router syncs session variables until VS1-17)
+crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
+crates/session/src/session.rs	set_collation	D02.2	temporary	VS1-14: charset.GetCharsetInfoByID
+crates/session/src/session.rs	set_process_info	D00.3	temporary	VS1-14: util.ProcessInfo (SHOW PROCESSLIST runs on the PoC)
+crates/session/src/session.rs	set_session_manager	D03.1	temporary	VS1-14: the server's session manager
+crates/session/src/session.rs	show_process	D00.3	temporary	VS1-14: util.ProcessInfo
+crates/session/src/session.rs	update_process_info	D00.3	temporary	VS1-14: util.ProcessInfo
+crates/session/src/session.rs	validate_statement_in_txn	D02.2	temporary	VS1-14: ast.ImportIntoStmt not in the Rust AST (nothing to refuse)
+crates/session/src/session.rs	validate_statement_read_only_in_staleness	D05.4	temporary	VS1-14: statements in stale read transactions (D05.4 part 2)
+crates/session/src/tidb.rs	is_read_only	D09.13	temporary	VS1-14: ExecStmt.IsReadOnly (planner IsReadOnly) in finishStmt; its error is the statement's
 crates/sessiontxn/src/isolation/base.rs	on_local_temporary_table_created_base	D06.4	temporary	D06.4 part 2: local temporary tables
 crates/sessiontxn/src/staleread/provider.rs	activate_txn	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/sessiontxn/src/staleread/provider.rs	get_snapshot_with_stmt_read_ts	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
