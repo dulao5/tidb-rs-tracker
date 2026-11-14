@@ -5,7 +5,8 @@ package domains
 //
 // Part 1 of the block: key ranges, task building, region / bucket splitting, small-task
 // concurrency, the paging range arithmetic and the request-field conversions. The
-// iterator, its workers and the response handling (part 2) are exempt below.
+// iterator, its workers and the response handling (part 2) need a TiKV store and are exempt
+// below; tidb-rs tests them on a mock store.
 //
 // Values: keys are hex; a range is [start, end].
 //
@@ -176,17 +177,23 @@ func coprExempt() map[string]string {
 		"copIteratorWorker.collectUnconsumedCopRuntimeStats", "copIteratorWorker.handleTiDBSendReqErr", "copIteratorWorker.finished",
 		"liteCopIteratorWorker.liteSendReq", "chooseBackoffer", "memTrackerConsumeResp", "appendScanDetail",
 		"copResponse.GetData", "copResponse.GetStartKey", "copResponse.GetCopRuntimeStats", "copResponse.MemSize", "copResponse.RespTime",
-		"pkg/store/copr/coprocessor.go:init", "copErrorResponse.Next", "copErrorResponse.Close",
+		"copErrorResponse.Next", "copErrorResponse.Close",
 		"newRateLimitAction", "rateLimitAction.Action", "rateLimitAction.GetPriority", "rateLimitAction.destroyTokenIfNeeded",
 		"rateLimitAction.conditionLock", "rateLimitAction.conditionUnlock", "rateLimitAction.close", "rateLimitAction.setEnabled",
 		"rateLimitAction.isEnabled",
 		"NewStore", "Store.Close", "Store.nextReplicaReadSeed", "Store.GetClient", "getEndPointType",
-		"kvStore.GetRegionCache", "kvStore.CheckVisibility", "kvStore.GetTiKVClient",
-		"tikvClient.Close", "tikvClient.CloseAddr", "tikvClient.SendRequest", "tikvClient.SendRequestAsync", "tikvClient.SetEventListener",
-		"pkg/store/copr/metrics/metrics.go:init", "pkg/store/copr/metrics/metrics.go:InitMetricsVars",
+		"kvStore.GetRegionCache", "kvStore.CheckVisibility",
 	}
 	for _, f := range part2 {
-		ex[f] = "D07.2 part 2: the iterator, workers, response handling and store wrapper on the client-rust adapter (tidb-rs specs/D07.2-copr/tasks.md)"
+		ex[f] = "ported; runs against a TiKV store (iterator, workers, RPC and response handling, store wrapper): unit tests on a mock store in tidb-rs crates/store/tests/copr_iter.rs"
+	}
+	ex["pkg/store/copr/coprocessor.go:init"] = "only sets the finCopResp sentinel; the port's sentinel is the RespMsg::Fin variant (no global object)"
+	for _, f := range []string{"kvStore.GetTiKVClient", "tikvClient.Close", "tikvClient.CloseAddr", "tikvClient.SendRequest",
+		"tikvClient.SendRequestAsync", "tikvClient.SetEventListener"} {
+		ex[f] = "client-go tikv.Client passthrough with error conversion; the TiKV client is client-rust (ADR 0008) and nothing on the read path calls it"
+	}
+	for _, f := range []string{"pkg/store/copr/metrics/metrics.go:init", "pkg/store/copr/metrics/metrics.go:InitMetricsVars"} {
+		ex[f] = "metrics of the coprocessor cache (CoprCacheCounter evict/hit/miss), exception A3 with the cache (block D07.4)"
 	}
 	return ex
 }

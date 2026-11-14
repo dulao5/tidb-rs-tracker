@@ -1,0 +1,20 @@
+file	symbol	block	kind	note
+crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
+crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
+crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.7	temporary	signatures of unported function families
+crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.9	temporary	signatures of unported function families
+crates/infoschema/src/autoid.rs	new_allocator	D06.2	temporary	D06.2 part 2: allocators
+crates/infoschema/src/autoid.rs	new_allocators_from_tbl_info	D06.2	temporary	D06.2 part 2: allocators
+crates/infoschema/src/infoschema_v2.rs	apply_recover_schema	D06.2	temporary	D06.2 part 2: Mutator.ListSimpleTables
+crates/infoschema/src/table.rs	table_from_meta	D06.4	temporary	VS1-12: TableFromMeta (D06.4 table part)
+crates/poc/session/src/router/newstack.rs	execute	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
+crates/poc/session/src/router/newstack.rs	execute_prepared	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
+crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
+crates/poc/session/src/router/newstack.rs	prepare	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
+crates/poc/session/src/router/newstack.rs	set_global_sys_var_only	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
+crates/poc/session/src/router/newstack.rs	set_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
+crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/session/src/session.rs	execute_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)

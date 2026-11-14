@@ -550,3 +550,4 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 ## sessiontxn（块 D05.4 第 1 部分：`pkg/sessiontxn` 的只读路径）
 
 provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future、会话变量）与存储 TSO 之上的状态机，Go 的测试用 testkit 和 store 运行它们。tidb-rs 把会话、存储、规划器写成 trait（tidb-rs `specs/D05.4-sessiontxn/spec.md` §2），用模拟会话的场景测试覆盖（`crates/sessiontxn/tests/providers.rs`），SQL 级覆盖随会话（VS1-14）；这些函数的豁免理由写明这一点。本领域只覆盖纯函数：`action`（`ErrorAction`、`RetryReady`、`NoIdea`）、`constant_future`（`ConstantFuture.Wait`）。写路径（for-update ts、悲观锁错误、fair locking、提交选项、乐观重试、断言级别）永久豁免；stale read、failpoint 钩子、指标、`pkg/session/txninfo` 是第 2 部分。
+- 第 2 部分（iterator、worker、RPC 与响应处理、store 包装）需要 TiKV store，不出向量；豁免理由指向 tidb-rs `crates/store/tests/copr_iter.rs` 的 mock store 单元测试。`kvStore.GetTiKVClient` 与 `tikvClient.*`（client-go `tikv.Client` 的透传，ADR 0008）和 `metrics.go`（coprocessor cache 的指标，例外 A3）为永久豁免。
