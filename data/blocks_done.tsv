@@ -19,6 +19,7 @@ D06.7	17/17	dulao5/tidb-rs#70, tracker#34
 D07.0	done	dulao5/tidb-rs#36 #40, tracker#22
 D08.1	296/348	P1 close-out (dulao5/tidb-rs#48): ported, or exempt for good / owned by another block
 D08.2	108/151	P1 close-out (dulao5/tidb-rs#48): ported, or exempt for good / owned by another block
+D08.3	50/50	dulao5/tidb-rs#179 #181 #182, tracker#71 #74; 316 pb codes of unported families are blocked-by stubs (D08.6/D08.7/D08.9/D08.10)
 D08.4	368/368	dulao5/tidb-rs#98 #108 #109, tracker#55 #62 #63
 D08.5	458/458	dulao5/tidb-rs#100..#112, tracker#56..#64
 D08.8	266/266	dulao5/tidb-rs#82..#162, tracker#44..#67
