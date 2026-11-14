@@ -35,10 +35,10 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.3 | VS1-27 | VS1-27 | planned | 22 / 103 | 368 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.4 | VS1-25 | VS1-25 | planned | 95 / 95 | 3309 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.6 | VS1-29 | VS1-29 | planned | 55 / 104 | 2009 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
 | D10.8 | VS1-11 | VS1-11 | planned | 52 / 88 | 1121 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D11.1 | VS1-29 | VS1-29 | planned | 85 / 317 | 913 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | VS1-12 | VS1-12 | planned | 31 / 245 | 743 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -50,7 +50,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-114 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+146 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -72,13 +72,18 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.0 | 2 | 0 | 0 |
 | D09.1 | 2 | 0 | 0 |
 | D09.13 | 4 | 0 | 0 |
+| D09.14 | 1 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |
 | D09.2 | 3 | 0 | 0 |
 | D09.5 | 1 | 0 | 0 |
 | D10.1 | 7 | 0 | 0 |
+| D10.4 | 4 | 0 | 0 |
+| D10.6 | 6 | 0 | 0 |
+| D10.7 | 3 | 0 | 0 |
 | D10.8 | 2 | 0 | 0 |
 | D10.9 | 3 | 0 | 0 |
-| D11.2 | 1 | 0 | 0 |
+| D11.1 | 13 | 0 | 0 |
+| D11.2 | 6 | 0 | 0 |
 | D12.0 | 1 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 2 | 0 | 0 |
