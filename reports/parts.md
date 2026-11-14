@@ -13,7 +13,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.4 | VS1-14 | VS1-14 | planned | 41 / 157 | 682 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
-| D06.4 | VS1-12 | VS1-12 | in-progress | 103 / 416 | 1132 | dulao5/tidb-rs (VS1-12): converge 54/57 + 3 stubs, 46 write path not ported |
+| D06.4 | VS1-12 | VS1-12 | in-progress | 103 / 416 | 1132 | dulao5/tidb-rs#234: converge 54/57 + 3 stubs, 46 write path not ported |
 | D06.5 | VS1-17 | VS1-17 | planned | 36 / 363 | 820 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -40,7 +40,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D11.1 | VS1-29 | VS1-29 | planned | 85 / 317 | 913 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
-| D12.1 | VS1-12 | VS1-12 | in-progress | 31 / 245 | 743 | dulao5/tidb-rs (VS1-12): converge 29/31 + 2 stubs; govec pointget |
+| D12.1 | VS1-12 | VS1-12 | in-progress | 31 / 245 | 743 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-35 | VS1-35 | planned | 37 / 72 | 1006 | tidb-rs specs/VS1-vertical-slice (#205) |
