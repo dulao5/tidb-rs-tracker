@@ -41,10 +41,20 @@ crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatur
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.7	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.9	temporary	signatures of unported function families
+crates/expression/src/helper.rs	get_time_value	D09.2	temporary	GetTimeValue's unary-operator case: expression.EvalSimpleAst (rewriter)
 crates/infoschema/src/autoid.rs	new_allocator	D06.2	temporary	D06.2 part 2: allocators
 crates/infoschema/src/autoid.rs	new_allocators_from_tbl_info	D06.2	temporary	D06.2 part 2: allocators
 crates/infoschema/src/infoschema_v2.rs	apply_recover_schema	D06.2	temporary	D06.2 part 2: Mutator.ListSimpleTables
-crates/infoschema/src/table.rs	table_from_meta	D06.4	temporary	VS1-12: TableFromMeta (D06.4 table part)
+crates/infoschema/src/table/column.rs	eval_col_default_expr	D09.2	temporary	default expressions: expression.EvalSimpleAst (rewriter)
+crates/infoschema/src/table/column.rs	get_col_default_expr_value	D09.2	temporary	default expressions: expression.EvalSimpleAst (rewriter)
+crates/infoschema/src/tables/mod.rs	CachedTableStub	D06.4	temporary	D06.4 part 2: cached tables (cache.go)
+crates/infoschema/src/tables/mod.rs	PartitionedTableStub	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
+crates/infoschema/src/tables/mod.rs	cached	D06.4	temporary	D06.4 part 2: cached tables (cache.go)
+crates/infoschema/src/tables/mod.rs	get_partitioned_table	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
+crates/infoschema/src/tables/mod.rs	new_cached_table	D06.4	temporary	D06.4 part 2: cached tables (cache.go)
+crates/infoschema/src/tables/mod.rs	new_partitioned_table	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
+crates/infoschema/src/tables/mod.rs	partitioned	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
+crates/infoschema/src/tables/mod.rs	temp_table_from_meta	D06.4	temporary	D06.4 part 2: temporary tables
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.8	temporary	VS1-11: the PointGetPlan check of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
