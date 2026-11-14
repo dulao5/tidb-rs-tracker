@@ -86,7 +86,7 @@ var pushdownCoverage = map[string]vec.Coverage{
 	"ft":      {Min: 300, GoFuncs: []string{"ToPBFieldType", "ToPBFieldTypeWithCheck", "FieldTypeFromPB"}},
 	"ftpb":    {Min: 200, GoFuncs: []string{"FieldTypeFromPB"}},
 	"enabled": {Min: 300, GoFuncs: []string{"IsPushDownEnabled", "storeTypeMask", "init"}},
-	"pbtps": {Min: 1},
+	"pbtps":   {Min: 1},
 	"pbexpr": {Min: 2000, GoFuncs: []string{"PBToExpr", "PbTypeToFieldType", "getSignatureByPB",
 		"newDistSQLFunctionBySig", "convertTime", "convertInt", "convertUint", "convertString", "convertFloat",
 		"convertDecimal", "convertDuration", "convertEnum", "convertVectorFloat32"}},
