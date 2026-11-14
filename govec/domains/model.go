@@ -1535,6 +1535,16 @@ func decodeSiteCases(g *vec.Gen) {
 		// object.
 		{"object/wrong-kinds", "ColumnInfo", string(cb), `{"id":{},"comment":{"a":1},"default_bit":{},"default":{"k":[1]}}`},
 		{"object/map-merge", "ColumnInfo", string(cb), `{"dependences":{"b":{},"a":{}}}`},
+		// Fields boxed in Rust (tidb-rs spec N13 §9: Option<Box<BTreeMap>>, Option<Box<[u8]>>):
+		// nil, non-nil empty and non-empty, decoded into a zero and into a filled ColumnInfo,
+		// then encoded (null vs {} / "").
+		{"boxed/nil", "ColumnInfo", `{}`, `{"dependences":null,"default_bit":null,"origin_default_bit":null}`},
+		{"boxed/empty", "ColumnInfo", `{}`, `{"dependences":{},"default_bit":"","origin_default_bit":""}`},
+		{"boxed/non-empty", "ColumnInfo", `{}`, `{"dependences":{"b":{},"a":{}},"default_bit":"AQI=","origin_default_bit":"Aw=="}`},
+		{"boxed/array-bytes", "ColumnInfo", `{}`, `{"default_bit":[],"origin_default_bit":[3,255]}`},
+		{"boxed/nil-into-filled", "ColumnInfo", string(cb), `{"dependences":null,"default_bit":null,"origin_default_bit":null}`},
+		{"boxed/empty-into-filled", "ColumnInfo", string(cb), `{"dependences":{},"default_bit":"","origin_default_bit":[]}`},
+		{"boxed/non-empty-into-filled", "ColumnInfo", string(cb), `{"dependences":{"c":{}},"default_bit":"Bw==","origin_default_bit":[9]}`},
 		{"object/map-value-error", "ColumnInfo", string(cb), `{"dependences":{"b":1,"c":{}}}`},
 		{"object/map-int-keys", "PartitionInfo", string(pb), `{"ddl_changed_index":{"2":false,"x":true,"+3":true,"-0":true,"9223372036854775808":true,"007":true}}`},
 		{"object/map-value-then-key", "PartitionInfo", string(pb), `{"ddl_changed_index":{"x":"s","4":"s"}}`},
