@@ -511,3 +511,12 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 - 读取在内存 snapshot `memSnap` 上进行（有序键值对，`Iter` / `IterReverse` 的语义与 client-go 的 scanner 相同，用完后 `Key()` 为 nil；Go 的 `ReverseHashIterator.Next` 在 `Next` 之后不检查 `Valid` 就读 `Key()`）。Rust 回放用同样语义的 map。
 - autoid accessor：Go 的各个 picker 共享一个 accessor，先取的会跟着后取的变。所有 Go 调用方都是取到后立刻使用，`autoids` 调用也这样做（tidb-rs spec §4）。
 - 第 2 部分（partialjson、`IterAllTables`、`GetRUStats`、`GetOldestSchemaVersion`、`NewMutator`、`pkg/meta/autoid`、`pkg/meta/metabuild`）列在 `Exempt` 中。
+
+## pushdown（块 D08.3 第 1 部分：`pkg/expression` 的 infer_pushdown.go、expr_to_pb.go）
+
+- **树**：配方同 expr_sf.go（列多一个 `ID`，相关列可带值），由 `NewFunctionBase` 建出，所以 Go 选出真实的签名，包括 tidb-rs 还没有移植的函数族。输出中的 `tree` 给出建好的树（函数名、Go 签名类型、结果类型、collation、pb code、CAST 签名的 `inUnion`），tidb-rs 用只有描述的签名重建，下推判定只读这些。同一个 UniqueID 的相关列总是同一个值（Apply 从外表行一次写入；tidb-rs 中值按列放在求值状态里）。
+- **客户端**：`mock.Client`（`kv.RequestTypeSupportedChecker`，与 Go 测试和 `CopClient` 相同），或不支持 `ReqTypeDAG`（列按 ID 转换、不转换 MysqlTime 常量）、什么都不支持的两个变体。
+- **全局状态**：每条记录自己设置并恢复 new collation 开关与 `DefaultExprPushDownBlacklist`。
+- **输出**：`ExprToPB` 等的结果是 gogoproto 序列化的字节（hex）：tidb-rs 用 Rust 的 tipb 消息，要求逐字节相同（gogoproto 的 non-nullable 字段总是序列化）。
+- **未导出的函数**：`canFuncBePushed`、`scalarExprSupportedByTiKV/Flash/TiDB`、`canEnumPushdownPreliminarily` 通过 `go:linkname` 调用；CAST 签名的 `inUnion` 用 `reflect` 读。
+- **豁免**：第 2 部分 `distsql_builtin.go` 的 16 个函数（`PBToExpr` 方向）。GROUPING（`BuiltinGroupingImplSig` 的 metadata，D08.9）不在配方中。
