@@ -1,4 +1,42 @@
 file	symbol	block	kind	note
+crates/executor/src/adapter.rs	exec	X	permanent	not ported (write path: pessimistic locks, table delta)
+crates/executor/src/adapter.rs	get_lazy_stmt_text	D02.1	temporary	D02.1: parser.NormalizeDigest (tidb_redact_log=ON text)
+crates/executor/src/adapter.rs	get_text_to_log	D02.1	temporary	D02.1: parser.NormalizeKeepHint (tidb_redact_log=ON text)
+crates/executor/src/adapter.rs	handle_no_delay	X	permanent	not ported (write path: pessimistic locks, table delta)
+crates/executor/src/adapter.rs	is_read_only	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
+crates/executor/src/adapter.rs	on_fetch_returned	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
+crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
+crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
+crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/builder.rs	build	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/builder.rs	build	D12.5	temporary	VS1-36: sort / top-n executors
+crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
+crates/executor/src/compiler.rs	get_prepared_stmt	D13.1	temporary	VS1-15: prepared statement cache (GetPreparedStmt)
+crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
+crates/executor/src/compiler.rs	planner_is_read_only	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
+crates/executor/src/compiler.rs	planner_optimize	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
+crates/executor/src/compiler.rs	preprocess	D09.0	temporary	VS1-10: preprocessor
+crates/executor/src/detach.rs	index_look_up_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/detach.rs	index_look_up_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/detach.rs	index_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/detach.rs	index_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/detach.rs	projection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/detach.rs	projection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/detach.rs	table_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/detach.rs	table_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/internal/builder/builder_utils.rs	construct_dag_req	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
+crates/executor/src/internal/builder/builder_utils.rs	to_pb	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
+crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
+crates/executor/src/internal/exec/executor.rs	release_sys_session	D06.5	temporary	D06.5: domain system session pool
+crates/executor/src/internal/exec/executor.rs	top_sql_enabled	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/internal/exec/executor.rs	update_delta_for_table_id	X	permanent	not ported (write path: pessimistic locks, table delta)
+crates/executor/src/internal/exec/indexusage.rs	get_table_row_count	D11.2	temporary	D11.2: statement used statistics (index usage)
+crates/executor/src/metrics.rs	observe	D14.1	temporary	D14.1: metric vectors of pkg/metrics
+crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.7	temporary	signatures of unported function families
@@ -27,4 +65,17 @@ crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14: session
 crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/session/src/session.rs	execute_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/sessiontxn/src/isolation/base.rs	on_local_temporary_table_created_base	D06.4	temporary	D06.4 part 2: local temporary tables
+crates/sessiontxn/src/staleread/provider.rs	activate_txn	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	get_snapshot_with_stmt_read_ts	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_initialize	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_local_temporary_table_created	D06.4	temporary	D06.4 part 2: local temporary tables
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_error_for_next_action	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_retry	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_start	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	stale_read_blocked	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_handle	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_index	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/snapshot.rs	iter	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
+crates/store/src/driver/txn/snapshot.rs	iter_reverse	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
