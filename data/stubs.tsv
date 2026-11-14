@@ -56,3 +56,7 @@ crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14: sess
 crates/session/src/session.rs	execute_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_handle	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_index	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/snapshot.rs	iter	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
+crates/store/src/driver/txn/snapshot.rs	iter_reverse	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
