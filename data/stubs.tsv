@@ -55,6 +55,15 @@ crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14: session
 crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/session/src/session.rs	execute_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
 crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14: session ExecuteStmt / PrepareStmt / ExecutePreparedStmt
+crates/sessiontxn/src/isolation/base.rs	on_local_temporary_table_created_base	D06.4	temporary	D06.4 part 2: local temporary tables
+crates/sessiontxn/src/staleread/provider.rs	activate_txn	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	get_snapshot_with_stmt_read_ts	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_initialize	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_local_temporary_table_created	D06.4	temporary	D06.4 part 2: local temporary tables
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_error_for_next_action	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_retry	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	on_stmt_start	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/sessiontxn/src/staleread/provider.rs	stale_read_blocked	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
 crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_handle	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
 crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_index	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
