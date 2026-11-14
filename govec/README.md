@@ -557,4 +557,4 @@ tidb-rs 是只读节点：写路径（记录的增删改、自增 / 行 ID 分�
 - 随机区间互不重叠、有序（coprocessor 请求的前提）；开放的结束 key 只出现在单个区间的记录中：多个区间里含开放区间时，mocktikv 的批量 region 扫描返回 "PD server timeout"（mock 的限制，不是 TiDB 的行为）。
 - `copTask.requestSource` 记为 `GetRequestSource()` 的字符串；Rust 回放不比较它，改为检查每个 task 的 request source 与请求的相同（Go 中就是原样复制）。
 - `batchTaskList` 是 map，按 task id 排序后记录（M-MAPORDER）。
-- 第 2 部分（iterator、worker、响应处理、store 包装）的函数在豁免表中写明 "D07.2 part 2"。
+- 第 2 部分（iterator、worker、RPC 与响应处理、store 包装）需要 TiKV store，不出向量；豁免理由指向 tidb-rs `crates/store/tests/copr_iter.rs` 的 mock store 单元测试。`kvStore.GetTiKVClient` 与 `tikvClient.*`（client-go `tikv.Client` 的透传，ADR 0008）和 `metrics.go`（coprocessor cache 的指标，例外 A3）为永久豁免。
