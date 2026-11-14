@@ -536,3 +536,16 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 - 内存库（information_schema、metrics_schema）是 D06.6：生成时经 `go:linkname` 清空 `infoschema.drivers`，记录中没有它们。
 - 场景生成器保证同一个库内表名按小写唯一（与 TiDB 相同）：否则全量加载的结果取决于 `TableName2ID` 的 map 顺序（M-MAPORDER）。
 - sieve 的泛型函数未导出，govec 只能经 `Data` 的表缓存覆盖它；不被 v2 调用的 `Contains`、`Peek`、`Len`、`Size`、`Purge`、`Close` 由 tidb-rs 移植的 `sieve_test.go` 覆盖。第 2 部分（`InfoCache`、`SessionTables`、`SessionExtendedInfoSchema`、以接口为参数的辅助函数、`init`）列在 `Exempt` 中。
+
+## table（块 D06.4 第 1 部分：`pkg/table`、`pkg/table/tables` 的读取路径）
+
+tidb-rs 是只读节点：写路径（记录的增删改、自增 / 行 ID 分配、检查约束、mutate 选项、索引写入、mutation checker、`tblctx` / `tblsession`）永久豁免；分区表、缓存表、临时表、索引读取辅助函数、SHOW COLUMNS 是第 2 部分（tidb-rs `specs/D06.4-table/tasks.md`）。表一律以 `model.TableInfo` 的 JSON 传入，Exec 中 `json.Unmarshal`，与 TiDB 从 TiKV 加载时相同（`any` 型默认值是 float64 / string / nil）。上下文是 cast 领域的 `castCtx` 数组再加时区（null 为 UTC，否则 `time.FixedZone("Z", 秒)`）。op：
+
+- `table_from_meta`：随机表（各类型的列、默认值、列 / 索引 / 表的状态、隐藏列、生成列与默认值表达式、DDL 中的列、int handle、公共 handle（含前缀主键）、分区、缓存表），`TableFromMeta` 或 `MockTableFromMeta` 之后记录各列列表（偏移）、每列的 `String()` 与 handle 判断、索引、前缀、`Type`、物理 ID、是否分区 / 缓存、主键辅助函数（各自 recover：`TryGetCommonPkColumns` 对非公开列会越界）、`FindIndexByColName`。分区表只生成 Go 能构造出分区表达式的（整数列 c0、无生成列）：tidb-rs 第 1 部分的 `newPartitionedTable` 不构造分区表达式。
+- `default_value`：`GetColDefaultValue`、`GetColOriginDefaultValue`、`GetColOriginDefaultValueWithoutStrictSQLMode`，以及 `tables.GetColDefaultValue` 在同一缓存上调用两次。默认值是表达式（`DefaultIsExpr`）时不调用 `GetColDefaultValue`：它需要 `EvalSimpleAst`（D09.2），tidb-rs 中是边界桩。
+- `cast_column`：`CastColumnValue`（含 `handleZeroDatetime`、尾部空格、错误字符转换），记录结果、错误与 warning。
+- `time_value`：`expression.GetTimeValue` 的字符串分支（D08.12，归 D06.4；豁免仍留在 cast 领域，块完成时删除）。
+- `decode_row`：Go 用 `tablecodec.EncodeRow` 写出部分列的行，`DecodeRawRowData` 读回（int / 公共 handle、nil 列、默认值、DDL 中的列 `GetChangingColVal`），记录 datum 与按 ID 排序的 map。
+- `find_cols`、`can_skip`、`restored`（`TryGetHandleRestoredDataWrapper`）、`table_scan`（`BuildTableScanFromInfos` 的 protobuf 字节与 `SetPBColumnsDefaultValue` 的默认值字节）、`zero_value`、`optional_fsp`。
+- 错误只记录 cause（映射规则 M-ERR：tidb-rs 不移植 `errors.Wrap`）。解析错误（1064）的文本是 Rust parser 的，tidb-rs 回放只比较错误码。
+- `util/generatedexpr`、`util.ColumnsToProto`（D00.3）经 `table_from_meta`、`table_scan` 覆盖，不在块内，不列入 `GoFuncs`。
