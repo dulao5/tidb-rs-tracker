@@ -896,7 +896,13 @@ func tableGenerate(g *vec.Gen, rng *rand.Rand) {
 		if i < 30 {
 			src = "TestCastValue"
 		}
-		g.Add(src, "cast_column", tblCtxArg(rng), d2DatumInOf(tblPick(rng, tblCastDatums)), d2FtInOf(ft),
+		ctxArg := tblCtxArg(rng)
+		d := tblPick(rng, tblCastDatums)
+		if d.Kind() == types.KindMysqlDuration && types.IsTypeTime(ft.GetType()) {
+			// TIME -> DATE/DATETIME/TIMESTAMP takes today's date (time.Now): not reproducible.
+			d = types.NewStringDatum("12:30:00")
+		}
+		g.Add(src, "cast_column", ctxArg, d2DatumInOf(d), d2FtInOf(ft),
 			tblPick(rng, []string{"", "c", "名字"}), rng.IntN(5) == 0, rng.IntN(5) == 0)
 	}
 	// tables
