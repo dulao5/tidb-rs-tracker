@@ -545,4 +545,9 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 - 随机区间互不重叠、有序（coprocessor 请求的前提）；开放的结束 key 只出现在单个区间的记录中：多个区间里含开放区间时，mocktikv 的批量 region 扫描返回 "PD server timeout"（mock 的限制，不是 TiDB 的行为）。
 - `copTask.requestSource` 记为 `GetRequestSource()` 的字符串；Rust 回放不比较它，改为检查每个 task 的 request source 与请求的相同（Go 中就是原样复制）。
 - `batchTaskList` 是 map，按 task id 排序后记录（M-MAPORDER）。
+- 第 2 部分（iterator、worker、响应处理、store 包装）的函数在豁免表中写明 "D07.2 part 2"。
+
+## sessiontxn（块 D05.4 第 1 部分：`pkg/sessiontxn` 的只读路径）
+
+provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future、会话变量）与存储 TSO 之上的状态机，Go 的测试用 testkit 和 store 运行它们。tidb-rs 把会话、存储、规划器写成 trait（tidb-rs `specs/D05.4-sessiontxn/spec.md` §2），用模拟会话的场景测试覆盖（`crates/sessiontxn/tests/providers.rs`），SQL 级覆盖随会话（VS1-14）；这些函数的豁免理由写明这一点。本领域覆盖纯函数：`action`（`ErrorAction`、`RetryReady`、`NoIdea`）、`constant_future`（`ConstantFuture.Wait`）；另有 `read_ts`（tidb-rs#219 评审，N11 §4.4）：随机语句序列（BEGIN / COMMIT / 读 / autocommit 点查，optimistic / RR / RC，autocommit 开关，`tidb_low_resolution_tso`，`tidb_snapshot`）在 mock.Context + mockstore 上照会话的方式驱动 isolation provider（事务外的语句用 `EnterNewTxnBeforeStmt`，autocommit 时用 optimistic provider；事务结束换一个新的 mock 会话，如同会话重置 LazyTxn），oracle 计数 TSO 请求；每次读记录 `[来源, TSO 请求数]`，来源按 ts 判定：MaxUint64 为 `MaxTs`，等于 `tidb_snapshot` 为 `Snapshot`，本语句请求过 TSO 为 `Tso` / `LowResolution`，否则 `TxnStart`。它是 tidb-rs `ReadTsSource` 的对照，必须在 VS1-14 之前。写路径（for-update ts、悲观锁错误、fair locking、提交选项、乐观重试、断言级别）永久豁免；stale read、failpoint 钩子、指标、`pkg/session/txninfo` 是第 2 部分。
 - 第 2 部分（iterator、worker、RPC 与响应处理、store 包装）需要 TiKV store，不出向量；豁免理由指向 tidb-rs `crates/store/tests/copr_iter.rs` 的 mock store 单元测试。`kvStore.GetTiKVClient` 与 `tikvClient.*`（client-go `tikv.Client` 的透传，ADR 0008）和 `metrics.go`（coprocessor cache 的指标，例外 A3）为永久豁免。
