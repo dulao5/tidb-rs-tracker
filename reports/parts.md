@@ -15,7 +15,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
 | D06.4 | VS1-12 | VS1-12 | planned | 103 / 416 | 1132 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D06.5 | VS1-17 | VS1-17 | planned | 36 / 363 | 820 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | tidb-rs vs1/store-snapshot: converge 40/40 |
+| D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | planned | 97 / 214 | 1748 | tidb-rs specs/VS1-vertical-slice (#205) |
