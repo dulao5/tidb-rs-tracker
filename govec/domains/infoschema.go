@@ -37,6 +37,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"sort"
+	"strings"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/infoschema"
@@ -889,7 +890,18 @@ func (s *isSim) op() []*model.SchemaDiff {
 		from := s.dbOf(t.ID)
 		to := metaPick(rng, s.dbs)
 		n := cloneTbl(t)
-		name := s.freeName(to.ID)
+		// Within one schema the table's own name is free: a case-only rename (t -> T)
+		// is generated on purpose (D06.3 spec §9 item 4: CIStr-wide dedup).
+		except := int64(0)
+		if from.ID == to.ID {
+			except = t.ID
+		}
+		name := s.freeNameExcept(to.ID, except)
+		if from.ID == to.ID && rng.IntN(3) == 0 {
+			if sw := swapCase(t.Name.O); sw != t.Name.O {
+				name = sw
+			}
+		}
 		if name == "" {
 			return nil
 		}
@@ -1125,8 +1137,13 @@ func (s *isSim) op() []*model.SchemaDiff {
 // Table names are unique in a schema, case-insensitively (as in TiDB). Duplicates would
 // also make a full load depend on Go's map order (TableName2ID, M-MAPORDER).
 func (s *isSim) nameTaken(dbID int64, l string) bool {
+	return s.nameTakenExcept(dbID, l, 0)
+}
+
+// nameTakenExcept ignores the table except (a rename within its own schema).
+func (s *isSim) nameTakenExcept(dbID int64, l string, except int64) bool {
 	for _, t := range s.tables[dbID] {
-		if t.Name.L == l {
+		if t.Name.L == l && t.ID != except {
 			return true
 		}
 	}
@@ -1134,13 +1151,25 @@ func (s *isSim) nameTaken(dbID int64, l string) bool {
 }
 
 func (s *isSim) freeName(dbID int64) string {
+	return s.freeNameExcept(dbID, 0)
+}
+
+func (s *isSim) freeNameExcept(dbID, except int64) string {
 	for i := 0; i < 4; i++ {
 		n := metaPick(s.rng, isProbeTables)
-		if !s.nameTaken(dbID, pmodel.NewCIStr(n).L) {
+		if !s.nameTakenExcept(dbID, pmodel.NewCIStr(n).L, except) {
 			return n
 		}
 	}
 	return ""
+}
+
+// swapCase upper-cases a lower-case ASCII name and lower-cases any other.
+func swapCase(n string) string {
+	if l := strings.ToLower(n); l != n {
+		return l
+	}
+	return strings.ToUpper(n)
 }
 
 func (s *isSim) remove(dbID, tid int64) {
