@@ -15,7 +15,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
 | D06.4 | VS1-12 | VS1-12 | planned | 103 / 416 | 1132 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D06.5 | VS1-17 | VS1-17 | planned | 36 / 363 | 820 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D07.1 | VS1-18 | VS1-18 | planned | 40 / 193 | 591 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
@@ -50,7 +50,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-91 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+104 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -59,11 +59,12 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D03.1 | 3 | 0 | 0 |
 | D04.1 | 2 | 0 | 0 |
 | D05.3 | 5 | 0 | 0 |
-| D05.4 | 4 | 0 | 0 |
+| D05.4 | 11 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
 | D06.3 | 1 | 0 | 0 |
-| D06.4 | 1 | 0 | 0 |
+| D06.4 | 5 | 0 | 0 |
 | D06.5 | 7 | 0 | 0 |
+| D07.1 | 2 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |

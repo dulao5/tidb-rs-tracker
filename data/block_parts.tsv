@@ -6,7 +6,7 @@ D06.2	1		done	130/240, dulao5/tidb-rs D06.2 part 1
 D06.3	1		done	184/270, dulao5/tidb-rs#176 #177
 D06.4	VS1-12	VS1-12	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D06.5	VS1-17	VS1-17	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D07.1	VS1-18	VS1-18	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D07.1	VS1-18	VS1-18	in-progress	dulao5/tidb-rs#221: converge 40/40
 D07.2	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.3	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.0	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess
