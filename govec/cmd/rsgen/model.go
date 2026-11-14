@@ -68,6 +68,44 @@ func skipField(f reflect.StructField) bool {
 // the Rust struct derives Clone.
 var cloneNotPorted = map[string]bool{"Job": true, "SubJob": true}
 
+// sharedFields: Go `[]*T` fields whose elements long-lived holders share (the table objects
+// of the infoschema point at them): `Option<Vec<Arc<T>>>`, written through `gocopy::make_mut`
+// (tidb-rs spec N13, issue #229). Other `[]*T` hold their elements by value.
+var sharedFields = map[string]bool{"TableInfo.Columns": true, "TableInfo.Indices": true,
+	"DBInfoDeprecated.Tables": true}
+
+// isShared: whether field f of struct owner is a shared `[]*T` (see sharedFields).
+func (g *modelGen) isShared(owner reflect.Type, f reflect.StructField) bool {
+	if owner.Kind() == reflect.Pointer {
+		owner = owner.Elem()
+	}
+	name := g.structName(owner) + "." + f.Name
+	if !sharedFields[name] {
+		return false
+	}
+	if f.Type.Kind() != reflect.Slice || f.Type.Elem().Kind() != reflect.Pointer {
+		panic("rsgen model: shared field is not []*T: " + name)
+	}
+	return true
+}
+
+// fieldType: the Rust type of field f of struct owner.
+func (g *modelGen) fieldType(owner reflect.Type, f reflect.StructField) string {
+	if g.isShared(owner, f) {
+		return "Option<Vec<Arc<" + g.rustType(f.Type.Elem().Elem()) + ">>>"
+	}
+	return g.rustType(f.Type)
+}
+
+// decShared: dec for a shared `[]*T` field: elements decode in place through
+// gocopy::make_mut (copy-on-write with Go's struct copy: an element shared with another
+// holder is copied first, so the other holder does not see the write).
+func (g *modelGen) decShared(place string, t reflect.Type) string {
+	e := t.Elem().Elem()
+	return fmt.Sprintf("d.slice(v, &mut %s, %q, |d, v, x: &mut Arc<%s>| { if let Raw::Null = v { *x = Default::default(); return; } %s });",
+		place, goTypeString(t), g.rustType(e), g.dec("crate::gocopy::make_mut(x)", e))
+}
+
 // jsonField is one field of encoding/json's view of a struct.
 type jsonField struct {
 	name      string
@@ -659,7 +697,10 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 		if tag != "" {
 			e.p("    /// json: `%s`\n", tag)
 		}
-		e.p("    pub %s: %s,\n", msnake(f.Name), g.rustType(f.Type))
+		if g.isShared(t, f) {
+			e.p("    /// Shared with the table objects (`Arc`, copy-on-write; spec N13).\n")
+		}
+		e.p("    pub %s: %s,\n", msnake(f.Name), g.fieldType(t, f))
 		g.collectLeaves(f.Type)
 	}
 	e.p("}\n")
@@ -773,13 +814,21 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 		if len(fields) <= 1 {
 			break
 		}
-		e.p("            %d => { %s%s }\n", i, pre, g.dec(base+"."+msnake(last.Name), last.Type))
+		owner := t
+		if len(guards) > 0 {
+			owner = guards[len(guards)-1].Type
+		}
+		dec := g.dec(base+"."+msnake(last.Name), last.Type)
+		if g.isShared(owner, last) {
+			dec = g.decShared(base+"."+msnake(last.Name), last.Type)
+		}
+		e.p("            %d => { %s%s }\n", i, pre, dec)
 	}
 	if len(fields) > 1 {
 		e.p("            _ => {}\n        });\n    }\n\n")
 	}
 	if g.hasClone[t] {
-		e.p("    /// Go's struct copy `*x` (every field copied as is, without the Go `Clone` methods of\n    /// the field types; Rust has no shared pointers to keep), the starting point of the\n    /// hand-ported `Clone`.\n    // glue: Go struct copy of %s (generated)\n    pub(crate) fn struct_copy(&self) -> Self {\n        self.go_copy()\n    }\n\n", t.String())
+		e.p("    /// Go's struct copy `*x` (every field copied as is, without the Go `Clone` methods of\n    /// the field types; shared `Arc` fields share their elements as Go does), the starting\n    /// point of the hand-ported `Clone`.\n    // glue: Go struct copy of %s (generated)\n    pub(crate) fn struct_copy(&self) -> Self {\n        self.go_copy()\n    }\n\n", t.String())
 	}
 	e.p("    /// `json.Marshal(x)`.\n    // glue: json.Marshal of %s (generated)\n    pub fn marshal_json(&self) -> Result<String, Error> {\n        let mut out = String::new();\n        self.encode_json(&mut out)?;\n        Ok(out)\n    }\n\n", t.String())
 	// json.RawMessage keeps the bytes of the input: only then does the decoder need it.
@@ -887,7 +936,7 @@ func genModel(modelDir string) {
 
 	e := &emitter{}
 	e.header(goFiles...)
-	e.p("use std::collections::BTreeMap;\n\nuse tidb_base::Error;\nuse tidb_base::gostd::json::{self, Decoder, Raw};\nuse tidb_base::gostd::time::Time;\nuse tidb_base::mysql::SQLMode;\nuse tidb_parser::auth::UserIdentity;\nuse tidb_parser::model::{CIStr, ColumnChoice, IndexType, PartitionType, RunawayActionType, RunawayWatchType, TableLockType, ViewAlgorithm, ViewCheckOption, ViewSecurity};\nuse tidb_parser::types::FieldType;\n\nuse crate::any::AnyValue;\nuse crate::consts_gen::*;\nuse crate::gocopy::{GoCopy, go_copy_leaf};\n")
+	e.p("use std::collections::BTreeMap;\nuse std::sync::Arc;\n\nuse tidb_base::Error;\nuse tidb_base::gostd::json::{self, Decoder, Raw};\nuse tidb_base::gostd::time::Time;\nuse tidb_base::mysql::SQLMode;\nuse tidb_parser::auth::UserIdentity;\nuse tidb_parser::model::{CIStr, ColumnChoice, IndexType, PartitionType, RunawayActionType, RunawayWatchType, TableLockType, ViewAlgorithm, ViewCheckOption, ViewSecurity};\nuse tidb_parser::types::FieldType;\n\nuse crate::any::AnyValue;\nuse crate::consts_gen::*;\nuse crate::gocopy::{GoCopy, go_copy_leaf};\n")
 	for _, t := range g.structs {
 		g.emitStruct(e, t)
 	}
