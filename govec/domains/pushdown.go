@@ -184,6 +184,14 @@ func pdBuild(ctx expression.BuildContext, raw json.RawMessage) (expression.Expre
 	return expression.NewFunctionBase(ctx, name, rt, args...)
 }
 
+// pdBuildCtx: the build context of the recipes. Building can fold a constant with the
+// current time (a DURATION constant compared with a DATETIME column becomes a DATETIME of
+// today), so the time is fixed.
+func pdBuildCtx() *exprstatic.ExprContext {
+	return exprstatic.NewExprContext(exprstatic.WithEvalCtx(exprstatic.NewEvalContext(
+		exprstatic.WithCurrentTime(func() (gotime.Time, error) { return gotime.Unix(1767225600, 0), nil }))))
+}
+
 // pdInUnion: baseBuiltinCastFunc.inUnion of a signature that embeds it (its metadata()), or nil.
 func pdInUnion(f any) any {
 	v := reflect.ValueOf(f).Elem()
@@ -307,7 +315,7 @@ func pushdownExec(op string, p []json.RawMessage) (out any, err error) {
 		o := pdOpts(p[1])
 		collate.SetNewCollationEnabledForTest(o.NC)
 		expression.DefaultExprPushDownBlacklist.Store(pdBlacklist(o.BL))
-		e, err := pdBuild(exprstatic.NewExprContext(), p[0])
+		e, err := pdBuild(pdBuildCtx(), p[0])
 		if err != nil {
 			return map[string]any{"build": exErr(err)}, nil
 		}
@@ -348,7 +356,7 @@ func pushdownExec(op string, p []json.RawMessage) (out any, err error) {
 		var exprs []expression.Expression
 		trees := []any{}
 		for _, r := range exArr(p[0]) {
-			e, err := pdBuild(exprstatic.NewExprContext(), r)
+			e, err := pdBuild(pdBuildCtx(), r)
 			if err != nil {
 				return map[string]any{"build": exErr(err)}, nil
 			}
@@ -641,7 +649,7 @@ func pdTryBuild(nc bool, r any) (e expression.Expression) {
 		collate.SetNewCollationEnabledForTest(true)
 	}()
 	collate.SetNewCollationEnabledForTest(nc)
-	e, err := pdBuild(exprstatic.NewExprContext(), vec.MustJSON(r))
+	e, err := pdBuild(pdBuildCtx(), vec.MustJSON(r))
 	if err != nil {
 		return nil
 	}
