@@ -331,6 +331,11 @@ RULES = [
     ("X", r"pkg/meta/meta_autoid\.go$", r"^(autoIDAccessor\.(Put|Inc|Del|CopyTo)|autoIDAccessors\.(Put|Del))$"),
     ("D06.2", r"pkg/(meta|structure)/", None),
     ("D06.6", r"pkg/infoschema/(tables|cluster|metrics_schema|perfschema/|metrics)\.?", None),
+    # infoschema scoping (D06.3, 2026-11-14): internal/testkit.go is test helpers on a
+    # mockstore; updateAutoIDForExchangePartition is a meta write that every Go TiDB
+    # applying the exchange-partition diff does (X: "DDL 与元数据写入由 Go TiDB 承担").
+    ("X", r"pkg/infoschema/internal/testkit\.go$", None),
+    ("X", r"pkg/infoschema/builder\.go$", r"^updateAutoIDForExchangePartition$"),
     ("D06.3", r"pkg/infoschema/", None),
     ("D06.4", r"pkg/table/", None),
     ("DEF.MPP", r"pkg/domain/infosync/tiflash_manager", None),

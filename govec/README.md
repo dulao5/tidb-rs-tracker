@@ -520,3 +520,17 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
 - **输出**：`ExprToPB` 等的结果是 gogoproto 序列化的字节（hex）：tidb-rs 用 Rust 的 tipb 消息，要求逐字节相同（gogoproto 的 non-nullable 字段总是序列化）。
 - **未导出的函数**：`canFuncBePushed`、`scalarExprSupportedByTiKV/Flash/TiDB`、`canEnumPushdownPreliminarily` 通过 `go:linkname` 调用；CAST 签名的 `inUnion` 用 `reflect` 读。
 - **豁免**：第 2 部分 `distsql_builtin.go` 的 16 个函数（`PBToExpr` 方向）。GROUPING（`BuiltinGroupingImplSig` 的 metadata，D08.9）不在配方中。
+
+## infoschema（块 D06.3 第 1 部分：`pkg/infoschema` 的 v2 构建与读取）
+
+负责人决定只移植 infoschema v2（v1 的 42 个函数永久豁免）；缓存的布局按例外 A3（tidb-rs `specs/D06.3-infoschema/spec.md` §5）。一个 op：
+
+- `build`：参数是一串步骤，一条记录是一个场景，所有步骤共享一个 `infoschema.Data`，如同一个 domain：
+  - `full`：存储状态（`meta.Mutator` 写出，经 `dumpTxn`）在 commit ts 上的全量加载，照 `domain.fetchAllSchemasWithTables` 的 v2 路径（`GetAllNameToIDAndTheMustLoadedTableInfo` 与两个 `Convert*`），再 `NewBuilder` + `InitWithDBInfos` + `Build`；
+  - `diffs`：在新状态上照 `domain.tryLoadSchemaDiffs` 成批应用 schema diff（`InitWithOldInfoSchema`、`WithStore`、`SetDeltaUpdateBundles`、`ApplyDiff`、`Build`）；`ApplyDiff` 出错时记录错误，再照 domain 做一次全量加载；
+  - `gc`（`Data.GCOldVersion`）、`cap`（`Data.SetCacheCapacity`；只用 1 和 1 GiB：容量为 1 时无论 entry 多大都只留最后一个，A3 使 Rust 与 Go 的 entry 大小不同）、`query`（查询较早构建的版本）。
+  - 每次 `Build` 后查询全部读取 API（`isQueries`：库、表（含 `json.Marshal` 的表 JSON）、按 ID / 分区 ID、外键引用、特殊属性过滤、`IterateAllTableItems`、policy、resource group、bundle 覆盖的 ID、`TableIsCached` 在 `TableByName` 回填前后、`EvictTable` 之后）。顺序固定，Rust 回放按同样顺序调用。
+- 存储（`autoid.Requirement.Store()`）按 commit ts 保存各状态：`GetSnapshot(v)` 取 ts ≤ v 的最新状态（`loadTableInfo`、`SchemaTableInfos` 在 InfoSchema 的 ts 上读）；`Begin` 交给一个独立的 mockstore（`updateAutoIDForExchangePartition` 的写入，tidb-rs 中归 X）。
+- 内存库（information_schema、metrics_schema）是 D06.6：生成时经 `go:linkname` 清空 `infoschema.drivers`，记录中没有它们。
+- 场景生成器保证同一个库内表名按小写唯一（与 TiDB 相同）：否则全量加载的结果取决于 `TableName2ID` 的 map 顺序（M-MAPORDER）。
+- sieve 的泛型函数未导出，govec 只能经 `Data` 的表缓存覆盖它；不被 v2 调用的 `Contains`、`Peek`、`Len`、`Size`、`Purge`、`Close` 由 tidb-rs 移植的 `sieve_test.go` 覆盖。第 2 部分（`InfoCache`、`SessionTables`、`SessionExtendedInfoSchema`、以接口为参数的辅助函数、`init`）列在 `Exempt` 中。
