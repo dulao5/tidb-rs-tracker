@@ -32,6 +32,8 @@ a copy of the module with the affected files replaced by the copies here
 | [pingcap/tidb#71844](https://github.com/pingcap/tidb/pull/71844) (release-8.5 `4f61995df8`, 2026-11-05, after v8.5.8; only its misc.go part) | `pkg/parser/ast/misc.go` (parser module) | `RedactURL` (`tidb_cloud_storage_uri`'s GetGlobal) also redacts `oss` secrets and azure `account-key` / `encryption-key` / `endpoint` | sessionvars |
 | [pingcap/tidb#72214](https://github.com/pingcap/tidb/pull/72214) (release-8.5 `84040e1f0a`, 2026-11-10, after v8.5.8; issue pingcap/tidb#71858; only its misc.go part) | `pkg/parser/ast/misc.go` (same file, on top of #71844) | `RedactURL` drops userinfo and fragments, keeps only allowlisted query options per scheme (adds `gs`/`gcs`), drops the whole query if it does not parse, and returns `(invalid URL)` for an unparsable URL: v8.5.8 kept `user:pass@`, unknown options and unparsable URLs verbatim (credential leak) | sessionvars |
 
+| [tidb-rs#195](https://github.com/dulao5/tidb-rs/issues/195) (**tidb-rs deliberate deviation**, not an upstream fix; decided by the tidb-rs maintainers, docs/compatibility.md) | `pkg/infoschema/infoschema_v2.go` | `gcCollectTableItem` / `gcCollectReferredForeignKeyItem` keep, per table, the newest item at or below the GC cut and delete only older ones: v8.5.8 also deleted that item when a newer one above the cut existed, so an InfoSchema at the cut (stale read, `tidb_snapshot`) reported "table doesn't exist" | infoschema |
+
 Adding a fix: copy the v8.5.8 file to `fixes/<path>.fixed`, apply the upstream
 change with a comment citing it, add the mapping to `scripts/govec-fixes.sh`,
 a row here, and a `vec.Fix` (with a probe) on each affected domain.

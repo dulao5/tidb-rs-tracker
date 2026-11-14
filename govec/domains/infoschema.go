@@ -73,7 +73,44 @@ func init() {
 		Gzip:     true,
 		Generate: infoschemaGenerate,
 		Exec:     infoschemaExec,
+		Fixes:    []vec.Fix{{ID: fix195, Applied: fix195Applied}},
 	})
+}
+
+// fix195 is tidb-rs's deliberate deviation tidb-rs#195 (govec/fixes/README.md): Data's GC
+// keeps, per table, the newest item at or below the cut (v8.5.8 also deleted it when a
+// newer item above the cut existed, so readers at the cut lost the table).
+const fix195 = "tidb-rs#195"
+
+// fix195Applied builds table t at v2, alters it at v5, GCs with cut 3 and asks the v2
+// InfoSchema for t: v8.5.8 has deleted the v2 item.
+func fix195Applied() (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	s := &isSim{rng: rand.New(rand.NewPCG(1, 2)), tables: map[int64][]*model.TableInfo{}}
+	db := &model.DBInfo{ID: 1, Name: pmodel.NewCIStr("d1"), State: model.StatePublic}
+	t := s.newTable(1, "t")
+	t.ID, t.Partition, t.ForeignKeys = 2, nil, nil
+	s.write(func(m *meta.Mutator) {
+		must(m.CreateDatabase(db))
+		must(m.CreateTableOrView(1, t))
+	})
+	full := isStep{K: "full", TS: 10, Ver: 2, Pairs: s.pairs}
+	n := cloneTbl(t)
+	n.Comment = "altered"
+	s.write(func(m *meta.Mutator) { must(m.UpdateTable(1, n)) })
+	d, err := json.Marshal(&model.SchemaDiff{Version: 5, Type: model.ActionAddColumn, SchemaID: 1, TableID: 2})
+	must(err)
+	steps := []isStep{full, {K: "diffs", TS: 20, Pairs: s.pairs, Diffs: []json.RawMessage{d}},
+		{K: "gc", Ver: 3}, {K: "query", At: 0}}
+	out, err := infoschemaExec("build", []json.RawMessage{vec.MustJSON(steps)})
+	must(err)
+	q := out.([]isStepOut)[3].Q.(map[string]any)
+	items, _ := q["items"].([]any)
+	return len(items) == 1
 }
 
 var infoschemaCoverage = map[string]vec.Coverage{

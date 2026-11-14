@@ -531,6 +531,7 @@ tidb-rs 只读，`structure` 和 `meta.Mutator` 的写入函数归 X（`scripts/
   - `gc`（`Data.GCOldVersion`）、`cap`（`Data.SetCacheCapacity`；只用 1 和 1 GiB：容量为 1 时无论 entry 多大都只留最后一个，A3 使 Rust 与 Go 的 entry 大小不同）、`query`（查询较早构建的版本）。
   - 每次 `Build` 后查询全部读取 API（`isQueries`：库、表（含 `json.Marshal` 的表 JSON）、按 ID / 分区 ID、外键引用、特殊属性过滤、`IterateAllTableItems`、policy、resource group、bundle 覆盖的 ID、`TableIsCached` 在 `TableByName` 回填前后、`EvictTable` 之后）。顺序固定，Rust 回放按同样顺序调用。
 - 存储（`autoid.Requirement.Store()`）按 commit ts 保存各状态：`GetSnapshot(v)` 取 ts ≤ v 的最新状态（`loadTableInfo`、`SchemaTableInfos` 在 InfoSchema 的 ts 上读）；`Begin` 交给一个独立的 mockstore（`updateAutoIDForExchangePartition` 的写入，tidb-rs 中归 X）。
+- GC 按 tidb-rs 的有意偏离 tidb-rs#195 生成（`fixes/pkg/infoschema/infoschema_v2.go.fixed`，fix `tidb-rs#195`）：每张表保留截止版本及以下最新的 item，只删更旧的；v8.5.8 在有更新的 item 高于截止版本时也删掉它。
 - 内存库（information_schema、metrics_schema）是 D06.6：生成时经 `go:linkname` 清空 `infoschema.drivers`，记录中没有它们。
 - 场景生成器保证同一个库内表名按小写唯一（与 TiDB 相同）：否则全量加载的结果取决于 `TableName2ID` 的 map 顺序（M-MAPORDER）。
 - sieve 的泛型函数未导出，govec 只能经 `Data` 的表缓存覆盖它；不被 v2 调用的 `Contains`、`Peek`、`Len`、`Size`、`Purge`、`Close` 由 tidb-rs 移植的 `sieve_test.go` 覆盖。第 2 部分（`InfoCache`、`SessionTables`、`SessionExtendedInfoSchema`、以接口为参数的辅助函数、`init`）列在 `Exempt` 中。
