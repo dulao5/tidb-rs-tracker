@@ -154,7 +154,7 @@ var cardinalityCoverage = map[string]vec.Coverage{
 	"table_ops": {Min: 150, GoFuncs: []string{"Table.Copy", "Table.ShallowCopy", "Table.DelCol", "Table.DelIdx",
 		"Table.GetStatsInfo", "Table.ReleaseAndPutToPool", "HistColl.SetCol", "HistColl.SetIdx", "NewHistColl",
 		"NewExtendedStatsColl"}},
-	"ndv": {Min: 200, GoFuncs: []string{"EstimateColsNDVWithMatchedLen", "EstimateColsDNVWithMatchedLenFromUniqueIDs"}},
+	"ndv":    {Min: 200, GoFuncs: []string{"EstimateColsNDVWithMatchedLen", "EstimateColsDNVWithMatchedLenFromUniqueIDs"}},
 	"mv_sel": {Min: 100, GoFuncs: []string{"CalcTotalSelectivityForMVIdxPath"}},
 	"topn":   {Min: 50, GoFuncs: []string{"TopN.TotalCount", "TopN.Num", "TopN.Copy", "TopN.MemoryUsage", "TopN.calculateCount", "TopN.onceCalculateCount", "TopN.calculateCountInternal"}},
 }
@@ -1250,7 +1250,9 @@ func cardinalityGenerate(g *vec.Gen, rng *rand.Rand) {
 		{"int", func(i int) any { return cdD("i", int64(i*10-50)) }},
 		{"uint", func(i int) any { return cdD("u", uint64(i*10)) }},
 		{"double", func(i int) any { return cdD("f", fstr(float64(i)*2.5-10)) }},
-		{"varchar", func(i int) any { return cdD("b", hex.EncodeToString([]byte(strings.Repeat("a", 1+i%3)+string(rune('a'+i))))) }},
+		{"varchar", func(i int) any {
+			return cdD("b", hex.EncodeToString([]byte(strings.Repeat("a", 1+i%3)+string(rune('a'+i)))))
+		}},
 		{"decimal", func(i int) any { return cdD("dec", fmt.Sprintf("%d.%02d", i*3-20, (i+100)%100)) }},
 		{"datetime", func(i int) any { return cdD("dt", fmt.Sprintf("2020-01-%02d 0%d:00:00", 1+(i+28)%28, (i+10)%10)) }},
 		{"duration", func(i int) any { return cdD("dur", fmt.Sprintf("%02d:%02d:00", (i+24)%24, (i+60)%60)) }},
