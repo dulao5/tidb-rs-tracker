@@ -17,8 +17,13 @@ D06.2 / D06.3 "part 1"): a part converges on its own function list (tidb-rs
   (an exception or a "not ported" decision) or delegated (left to Go TiDB in the cluster).
   `scan --write` rebuilds the (file, symbol, block) rows from a tidb-rs checkout and keeps
   `kind` / `note`; `scan` alone fails if the registry and the code differ. `check` fails on
-  an empty `note`. `.gitattributes` merges stubs.tsv with the union driver, so a merge keeps
-  both sides' rows (and notes); run `scan --write` afterwards to drop the stale ones.
+  an empty `note`. `.gitattributes` merges stubs.tsv with the union driver, so a local
+  `git merge` keeps both sides' rows (and notes); run `scan --write` afterwards to drop the
+  stale ones. If both sides changed the same stub, the merge leaves two rows with one key:
+  `check` and `scan` then fail and list the key, and the person merging keeps one row.
+  GitHub's server-side merge (merge button, `gh pr merge`, refs/pull/N/merge) may ignore
+  .gitattributes merge drivers, so a PR can still show as conflicting there: merge main
+  into the branch locally. Tests: python3 scripts/blocks/test_parts.py
 
     parts.py import ../tidb-rs/specs/VS1-vertical-slice/functions.tsv
     parts.py scan [--write] ../tidb-rs
@@ -53,6 +58,17 @@ FN_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const\s+)?(?:async\s+)?(?:u
 
 def die(msg):
     sys.exit("parts: " + msg)
+
+
+def duplicate_stub_keys(rows):
+    """(file, symbol, block) keys that occur more than once in stubs.tsv."""
+    seen, dups = set(), []
+    for r in rows:
+        k = (r["file"], r["symbol"], r["block"])
+        if k in seen and k not in dups:
+            dups.append(k)
+        seen.add(k)
+    return dups
 
 
 def read(name, cols):
@@ -157,6 +173,12 @@ def cmd_scan(args):
     found = scan_stubs(args.tidb_rs)
     path = os.path.join(DATA, "stubs.tsv")
     old = read("stubs.tsv", STUBS_COLS) if os.path.exists(path) else []
+    dups = duplicate_stub_keys(old)
+    if dups:
+        for k in dups:
+            print(f"duplicate: {k[0]} {k[1]} blocked-by:{k[2]}")
+        die("data/stubs.tsv has duplicate (file, symbol, block) rows, usually from a union merge: "
+            "keep one row per key and choose its note, then rerun")
     by_key = {(r["file"], r["symbol"], r["block"]): r for r in old}
     if args.write:
         rows = [by_key.get(k, {"file": k[0], "symbol": k[1], "block": k[2], "kind": "temporary", "note": ""})
@@ -214,6 +236,9 @@ def validate():
     dup = [k for k, n in collections.Counter((r["file"], r["symbol"]) for r in part_funcs).items() if n > 1]
     for k in dup:
         errors.append(f"part_funcs.tsv: {k[0]} {k[1]} is in more than one part")
+    for k in duplicate_stub_keys(stubs):
+        errors.append(f"stubs.tsv: {k[0]} {k[1]} blocked-by:{k[2]}: duplicate row (a union merge "
+                      f"kept both sides; keep one row and choose its note)")
     for r in stubs:
         if r["block"] not in blocks:
             errors.append(f"stubs.tsv: {r['file']} {r['symbol']}: unknown block {r['block']}")
