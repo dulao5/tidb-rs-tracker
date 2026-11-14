@@ -12,15 +12,37 @@ package domains
 // functions.
 //
 // Values: an error is [name, msg]; an action is its int value.
+//
+// read_ts (tidb-rs#219 review, N11 §4.4): random statement sequences on one session (a
+// mock.Context over a mockstore whose oracle counts TSO requests), driving the isolation
+// providers as the session does (EnterNewTxnBeforeStmt before a statement outside a
+// transaction, EnterNewTxnWithBeginStmt for BEGIN; autocommit statements outside a
+// transaction use the optimistic provider). Args: [cfg, steps]; cfg = {mode: "optimistic" |
+// "rr" | "rc", autocommit, low_res, snapshot}; a step is "begin", "commit", "read" or
+// "point" (a read with an autocommit point-get plan). Out: per read, [source, tso requests]
+// counted from OnStmtStart to GetStmtReadTS, with source MaxTs (ts = MaxUint64), Snapshot
+// (ts = tidb_snapshot), Tso / LowResolution (the statement requested a TSO), else TxnStart.
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand/v2"
+	"sync/atomic"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
+	"github.com/pingcap/tidb/pkg/kv"
+	"github.com/pingcap/tidb/pkg/meta/model"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	plannercore "github.com/pingcap/tidb/pkg/planner/core"
+	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/sessiontxn"
+	"github.com/pingcap/tidb/pkg/sessiontxn/isolation"
+	"github.com/pingcap/tidb/pkg/store/mockstore"
+	"github.com/pingcap/tidb/pkg/util/mock"
+	"github.com/tikv/client-go/v2/oracle"
 )
 
 const sessiontxnSeed = 20261116
@@ -41,6 +63,9 @@ func init() {
 var sessiontxnCoverage = map[string]vec.Coverage{
 	"action":          {Min: 3, GoFuncs: []string{"ErrorAction", "RetryReady", "NoIdea"}},
 	"constant_future": {Min: 10, GoFuncs: []string{"ConstantFuture.Wait"}},
+	// Drives the providers whose functions are exempt as covered by tidb-rs unit tests; the
+	// sequences are the oracle of tidb-rs's ReadTsSource (N11 §4.4).
+	"read_ts": {Min: 300, GoFuncs: []string{"ConstantFuture.Wait"}},
 }
 
 func sessiontxnExempt() map[string]string {
@@ -214,6 +239,182 @@ func sessiontxnGenerate(g *vec.Gen, rng *rand.Rand) {
 	for i := 0; i < 10; i++ {
 		g.Add("rand/constant_future", "constant_future", rng.Uint64())
 	}
+	modes := []string{"optimistic", "rr", "rc"}
+	for i := 0; i < 360; i++ {
+		cfg := map[string]any{
+			"mode":       modes[rng.IntN(3)],
+			"autocommit": rng.IntN(3) > 0,
+			"low_res":    rng.IntN(6) == 0,
+			"snapshot":   rng.IntN(8) == 0,
+		}
+		var steps []string
+		inTxn := false
+		for k := 0; k < 3+rng.IntN(8); k++ {
+			switch r := rng.IntN(10); {
+			case r == 0 && !inTxn:
+				steps = append(steps, "begin")
+				inTxn = true
+			case r == 1 && inTxn:
+				steps = append(steps, "commit")
+				inTxn = false
+			case r < 5:
+				steps = append(steps, "point")
+			default:
+				steps = append(steps, "read")
+			}
+		}
+		g.Add(fmt.Sprintf("rand/read_ts/%d", i), "read_ts", cfg, steps)
+	}
+}
+
+// countingOracle counts the TSO requests of the providers.
+type countingOracle struct {
+	oracle.Oracle
+	tso, lowRes atomic.Int64
+}
+
+func (o *countingOracle) GetTimestampAsync(ctx context.Context, opt *oracle.Option) oracle.Future {
+	o.tso.Add(1)
+	return o.Oracle.GetTimestampAsync(ctx, opt)
+}
+
+func (o *countingOracle) GetLowResolutionTimestampAsync(ctx context.Context, opt *oracle.Option) oracle.Future {
+	o.lowRes.Add(1)
+	return o.Oracle.GetLowResolutionTimestampAsync(ctx, opt)
+}
+
+type countingStore struct {
+	kv.Storage
+	o *countingOracle
+}
+
+func (s *countingStore) GetOracle() oracle.Oracle { return s.o }
+
+var sessiontxnStore kv.Storage
+
+func sessiontxnReadTS(cfg map[string]any, steps []string) (any, error) {
+	if sessiontxnStore == nil {
+		st, err := mockstore.NewMockStore()
+		if err != nil {
+			return nil, err
+		}
+		sessiontxnStore = st
+	}
+	o := &countingOracle{Oracle: sessiontxnStore.GetOracle()}
+	ctx := context.Background()
+	var snapshot uint64
+	if cfg["snapshot"].(bool) {
+		ver, err := sessiontxnStore.CurrentVersion(kv.GlobalTxnScope)
+		if err != nil {
+			return nil, err
+		}
+		snapshot = ver.Ver
+	}
+	// A transaction ends with a fresh mock session (the session's LazyTxn is reset at the
+	// end of a transaction; mock.Context keeps a never-activated MaxTS future).
+	var sctx *mock.Context
+	var vars *variable.SessionVars
+	newSctx := func() error {
+		sctx = mock.NewContext()
+		sctx.Store = &countingStore{Storage: sessiontxnStore, o: o}
+		vars = sctx.GetSessionVars()
+		vars.ConnectionID = 1 // a user session (UseLowResolutionTSO, NeedSetRCCheckTSFlag)
+		vars.SetStatusFlag(mysql.ServerStatusAutocommit, cfg["autocommit"].(bool))
+		if cfg["low_res"].(bool) {
+			if err := vars.SetSystemVar(variable.TiDBLowResolutionTSO, "ON"); err != nil {
+				return err
+			}
+		}
+		vars.SnapshotTS = snapshot
+		return nil
+	}
+	endTxn := func() error {
+		if txn, _ := sctx.Txn(false); txn != nil && txn.Valid() {
+			if err := sctx.CommitTxn(ctx); err != nil {
+				return err
+			}
+		}
+		return newSctx()
+	}
+	if err := newSctx(); err != nil {
+		return nil, err
+	}
+	newProvider := func(explicit bool) sessiontxn.TxnContextProvider {
+		mode := cfg["mode"].(string)
+		if !explicit && vars.IsAutocommit() {
+			mode = "optimistic"
+		}
+		switch mode {
+		case "rr":
+			return isolation.NewPessimisticRRTxnContextProvider(sctx, false)
+		case "rc":
+			return isolation.NewPessimisticRCTxnContextProvider(sctx, false)
+		}
+		p := &isolation.OptimisticTxnContextProvider{}
+		p.ResetForNewTxn(sctx, false)
+		return p
+	}
+	var p sessiontxn.TxnContextProvider
+	var out []any
+	for _, step := range steps {
+		switch step {
+		case "begin":
+			p = newProvider(true)
+			if err := p.OnInitialize(ctx, sessiontxn.EnterNewTxnWithBeginStmt); err != nil {
+				return nil, err
+			}
+		case "commit":
+			if err := endTxn(); err != nil {
+				return nil, err
+			}
+			p = nil
+		default:
+			if p == nil {
+				p = newProvider(false)
+				if err := p.OnInitialize(ctx, sessiontxn.EnterNewTxnBeforeStmt); err != nil {
+					return nil, err
+				}
+			}
+			tso0, low0 := o.tso.Load(), o.lowRes.Load()
+			if err := p.OnStmtStart(ctx, nil); err != nil {
+				return nil, err
+			}
+			if step == "point" {
+				plan := &plannercore.PointGetPlan{TblInfo: &model.TableInfo{}}
+				if err := p.AdviseOptimizeWithPlan(plan); err != nil {
+					return nil, err
+				}
+			}
+			if err := p.AdviseWarmup(); err != nil {
+				return nil, err
+			}
+			ts, err := p.GetStmtReadTS()
+			if err != nil {
+				return nil, err
+			}
+			reqs := (o.tso.Load() - tso0) + (o.lowRes.Load() - low0)
+			src := "TxnStart"
+			switch {
+			case ts == math.MaxUint64:
+				src = "MaxTs"
+			case snapshot != 0 && ts == snapshot:
+				src = "Snapshot"
+			case reqs > 0 && vars.UseLowResolutionTSO():
+				src = "LowResolution"
+			case reqs > 0:
+				src = "Tso"
+			}
+			out = append(out, []any{src, reqs})
+			// An autocommit statement outside a transaction ends its transaction.
+			if !vars.InTxn() {
+				if err := endTxn(); err != nil {
+					return nil, err
+				}
+				p = nil
+			}
+		}
+	}
+	return out, nil
 }
 
 func sessiontxnExec(op string, args []json.RawMessage) (out any, err error) {
@@ -236,6 +437,8 @@ func sessiontxnExec(op string, args []json.RawMessage) (out any, err error) {
 		return []any{int(a), msg}, nil
 	case "constant_future":
 		return sessiontxn.ConstantFuture(arg[uint64](args, 0)).Wait()
+	case "read_ts":
+		return sessiontxnReadTS(arg[map[string]any](args, 0), arg[[]string](args, 1))
 	}
 	return nil, fmt.Errorf("unknown op %q", op)
 }
