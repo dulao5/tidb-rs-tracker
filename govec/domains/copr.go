@@ -177,7 +177,7 @@ func coprExempt() map[string]string {
 		"copIteratorWorker.collectUnconsumedCopRuntimeStats", "copIteratorWorker.handleTiDBSendReqErr", "copIteratorWorker.finished",
 		"liteCopIteratorWorker.liteSendReq", "chooseBackoffer", "memTrackerConsumeResp", "appendScanDetail",
 		"copResponse.GetData", "copResponse.GetStartKey", "copResponse.GetCopRuntimeStats", "copResponse.MemSize", "copResponse.RespTime",
-		"pkg/store/copr/coprocessor.go:init", "copErrorResponse.Next", "copErrorResponse.Close",
+		"copErrorResponse.Next", "copErrorResponse.Close",
 		"newRateLimitAction", "rateLimitAction.Action", "rateLimitAction.GetPriority", "rateLimitAction.destroyTokenIfNeeded",
 		"rateLimitAction.conditionLock", "rateLimitAction.conditionUnlock", "rateLimitAction.close", "rateLimitAction.setEnabled",
 		"rateLimitAction.isEnabled",
@@ -187,6 +187,7 @@ func coprExempt() map[string]string {
 	for _, f := range part2 {
 		ex[f] = "ported; runs against a TiKV store (iterator, workers, RPC and response handling, store wrapper): unit tests on a mock store in tidb-rs crates/store/tests/copr_iter.rs"
 	}
+	ex["pkg/store/copr/coprocessor.go:init"] = "only sets the finCopResp sentinel; the port's sentinel is the RespMsg::Fin variant (no global object)"
 	for _, f := range []string{"kvStore.GetTiKVClient", "tikvClient.Close", "tikvClient.CloseAddr", "tikvClient.SendRequest",
 		"tikvClient.SendRequestAsync", "tikvClient.SetEventListener"} {
 		ex[f] = "client-go tikv.Client passthrough with error conversion; the TiKV client is client-rust (ADR 0008) and nothing on the read path calls it"
