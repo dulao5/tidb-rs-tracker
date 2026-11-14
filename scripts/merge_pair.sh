@@ -10,10 +10,10 @@
 #
 # Steps:
 #   1. both PRs are open, MERGEABLE, and all their checks passed;
-#   2. `parts.py scan` from the tracker PR's head against the tidb-rs PR's
-#      head reports that the stub registry matches the code;
-#   3. merge the tracker PR and confirm it is MERGED;
-#   4. merge the tidb-rs PR and confirm it is MERGED.
+#   2. `parts.py scan` on the test-merge refs (refs/pull/N/merge) of both
+#      PRs reports that the stub registry matches the code;
+#   3. merge the tracker PR at the checked head (--match-head-commit), confirm;
+#   4. merge the tidb-rs PR the same way; if this fails after step 3, say so loudly.
 #
 # Environment: TRACKER_REPO (default dulao5/tidb-rs-tracker),
 # TIDB_RS_REPO (default dulao5/tidb-rs). DRY_RUN=1 runs steps 1-2 only.
@@ -60,8 +60,8 @@ check_pr() {
 }
 
 merge_pr() {
-  local repo=$1 pr=$2 state oid
-  gh pr merge "$pr" -R "$repo" --merge
+  local repo=$1 pr=$2 head=$3 state oid
+  gh pr merge "$pr" -R "$repo" --merge --match-head-commit "$head"
   state=$(gh pr view "$pr" -R "$repo" --json state --jq .state)
   [ "$state" = MERGED ] || { echo "$repo#$pr is $state after merge" >&2; exit 1; }
   oid=$(gh pr view "$pr" -R "$repo" --json mergeCommit --jq .mergeCommit.oid)
@@ -72,25 +72,33 @@ merge_pr() {
 check_pr "$T_REPO" "$T_PR"
 check_pr "$R_REPO" "$R_PR"
 
-# 2. Stub registry of the tracker PR matches the code of the tidb-rs PR.
+# 2. Stub registry matches the code, checked on GitHub's test-merge refs
+# (refs/pull/N/merge = the PR merged into the current main), because that is
+# what both mains will contain after the merge. The ref exists while the PR
+# is MERGEABLE (step 1). The PR head behind each merge ref is its second
+# parent; step 3/4 merge with --match-head-commit on that sha, so exactly the
+# checked commit gets merged.
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-t_head=$(gh pr view "$T_PR" -R "$T_REPO" --json headRefOid --jq .headRefOid)
-r_head=$(gh pr view "$R_PR" -R "$R_REPO" --json headRefOid --jq .headRefOid)
-fetch() {  # repo dir sha
-  git init -q "$2"
-  git -C "$2" fetch -q --depth 1 "git@github.com:$1.git" "$3"
-  git -C "$2" checkout -q FETCH_HEAD
+fetch_merge_ref() {  # repo pr dir -> prints the PR head sha
+  git init -q "$3"
+  git -C "$3" fetch -q --depth 2 "git@github.com:$1.git" "refs/pull/$2/merge"
+  git -C "$3" checkout -q FETCH_HEAD
+  git -C "$3" rev-parse FETCH_HEAD^2
 }
-fetch "$T_REPO" "$work/tracker" "$t_head"
-fetch "$R_REPO" "$work/tidb-rs" "$r_head"
+t_head=$(fetch_merge_ref "$T_REPO" "$T_PR" "$work/tracker")
+r_head=$(fetch_merge_ref "$R_REPO" "$R_PR" "$work/tidb-rs")
 (cd "$work/tracker" && python3 scripts/blocks/parts.py scan "$work/tidb-rs")
-echo "ok: stub registry of $T_REPO#$T_PR matches $R_REPO#$R_PR"
+echo "ok: stub registry matches (merge refs; heads ${t_head:0:7} / ${r_head:0:7})"
 
 # 3. and 4. Merge in order.
 if [ "${DRY_RUN:-0}" = 1 ]; then
   echo "dry run: not merging"
   exit 0
 fi
-merge_pr "$T_REPO" "$T_PR"
-merge_pr "$R_REPO" "$R_PR"
+merge_pr "$T_REPO" "$T_PR" "$t_head"
+if ! merge_pr "$R_REPO" "$R_PR" "$r_head"; then
+  echo "!!! $T_REPO#$T_PR IS MERGED BUT $R_REPO#$R_PR IS NOT." >&2
+  echo "!!! tracker main and tidb-rs main now disagree: fix and merge $R_REPO#$R_PR right away." >&2
+  exit 1
+fi
