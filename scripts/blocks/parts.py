@@ -16,7 +16,9 @@ D06.2 / D06.3 "part 1"): a part converges on its own function list (tidb-rs
   `kind` is temporary (blocked-by:<block>, must vanish when the block is done), permanent
   (an exception or a "not ported" decision) or delegated (left to Go TiDB in the cluster).
   `scan --write` rebuilds the (file, symbol, block) rows from a tidb-rs checkout and keeps
-  `kind` / `note`; `scan` alone fails if the registry and the code differ.
+  `kind` / `note`; `scan` alone fails if the registry and the code differ. `check` fails on
+  an empty `note`. `.gitattributes` merges stubs.tsv with the union driver, so a merge keeps
+  both sides' rows (and notes); run `scan --write` afterwards to drop the stale ones.
 
     parts.py import ../tidb-rs/specs/VS1-vertical-slice/functions.tsv
     parts.py scan [--write] ../tidb-rs
@@ -217,6 +219,10 @@ def validate():
             errors.append(f"stubs.tsv: {r['file']} {r['symbol']}: unknown block {r['block']}")
         if r["kind"] not in KINDS:
             errors.append(f"stubs.tsv: {r['file']} {r['symbol']}: kind {r['kind']!r} not in {KINDS}")
+        # Every stub says why it exists; an empty note usually means a merge rescan lost it.
+        if not r["note"].strip():
+            errors.append(f"stubs.tsv: {r['file']} {r['symbol']}: empty note (say what the stub "
+                          f"waits for; after a merge, take the note from the branch that added it)")
         # Constitution §4.3: a temporary stub disappears when its block is done.
         if r["kind"] == "temporary" and r["block"] in done:
             errors.append(f"stubs.tsv: {r['file']} {r['symbol']}: temporary stub on {r['block']}, "
