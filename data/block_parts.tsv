@@ -9,10 +9,10 @@ D06.5	VS1-17	VS1-17	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.1	VS1-18	VS1-18	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.2	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.3	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D09.0	VS1-10	VS1-10	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D09.0	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess
 D09.1	VS1-21	VS1-21	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.11	VS1-23	VS1-23	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D09.13	VS1-10	VS1-10	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D09.13	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs
 D09.13	VS1-24	VS1-24	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.14	VS1-23	VS1-23	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.2	VS1-22	VS1-22	planned	tidb-rs specs/VS1-vertical-slice (#205)
