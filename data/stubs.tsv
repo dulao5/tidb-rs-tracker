@@ -65,3 +65,7 @@ crates/sessiontxn/src/staleread/provider.rs	on_stmt_retry	D05.4	temporary	D05.4 
 crates/sessiontxn/src/staleread/provider.rs	on_stmt_start	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/sessiontxn/src/staleread/provider.rs	stale_read_blocked	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_handle	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_index	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
+crates/store/src/driver/txn/snapshot.rs	iter	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
+crates/store/src/driver/txn/snapshot.rs	iter_reverse	D07.1	temporary	D07.1 part 2: snapshot scanner (T11)
