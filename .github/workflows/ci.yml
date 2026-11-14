@@ -37,6 +37,7 @@ jobs:
           sparse-checkout: crates
       - name: Block parts and boundary stubs
         run: |
+          python3 scripts/blocks/test_parts.py
           python3 scripts/blocks/parts.py check
           python3 scripts/blocks/parts.py scan tidb-rs
       - name: Build tracker.db
