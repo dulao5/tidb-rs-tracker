@@ -30,7 +30,7 @@ D10.6	VS1-29	VS1-29	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D10.8	VS1-11	VS1-11	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D10.9	VS1-31	VS1-31	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D11.1	VS1-29	VS1-29	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D12.0	VS1-13	VS1-13	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D12.0	VS1-13	VS1-13	in-progress	dulao5/tidb-rs#222: converge 123/123
 D12.1	VS1-12	VS1-12	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.1	VS1-34	VS1-34	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.12	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)
