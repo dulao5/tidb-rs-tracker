@@ -137,7 +137,8 @@ crates/planner/src/core/preprocess.rs	handle_table_name	D05.4	temporary	VS1-10: 
 crates/planner/src/core/preprocess.rs	has_auto_convert_warning	D02.2	temporary	VS1-10: has_auto_convert_warning (blocked-by:D02.2)
 crates/planner/src/core/preprocess.rs	resolve_execute_stmt	D13.1	temporary	VS1-10: resolve_execute_stmt (blocked-by:D13.1)
 crates/planner/src/core/preprocess.rs	table_by_name	D04.1	temporary	preprocessor tableByName: the privilege check of a table that is not found needs the privilege manager (D04.1); the PoC answers
-crates/planner/src/core/preprocess.rs	try_lock_mdl_and_update_schema_if_necessary	D05.4	temporary	VS1-10: try_lock_mdl_and_update_schema_if_necessary (blocked-by:D05.4)
+crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.3	temporary	metadata lock (read path, #146 part 1, #252 go-gap): global temporary tables and SessionExtendedInfoSchema.UpdateTableInfo (a table newer than the transaction's InfoSchema) need the session-extended InfoSchema of the infoschema block part 2; the PoC answers
+crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadata lock: domain.GetDomain(sctx) when the caller hands in no domain InfoSchema (the session always does)
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)
@@ -181,8 +182,10 @@ crates/session/src/session.rs	get_ranger_ctx	D05.3	temporary	VS1-14: the session
 crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the server's session manager
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
 crates/session/src/session.rs	get_table_ctx	D06.4	temporary	VS1-14: tblctx table context
+crates/session/src/session.rs	init_mdl_variable	D06.5	temporary	InitMDLVariable: reading the MetadataLock meta key at bootstrap is the domain start-up; Go's default ON is assumed
 crates/session/src/session.rs	load_common_global_variables_if_needed	D06.5	temporary	VS1-14: domain.GetSessionCache (the router syncs session variables until VS1-17)
 crates/session/src/session.rs	prepare_stmt	D13.1	temporary	the prepare dedup cache hit (tidb_enable_cache_prepare_stmt): counted with the plan-cache exception A3, never written
+crates/session/src/session.rs	report_metadata_locks	D06.5	temporary	new-stack MDL reporting hook (#252 go-gap): the domain's MDL check loop does not scan new-stack sessions yet, the PoC still reports for this node; until then the router must not send DML or explicit transactions to the new stack
 crates/session/src/session.rs	set_collation	D02.2	temporary	VS1-14: charset.GetCharsetInfoByID
 crates/session/src/session.rs	set_process_info	D00.3	temporary	VS1-14: util.ProcessInfo (SHOW PROCESSLIST runs on the PoC)
 crates/session/src/session.rs	set_session_manager	D03.1	temporary	VS1-14: the server's session manager
