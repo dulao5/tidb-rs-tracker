@@ -797,6 +797,12 @@ func fpForeign(rng *rand.Rand, c *model.ColumnInfo) types.Datum {
 	case 9:
 		return types.NewTimeDatum(types.NewTime(types.FromDate(2021, 2, 3, 4, 5, 6, 789000), mysql.TypeDatetime, 6))
 	case 10:
+		// A TIME converted to a date / datetime takes today's date (the wall clock): not
+		// for those columns, the records would depend on the generation day.
+		switch c.GetType() {
+		case mysql.TypeDate, mysql.TypeDatetime, mysql.TypeTimestamp:
+			return types.NewIntDatum(20210203)
+		}
 		return types.NewDurationDatum(types.Duration{Duration: 25 * gotime.Hour, Fsp: 0})
 	case 11:
 		return types.NewMysqlEnumDatum(types.Enum{Name: "c", Value: 3})

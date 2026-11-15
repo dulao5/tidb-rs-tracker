@@ -64,6 +64,22 @@ crates/infoschema/src/tables/mod.rs	new_cached_table	D06.4	temporary	D06.4 part 
 crates/infoschema/src/tables/mod.rs	new_partitioned_table	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
 crates/infoschema/src/tables/mod.rs	partitioned	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
 crates/infoschema/src/tables/mod.rs	temp_table_from_meta	D06.4	temporary	D06.4 part 2: temporary tables
+crates/planner/src/cardinality/row_count_column.rs	between_row_count_on_column	D11.1	temporary	
+crates/planner/src/cardinality/row_count_column.rs	equal_row_count_on_column	D11.1	temporary	
+crates/planner/src/cardinality/row_count_column.rs	get_column_row_count	D11.1	temporary	
+crates/planner/src/cardinality/row_count_index.rs	get_index_row_count_for_stats_v1	D10.6	temporary	
+crates/planner/src/cardinality/row_count_index.rs	get_index_row_count_for_stats_v2	D10.6	temporary	
+crates/planner/src/cardinality/selectivity.rs	build_partial_paths4_mv_index	D10.7	temporary	
+crates/planner/src/cardinality/selectivity.rs	collect_filters4_mv_index	D10.7	temporary	
+crates/planner/src/cardinality/selectivity.rs	find_available_stats_for_col	D10.6	temporary	
+crates/planner/src/cardinality/selectivity.rs	out_of_range_eq_selectivity	D10.6	temporary	
+crates/planner/src/cardinality/selectivity.rs	ranger_build_column_range	D10.4	temporary	
+crates/planner/src/cardinality/selectivity.rs	ranger_detach_cond_and_build_range_for_index	D10.4	temporary	
+crates/planner/src/cardinality/selectivity.rs	ranger_extract_access_conditions_for_column	D10.4	temporary	
+crates/planner/src/cardinality/selectivity.rs	ranger_merge_dnf_items4_col	D10.4	temporary	
+crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	
+crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	
+crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
 crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
@@ -107,6 +123,7 @@ crates/planner/src/core/preprocess.rs	try_lock_mdl_and_update_schema_if_necessar
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)
+crates/planner/src/logicalop/derive_stats.rs	(module)	D09.14	temporary	
 crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_logical_plan (blocked-by:D09.1)
 crates/planner/src/optimize.rs	is_read_only	D02.2	temporary	VS1-10: is_read_only (blocked-by:D02.2)
 crates/planner/src/optimize.rs	optimize_exec_stmt	D13.1	temporary	VS1-10: optimize_exec_stmt (blocked-by:D13.1)
@@ -166,6 +183,21 @@ crates/sessiontxn/src/staleread/provider.rs	on_stmt_error_for_next_action	D05.4	
 crates/sessiontxn/src/staleread/provider.rs	on_stmt_retry	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/sessiontxn/src/staleread/provider.rs	on_stmt_start	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
 crates/sessiontxn/src/staleread/provider.rs	stale_read_blocked	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
+crates/statistics/src/asyncload.rs	insert_needed_item	D11.2	temporary	
+crates/statistics/src/cmsketch.rs	CMSketch	D11.1	temporary	
+crates/statistics/src/cmsketch.rs	copy	D11.1	temporary	
+crates/statistics/src/cmsketch.rs	memory_usage	D11.1	temporary	
+crates/statistics/src/cmsketch.rs	tests	D11.1	temporary	
+crates/statistics/src/column.rs	empty_column	D11.2	temporary	
+crates/statistics/src/fmsketch.rs	FMSketch	D11.1	temporary	
+crates/statistics/src/fmsketch.rs	copy	D11.1	temporary	
+crates/statistics/src/fmsketch.rs	memory_usage	D11.1	temporary	
+crates/statistics/src/index.rs	index_stats_is_invalid	D11.2	temporary	
+crates/statistics/src/index.rs	query_bytes	D11.1	temporary	
+crates/statistics/src/scalar.rs	(module)	D11.1	temporary	
+crates/statistics/src/table.rs	generate_hist_coll_from_column_info	D10.7	temporary	
+crates/statistics/src/table.rs	pseudo_table	D11.1	temporary	
+crates/statistics/src/table.rs	pseudo_table	D11.2	temporary	
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
 crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_handle	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
 crates/store/src/driver/txn/error.rs	extract_key_exists_err_from_index	D06.4	temporary	D06.4: tables.FindPrimaryIndex / BuildRowcodecColInfoForIndexColumns (write-path duplicate-key errors)
