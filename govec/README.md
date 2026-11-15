@@ -241,6 +241,16 @@ CC=/usr/bin/clang go run ./cmd/rsgen -out <tidb-rs>/crates/base/src
 (cd <tidb-rs> && cargo fmt -p tidb-base)
 ```
 
+`-model`（D06.1 元数据模型）要分两步：带 `GOFLAGS` 构建，**运行时清空 `GOFLAGS`**。rsgen 用 `go/types` 读 `pkg/meta/model` 的源码，标准库的导入由 `importer.Default()` 解析，它在模型源码目录（`work/` 下的模块副本）中调用 `go list`；`GOFLAGS=-modfile=...` 在那里找不到主模块，导入失败，`DefaultJobInterval = time.Hour` 之类的常量求不出值，rsgen panic（`constant DefaultJobInterval not evaluated`）：
+
+```sh
+cd govec
+export GOFLAGS="$(../scripts/govec-fixes.sh)"
+CC=/usr/bin/clang go build -o ../bin/rsgen ./cmd/rsgen
+GOFLAGS= ../bin/rsgen -model <tidb-rs>/crates/model/src
+(cd <tidb-rs> && rustfmt --edition 2024 crates/model/src/types_gen.rs crates/model/src/consts_gen.rs)
+```
+
 rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表和 `strconv.IsPrint` 的可打印范围表（对每个码位调用 Go 的 `IsPrint` 得到）。生成的文件保留 Go 标识符（映射规则 M-GONAME），文件头带 `#![allow(non_upper_case_globals)]`。函数都是手工移植的。
 
 ### 目标平台
