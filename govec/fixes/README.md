@@ -34,6 +34,15 @@ a copy of the module with the affected files replaced by the copies here
 
 | [tidb-rs#195](https://github.com/dulao5/tidb-rs/issues/195) (**tidb-rs deliberate deviation**, not an upstream fix; decided by the tidb-rs maintainers, docs/compatibility.md) | `pkg/infoschema/infoschema_v2.go` | `gcCollectTableItem` / `gcCollectReferredForeignKeyItem` keep, per table, the newest item at or below the GC cut and delete only older ones: v8.5.8 also deleted that item when a newer one above the cut existed, so an InfoSchema at the cut (stale read, `tidb_snapshot`) reported "table doesn't exist" | infoschema |
 
+
+**Export shims** (no behaviour change): a new file in a package of the copy that only
+calls existing functions, for code govec cannot import otherwise (Go's internal-package
+rule). It is not a fix: no `vec.Fix`, no probe — a build without it does not compile.
+
+| Shim | Exports | Domains |
+|---|---|---|
+| `pkg/server/govec_export.go` | `pkg/server/internal/{column,util}` (`Info.Dump`, `DumpTextRow`, `DumpBinaryRow`, `ConvertColumnInfo`, `AppendFormatFloat`, the result encoder, the input decoder) and the unexported `parseBinaryParams`, through `Govec*` wrappers | protocol |
+
 Adding a fix: copy the v8.5.8 file to `fixes/<path>.fixed`, apply the upstream
 change with a comment citing it, add the mapping to `scripts/govec-fixes.sh`,
 a row here, and a `vec.Fix` (with a probe) on each affected domain.

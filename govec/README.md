@@ -592,3 +592,10 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 ## resetstmt（块 D12.2 中由 VS1-14 提前移植的 `ResetContextOfStmt`）
 
 `executor.ResetContextOfStmt`（`pkg/executor/select.go`）在会话的 `ExecuteStmt` 中、`Compile` 之前执行：安装新的语句上下文，写入"上一条语句"的状态（`SysWarningCount` / `SysErrorCount`、`PrevAffectedRows`、`PrevLastInsertID`、`PrevFoundInPlanCache`）以及语句的类型标志和错误级别。tidb-rs 在 VS1-14 中把它从 VS1-35 提前移植（tidb-rs `specs/D05.3-session/spec.md` §2.4），本领域是 VS1-14 "warning 计数与 Go 一致"在函数级的对照。op `reset`：参数 `[cfg, prev, sql]`，`cfg = {sql_mode, warnings, notes, errors, last_insert_id, found_in_plan_cache, skip_utf8_check}`。每条记录用一个新的 `mock.Context`（绑定一个零值 `Domain`：`ExpensiveQueryHandle` 为 nil），先对上一条语句 `prev`（`""` 表示没有）执行一次 `ResetContextOfStmt`，再在它的语句上下文中追加 warning、note、error，设 `LastInsertID` 与 `FoundInPlanCache`，最后对 `sql` 执行 `ResetContextOfStmt`。输出是它写入的会话与语句上下文字段（`domains/resetstmt.go` 的 `resetstmtState`）。语句只取 tidb-rs AST 中已有的种类（SELECT、集合运算、SHOW、BEGIN / COMMIT / ROLLBACK、USE、SET），其他语句在 tidb-rs 中是 `blocked-by:D02.2` 的桩。块 D12.2 的其余函数（基础算子）是 VS1-35，写路径的函数（`SELECT ... FOR UPDATE`、`SELECT INTO`、UPDATE / DELETE 的上下文）永久豁免。
+
+## protocol（块 D03.1 第 1 部分：结果编码与二进制参数，tidb-rs VS1-16；以及 D08.12 的 `ExecBinaryParam`）
+
+- `column`：列定义 `Info.Dump` / `DumpWithDefault`，各列类型 × 7 种 `character_set_results`；`convert`：`ConvertColumnInfo`；`row`：`DumpTextRow` / `DumpBinaryRow`（26 种列类型，含 JSON、向量、ENUM / SET 和非法类型；随机多列行）；`float`：`AppendFormatFloat`；`params`：`parseBinaryParams`（每种类型、长数据、NULL 位图、截断的值、未知类型）后接 `ExecBinaryParam`（三组类型标志）。字节一律十六进制。
+- `pkg/server/internal/...` 是 internal 包，经导出垫片 `fixes/pkg/server/govec_export.go.fixed` 调用（不改行为，见 [fixes/README.md](fixes/README.md)）。
+- 记录里有 Go 的 panic（tidb-rs 必须同样 panic，由连接循环恢复）：TIME 列小数位 31 的文本输出、二进制参数中长度编码 NULL 的 DECIMAL（空指针）、截断的长度编码整数。
+- 本领域的整数与位运算在两个目标上相同；amd64 文件取自 tracker CI 的产物。
