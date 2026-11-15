@@ -568,6 +568,12 @@ op `decode_row_val`：`executor.NewRowDecoder` 与 `executor.DecodeRowValToChunk
 - 聚簇表不生成 `_tidb_rowid`：SQL 层没有这种列；Go 会把 common handle 的第一列按自己的类型解码进 BIGINT 列，`chunk.Column.AppendMyDecimal` 等经 unsafe 越界写，破坏生成进程的堆（同一次运行中其他记录的字符串被清零，结果不确定）。
 - 块内其余函数（BatchPointGet、TableReader、IndexLookUp 等）以及 VS1-12 中由 tidb-rs 单测覆盖的函数列在 `pointget_exempt.go`。
 
+## fastplan（块 D10.8 第 1 部分：点查快速路径，tidb-rs VS1-11；以及 D09.0 的唯一索引 key 编码）
+
+- op `fast`：一条 SELECT 经 Go parser、`core.Preprocess`（`MockInfoSchema` 只含语句提到的表，库为 `test`）后交给 `core.TryFastPlan`。输出是不出计划（`null`）、点查计划的全部字段（handle / 索引值与列类型、schema 各列的 ID / UniqueID / Index / 类型、输出名、`unfoldFromWildCard`、WHERE 列名、计划 ID、`PlanColumnID`、`MemoryUsage`、`OperatorInfo`、`StmtCtx.Tables`）、`Batch_Point_Get` 或 `TableDual`（tidb-rs 中是边界桩），以及语句 warning。Go 解析或 preprocess 失败的记为 `{"pre": msg}`，tidb-rs 跳过。表由 CREATE TABLE（`ddl.MockTableInfo`）建成，再改出 DDL 写不出的状态：非 public 的列 / 索引、hash 分区加全局索引（含 `AddingDefinitions`）、不可见索引、前缀索引、聚簇 / 非聚簇主键、生成列。会话变量：当前库、`sql_select_limit`、`tidb_enable_stable_result_mode`、fix control 52592、`tidb_optimizer_use_invisible_indexes`、autocommit、READ COMMITTED、连接 ID、`tidb_enable_optimize_trace`、new collation 开关；表达式上下文的 type flags 还有截断转 warning / 忽略截断两种。语句有手写的（每个拒绝条件一条以上：HAVING / ORDER BY / LIMIT、多表、子查询、非 public 列、生成列、NULL 值、类型转换失败或不等、溢出转 TableDual、hint、`FOR UPDATE` 各种形式、`_tidb_rowid`、行 checksum 列……）和随机的等值条件组合。UPDATE / DELETE 与 `AS OF` 要真实会话，不生成。
+- op `uidx`：`EncodeUniqueIndexKey` / `EncodeUniqueIndexValuesForKey`（会话的语句上下文带记录的 type flags、错误级别、时区，SQL mode 也来自记录；new collation 开或关），输出 key、错误（值不可能在索引中时为 `ErrNotExist`）、原地转换后的值和 warning。随后给出点查执行器读到的东西：索引值（`GenIndexValuePortal`，handle；new collation 的字符串列带 restored data；全局索引带分区 ID）、从中解出的 handle 与分区 ID（`DecodeHandleInIndexValue`、`SplitIndexValue`）、行 key、一行存储值及其按全部公开列解码的结果（`DecodeRowValToChunk`），以及索引有行无时的不一致错误（`consistency.Reporter.ReportLookupInconsistent`）。聚簇主键（`isCommonHandleRead`）不读索引，handle 是编码后的值。表是随机表：int handle、聚簇主键或 `_tidb_rowid`，四分之一的非聚簇表做 hash 分区加全局唯一索引；值一半以上是列类型的，其余是别的类型或越界的值（执行器会再转换一次）。tidb-rs 把这些记录直接交给两个函数，再经完整的点查执行器回放（`crates/executor/tests/govec_fastplan_uidx.rs`）。
+- 块内其余函数（BatchPointGet、点更新 / 点删除、测试钩子）和由 tidb-rs 单测覆盖的方法列在 `fastplan.go` 的 `fastplanExempt`。
+
 ## copr（块 D07.2 第 1 部分：`pkg/store/copr` 的 key_ranges.go、region_cache.go、coprocessor.go 的建任务部分；`pkg/util/paging`）
 
 - 记录格式见 `domains/copr.go` 文件头：`kr`（KeyRanges 的 first/mid/last 形状与 Split、Slice、At、String、ToPBRanges）、`bkr`、`calc`（paging 的 calculateRemain / calculateRetry）、`split`（按 region / bucket 切分）、`build`（buildCopTasks，含 store batch 与 row count hint）、`small`、`reqflags`、`pb`、`paging`。

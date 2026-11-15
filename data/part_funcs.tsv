@@ -1,4 +1,5 @@
 block	part	file	symbol
+D00.3	VS1-11	pkg/util/logutil/consistency/reporter.go	Reporter.ReportLookupInconsistent
 D03.1	VS1-16	pkg/server/conn.go	clientConn.handleQuery
 D03.1	VS1-16	pkg/server/conn.go	clientConn.handleStmt
 D03.1	VS1-16	pkg/server/conn.go	clientConn.writeChunks
@@ -706,6 +707,8 @@ D09.0	VS1-10	pkg/planner/core/util.go	physicalSchemaProducer.Schema
 D09.0	VS1-10	pkg/planner/core/util.go	physicalSchemaProducer.SetSchema
 D09.0	VS1-10	pkg/planner/core/util.go	physicalSchemaProducer.cloneForPlanCacheWithSelf
 D09.0	VS1-10	pkg/planner/core/util.go	physicalSchemaProducer.cloneWithSelf
+D09.0	VS1-11	pkg/planner/core/util.go	EncodeUniqueIndexKey
+D09.0	VS1-11	pkg/planner/core/util.go	EncodeUniqueIndexValuesForKey
 D09.1	VS1-21	pkg/planner/core/logical_plan_builder.go	CheckParamTypeInt64orUint64
 D09.1	VS1-21	pkg/planner/core/logical_plan_builder.go	PlanBuilder.addAliasName
 D09.1	VS1-21	pkg/planner/core/logical_plan_builder.go	PlanBuilder.buildDataSource

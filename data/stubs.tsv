@@ -8,7 +8,6 @@ crates/executor/src/adapter.rs	on_fetch_returned	D14.2	temporary	D14.2: slow log
 crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
-crates/executor/src/builder.rs	build	D10.8	temporary	VS1-11: PointGetPlan (the builder downcasts to the glue carrier until then)
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/builder.rs	build	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
@@ -33,11 +32,6 @@ crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: sele
 crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	table_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	table_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/glue.rs	encode_unique_index_key	D09.0	temporary	plannercore.EncodeUniqueIndexKey: in no VS1 item (tidb-rs D12.1 spec §5: proposed for VS1-11)
-crates/executor/src/glue.rs	encode_unique_index_values_for_key	D09.0	temporary	plannercore.EncodeUniqueIndexValuesForKey: in no VS1 item (tidb-rs D12.1 spec §5: proposed for VS1-11)
-crates/executor/src/glue.rs	get_avg_row_size	D10.8	temporary	VS1-11: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
-crates/executor/src/glue.rs	prune_partitions	D10.8	temporary	VS1-11: PointGetPlan.PrunePartitions (tables with partitions)
-crates/executor/src/glue.rs	report_lookup_inconsistent	D00.3	temporary	D00.3: consistency.Reporter (index entry without its row)
 crates/executor/src/internal/builder/builder_utils.rs	construct_dag_req	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/builder/builder_utils.rs	to_pb	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
@@ -48,7 +42,6 @@ crates/executor/src/internal/exec/indexusage.rs	get_table_row_count	D11.2	tempor
 crates/executor/src/metrics.rs	observe	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/point_get.rs	build_point_get	D12.2	temporary	VS1-35: TableDualExec of a pruned-away partition
 crates/executor/src/point_get.rs	build_point_get	X	permanent	not ported (write path: SELECT ... FOR UPDATE point get)
-crates/executor/src/point_get.rs	init	D10.8	temporary	VS1-11: PointGetPlan (the glue carrier until then)
 crates/executor/src/point_get.rs	lock_key_base	X	permanent	not ported (write path: pessimistic lock of the read key)
 crates/executor/src/point_get.rs	verify_txn_scope	D07.3	temporary	D07.3: distsql.VerifyTxnScope (local txn scopes)
 crates/executor/src/select.rs	reset_context_of_stmt	D02.2	temporary	VS1-14: ResetContextOfStmt of statements outside the Rust AST (INSERT/UPDATE/DELETE/EXPLAIN...)
@@ -84,18 +77,35 @@ crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	Select
 crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	comment-only stub above the test module: crossValidationSelectivity (D10.6 part 2, needs GetColumnRowCount)
 crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	D11.2: recordUsedItemStatsStatus needs StatementContext.UsedStatsInfo (D11.2 tasks P1-1); records nothing, the estimate does not depend on it
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
-crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.8	temporary	VS1-11: the PointGetPlan check of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
-crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-10: init_point_get_plan (blocked-by:D10.8)
+crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
+crates/planner/src/core/logical_plan_builder.rs	get_uint_from_node	D13.1	temporary	VS1-15: the value EXECUTE binds to a LIMIT parameter marker
+crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-10: enforce_property (blocked-by:D10.1)
 crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
+crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-30: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
 crates/planner/src/core/planbuilder.rs	append_visit_info_is_restricted_user	D04.1	temporary	VS1-10: append_visit_info_is_restricted_user (blocked-by:D04.1)
 crates/planner/src/core/planbuilder.rs	build	D09.1	temporary	VS1-10: build (blocked-by:D09.1)
 crates/planner/src/core/planbuilder.rs	build	D12.12	temporary	VS1-10: build (blocked-by:D12.12)
 crates/planner/src/core/planbuilder.rs	check_hinted_sql	D13.3	temporary	VS1-10: check_hinted_sql (blocked-by:D13.3)
 crates/planner/src/core/planbuilder.rs	get_hint_state	D13.3	temporary	VS1-10: get_hint_state (blocked-by:D13.3)
+crates/planner/src/core/point_get_plan.rs	check_tbl_index_for_point_plan	D06.5	temporary	VS1-17: GetLatestIndexInfo (FOR UPDATE / READ COMMITTED with a connection)
+crates/planner/src/core/point_get_plan.rs	explain_info	D10.9	temporary	VS1-31: AccessObject of the point get (EXPLAIN text)
+crates/planner/src/core/point_get_plan.rs	explain_normalized_info	D10.9	temporary	VS1-31: AccessObject of the point get (EXPLAIN text)
+crates/planner/src/core/point_get_plan.rs	get_hash_or_key_partition_column_name	D06.4	temporary	D06.4 part 2: the partition expression (BatchPointGet only)
+crates/planner/src/core/point_get_plan.rs	get_name_value_pairs	D13.1	temporary	VS1-15: the value EXECUTE binds to a parameter marker of a point get condition
+crates/planner/src/core/point_get_plan.rs	index_is_available_by_hints	D02.2	temporary	D02.2: comment-style optimizer hints are not in the Rust AST
+crates/planner/src/core/point_get_plan.rs	is_expr_has_sub_query	X	permanent	not ported (write path: point UPDATE / DELETE)
+crates/planner/src/core/point_get_plan.rs	load_table_stats	D10.2	temporary	VS1-28: loadTableStats of a point get
+crates/planner/src/core/point_get_plan.rs	pessimistic_lock_eligible	X	permanent	not ported (write path: SessionVars.BulkDMLEnabled of tidb_dml_type=bulk, with pessimistic-auto-commit on)
+crates/planner/src/core/point_get_plan.rs	prune_partitions	D06.4	temporary	D06.4 part 2: GetPartitionIdxByRow (partition pruning of a point get)
+crates/planner/src/core/point_get_plan.rs	resolve_indices	D10.9	temporary	VS1-31: resolveIndicesForVirtualColumn (no virtual column on the fast path)
+crates/planner/src/core/point_get_plan.rs	try_fast_plan	D10.1	temporary	VS1-27: PhysicalTableDual of an impossible point get condition
+crates/planner/src/core/point_get_plan.rs	try_fast_plan	D10.9	temporary	VS1-31: the optimizer trace of the fast plan (ExplainInfo)
+crates/planner/src/core/point_get_plan.rs	try_fast_plan	X	permanent	not ported (write path: point UPDATE / DELETE plans)
+crates/planner/src/core/point_get_plan.rs	try_where_in2_batch_point_get	D10.8	temporary	BatchPointGetPlan: not in VS1 (D10.8 part 2)
 crates/planner/src/core/preprocess.rs	alias_checker_enter	D02.2	temporary	VS1-10: alias_checker_enter (blocked-by:D02.2)
 crates/planner/src/core/preprocess.rs	check_not_in_repair	D06.5	temporary	VS1-10: check_not_in_repair (blocked-by:D06.5)
 crates/planner/src/core/preprocess.rs	ensure_info_schema	D05.4	temporary	VS1-10: ensure_info_schema (blocked-by:D05.4)
