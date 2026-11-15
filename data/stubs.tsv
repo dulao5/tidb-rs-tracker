@@ -1,4 +1,5 @@
 file	symbol	block	kind	note
+crates/domain/src/domain.rs	get_timestamp_for_schema_version_with_non_empty_diff	D07.1	temporary	the commit ts of the schema diff needs store/helper's MVCC debug API (GetMvccByEncodedKeyWithTS, store driver D07.1); until then the error Go returns for a non-TiKV store, schemaTs 0
 crates/executor/src/adapter.rs	exec	X	permanent	not ported (write path: pessimistic locks, table delta)
 crates/executor/src/adapter.rs	get_lazy_stmt_text	D02.1	temporary	D02.1: parser.NormalizeDigest (tidb_redact_log=ON text)
 crates/executor/src/adapter.rs	get_text_to_log	D02.1	temporary	D02.1: parser.NormalizeKeepHint (tidb_redact_log=ON text)
@@ -55,6 +56,7 @@ crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.9	temporary	signature
 crates/expression/src/helper.rs	get_time_value	D09.2	temporary	GetTimeValue's unary-operator case: expression.EvalSimpleAst (rewriter)
 crates/infoschema/src/autoid.rs	new_allocator	D06.2	temporary	D06.2 part 2: allocators
 crates/infoschema/src/autoid.rs	new_allocators_from_tbl_info	D06.2	temporary	D06.2 part 2: allocators
+crates/infoschema/src/cache.rs	gc_old_version	D06.2	temporary	InfoCache.gcOldVersion needs meta.GetOldestSchemaVersion (meta part 2, D06.2: the MVCC history of the schema version key through store/helper); old Data items stay until then
 crates/infoschema/src/infoschema_v2.rs	apply_recover_schema	D06.2	temporary	D06.2 part 2: Mutator.ListSimpleTables
 crates/infoschema/src/table/column.rs	eval_col_default_expr	D09.2	temporary	default expressions: expression.EvalSimpleAst (rewriter)
 crates/infoschema/src/table/column.rs	get_col_default_expr_value	D09.2	temporary	default expressions: expression.EvalSimpleAst (rewriter)
@@ -96,9 +98,8 @@ crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D0
 crates/planner/src/core/plan_cache_utils.rs	get_prepared_stmt	D02.2	temporary	the EXECUTE statement node (ast.ExecuteStmt) is not in the Rust AST
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
 crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
+crates/planner/src/core/plan_cache_utils.rs	not_resident	D06.3	temporary	synchronous table lookup of the planner: a table not loaded into the InfoSchema table cache before planning (loading reads TiKV; the session loads the statement's tables first, InfoSchema spec D06.3 §11.2)
 crates/planner/src/core/plan_cache_utils.rs	parse_param_types	D13.1	temporary	the parameter types of the plan cache key: the plan-cache exception A3
-crates/planner/src/core/plan_cache_utils.rs	table_by_id	D06.3	temporary	InfoSchema.TableByID for the plan cache: the InfoSchema interface (VS1-17)
-crates/planner/src/core/plan_cache_utils.rs	table_by_name	D06.3	temporary	InfoSchema.TableByName for the plan cache: the InfoSchema interface (VS1-17)
 crates/planner/src/core/plan_cacheable_checker.rs	cacheable	D13.1	temporary	Cacheable: Go test helper with a nil context, not used
 crates/planner/src/core/plan_cacheable_checker.rs	check_table_cacheable	D13.1	temporary	the non-prepared plan cache's stricter table check: not used by the new stack
 crates/planner/src/core/plan_cacheable_checker.rs	enter	D13.3	temporary	ignore_plan_cache(): optimizer hint names are not parsed in the Rust AST
@@ -135,7 +136,7 @@ crates/planner/src/core/preprocess.rs	erase_last_semicolon	D02.2	temporary	VS1-1
 crates/planner/src/core/preprocess.rs	handle_table_name	D05.4	temporary	VS1-10: handle_table_name (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	has_auto_convert_warning	D02.2	temporary	VS1-10: has_auto_convert_warning (blocked-by:D02.2)
 crates/planner/src/core/preprocess.rs	resolve_execute_stmt	D13.1	temporary	VS1-10: resolve_execute_stmt (blocked-by:D13.1)
-crates/planner/src/core/preprocess.rs	table_by_name	D06.3	temporary	VS1-10: table_by_name (blocked-by:D06.3)
+crates/planner/src/core/preprocess.rs	table_by_name	D04.1	temporary	preprocessor tableByName: the privilege check of a table that is not found needs the privilege manager (D04.1); the PoC answers
 crates/planner/src/core/preprocess.rs	try_lock_mdl_and_update_schema_if_necessary	D05.4	temporary	VS1-10: try_lock_mdl_and_update_schema_if_necessary (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
