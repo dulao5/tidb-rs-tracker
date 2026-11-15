@@ -8,6 +8,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 | block | part | item | status | functions (of block) | Go lines | evidence |
 |---|---|---|---|--:|--:|---|
+| D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs (VS1-11): converge 1/1 (Reporter.ReportLookupInconsistent) |
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D05.3 | VS1-14 | VS1-14 | planned | 129 / 325 | 2124 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D05.4 | VS1-14 | VS1-14 | planned | 41 / 157 | 682 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -19,6 +20,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
+| D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs (VS1-11): converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
@@ -36,7 +38,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.4 | VS1-25 | VS1-25 | planned | 95 / 95 | 3309 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.6 | VS1-29 | VS1-29 | planned | 55 / 104 | 2009 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.8 | VS1-11 | VS1-11 | planned | 52 / 88 | 1121 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs (VS1-11): converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D11.1 | VS1-29 | VS1-29 | planned | 85 / 317 | 913 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
@@ -50,44 +52,45 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-129 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+140 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
-| D00.3 | 1 | 0 | 0 |
 | D02.1 | 2 | 0 | 0 |
-| D02.2 | 5 | 0 | 0 |
+| D02.2 | 6 | 0 | 0 |
 | D03.1 | 3 | 0 | 0 |
 | D04.1 | 2 | 0 | 0 |
 | D05.3 | 5 | 0 | 0 |
 | D05.4 | 11 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
 | D06.3 | 1 | 0 | 0 |
-| D06.4 | 13 | 0 | 0 |
-| D06.5 | 7 | 0 | 0 |
+| D06.4 | 15 | 0 | 0 |
+| D06.5 | 8 | 0 | 0 |
 | D07.1 | 2 | 0 | 0 |
 | D07.3 | 2 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 1 | 0 | 0 |
-| D09.0 | 4 | 0 | 0 |
+| D09.0 | 2 | 0 | 0 |
 | D09.1 | 2 | 0 | 0 |
 | D09.13 | 4 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |
 | D09.2 | 3 | 0 | 0 |
 | D09.5 | 1 | 0 | 0 |
-| D10.1 | 7 | 0 | 0 |
-| D10.8 | 6 | 0 | 0 |
-| D10.9 | 3 | 0 | 0 |
+| D10.1 | 8 | 0 | 0 |
+| D10.2 | 1 | 0 | 0 |
+| D10.5 | 1 | 0 | 0 |
+| D10.8 | 3 | 0 | 0 |
+| D10.9 | 7 | 0 | 0 |
 | D11.2 | 1 | 0 | 0 |
 | D12.0 | 1 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 2 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 3 | 0 | 0 |
+| D13.1 | 5 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 2 | 0 | 0 |
 | D14.2 | 3 | 0 | 0 |
-| X | 0 | 7 | 0 |
+| X | 0 | 11 | 0 |
