@@ -241,6 +241,16 @@ CC=/usr/bin/clang go run ./cmd/rsgen -out <tidb-rs>/crates/base/src
 (cd <tidb-rs> && cargo fmt -p tidb-base)
 ```
 
+`-model`（D06.1 元数据模型）要分两步：带 `GOFLAGS` 构建，**运行时清空 `GOFLAGS`**。rsgen 用 `go/types` 读 `pkg/meta/model` 的源码，标准库的导入由 `importer.Default()` 解析，它在模型源码目录（`work/` 下的模块副本）中调用 `go list`；`GOFLAGS=-modfile=...` 在那里找不到主模块，导入失败，`DefaultJobInterval = time.Hour` 之类的常量求不出值，rsgen panic（`constant DefaultJobInterval not evaluated`）：
+
+```sh
+cd govec
+export GOFLAGS="$(../scripts/govec-fixes.sh)"
+CC=/usr/bin/clang go build -o ../bin/rsgen ./cmd/rsgen
+GOFLAGS= ../bin/rsgen -model <tidb-rs>/crates/model/src
+(cd <tidb-rs> && rustfmt --edition 2024 crates/model/src/types_gen.rs crates/model/src/consts_gen.rs)
+```
+
 rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表和 `strconv.IsPrint` 的可打印范围表（对每个码位调用 Go 的 `IsPrint` 得到）。生成的文件保留 Go 标识符（映射规则 M-GONAME），文件头带 `#![allow(non_upper_case_globals)]`。函数都是手工移植的。
 
 ### 目标平台
@@ -578,3 +588,7 @@ op `decode_row_val`：`executor.NewRowDecoder` 与 `executor.DecodeRowValToChunk
 
 provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future、会话变量）与存储 TSO 之上的状态机，Go 的测试用 testkit 和 store 运行它们。tidb-rs 把会话、存储、规划器写成 trait（tidb-rs `specs/D05.4-sessiontxn/spec.md` §2），用模拟会话的场景测试覆盖（`crates/sessiontxn/tests/providers.rs`），SQL 级覆盖随会话（VS1-14）；这些函数的豁免理由写明这一点。本领域覆盖纯函数：`action`（`ErrorAction`、`RetryReady`、`NoIdea`）、`constant_future`（`ConstantFuture.Wait`）；另有 `read_ts`（tidb-rs#219 评审，N11 §4.4）：随机语句序列（BEGIN / COMMIT / 读 / autocommit 点查，optimistic / RR / RC，autocommit 开关，`tidb_low_resolution_tso`，`tidb_snapshot`）在 mock.Context + mockstore 上照会话的方式驱动 isolation provider（事务外的语句用 `EnterNewTxnBeforeStmt`，autocommit 时用 optimistic provider；事务结束换一个新的 mock 会话，如同会话重置 LazyTxn），oracle 计数 TSO 请求；每次读记录 `[来源, TSO 请求数]`，来源按 ts 判定：MaxUint64 为 `MaxTs`，等于 `tidb_snapshot` 为 `Snapshot`，本语句请求过 TSO 为 `Tso` / `LowResolution`，否则 `TxnStart`。它是 tidb-rs `ReadTsSource` 的对照，必须在 VS1-14 之前。写路径（for-update ts、悲观锁错误、fair locking、提交选项、乐观重试、断言级别）永久豁免；stale read、failpoint 钩子、指标、`pkg/session/txninfo` 是第 2 部分。
 - 第 2 部分（iterator、worker、RPC 与响应处理、store 包装）需要 TiKV store，不出向量；豁免理由指向 tidb-rs `crates/store/tests/copr_iter.rs` 的 mock store 单元测试。`kvStore.GetTiKVClient` 与 `tikvClient.*`（client-go `tikv.Client` 的透传，ADR 0008）和 `metrics.go`（coprocessor cache 的指标，例外 A3）为永久豁免。
+
+## resetstmt（块 D12.2 中由 VS1-14 提前移植的 `ResetContextOfStmt`）
+
+`executor.ResetContextOfStmt`（`pkg/executor/select.go`）在会话的 `ExecuteStmt` 中、`Compile` 之前执行：安装新的语句上下文，写入"上一条语句"的状态（`SysWarningCount` / `SysErrorCount`、`PrevAffectedRows`、`PrevLastInsertID`、`PrevFoundInPlanCache`）以及语句的类型标志和错误级别。tidb-rs 在 VS1-14 中把它从 VS1-35 提前移植（tidb-rs `specs/D05.3-session/spec.md` §2.4），本领域是 VS1-14 "warning 计数与 Go 一致"在函数级的对照。op `reset`：参数 `[cfg, prev, sql]`，`cfg = {sql_mode, warnings, notes, errors, last_insert_id, found_in_plan_cache, skip_utf8_check}`。每条记录用一个新的 `mock.Context`（绑定一个零值 `Domain`：`ExpensiveQueryHandle` 为 nil），先对上一条语句 `prev`（`""` 表示没有）执行一次 `ResetContextOfStmt`，再在它的语句上下文中追加 warning、note、error，设 `LastInsertID` 与 `FoundInPlanCache`，最后对 `sql` 执行 `ResetContextOfStmt`。输出是它写入的会话与语句上下文字段（`domains/resetstmt.go` 的 `resetstmtState`）。语句只取 tidb-rs AST 中已有的种类（SELECT、集合运算、SHOW、BEGIN / COMMIT / ROLLBACK、USE、SET），其他语句在 tidb-rs 中是 `blocked-by:D02.2` 的桩。块 D12.2 的其余函数（基础算子）是 VS1-35，写路径的函数（`SELECT ... FOR UPDATE`、`SELECT INTO`、UPDATE / DELETE 的上下文）永久豁免。

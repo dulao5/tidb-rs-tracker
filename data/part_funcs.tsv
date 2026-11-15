@@ -107,14 +107,11 @@ D05.3	VS1-14	pkg/session/session.go	getSnapshotInfoSchema
 D05.3	VS1-14	pkg/session/session.go	isEndTxnStmt
 D05.3	VS1-14	pkg/session/session.go	logGeneralQuery
 D05.3	VS1-14	pkg/session/session.go	logStmt
-D05.3	VS1-14	pkg/session/session.go	resolvePreparedStmt
 D05.3	VS1-14	pkg/session/session.go	runStmt
 D05.3	VS1-14	pkg/session/session.go	session.AffectedRows
 D05.3	VS1-14	pkg/session/session.go	session.ClearValue
 D05.3	VS1-14	pkg/session/session.go	session.Close
 D05.3	VS1-14	pkg/session/session.go	session.CommitTxn
-D05.3	VS1-14	pkg/session/session.go	session.DropPreparedStmt
-D05.3	VS1-14	pkg/session/session.go	session.ExecutePreparedStmt
 D05.3	VS1-14	pkg/session/session.go	session.ExecuteStmt
 D05.3	VS1-14	pkg/session/session.go	session.GetBuildPBCtx
 D05.3	VS1-14	pkg/session/session.go	session.GetClient
@@ -128,14 +125,12 @@ D05.3	VS1-14	pkg/session/session.go	session.GetPreparedTxnFuture
 D05.3	VS1-14	pkg/session/session.go	session.GetRangerCtx
 D05.3	VS1-14	pkg/session/session.go	session.GetSQLLabel
 D05.3	VS1-14	pkg/session/session.go	session.GetSessionManager
-D05.3	VS1-14	pkg/session/session.go	session.GetSessionPlanCache
 D05.3	VS1-14	pkg/session/session.go	session.GetSessionVars
 D05.3	VS1-14	pkg/session/session.go	session.GetStore
 D05.3	VS1-14	pkg/session/session.go	session.GetTableCtx
 D05.3	VS1-14	pkg/session/session.go	session.LastMessage
 D05.3	VS1-14	pkg/session/session.go	session.Parse
 D05.3	VS1-14	pkg/session/session.go	session.ParseSQL
-D05.3	VS1-14	pkg/session/session.go	session.PrepareStmt
 D05.3	VS1-14	pkg/session/session.go	session.PrepareTSFuture
 D05.3	VS1-14	pkg/session/session.go	session.PrepareTxnCtx
 D05.3	VS1-14	pkg/session/session.go	session.RefreshTxnCtx
@@ -225,6 +220,11 @@ D05.3	VS1-14	pkg/session/txnmanager.go	txnManager.SetOptionsBeforeCommit
 D05.3	VS1-14	pkg/session/txnmanager.go	txnManager.newProviderWithRequest
 D05.3	VS1-14	pkg/session/txnmanager.go	txnManager.recordEvent
 D05.3	VS1-14	pkg/session/txnmanager.go	txnManager.resetEvents
+D05.3	VS1-14b	pkg/session/session.go	resolvePreparedStmt
+D05.3	VS1-14b	pkg/session/session.go	session.DropPreparedStmt
+D05.3	VS1-14b	pkg/session/session.go	session.ExecutePreparedStmt
+D05.3	VS1-14b	pkg/session/session.go	session.GetSessionPlanCache
+D05.3	VS1-14b	pkg/session/session.go	session.PrepareStmt
 D05.4	VS1-14	pkg/sessiontxn/interface.go	AdviseOptimizeWithPlanAndThenWarmUp
 D05.4	VS1-14	pkg/sessiontxn/interface.go	ErrorAction
 D05.4	VS1-14	pkg/sessiontxn/interface.go	NewTxn
@@ -2013,6 +2013,8 @@ D12.1	VS1-34	pkg/executor/table_reader.go	tableResultHandler.nextRaw
 D12.1	VS1-34	pkg/executor/table_reader.go	tableResultHandler.open
 D12.12	VS1-15	pkg/executor/prepared.go	NewPrepareExec
 D12.12	VS1-15	pkg/executor/prepared.go	PrepareExec.Next
+D12.2	VS1-14	pkg/executor/select.go	ResetContextOfStmt
+D12.2	VS1-14	pkg/executor/select.go	isWeakConsistencyRead
 D12.2	VS1-35	pkg/executor/builder.go	executorBuilder.buildLimit
 D12.2	VS1-35	pkg/executor/builder.go	executorBuilder.buildProjection
 D12.2	VS1-35	pkg/executor/builder.go	executorBuilder.buildSelection
@@ -2036,7 +2038,6 @@ D12.2	VS1-35	pkg/executor/select.go	LimitExec.Close
 D12.2	VS1-35	pkg/executor/select.go	LimitExec.Next
 D12.2	VS1-35	pkg/executor/select.go	LimitExec.Open
 D12.2	VS1-35	pkg/executor/select.go	LimitExec.adjustRequiredRows
-D12.2	VS1-35	pkg/executor/select.go	ResetContextOfStmt
 D12.2	VS1-35	pkg/executor/select.go	SelectionExec.Close
 D12.2	VS1-35	pkg/executor/select.go	SelectionExec.Next
 D12.2	VS1-35	pkg/executor/select.go	SelectionExec.Open
@@ -2047,7 +2048,6 @@ D12.2	VS1-35	pkg/executor/select.go	TableDualExec.Open
 D12.2	VS1-35	pkg/executor/select.go	checkMaxExecutionTimeExceeded
 D12.2	VS1-35	pkg/executor/select.go	globalPanicOnExceed.Action
 D12.2	VS1-35	pkg/executor/select.go	globalPanicOnExceed.GetPriority
-D12.2	VS1-35	pkg/executor/select.go	isWeakConsistencyRead
 D12.2	VS1-35	pkg/executor/select.go	newSelectionExecutorContext
 D12.2	VS1-35	pkg/executor/select.go	setOptionForTopSQL
 D12.5	VS1-36	pkg/executor/builder.go	executorBuilder.buildSort

@@ -10,8 +10,9 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 |---|---|---|---|--:|--:|---|
 | D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs (VS1-11): converge 1/1 (Reporter.ReportLookupInconsistent) |
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D05.3 | VS1-14 | VS1-14 | planned | 129 / 325 | 2124 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D05.4 | VS1-14 | VS1-14 | planned | 41 / 157 | 682 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | tidb-rs branch vs1/session (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
+| D05.3 | VS1-14b | VS1-14b | planned | 5 / 325 | 139 | tidb-rs specs/D05.3-session/spec.md §0 (prepared statements, part 2) |
+| D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + tidb-rs branch vs1/session (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
 | D06.4 | VS1-12 | VS1-12 | in-progress | 103 / 416 | 1132 | dulao5/tidb-rs#234: converge 54/57 + 3 stubs, 46 write path not ported |
@@ -45,36 +46,38 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D12.2 | VS1-35 | VS1-35 | planned | 37 / 72 | 1006 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | tidb-rs branch vs1/session (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
+| D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.5 | VS1-36 | VS1-36 | planned | 65 / 188 | 1154 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.3 | VS1-24 | VS1-24 | planned | 38 / 89 | 837 | tidb-rs specs/VS1-vertical-slice (#205) |
 
 ## Boundary stubs by block
 
-139 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+172 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
+| D00.3 | 3 | 0 | 0 |
 | D02.1 | 2 | 0 | 0 |
-| D02.2 | 6 | 0 | 0 |
-| D03.1 | 3 | 0 | 0 |
+| D02.2 | 10 | 0 | 0 |
+| D03.1 | 5 | 0 | 0 |
 | D04.1 | 2 | 0 | 0 |
-| D05.3 | 5 | 0 | 0 |
-| D05.4 | 11 | 0 | 0 |
+| D05.3 | 7 | 0 | 0 |
+| D05.4 | 12 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
 | D06.3 | 1 | 0 | 0 |
-| D06.4 | 15 | 0 | 0 |
-| D06.5 | 8 | 0 | 0 |
-| D07.1 | 2 | 0 | 0 |
-| D07.3 | 2 | 0 | 0 |
+| D06.4 | 16 | 0 | 0 |
+| D06.5 | 11 | 0 | 0 |
+| D07.1 | 12 | 0 | 0 |
+| D07.3 | 3 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 1 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
 | D09.1 | 2 | 0 | 0 |
-| D09.13 | 4 | 0 | 0 |
+| D09.13 | 5 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |
 | D09.2 | 3 | 0 | 0 |
 | D09.5 | 1 | 0 | 0 |
@@ -82,15 +85,15 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.2 | 1 | 0 | 0 |
 | D10.5 | 1 | 0 | 0 |
 | D10.8 | 2 | 0 | 0 |
-| D10.9 | 7 | 0 | 0 |
+| D10.9 | 8 | 0 | 0 |
 | D11.2 | 1 | 0 | 0 |
-| D12.0 | 1 | 0 | 0 |
+| D12.0 | 2 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 2 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
 | D13.1 | 5 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
-| D14.1 | 2 | 0 | 0 |
+| D14.1 | 4 | 0 | 0 |
 | D14.2 | 3 | 0 | 0 |
-| X | 0 | 11 | 0 |
+| X | 0 | 12 | 0 |
