@@ -54,7 +54,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-222 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+223 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -76,7 +76,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 2 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
-| D09.1 | 2 | 0 | 0 |
+| D09.1 | 3 | 0 | 0 |
 | D09.13 | 5 | 0 | 0 |
 | D09.14 | 1 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |

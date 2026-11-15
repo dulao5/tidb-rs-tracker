@@ -92,6 +92,7 @@ crates/planner/src/core/plan_cache.rs	generate_new_plan	D13.1	temporary	putting 
 crates/planner/src/core/plan_cache.rs	get_plan_from_plan_cache	D13.1	temporary	plan cache lookup always misses: the plan-cache exception A3
 crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser
+crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D09.1	temporary	PlanBuilder.Build returns no plan before buildSelect (VS1-21): no column definitions, so PREPARE stops here
 crates/planner/src/core/plan_cache_utils.rs	get_prepared_stmt	D02.2	temporary	the EXECUTE statement node (ast.ExecuteStmt) is not in the Rust AST
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
 crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
