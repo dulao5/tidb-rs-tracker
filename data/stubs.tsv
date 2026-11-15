@@ -140,8 +140,6 @@ crates/session/src/glue.rs	iter_reverse	D07.1	temporary	VS1-14: the store driver
 crates/session/src/metrics.rs	init	D14.1	temporary	VS1-14: session metric vectors
 crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session metric vectors
 crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
-crates/session/src/session.rs	drop_prepared_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
-crates/session/src/session.rs	execute_prepared_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
 crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
 crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
@@ -152,7 +150,7 @@ crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the se
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
 crates/session/src/session.rs	get_table_ctx	D06.4	temporary	VS1-14: tblctx table context
 crates/session/src/session.rs	load_common_global_variables_if_needed	D06.5	temporary	VS1-14: domain.GetSessionCache (the router syncs session variables until VS1-17)
-crates/session/src/session.rs	prepare_stmt	D05.3	temporary	VS1-14b: prepared statements in the new session (part 2)
+crates/session/src/session.rs	new_prepare_exec	D12.12	temporary	VS1-15: executor.NewPrepareExec, the prepare executor and its PlanCacheStmt (prepared-statement planning)
 crates/session/src/session.rs	set_collation	D02.2	temporary	VS1-14: charset.GetCharsetInfoByID
 crates/session/src/session.rs	set_process_info	D00.3	temporary	VS1-14: util.ProcessInfo (SHOW PROCESSLIST runs on the PoC)
 crates/session/src/session.rs	set_session_manager	D03.1	temporary	VS1-14: the server's session manager

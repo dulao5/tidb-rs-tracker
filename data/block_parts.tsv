@@ -1,7 +1,7 @@
 block	part	item	status	evidence
 D03.1	VS1-16	VS1-16	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D05.3	VS1-14	VS1-14	in-progress	tidb-rs branch vs1/session (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported
-D05.3	VS1-14b	VS1-14b	planned	tidb-rs specs/D05.3-session/spec.md §0 (prepared statements, part 2)
+D05.3	VS1-14b	VS1-14b	in-progress	tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15
 D05.4	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#219 + tidb-rs branch vs1/session (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported
 D06.2	1		done	130/240, dulao5/tidb-rs D06.2 part 1
 D06.3	1		done	184/270, dulao5/tidb-rs#176 #177

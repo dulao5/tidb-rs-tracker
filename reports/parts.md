@@ -10,7 +10,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 |---|---|---|---|--:|--:|---|
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | tidb-rs branch vs1/session (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
-| D05.3 | VS1-14b | VS1-14b | planned | 5 / 325 | 139 | tidb-rs specs/D05.3-session/spec.md §0 (prepared statements, part 2) |
+| D05.3 | VS1-14b | VS1-14b | in-progress | 5 / 325 | 139 | tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15 |
 | D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + tidb-rs branch vs1/session (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
@@ -52,7 +52,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-191 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+189 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -61,7 +61,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D02.2 | 9 | 0 | 0 |
 | D03.1 | 5 | 0 | 0 |
 | D04.1 | 2 | 0 | 0 |
-| D05.3 | 7 | 0 | 0 |
+| D05.3 | 4 | 0 | 0 |
 | D05.4 | 12 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
 | D06.3 | 1 | 0 | 0 |
@@ -89,7 +89,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D11.2 | 6 | 0 | 0 |
 | D12.0 | 2 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
-| D12.12 | 2 | 0 | 0 |
+| D12.12 | 3 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
 | D13.1 | 3 | 0 | 0 |
