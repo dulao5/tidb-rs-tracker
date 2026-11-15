@@ -44,6 +44,8 @@ crates/executor/src/point_get.rs	build_point_get	D12.2	temporary	VS1-35: TableDu
 crates/executor/src/point_get.rs	build_point_get	X	permanent	not ported (write path: SELECT ... FOR UPDATE point get)
 crates/executor/src/point_get.rs	lock_key_base	X	permanent	not ported (write path: pessimistic lock of the read key)
 crates/executor/src/point_get.rs	verify_txn_scope	D07.3	temporary	D07.3: distsql.VerifyTxnScope (local txn scopes)
+crates/executor/src/prepared.rs	next	D02.1	temporary	prepared-statement planning (VS1-15): the Rust parser's syntax error / warning text differs from Go's, the PoC answers
+crates/executor/src/prepared.rs	next	D05.4	temporary	prepared-statement planning (VS1-15): no transaction InfoSchema (PrepareStmt always sets one)
 crates/executor/src/select.rs	reset_context_of_stmt	D02.2	temporary	VS1-14: ResetContextOfStmt of statements outside the Rust AST (INSERT/UPDATE/DELETE/EXPLAIN...)
 crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
@@ -85,6 +87,24 @@ crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-10: enforce_property (blocked-by:D10.1)
 crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
+crates/planner/src/core/plan_cache.rs	adjust_cached_plan	D13.1	temporary	the plan cache hit path: the plan-cache exception A3, spec not confirmed
+crates/planner/src/core/plan_cache.rs	generate_new_plan	D13.1	temporary	putting a plan into the plan cache: the plan-cache exception A3, nothing is cached
+crates/planner/src/core/plan_cache.rs	get_plan_from_plan_cache	D13.1	temporary	plan cache lookup always misses: the plan-cache exception A3
+crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
+crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser
+crates/planner/src/core/plan_cache_utils.rs	get_prepared_stmt	D02.2	temporary	the EXECUTE statement node (ast.ExecuteStmt) is not in the Rust AST
+crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
+crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
+crates/planner/src/core/plan_cache_utils.rs	parse_param_types	D13.1	temporary	the parameter types of the plan cache key: the plan-cache exception A3
+crates/planner/src/core/plan_cache_utils.rs	table_by_id	D06.3	temporary	InfoSchema.TableByID for the plan cache: the InfoSchema interface (VS1-17)
+crates/planner/src/core/plan_cache_utils.rs	table_by_name	D06.3	temporary	InfoSchema.TableByName for the plan cache: the InfoSchema interface (VS1-17)
+crates/planner/src/core/plan_cacheable_checker.rs	cacheable	D13.1	temporary	Cacheable: Go test helper with a nil context, not used
+crates/planner/src/core/plan_cacheable_checker.rs	check_table_cacheable	D13.1	temporary	the non-prepared plan cache's stricter table check: not used by the new stack
+crates/planner/src/core/plan_cacheable_checker.rs	enter	D13.3	temporary	ignore_plan_cache(): optimizer hint names are not parsed in the Rust AST
+crates/planner/src/core/plan_cacheable_checker.rs	is_ast_cacheable	D02.2	temporary	INSERT / UPDATE / DELETE are not in the Rust AST
+crates/planner/src/core/plan_cacheable_checker.rs	is_physical_plan_cacheable	D10.1	temporary	PhysicalTableReader / PhysicalTableScan fields: the physical operators (VS1-27)
+crates/planner/src/core/plan_cacheable_checker.rs	non_prepared_plan_cacheable_with_ctx	D13.1	temporary	the non-prepared plan cache checks: not used by the new stack
+crates/planner/src/core/plan_cacheable_checker.rs	unported	D02.2	temporary	AST nodes the Rust AST does not have (Unported): the checker does not guess
 crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-30: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
 crates/planner/src/core/planbuilder.rs	append_visit_info_is_restricted_user	D04.1	temporary	VS1-10: append_visit_info_is_restricted_user (blocked-by:D04.1)
 crates/planner/src/core/planbuilder.rs	build	D09.1	temporary	VS1-10: build (blocked-by:D09.1)
@@ -122,7 +142,8 @@ crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats
 crates/planner/src/logicalop/derive_stats.rs	(module)	D09.14	temporary	D09.14 (VS1-21 / VS1-23): DeriveStats / RecursiveDeriveStats / ExtractColGroups of BaseLogicalPlan, DataSource, LogicalSelection / Projection / Limit / TopN / TableDual (D10.6 functions of VS1-29); need the logical operators
 crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_logical_plan (blocked-by:D09.1)
 crates/planner/src/optimize.rs	is_read_only	D02.2	temporary	VS1-10: is_read_only (blocked-by:D02.2)
-crates/planner/src/optimize.rs	optimize_exec_stmt	D13.1	temporary	VS1-10: optimize_exec_stmt (blocked-by:D13.1)
+crates/planner/src/optimize.rs	optimize_ast_node	D13.3	temporary	OptimizeAstNode = planner.Optimize: hint extraction first (VS1-24)
+crates/planner/src/optimize.rs	optimize_exec_stmt	D02.2	temporary	OptimizeExecStmt needs the EXECUTE statement node, not in the Rust AST; its GetPlanFromPlanCache is ported
 crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_stmt (blocked-by:D13.3)
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
@@ -149,7 +170,9 @@ crates/session/src/glue.rs	iter	D07.1	temporary	VS1-14: the store driver's kv.St
 crates/session/src/glue.rs	iter_reverse	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
 crates/session/src/metrics.rs	init	D14.1	temporary	VS1-14: session metric vectors
 crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session metric vectors
+crates/session/src/session.rs	delete	D13.1	temporary	session plan cache stand-in holds no plans (the plan-cache exception A3); keeps the deleted keys
 crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
+crates/session/src/session.rs	execute_prepared_stmt	D02.2	temporary	ExecutePreparedStmt after the lookup: ast.ExecuteStmt is not in the Rust AST
 crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
 crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
@@ -160,7 +183,7 @@ crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the se
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
 crates/session/src/session.rs	get_table_ctx	D06.4	temporary	VS1-14: tblctx table context
 crates/session/src/session.rs	load_common_global_variables_if_needed	D06.5	temporary	VS1-14: domain.GetSessionCache (the router syncs session variables until VS1-17)
-crates/session/src/session.rs	new_prepare_exec	D12.12	temporary	VS1-15: executor.NewPrepareExec, the prepare executor and its PlanCacheStmt (prepared-statement planning)
+crates/session/src/session.rs	prepare_stmt	D13.1	temporary	the prepare dedup cache hit (tidb_enable_cache_prepare_stmt): counted with the plan-cache exception A3, never written
 crates/session/src/session.rs	set_collation	D02.2	temporary	VS1-14: charset.GetCharsetInfoByID
 crates/session/src/session.rs	set_process_info	D00.3	temporary	VS1-14: util.ProcessInfo (SHOW PROCESSLIST runs on the PoC)
 crates/session/src/session.rs	set_session_manager	D03.1	temporary	VS1-14: the server's session manager

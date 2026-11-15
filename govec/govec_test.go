@@ -59,6 +59,8 @@ var minedGoTests = map[string][]string{
 	"rangerbuild": domains.RangerbuildMinedTests(),
 	// The SELECT rows of pkg/planner/core/preprocess_test.go TestValidator (D09.0, VS1-10).
 	"preprocess": domains.PreprocessMinedTests(),
+	// The cases of pkg/planner/core/plan_cacheable_checker_test.go (D13.1, VS1-15), as SQL.
+	"plancache": domains.PlancacheMinedTests(),
 	// Scenario of pkg/expression/expropt/optional_test.go (D00.1 part 2b), as records.
 	"ctx2b": domains.Ctx2bMinedTests(),
 	// Scenarios of pkg/util/execdetails/execdetails_test.go (D14.0), as records.
