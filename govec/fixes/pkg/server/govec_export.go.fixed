@@ -1,0 +1,82 @@
+// Export shim for govec (tidb-rs-tracker); not an upstream fix and no change of behaviour.
+// Go's internal-package rule keeps pkg/server/internal/{column,dump,util} and the
+// unexported parseBinaryParams out of reach of the govec module, so this file (a new file
+// of package server, added to govec's copy of the module by scripts/govec-fixes.sh) calls
+// them unchanged for the `protocol` domain (govec/domains/protocol.go).
+
+package server
+
+import (
+	"github.com/pingcap/tidb/pkg/param"
+	"github.com/pingcap/tidb/pkg/planner/core/resolve"
+	"github.com/pingcap/tidb/pkg/server/internal/column"
+	"github.com/pingcap/tidb/pkg/server/internal/util"
+	"github.com/pingcap/tidb/pkg/util/chunk"
+)
+
+// GovecColumnInfo mirrors column.Info field by field.
+type GovecColumnInfo struct {
+	DefaultValue any
+	Schema       string
+	Table        string
+	OrgTable     string
+	Name         string
+	OrgName      string
+	ColumnLength uint32
+	Charset      uint16
+	Flag         uint16
+	Decimal      uint8
+	Type         uint8
+}
+
+func govecInfo(c GovecColumnInfo) *column.Info {
+	return &column.Info{DefaultValue: c.DefaultValue, Schema: c.Schema, Table: c.Table,
+		OrgTable: c.OrgTable, Name: c.Name, OrgName: c.OrgName, ColumnLength: c.ColumnLength,
+		Charset: c.Charset, Flag: c.Flag, Decimal: c.Decimal, Type: c.Type}
+}
+
+func govecInfos(cols []GovecColumnInfo) []*column.Info {
+	out := make([]*column.Info, len(cols))
+	for i, c := range cols {
+		out[i] = govecInfo(c)
+	}
+	return out
+}
+
+// GovecDumpColumn is Info.Dump / Info.DumpWithDefault with a result encoder for resultsCharset.
+func GovecDumpColumn(c GovecColumnInfo, resultsCharset string, withDefault bool) []byte {
+	d := column.NewResultEncoder(resultsCharset)
+	if withDefault {
+		return govecInfo(c).DumpWithDefault(nil, d)
+	}
+	return govecInfo(c).Dump(nil, d)
+}
+
+// GovecDumpRow is DumpBinaryRow (binary) or DumpTextRow with a result encoder for resultsCharset.
+func GovecDumpRow(cols []GovecColumnInfo, row chunk.Row, resultsCharset string, binary bool) ([]byte, error) {
+	d := column.NewResultEncoder(resultsCharset)
+	if binary {
+		return column.DumpBinaryRow(nil, govecInfos(cols), row, d)
+	}
+	return column.DumpTextRow(nil, govecInfos(cols), row, d)
+}
+
+// GovecConvertColumnInfo is ConvertColumnInfo.
+func GovecConvertColumnInfo(fld *resolve.ResultField) GovecColumnInfo {
+	ci := column.ConvertColumnInfo(fld)
+	return GovecColumnInfo{DefaultValue: ci.DefaultValue, Schema: ci.Schema, Table: ci.Table,
+		OrgTable: ci.OrgTable, Name: ci.Name, OrgName: ci.OrgName, ColumnLength: ci.ColumnLength,
+		Charset: ci.Charset, Flag: ci.Flag, Decimal: ci.Decimal, Type: ci.Type}
+}
+
+// GovecAppendFormatFloat is util.AppendFormatFloat.
+func GovecAppendFormatFloat(f float64, prec, bitSize int) []byte {
+	return util.AppendFormatFloat(nil, f, prec, bitSize)
+}
+
+// GovecParseBinaryParams is parseBinaryParams with an input decoder for clientCharset.
+func GovecParseBinaryParams(n int, boundParams [][]byte, nullBitmap, paramTypes, paramValues []byte, clientCharset string) ([]param.BinaryParam, error) {
+	params := make([]param.BinaryParam, n)
+	err := parseBinaryParams(params, boundParams, nullBitmap, paramTypes, paramValues, util.NewInputDecoder(clientCharset))
+	return params, err
+}

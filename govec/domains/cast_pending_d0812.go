@@ -19,8 +19,6 @@ func castExemptD0812() map[string]string {
 	const (
 		toExplain = "owned by D10.9: EXPLAIN / plan-digest printing of expressions, called by the plans' " +
 			"ExplainInfo (planner/core/explain.go); listed in tidb-rs specs/D10.9-postprocess/tasks.md"
-		toBinaryParam = "owned by D03.1: decodes the binary-protocol parameters of COM_STMT_EXECUTE " +
-			"(server/conn_stmt.go parseBinaryParams); listed in tidb-rs specs/D03.1-server/tasks.md"
 		toPosition = "owned by D09.4: GROUP BY / ORDER BY position items (ast.PositionExpr with a parser-driver " +
 			"ParamMarkerExpr: `ORDER BY ?`) resolved by the aggregation builder; listed in tidb-rs " +
 			"specs/D09.4-agg-window/tasks.md"
@@ -38,13 +36,6 @@ func castExemptD0812() map[string]string {
 	m := map[string]string{
 		"ConstructPositionExpr":             toPosition,
 		"PosFromPositionExpr":               toPosition,
-		"ExecBinaryParam":                   toBinaryParam,
-		"binaryDate":                        toBinaryParam,
-		"binaryDateTime":                    toBinaryParam,
-		"binaryDuration":                    toBinaryParam,
-		"binaryDurationWithMS":              toBinaryParam,
-		"binaryTimestamp":                   toBinaryParam,
-		"binaryTimestampWithTZ":             toBinaryParam,
 		"ParamMarkerInPrepareChecker.Enter": toPrepareChecker,
 		"ParamMarkerInPrepareChecker.Leave": toPrepareChecker,
 		"ParamMarkerExpression": "owned by D09.2: builds the Constant of a parser-driver ParamMarkerExpr (`?` of " +

@@ -152,10 +152,7 @@ crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
 crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
-crates/poc/session/src/router/newstack.rs	execute	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
-crates/poc/session/src/router/newstack.rs	execute_prepared	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
 crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
-crates/poc/session/src/router/newstack.rs	prepare	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
 crates/poc/session/src/router/newstack.rs	set_global_sys_var_only	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/session/src/glue.rs	batch_get	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
