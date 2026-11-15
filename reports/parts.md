@@ -8,10 +8,11 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 | block | part | item | status | functions (of block) | Go lines | evidence |
 |---|---|---|---|--:|--:|---|
+| D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs#239: converge 1/1 (Reporter.ReportLookupInconsistent) |
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | tidb-rs branch vs1/session (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
+| D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
 | D05.3 | VS1-14b | VS1-14b | in-progress | 5 / 325 | 139 | tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15 |
-| D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + tidb-rs branch vs1/session (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
+| D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
 | D06.4 | VS1-12 | VS1-12 | in-progress | 103 / 416 | 1132 | dulao5/tidb-rs#234: converge 54/57 + 3 stubs, 46 write path not ported |
@@ -20,6 +21,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
+| D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
@@ -37,14 +39,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
-| D10.8 | VS1-11 | VS1-11 | planned | 52 / 88 | 1121 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | tidb-rs branch vs1/session (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
+| D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
 | D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.5 | VS1-36 | VS1-36 | planned | 65 / 188 | 1154 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -52,39 +54,41 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-189 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+199 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
-| D00.3 | 4 | 0 | 0 |
+| D00.3 | 3 | 0 | 0 |
 | D02.1 | 2 | 0 | 0 |
-| D02.2 | 9 | 0 | 0 |
+| D02.2 | 10 | 0 | 0 |
 | D03.1 | 5 | 0 | 0 |
 | D04.1 | 2 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
 | D05.4 | 12 | 0 | 0 |
 | D06.2 | 3 | 0 | 0 |
 | D06.3 | 1 | 0 | 0 |
-| D06.4 | 14 | 0 | 0 |
-| D06.5 | 10 | 0 | 0 |
+| D06.4 | 16 | 0 | 0 |
+| D06.5 | 11 | 0 | 0 |
 | D07.1 | 12 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 2 | 0 | 0 |
-| D09.0 | 4 | 0 | 0 |
+| D09.0 | 2 | 0 | 0 |
 | D09.1 | 2 | 0 | 0 |
 | D09.13 | 5 | 0 | 0 |
 | D09.14 | 1 | 0 | 0 |
 | D09.15 | 1 | 0 | 0 |
 | D09.2 | 3 | 0 | 0 |
 | D09.5 | 1 | 0 | 0 |
-| D10.1 | 7 | 0 | 0 |
+| D10.1 | 8 | 0 | 0 |
+| D10.2 | 1 | 0 | 0 |
+| D10.5 | 1 | 0 | 0 |
 | D10.6 | 6 | 0 | 0 |
 | D10.7 | 3 | 0 | 0 |
-| D10.8 | 6 | 0 | 0 |
-| D10.9 | 4 | 0 | 0 |
+| D10.8 | 2 | 0 | 0 |
+| D10.9 | 8 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 6 | 0 | 0 |
 | D12.0 | 2 | 0 | 0 |
@@ -92,8 +96,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 3 | 0 | 0 |
+| D13.1 | 5 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 3 | 0 | 0 |
-| X | 0 | 8 | 0 |
+| X | 0 | 12 | 0 |
