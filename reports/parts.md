@@ -15,8 +15,10 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
+| D06.3 | VS1-17 | VS1-17 | in-progress | 16 / 270 | 309 | tidb-rs branch vs1/infoschema-load (InfoCache, task T8): converge matched 15/16, accounted 1 stub |
 | D06.4 | VS1-12 | VS1-12 | in-progress | 103 / 416 | 1132 | dulao5/tidb-rs#234: converge 54/57 + 3 stubs, 46 write path not ported |
-| D06.5 | VS1-17 | VS1-17 | planned | 36 / 363 | 820 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D06.5 | VS1-17 | VS1-17 | in-progress | 16 / 363 | 464 | tidb-rs branch vs1/infoschema-load (schema loading, part 1): converge matched 15/16, accounted 1 stub |
+| D06.5 | VS1-17b | VS1-17b | planned | 20 / 363 | 356 | schema validator / checker, reload loop and lease (left for part 2: the lease rules wait for the cluster-protocol exception N11) |
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -54,7 +56,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-223 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+224 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -62,14 +64,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D02.1 | 3 | 0 | 0 |
 | D02.2 | 16 | 0 | 0 |
 | D03.1 | 5 | 0 | 0 |
-| D04.1 | 2 | 0 | 0 |
+| D04.1 | 3 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
 | D05.4 | 13 | 0 | 0 |
-| D06.2 | 3 | 0 | 0 |
-| D06.3 | 3 | 0 | 0 |
+| D06.2 | 4 | 0 | 0 |
+| D06.3 | 1 | 0 | 0 |
 | D06.4 | 16 | 0 | 0 |
 | D06.5 | 11 | 0 | 0 |
-| D07.1 | 12 | 0 | 0 |
+| D07.1 | 13 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
