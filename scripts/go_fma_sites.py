@@ -11,7 +11,7 @@ separate multiply and add where Go does not.
 This script compiles Go packages for each target with `-gcflags=<pkg>=-S`, collects the
 fused multiply-add instructions and maps them back to source lines:
 
-    scripts/go_fma_sites.py                          write data/go_fma_sites.tsv (pkg/types)
+    scripts/go_fma_sites.py                          write data/go_fma_sites.tsv (DEFAULT_PKGS)
     scripts/go_fma_sites.py --check                  regenerate and compare (CI)
     scripts/go_fma_sites.py -p github.com/pingcap/tidb/pkg/expression -o -   other packages
 
@@ -35,7 +35,12 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODDIR = os.path.join(ROOT, "govec")
 TIDB_MOD = "github.com/pingcap/tidb"
-DEFAULT_PKGS = ["github.com/pingcap/tidb/pkg/types"]
+DEFAULT_PKGS = [
+    "github.com/pingcap/tidb/pkg/types",
+    # D10.6 / D11.1 (tidb-rs VS1-29): the estimation formulas.
+    "github.com/pingcap/tidb/pkg/planner/cardinality",
+    "github.com/pingcap/tidb/pkg/statistics",
+]
 
 # (column, GOARCH, extra env). Column names are the TSV columns (tracker.py TABLES).
 TARGETS = [

@@ -8,7 +8,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 | block | part | item | status | functions (of block) | Go lines | evidence |
 |---|---|---|---|--:|--:|---|
-| D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs (VS1-11): converge 1/1 (Reporter.ReportLookupInconsistent) |
+| D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs#239: converge 1/1 (Reporter.ReportLookupInconsistent) |
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | tidb-rs branch vs1/session (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
 | D05.3 | VS1-14b | VS1-14b | planned | 5 / 325 | 139 | tidb-rs specs/D05.3-session/spec.md §0 (prepared statements, part 2) |
@@ -21,7 +21,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
-| D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs (VS1-11): converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
+| D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
@@ -38,10 +38,10 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.3 | VS1-27 | VS1-27 | planned | 22 / 103 | 368 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.4 | VS1-25 | VS1-25 | planned | 95 / 95 | 3309 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.6 | VS1-29 | VS1-29 | planned | 55 / 104 | 2009 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs (VS1-11): converge 46/52 + 6 stubs; govec fastplan |
+| D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
+| D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D11.1 | VS1-29 | VS1-29 | planned | 85 / 317 | 913 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
