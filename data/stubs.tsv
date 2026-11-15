@@ -8,10 +8,15 @@ crates/executor/src/adapter.rs	on_fetch_returned	D14.2	temporary	D14.2: slow log
 crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/builder.rs	build	D10.8	temporary	VS1-11: PointGetPlan (the builder downcasts to the glue carrier until then)
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/builder.rs	build	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/builder.rs	build	D12.5	temporary	VS1-36: sort / top-n executors
+crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)
+crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
+crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
+crates/executor/src/builder.rs	new_closest_read_adjuster	D07.3	temporary	VS1-34: DistSQLContext and kv.Request.MatchStoreLabels (table reader only)
 crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/compiler.rs	get_prepared_stmt	D13.1	temporary	VS1-15: prepared statement cache (GetPreparedStmt)
 crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
@@ -28,6 +33,11 @@ crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: sele
 crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	table_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	table_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/glue.rs	encode_unique_index_key	D09.0	temporary	plannercore.EncodeUniqueIndexKey: in no VS1 item (tidb-rs D12.1 spec §5: proposed for VS1-11)
+crates/executor/src/glue.rs	encode_unique_index_values_for_key	D09.0	temporary	plannercore.EncodeUniqueIndexValuesForKey: in no VS1 item (tidb-rs D12.1 spec §5: proposed for VS1-11)
+crates/executor/src/glue.rs	get_avg_row_size	D10.8	temporary	VS1-11: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
+crates/executor/src/glue.rs	prune_partitions	D10.8	temporary	VS1-11: PointGetPlan.PrunePartitions (tables with partitions)
+crates/executor/src/glue.rs	report_lookup_inconsistent	D00.3	temporary	D00.3: consistency.Reporter (index entry without its row)
 crates/executor/src/internal/builder/builder_utils.rs	construct_dag_req	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/builder/builder_utils.rs	to_pb	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
@@ -36,6 +46,11 @@ crates/executor/src/internal/exec/executor.rs	top_sql_enabled	D14.2	temporary	D1
 crates/executor/src/internal/exec/executor.rs	update_delta_for_table_id	X	permanent	not ported (write path: pessimistic locks, table delta)
 crates/executor/src/internal/exec/indexusage.rs	get_table_row_count	D11.2	temporary	D11.2: statement used statistics (index usage)
 crates/executor/src/metrics.rs	observe	D14.1	temporary	D14.1: metric vectors of pkg/metrics
+crates/executor/src/point_get.rs	build_point_get	D12.2	temporary	VS1-35: TableDualExec of a pruned-away partition
+crates/executor/src/point_get.rs	build_point_get	X	permanent	not ported (write path: SELECT ... FOR UPDATE point get)
+crates/executor/src/point_get.rs	init	D10.8	temporary	VS1-11: PointGetPlan (the glue carrier until then)
+crates/executor/src/point_get.rs	lock_key_base	X	permanent	not ported (write path: pessimistic lock of the read key)
+crates/executor/src/point_get.rs	verify_txn_scope	D07.3	temporary	D07.3: distsql.VerifyTxnScope (local txn scopes)
 crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
