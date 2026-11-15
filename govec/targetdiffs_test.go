@@ -15,6 +15,13 @@ type targetDiff struct {
 }
 
 var targetDiffs = []targetDiff{
+	// cardinality (D10.6 / D11.1, VS1-29): M-FMA in the estimation formulas, fused on arm64
+	// only (go_fma_sites.tsv): Histogram.LessRowCountWithBktIdx (histogram.go:555, reached by
+	// BetweenRowCount / LessRowCount) and CalcTotalSelectivityForMVIdxPath (selectivity.go:535).
+	{Domain: "cardinality", Op: "hist", Args: "*", N: 7,
+		Why: "M-FMA: Histogram.LessRowCountWithBktIdx preCount + frac*(...) fused on arm64 only"},
+	{Domain: "cardinality", Op: "mv_sel", Args: "*", N: 1,
+		Why: "M-FMA: CalcTotalSelectivityForMVIdxPath (sel + t) - t*sel fused on arm64 only"},
 	// execdetails (D14.0). M-FMA in the dependencies (not in the TiDB packages, which
 	// fuse nothing): influxdata/tdigest's Quantile / weightedAverage (tdigest.go:173,
 	// 181, 182, 260) and Go's math.Sin / math.Asin (sin.go:227-238, asin.go:40,
