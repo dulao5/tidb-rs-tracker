@@ -64,9 +64,8 @@ crates/infoschema/src/tables/mod.rs	new_partitioned_table	D06.4	temporary	D06.4 
 crates/infoschema/src/tables/mod.rs	partitioned	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
 crates/infoschema/src/tables/mod.rs	temp_table_from_meta	D06.4	temporary	D06.4 part 2: temporary tables
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
-crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.8	temporary	VS1-11: the PointGetPlan check of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
-crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-10: init_point_get_plan (blocked-by:D10.8)
+crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
 crates/planner/src/core/logical_plan_builder.rs	get_uint_from_node	D13.1	temporary	VS1-15: the value EXECUTE binds to a LIMIT parameter marker
 crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
