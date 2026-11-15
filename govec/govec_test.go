@@ -55,6 +55,8 @@ var minedGoTests = map[string][]string{
 	"planutil": domains.PlanutilMinedTests(),
 	// The scenario of pkg/planner/cardinality/row_count_test.go TestPseudoTable (D10.6 / D11.1, VS1-29).
 	"cardinality": domains.CardinalityMinedTests(),
+	// The case tables of pkg/util/ranger/ranger_test.go (D10.4, VS1-25).
+	"rangerbuild": domains.RangerbuildMinedTests(),
 	// The SELECT rows of pkg/planner/core/preprocess_test.go TestValidator (D09.0, VS1-10).
 	"preprocess": domains.PreprocessMinedTests(),
 	// Scenario of pkg/expression/expropt/optional_test.go (D00.1 part 2b), as records.
