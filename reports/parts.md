@@ -12,6 +12,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
 | D05.3 | VS1-14b | VS1-14b | in-progress | 5 / 325 | 139 | tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15 |
+| D05.3 | VS1-14m | VS1-14m | in-progress | 2 / 325 | 50 | tidb-rs branch vs1/read-mdl (read-path metadata lock per Go, #146 part 1): converge matched 1/2 (RemoveLockDDLJobs; InitMDLVariable is a stub, D06.5) |
 | D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
@@ -22,7 +23,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 70/97, accounted 27 stubs; govec preprocess |
+| D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -56,7 +57,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-221 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+224 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -66,11 +67,11 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D03.1 | 2 | 0 | 0 |
 | D04.1 | 3 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
-| D05.4 | 13 | 0 | 0 |
+| D05.4 | 12 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
-| D06.3 | 1 | 0 | 0 |
+| D06.3 | 2 | 0 | 0 |
 | D06.4 | 16 | 0 | 0 |
-| D06.5 | 11 | 0 | 0 |
+| D06.5 | 14 | 0 | 0 |
 | D07.1 | 13 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |

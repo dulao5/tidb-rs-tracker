@@ -225,6 +225,8 @@ D05.3	VS1-14b	pkg/session/session.go	session.DropPreparedStmt
 D05.3	VS1-14b	pkg/session/session.go	session.ExecutePreparedStmt
 D05.3	VS1-14b	pkg/session/session.go	session.GetSessionPlanCache
 D05.3	VS1-14b	pkg/session/session.go	session.PrepareStmt
+D05.3	VS1-14m	pkg/session/session.go	InitMDLVariable
+D05.3	VS1-14m	pkg/session/session.go	RemoveLockDDLJobs
 D05.4	VS1-14	pkg/sessiontxn/interface.go	AdviseOptimizeWithPlanAndThenWarmUp
 D05.4	VS1-14	pkg/sessiontxn/interface.go	ErrorAction
 D05.4	VS1-14	pkg/sessiontxn/interface.go	NewTxn
