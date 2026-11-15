@@ -28,7 +28,7 @@ package domains
 //     ColumnGreaterRowCount ("gt") on the pseudo table.
 //   - "selectivity": args [table, cols, exprs, defaultStrMatchSelectivity] -> Selectivity
 //     (result and number of nodes). Conditions on a column / index of the HistColl build ranges
-//     (ranger, D10.4): tidb-rs returns blocked-by:D10.4 for them until VS1-25.
+//     (ranger, D10.4): compared with Go since VS1-25 (tidb-rs ported the ranger).
 //   - "row_size": args [pseudo, rc, statsCols, cols, enableChunkRPC, isEncodedKey, isForScan,
 //     storeType, handleInCols, isUnique] -> GetAvgRowSize, GetIndexAvgRowSize,
 //     GetTableAvgRowSize, GetAvgRowSizeDataInDiskByRows. statsCols [[uid, tp, isHandle,
@@ -118,8 +118,11 @@ var cardinalityCoverage = map[string]vec.Coverage{
 		"GetRowCountByIndexRanges", "getPseudoRowCountByColumnRanges", "getPseudoRowCountBySignedIntRanges",
 		"getPseudoRowCountByUnsignedIntRanges", "getPseudoRowCountByIndexRanges", "ColumnStatsIsInvalid",
 		"IndexStatsIsInvalid", "canSkipIndexEstimation", "isFullRangeIncludingNulls"}},
-	"col_est":     {Min: 100, GoFuncs: []string{"ColumnEqualRowCount", "ColumnGreaterRowCount"}},
-	"selectivity": {Min: 500, GoFuncs: []string{"Selectivity", "pseudoSelectivity", "getConstantColumnID", "isColEqCorCol"}},
+	"col_est": {Min: 100, GoFuncs: []string{"ColumnEqualRowCount", "ColumnGreaterRowCount"}},
+	"selectivity": {Min: 500, GoFuncs: []string{"Selectivity", "pseudoSelectivity", "getConstantColumnID", "isColEqCorCol",
+		"pkg/planner/cardinality/selectivity.go:getMaskAndRanges", "pkg/planner/cardinality/selectivity.go:findPrefixOfIndex",
+		"pkg/planner/cardinality/selectivity.go:findPrefixOfIndexByCol",
+		"pkg/planner/cardinality/selectivity.go:GetUsableSetsByGreedy", "pkg/planner/cardinality/selectivity.go:compareType"}},
 	"row_size": {Min: 300, GoFuncs: []string{"GetAvgRowSize", "GetIndexAvgRowSize", "GetTableAvgRowSize",
 		"GetAvgRowSizeDataInDiskByRows", "NewHistCollWithColsAndIdxs"}},
 	"avg_col": {Min: 200, GoFuncs: []string{"AvgColSize", "AvgColSizeChunkFormat", "AvgColSizeDataInDiskByRows"}},
