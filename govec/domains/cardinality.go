@@ -1340,6 +1340,26 @@ func cardinalityGenerate(g *vec.Gen, rng *rand.Rand) {
 		g.Add("rand/mv_sel", "mv_sel", int64([]int{0, 1, 1000, 10000}[rng.IntN(4)]), counts, rng.IntN(2) == 0)
 	}
 
+	// GetRowCountByIntColumnRanges picks the algorithm by the first range's low bound kind
+	// (row_count_column.go:104): a SIGNED column whose range starts at NULL / MinNotNull takes
+	// the UNSIGNED algorithm, and a negative bound is read as a huge uint64.
+	signed := &model.TableInfo{ID: 200, Name: pmodel.NewCIStr("t"), State: model.StatePublic}
+	signed.Columns = append(signed.Columns, &model.ColumnInfo{ID: 1, Name: pmodel.NewCIStr("a"),
+		FieldType: *types.NewFieldType(mysql.TypeLonglong), State: model.StatePublic})
+	sj := cdTableJSON(signed)
+	for _, lo := range []any{cdD("null", nil), cdD("min", nil)} {
+		for _, hi := range []any{cdD("i", -5), cdD("i", 5), cdD("i", -9223372036854775808), cdD("max", nil)} {
+			for _, le := range []bool{false, true} {
+				g.Add("sys/int_low_null", "row_count", sj, true, false, [][2]int64{{1, 1007}}, "int", 1007,
+					[]any{[]any{[]any{lo}, []any{hi}, le, false, []string{"binary"}}})
+			}
+		}
+	}
+	// the same with a second range whose low bound is an int64 (signed algorithm for both)
+	g.Add("sys/int_low_null", "row_count", sj, true, false, [][2]int64{{1, 1007}}, "int", 1007,
+		[]any{[]any{[]any{cdD("i", -10)}, []any{cdD("i", -5)}, false, false, []string{"binary"}},
+			[]any{[]any{cdD("null", nil)}, []any{cdD("i", -5)}, false, false, []string{"binary"}}})
+
 	// TopN
 	g.Add("sys/topn", "topn", nil)
 	g.Add("sys/topn", "topn", [][]any{})
