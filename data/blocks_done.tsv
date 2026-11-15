@@ -26,3 +26,4 @@ D08.8	266/266	dulao5/tidb-rs#82..#162, tracker#44..#67
 D08.12	74/135	P1 close-out (dulao5/tidb-rs#48): ported, or exempt for good / owned by another block
 D15.1	done	exception A1; dulao5/tidb-rs#11 #13, tracker#5 #7
 D15.3	done	dulao5/tidb-rs#59, tracker#28
+D10.4	95/95	dulao5/tidb-rs#240, tracker#93 (VS1-25, whole block); boundaries are D08.9 (in(...) rebuild, tidb_shard())

@@ -34,7 +34,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-28 | VS1-28 | planned | 98 / 181 | 3127 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.3 | VS1-27 | VS1-27 | planned | 22 / 103 | 368 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D10.4 | VS1-25 | VS1-25 | in-progress | 95 / 95 | 3309 | tidb-rs branch vs1/ranger: converge matched 95/95 (the whole block); govec rangerbuild |
+| D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
 | D10.8 | VS1-11 | VS1-11 | planned | 52 / 88 | 1121 | tidb-rs specs/VS1-vertical-slice (#205) |
