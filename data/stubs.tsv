@@ -79,10 +79,6 @@ crates/planner/src/cardinality/selectivity.rs	build_partial_paths4_mv_index	D10.
 crates/planner/src/cardinality/selectivity.rs	collect_filters4_mv_index	D10.7	temporary	D10.7: planner/core collectFilters4MVIndex (MV index paths), called by getMaskAndSelectivityForMVIndex
 crates/planner/src/cardinality/selectivity.rs	find_available_stats_for_col	D10.6	temporary	comment-only stub above this fn: GetSelectivityByFilter (D10.6 part 2, TopN-assisted estimation; Selectivity returns the boundary error when tidb_default_string_match_selectivity is 0)
 crates/planner/src/cardinality/selectivity.rs	out_of_range_eq_selectivity	D10.6	temporary	comment-only stub above this fn: getEqualCondSelectivity (D10.6 part 2, index row counts from real statistics)
-crates/planner/src/cardinality/selectivity.rs	ranger_build_column_range	D10.4	temporary	D10.4 (VS1-25): ranger.BuildColumnRange, called by getMaskAndRanges
-crates/planner/src/cardinality/selectivity.rs	ranger_detach_cond_and_build_range_for_index	D10.4	temporary	D10.4 (VS1-25): ranger.DetachCondAndBuildRangeForIndex, called by getMaskAndRanges
-crates/planner/src/cardinality/selectivity.rs	ranger_extract_access_conditions_for_column	D10.4	temporary	D10.4 (VS1-25): ranger.ExtractAccessConditionsForColumn, called by getMaskAndRanges
-crates/planner/src/cardinality/selectivity.rs	ranger_merge_dnf_items4_col	D10.4	temporary	D10.4 (VS1-25): ranger.MergeDNFItems4Col, called by Selectivity for not-covered DNF conditions
 crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	Selectivity returns blocked-by:D10.6 when TopN-assisted estimation (GetSelectivityByFilter) would run (tidb_default_string_match_selectivity = 0)
 crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	comment-only stub above the test module: crossValidationSelectivity (D10.6 part 2, needs GetColumnRowCount)
 crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	D11.2: recordUsedItemStatsStatus needs StatementContext.UsedStatsInfo (D11.2 tasks P1-1); records nothing, the estimate does not depend on it
@@ -119,6 +115,7 @@ crates/planner/src/optimize.rs	optimize_exec_stmt	D13.1	temporary	VS1-10: optimi
 crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_stmt (blocked-by:D13.3)
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
+crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
 crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
 crates/poc/session/src/router/newstack.rs	execute	D03.1	temporary	VS1-16: result sets, column definitions, binary parameters of the new stack
