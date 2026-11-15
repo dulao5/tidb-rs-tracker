@@ -1973,12 +1973,14 @@ D12.1	VS1-12	pkg/executor/point_get.go	PointGetExecutor.buildVirtualColumnInfo
 D12.1	VS1-12	pkg/executor/point_get.go	PointGetExecutor.get
 D12.1	VS1-12	pkg/executor/point_get.go	decodeOldRowValToChunk
 D12.1	VS1-12	pkg/executor/point_get.go	executorBuilder.buildPointGet
+D12.1	VS1-12	pkg/executor/point_get.go	fillRowChecksum
 D12.1	VS1-12	pkg/executor/point_get.go	getColInfoByID
 D12.1	VS1-12	pkg/executor/point_get.go	notPKPrefixCol
 D12.1	VS1-12	pkg/executor/point_get.go	runtimeStatsWithSnapshot.Clone
 D12.1	VS1-12	pkg/executor/point_get.go	runtimeStatsWithSnapshot.Merge
 D12.1	VS1-12	pkg/executor/point_get.go	runtimeStatsWithSnapshot.String
 D12.1	VS1-12	pkg/executor/point_get.go	runtimeStatsWithSnapshot.Tp
+D12.1	VS1-12	pkg/executor/point_get.go	shouldFillRowChecksum
 D12.1	VS1-12	pkg/executor/point_get.go	tryDecodeFromHandle
 D12.1	VS1-34	pkg/executor/builder.go	buildNoRangeTableReader
 D12.1	VS1-34	pkg/executor/builder.go	buildTableReq

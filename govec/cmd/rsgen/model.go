@@ -89,12 +89,53 @@ func (g *modelGen) isShared(owner reflect.Type, f reflect.StructField) bool {
 	return true
 }
 
+// boxedFields: rarely set nilable fields of long-lived metadata, held behind one pointer so
+// that the struct is smaller (tidb-rs spec N13 §9: `ArcInner<ColumnInfo>` must stay in
+// jemalloc's 384 B size class). A map `map[K]V` becomes `Option<Box<BTreeMap<K, V>>>`, a
+// `[]byte` becomes `Option<Box<[u8]>>`; `None` is still nil, `Some` of an empty value is
+// still the non-nil empty value, so the JSON is unchanged.
+var boxedFields = map[string]bool{"ColumnInfo.Dependences": true,
+	"ColumnInfo.OriginDefaultValueBit": true, "ColumnInfo.DefaultValueBit": true}
+
+// isBoxed: whether field f of struct owner is a boxed nilable field (see boxedFields).
+func (g *modelGen) isBoxed(owner reflect.Type, f reflect.StructField) bool {
+	if owner.Kind() == reflect.Pointer {
+		owner = owner.Elem()
+	}
+	name := g.structName(owner) + "." + f.Name
+	if !boxedFields[name] {
+		return false
+	}
+	if f.Type.Kind() != reflect.Map && (f.Type.Kind() != reflect.Slice || f.Type.Elem().Kind() != reflect.Uint8) {
+		panic("rsgen model: boxed field is not a map or []byte: " + name)
+	}
+	return true
+}
+
 // fieldType: the Rust type of field f of struct owner.
 func (g *modelGen) fieldType(owner reflect.Type, f reflect.StructField) string {
 	if g.isShared(owner, f) {
 		return "Option<Vec<Arc<" + g.rustType(f.Type.Elem().Elem()) + ">>>"
 	}
+	if g.isBoxed(owner, f) {
+		if f.Type.Kind() == reflect.Map {
+			return "Option<Box<BTreeMap<" + g.rustType(f.Type.Key()) + ", " + g.rustType(f.Type.Elem()) + ">>>"
+		}
+		return "Option<Box<[u8]>>"
+	}
 	return g.rustType(f.Type)
+}
+
+// decBoxed: dec for a boxed field: the value moves out of its box into the place the
+// decoder writes (a map is merged into, as encoding/json does), then back into a box.
+// Encoding and omitempty need nothing special: they read through the box.
+func (g *modelGen) decBoxed(place string, t reflect.Type) string {
+	if t.Kind() == reflect.Map {
+		return fmt.Sprintf("{ let mut m = %s.take().map(|b| *b); %s %s = m.map(Box::new); }",
+			place, g.dec("m", t), place)
+	}
+	return fmt.Sprintf("{ let mut b = %s.take().map(Vec::from); %s %s = b.map(Vec::into_boxed_slice); }",
+		place, g.dec("b", t), place)
 }
 
 // decShared: dec for a shared `[]*T` field: elements decode in place through
@@ -700,6 +741,9 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 		if g.isShared(t, f) {
 			e.p("    /// Shared with the table objects (`Arc`, copy-on-write; spec N13).\n")
 		}
+		if g.isBoxed(t, f) {
+			e.p("    /// Boxed: rarely set; keeps the struct in its allocator size class (spec N13 §9).\n")
+		}
 		e.p("    pub %s: %s,\n", msnake(f.Name), g.fieldType(t, f))
 		g.collectLeaves(f.Type)
 	}
@@ -821,6 +865,9 @@ func (g *modelGen) emitStruct(e *emitter, t reflect.Type) {
 		dec := g.dec(base+"."+msnake(last.Name), last.Type)
 		if g.isShared(owner, last) {
 			dec = g.decShared(base+"."+msnake(last.Name), last.Type)
+		}
+		if g.isBoxed(owner, last) {
+			dec = g.decBoxed(base+"."+msnake(last.Name), last.Type)
 		}
 		e.p("            %d => { %s%s }\n", i, pre, dec)
 	}

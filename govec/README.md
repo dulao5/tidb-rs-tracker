@@ -241,6 +241,16 @@ CC=/usr/bin/clang go run ./cmd/rsgen -out <tidb-rs>/crates/base/src
 (cd <tidb-rs> && cargo fmt -p tidb-base)
 ```
 
+`-model`（D06.1 元数据模型）要分两步：带 `GOFLAGS` 构建，**运行时清空 `GOFLAGS`**。rsgen 用 `go/types` 读 `pkg/meta/model` 的源码，标准库的导入由 `importer.Default()` 解析，它在模型源码目录（`work/` 下的模块副本）中调用 `go list`；`GOFLAGS=-modfile=...` 在那里找不到主模块，导入失败，`DefaultJobInterval = time.Hour` 之类的常量求不出值，rsgen panic（`constant DefaultJobInterval not evaluated`）：
+
+```sh
+cd govec
+export GOFLAGS="$(../scripts/govec-fixes.sh)"
+CC=/usr/bin/clang go build -o ../bin/rsgen ./cmd/rsgen
+GOFLAGS= ../bin/rsgen -model <tidb-rs>/crates/model/src
+(cd <tidb-rs> && rustfmt --edition 2024 crates/model/src/types_gen.rs crates/model/src/consts_gen.rs)
+```
+
 rsgen 只生成数据，不生成逻辑：常量（名字、顺序、注释来自 Go AST，值来自 go/types 对源码求值）、map 字面量（按键排序的静态表）、错误注册表和错误原型（运行时值）、`unicode` 类别表和 `strconv.IsPrint` 的可打印范围表（对每个码位调用 Go 的 `IsPrint` 得到）。生成的文件保留 Go 标识符（映射规则 M-GONAME），文件头带 `#![allow(non_upper_case_globals)]`。函数都是手工移植的。
 
 ### 目标平台
@@ -549,6 +559,15 @@ tidb-rs 是只读节点：写路径（记录的增删改、自增 / 行 ID 分�
 - `find_cols`、`can_skip`、`restored`（`TryGetHandleRestoredDataWrapper`）、`table_scan`（`BuildTableScanFromInfos` 的 protobuf 字节与 `SetPBColumnsDefaultValue` 的默认值字节）、`zero_value`、`optional_fsp`。
 - 错误只记录 cause（映射规则 M-ERR：tidb-rs 不移植 `errors.Wrap`）。解析错误（1064）的文本是 Rust parser 的，tidb-rs 回放只比较错误码。
 - `util/generatedexpr`、`util.ColumnsToProto`（D00.3）经 `table_from_meta`、`table_scan` 覆盖，不在块内，不列入 `GoFuncs`。
+## pointget（块 D12.1 第 1 部分：点查执行器的行解码，tidb-rs VS1-12）
+
+op `decode_row_val`：`executor.NewRowDecoder` 与 `executor.DecodeRowValToChunk`。表沿用 table 领域的随机表（列类型、默认值、状态、生成列、int / 公共 handle、前缀主键），约五分之一的表把列 ID 加 300（行格式 v2 的 large 形式）。schema 是公开列的随机子集和顺序（`colInfoToColumn`：`RetType` 为列类型的副本；非存储生成列带 `VirtualExpr` 标记），没有聚簇键的表有时再加 `_tidb_rowid`。存储的行只含部分列（其余是"新增列"，按 origin default 读），部分值为 NULL；行格式 v1（`EncodeOldRow`）、v2（`rowcodec.Encoder{Enable: true}`）、带 handle checksum 的 v2。会话是 mock context，`GetExprCtx` 换成记录的静态上下文，时区相同。输出：每列追加的行数、错误、各列 datum（`GetDatum`）和 warning。
+
+- op `row_checksum`：`executor.fillRowChecksum`（未导出，经 `go:linkname`；`shouldFillRowChecksum` 随之覆盖）写进新 chunk 的 `_tidb_row_checksum` 列（planner 的 `CHAR(MaxBlobWidth)` 列，schema 中位置随机）。int handle、`_tidb_rowid` 与聚簇表，行只含部分列（新增列取 origin default），行格式 v1（checksum 为 NULL），约一半的表加一个 TIMESTAMP 列；会话时区（`SessionVars.TimeZone`）取 UTC、+8、-3、+5:30、-9:30（TIMESTAMP 解码到会话时区，checksum 前换回 UTC）。输出每列：`"-"`（没有行）、null 或 checksum 字符串，以及错误。另有 `decode_row_val` 记录的 schema 含 checksum 列（v1 行在 Go 中 `getColInfoByID(-4)` 为 nil 而 panic）。
+- record key 不在本领域重复：tablecodec 领域 `keys` 的 `rowh`（`EncodeRowKeyWithHandle`）由 tidb-rs 经点查执行器回放（handle 编码只用一套向量）。
+- 聚簇表不生成 `_tidb_rowid`：SQL 层没有这种列；Go 会把 common handle 的第一列按自己的类型解码进 BIGINT 列，`chunk.Column.AppendMyDecimal` 等经 unsafe 越界写，破坏生成进程的堆（同一次运行中其他记录的字符串被清零，结果不确定）。
+- 块内其余函数（BatchPointGet、TableReader、IndexLookUp 等）以及 VS1-12 中由 tidb-rs 单测覆盖的函数列在 `pointget_exempt.go`。
+
 ## copr（块 D07.2 第 1 部分：`pkg/store/copr` 的 key_ranges.go、region_cache.go、coprocessor.go 的建任务部分；`pkg/util/paging`）
 
 - 记录格式见 `domains/copr.go` 文件头：`kr`（KeyRanges 的 first/mid/last 形状与 Split、Slice、At、String、ToPBRanges）、`bkr`、`calc`（paging 的 calculateRemain / calculateRetry）、`split`（按 region / bucket 切分）、`build`（buildCopTasks，含 store batch 与 row count hint）、`small`、`reqflags`、`pb`、`paging`。
