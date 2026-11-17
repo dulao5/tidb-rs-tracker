@@ -141,8 +141,25 @@ crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.3	temporary	metadat
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadata lock: domain.GetDomain(sctx) when the caller hands in no domain InfoSchema (the session always does)
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
+crates/planner/src/core/rule_eliminate_projection.rs	eliminate_physical_projection	D10.1	temporary	D10.1: the physical half of projection elimination (postOptimize, VS1-24) needs PhysicalProjection / PhysicalTableReader / physical aggregation
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)
+crates/planner/src/logicalop/base_logical_plan.rs	extract_fd	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported; FD-based rules and ONLY_FULL_GROUP_BY checks need them
+crates/planner/src/logicalop/base_logical_plan.rs	fds	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported
+crates/planner/src/logicalop/base_logical_plan.rs	task_map	D10.2	temporary	D10.2: the FindBestTask memo (taskMap) is a side table keyed by PlanId, comes with physical optimization
 crates/planner/src/logicalop/derive_stats.rs	(module)	D09.14	temporary	D09.14 (VS1-21 / VS1-23): DeriveStats / RecursiveDeriveStats / ExtractColGroups of BaseLogicalPlan, DataSource, LogicalSelection / Projection / Limit / TopN / TableDual (D10.6 functions of VS1-29); need the logical operators
+crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.13	temporary	D09.13: DataSource.BuildKeyInfo needs rule/util CheckIndexCanBeKey and GetLatestIndexInfo (key-info rule, VS1-24)
+crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.14	temporary	D09.14: DataSource.ExtractFD needs pkg/planner/funcdep
+crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D10.2	temporary	D10.2: DataSource.IsSingleScan / CheckPartialIndexes / CheckPartialIndexByFilters belong to access path handling
+crates/planner/src/logicalop/logical_limit.rs	limit_hash_code_boundary	D14.2	temporary	D14.2: LogicalLimit.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D09.14	temporary	D09.14: LogicalProjection.ExtractFD needs pkg/planner/funcdep
+crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D10.2	temporary	D10.2: LogicalProjection.tryTransformSortItemPtrs (partial order properties of plan enumeration)
+crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D10.6	temporary	D10.6: LogicalProjection.getGroupNDVs is only called by DeriveStats (statistics derivation, VS1-29)
+crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D14.2	temporary	D14.2: LogicalProjection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/logicalop/logical_projection.rs	try_to_get_child_prop	D10.2	temporary	D10.2: LogicalProjection.TryToGetChildProp maps physical properties in plan enumeration
+crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.13	temporary	D09.13: LogicalSelection.BuildKeyInfo needs rule/util CheckMaxOneRowCond (key-info rule, VS1-24)
+crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.14	temporary	D09.14: LogicalSelection.ExtractFD needs pkg/planner/funcdep
+crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D14.2	temporary	D14.2: LogicalSelection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/logicalop/logical_table_dual.rs	table_dual_hash_code_boundary	D14.2	temporary	D14.2: LogicalTableDual.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_logical_plan (blocked-by:D09.1)
 crates/planner/src/optimize.rs	is_read_only	D02.2	temporary	VS1-10: is_read_only (blocked-by:D02.2)
 crates/planner/src/optimize.rs	optimize_ast_node	D13.3	temporary	OptimizeAstNode = planner.Optimize: hint extraction first (VS1-24)
@@ -151,6 +168,7 @@ crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_st
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
+crates/planner/src/util/logicaltrace.rs	append_function_prune_trace_step	D08.11	temporary	D08.11: the trace of pruned aggregate functions needs aggregation.AggFuncDesc
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
 crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
 crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
