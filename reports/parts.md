@@ -26,14 +26,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.11 | VS1-23 | VS1-23 | planned | 31 / 40 | 328 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.11 | VS1-23 | VS1-23 | in-progress | 31 / 40 | 328 | dulao5/tidb-rs#259: converge 28/31 |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
 | D09.13 | VS1-24 | VS1-24 | planned | 57 / 211 | 1334 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.14 | VS1-23 | VS1-23 | planned | 91 / 111 | 1352 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.4 | VS1-21 | VS1-21 | planned | 6 / 116 | 313 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.7 | VS1-23 | VS1-23 | planned | 21 / 33 | 428 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.8 | VS1-23 | VS1-23 | planned | 34 / 51 | 539 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
+| D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | planned | 110 / 354 | 1830 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
