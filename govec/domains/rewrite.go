@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"reflect"
 	"strings"
 	"sync"
 	gotime "time"
@@ -45,6 +46,7 @@ import (
 	"github.com/pingcap/tidb/pkg/planner/core/base"
 	"github.com/pingcap/tidb/pkg/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/pkg/types"
+	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
 	"github.com/pingcap/tidb/pkg/util/collate"
 	"github.com/pingcap/tidb/pkg/util/mock"
 )
@@ -204,7 +206,21 @@ func rwDump(e expression.Expression) any {
 		return map[string]any{"const": append([]any{d2DatumInOf(x.Value), sfFtIn(x.RetType), pm, def},
 			rwCoerRep(x)...)}
 	case *expression.ScalarFunction:
-		return sfDump(x)
+		// sfDump's function node, the arguments in this format.
+		args := []any{}
+		allVec := true
+		for _, a := range x.GetArgs() {
+			args = append(args, rwDump(a))
+			allVec = allVec && a.Vectorized()
+		}
+		sigVec := true
+		if allVec {
+			sigVec = x.Vectorized()
+		}
+		chs, coll := x.CharsetAndCollation()
+		return map[string]any{"f": []any{x.FuncName.L, x.FuncName.O, reflect.TypeOf(x.Function).Elem().Name(),
+			sfFtIn(x.RetType), args, sigVec, chs, coll, int(x.Function.PbCode()), x.HasCoercibility(),
+			int(x.Coercibility()), int(x.Repertoire()), x.IsExplicitCharset()}}
 	}
 	panic(fmt.Sprintf("rwDump %T", e))
 }
@@ -213,6 +229,18 @@ func rwDump(e expression.Expression) any {
 func rwParamOrder(c *expression.Constant) int {
 	return fpField(c.ParamMarker, "order").(int)
 }
+
+// rwMarkers collects the parameter markers of an AST.
+type rwMarkers struct{ ms []*driver.ParamMarkerExpr }
+
+func (v *rwMarkers) Enter(n ast.Node) (ast.Node, bool) {
+	if m, ok := n.(*driver.ParamMarkerExpr); ok {
+		v.ms = append(v.ms, m)
+	}
+	return n, false
+}
+
+func (v *rwMarkers) Leave(n ast.Node) (ast.Node, bool) { return n, true }
 
 func rwWarns(sctx *mock.Context) []vec.GoString {
 	out := []vec.GoString{}
@@ -245,6 +273,15 @@ func rewriteExec(op string, p []json.RawMessage) (out any, err error) {
 		return map[string]any{"pre": vec.GoString(perr.Error())}, nil
 	}
 	field := stmt.(*ast.SelectStmt).Fields.Fields[0].Expr
+	// EXECUTE writes the values into the markers too (SetParameterValuesIntoSCtx).
+	pm := &rwMarkers{}
+	field.Accept(pm)
+	for _, m := range pm.ms {
+		if m.Order < len(params) {
+			m.Datum = params[m.Order]
+			m.InExecute = true
+		}
+	}
 	return rbTry(func() any {
 		schema, names, err := expression.TableInfo2SchemaAndNames(sctx.GetExprCtx(), pmodel.NewCIStr("test"), ti)
 		must(err)
