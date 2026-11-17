@@ -119,7 +119,7 @@ func rewriteExempt() map[string]string {
 	}
 	ex["PlanBuilder.rewriteInsertOnDuplicateUpdate"] = "INSERT ... ON DUPLICATE KEY UPDATE: the write path (X); D09.2 spec §4"
 	ex["expressionRewriter.rewriteUserVariable"] = "user variables need the getvar / setvar functions (D08.9): boundary stub; D09.2 spec §4"
-	ex["expressionRewriter.rewriteSystemVariable"] = "system variables need the sysvar lookup (D05.1): boundary stub; D09.2 spec §4"
+	ex["expressionRewriter.rewriteSystemVariable"] = "system variables need the session variables in the rewriter: D09.2 part 2, boundary stub; D09.2 spec §4"
 	ex["expressionRewriter.evalDefaultExprForTable"] = "DEFAULT(col) reads column defaults (D09.15 write-path plans): boundary stub; D09.2 spec §4"
 	ex["expressionRewriter.evalDefaultExprWithPlanCtx"] = "DEFAULT(col) reads column defaults (D09.15 write-path plans): boundary stub; D09.2 spec §4"
 	ex["expressionRewriter.evalFieldDefaultValue"] = "DEFAULT(col) reads column defaults (D09.15 write-path plans): boundary stub; D09.2 spec §4"
@@ -127,8 +127,8 @@ func rewriteExempt() map[string]string {
 	ex["expressionRewriter.funcCallToExpressionWithPlanCtx"] = "GROUPING() needs ROLLUP's Expand (D09.4): boundary stub; D09.2 spec §4"
 	ex["expressionRewriter.positionToScalarFunc"] = "ORDER BY / GROUP BY positions: only reached through buildSelect (D09.1 plan vectors); D09.2 spec §4"
 	ex["expressionRewriter.collectPrivsForCount"] = "COUNT() is reached through an aggregate map (buildSelect, D09.1 plan vectors); D09.2 spec §4"
-	ex["buildSimpleExpr"] = "the plan-less rewriter (ParseSimpleExpr, D08.2 P1-3): D09.2 part 2; D09.2 spec §2"
-	ex["evalAstExpr"] = "the plan-less rewriter (ParseSimpleExpr, D08.2 P1-3): D09.2 part 2; D09.2 spec §2"
+	ex["buildSimpleExpr"] = "the plan-less rewriter (ParseSimpleExpr, handed over from P1): D09.2 part 2; D09.2 spec §2"
+	ex["evalAstExpr"] = "the plan-less rewriter (ParseSimpleExpr, handed over from P1): D09.2 part 2; D09.2 spec §2"
 	ex["evalAstExprWithPlanCtx"] = "evaluates a rewritten expression for LIMIT / SET / SHOW (D09.16): D09.2 part 2; D09.2 spec §2"
 	return ex
 }
@@ -174,6 +174,8 @@ func rwSession(o rwOpts, params []types.Datum) *mock.Context {
 	vars.PlanID.Store(0)
 	vars.TimeZone = gotime.UTC
 	vars.StmtCtx = stmtctx.NewStmtCtxWithTimeZone(gotime.UTC)
+	// A fixed statement time: NOW() and friends fold to it (deterministic generation).
+	vars.StmtCtx.GetOrStoreStmtCache(stmtctx.StmtNowTsCacheKey, gotime.Unix(1700000000, 0))
 	vars.StmtCtx.SetTypeFlags(types.Flags(o.Flags))
 	vars.StmtCtx.SetErrLevels(errctx.LevelMap(o.Levels))
 	vars.SQLMode = o.Mode
@@ -182,6 +184,8 @@ func rwSession(o rwOpts, params []types.Datum) *mock.Context {
 	}
 	vars.PlanCacheParams.Reset()
 	vars.PlanCacheParams.Append(params...)
+	// `@a := 1` records the variable's type in the session: forget it.
+	vars.UnsetUserVar("a")
 	return rwCtx
 }
 
