@@ -26,7 +26,7 @@ package domains
 // "pushed": [tree], "all": [tree], "tbl_cols": [tree]}; Selection {"conds": [tree]};
 // Projection {"exprs": [tree], "nodelay"}; Limit {"offset", "count"}; Sort {"by": [[tree,
 // desc]]}; TopN {"by", "offset", "count"}; TableDual {"rows"}. A tree is domain
-// "rangerbuild"'s; a handle is {"int": tree} or {"common": [tree]}.
+// "rangerbuild"'s with [pbCode, coercibility, repertoire] appended to a function node; a handle is {"int": tree} or {"common": [tree]}.
 //
 // A light plan node has the same keys with light expressions and without "tbl", "qb",
 // "tbl_cols": a light expression is ["c", uid, id, index, ft, origName], ["r", uid, ft]
@@ -216,11 +216,34 @@ func lrBy(by []*plannerutil.ByItems, f func(expression.Expression) any) []any {
 	return out
 }
 
+// lrFull is rbDump with the signature's pb code, coercibility and repertoire appended to a
+// function node (the push down checks and collation derivation read them).
+func lrFull(e expression.Expression) any {
+	switch x := e.(type) {
+	case *expression.Column:
+		var ve any
+		if x.VirtualExpr != nil {
+			ve = lrFull(x.VirtualExpr)
+		}
+		return map[string]any{"col": []any{x.ID, x.UniqueID, x.Index, sfFtIn(x.RetType), vec.GoString(x.OrigName),
+			x.IsHidden, ve}}
+	case *expression.ScalarFunction:
+		args := []any{}
+		for _, a := range x.GetArgs() {
+			args = append(args, lrFull(a))
+		}
+		chs, coll := x.CharsetAndCollation()
+		return map[string]any{"f": []any{x.FuncName.L, x.FuncName.O, reflect.TypeOf(x.Function).Elem().Name(),
+			sfFtIn(x.RetType), args, chs, coll, int32(x.Function.PbCode()), int(x.Coercibility()), int(x.Repertoire())}}
+	}
+	return rbDump(e)
+}
+
 // lrDump writes a plan node; full is the input form (trees), otherwise the light form.
 func lrDump(sctx *mock.Context, p base.LogicalPlan, full bool) map[string]any {
 	f := lrLight(sctx)
 	if full {
-		f = rbDump
+		f = lrFull
 	}
 	o := map[string]any{"tp": p.TP(), "id": p.ID(), "schema": lrExprs(p.Schema().Columns, f)}
 	if full {
