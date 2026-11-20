@@ -18,7 +18,6 @@ crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: 
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
 crates/executor/src/builder.rs	new_closest_read_adjuster	D07.3	temporary	VS1-34: DistSQLContext and kv.Request.MatchStoreLabels (table reader only)
 crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
-crates/executor/src/compiler.rs	get_prepared_stmt	D13.1	temporary	VS1-15: prepared statement cache (GetPreparedStmt)
 crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
 crates/executor/src/compiler.rs	planner_is_read_only	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
 crates/executor/src/compiler.rs	planner_optimize	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
@@ -95,7 +94,6 @@ crates/planner/src/core/plan_cache.rs	get_plan_from_plan_cache	D13.1	temporary	p
 crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D09.1	temporary	PlanBuilder.Build returns no plan before buildSelect (VS1-21): no column definitions, so PREPARE stops here
-crates/planner/src/core/plan_cache_utils.rs	get_prepared_stmt	D02.2	temporary	the EXECUTE statement node (ast.ExecuteStmt) is not in the Rust AST
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
 crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
 crates/planner/src/core/plan_cache_utils.rs	not_resident	D06.3	temporary	synchronous table lookup of the planner: a table not loaded into the InfoSchema table cache before planning (loading reads TiKV; the session loads the statement's tables first, InfoSchema spec D06.3 §11.2)
@@ -111,6 +109,7 @@ crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-3
 crates/planner/src/core/planbuilder.rs	append_visit_info_is_restricted_user	D04.1	temporary	VS1-10: append_visit_info_is_restricted_user (blocked-by:D04.1)
 crates/planner/src/core/planbuilder.rs	build	D09.1	temporary	VS1-10: build (blocked-by:D09.1)
 crates/planner/src/core/planbuilder.rs	build	D12.12	temporary	VS1-10: build (blocked-by:D12.12)
+crates/planner/src/core/planbuilder.rs	build_execute	D09.2	temporary	EXECUTE ... USING @var: the variables need the expression rewriter (b.rewrite); the binary protocol's arguments are values and do not
 crates/planner/src/core/planbuilder.rs	check_hinted_sql	D13.3	temporary	VS1-10: check_hinted_sql (blocked-by:D13.3)
 crates/planner/src/core/planbuilder.rs	get_hint_state	D13.3	temporary	VS1-10: get_hint_state (blocked-by:D13.3)
 crates/planner/src/core/point_get_plan.rs	check_tbl_index_for_point_plan	D06.5	temporary	VS1-17: GetLatestIndexInfo (FOR UPDATE / READ COMMITTED with a connection)
@@ -135,7 +134,6 @@ crates/planner/src/core/preprocess.rs	enter	D02.2	temporary	VS1-10: enter (block
 crates/planner/src/core/preprocess.rs	erase_last_semicolon	D02.2	temporary	VS1-10: erase_last_semicolon (blocked-by:D02.2)
 crates/planner/src/core/preprocess.rs	handle_table_name	D05.4	temporary	VS1-10: handle_table_name (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	has_auto_convert_warning	D02.2	temporary	VS1-10: has_auto_convert_warning (blocked-by:D02.2)
-crates/planner/src/core/preprocess.rs	resolve_execute_stmt	D13.1	temporary	VS1-10: resolve_execute_stmt (blocked-by:D13.1)
 crates/planner/src/core/preprocess.rs	table_by_name	D04.1	temporary	preprocessor tableByName: the privilege check of a table that is not found needs the privilege manager (D04.1); the PoC answers
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.3	temporary	metadata lock (read path, #146 part 1, #252 go-gap): global temporary tables and SessionExtendedInfoSchema.UpdateTableInfo (a table newer than the transaction's InfoSchema) need the session-extended InfoSchema of the infoschema block part 2; the PoC answers
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadata lock: domain.GetDomain(sctx) when the caller hands in no domain InfoSchema (the session always does)
@@ -160,10 +158,9 @@ crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.13	temp
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.14	temporary	D09.14: LogicalSelection.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D14.2	temporary	D14.2: LogicalSelection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_table_dual.rs	table_dual_hash_code_boundary	D14.2	temporary	D14.2: LogicalTableDual.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/optimize.rs	ast_is_read_only	D02.2	temporary	the parser's ast.IsReadOnly walks the whole statement for user variable assignments; the Rust AST has no visitor (the EXECUTE branch of planner IsReadOnly is ported)
 crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_logical_plan (blocked-by:D09.1)
-crates/planner/src/optimize.rs	is_read_only	D02.2	temporary	VS1-10: is_read_only (blocked-by:D02.2)
 crates/planner/src/optimize.rs	optimize_ast_node	D13.3	temporary	OptimizeAstNode = planner.Optimize: hint extraction first (VS1-24)
-crates/planner/src/optimize.rs	optimize_exec_stmt	D02.2	temporary	OptimizeExecStmt needs the EXECUTE statement node, not in the Rust AST; its GetPlanFromPlanCache is ported
 crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_stmt (blocked-by:D13.3)
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
@@ -190,7 +187,6 @@ crates/session/src/metrics.rs	init	D14.1	temporary	VS1-14: session metric vector
 crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session metric vectors
 crates/session/src/session.rs	delete	D13.1	temporary	session plan cache stand-in holds no plans (the plan-cache exception A3); keeps the deleted keys
 crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
-crates/session/src/session.rs	execute_prepared_stmt	D02.2	temporary	ExecutePreparedStmt after the lookup: ast.ExecuteStmt is not in the Rust AST
 crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
 crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
