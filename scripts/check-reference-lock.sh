@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # govec links the Go TiDB commit pinned in tidb-rs's tidb-reference.lock (the tree every Go
 # source of the port comes from): the pseudo-versions of github.com/pingcap/tidb and
-# github.com/pingcap/tidb/pkg/parser in govec/go.mod must end in the lock's commit.
+# github.com/pingcap/tidb/pkg/parser in govec/go.mod must end in the lock's commit, and go.mod
+# must not replace either module.
 #
 #   scripts/check-reference-lock.sh <tidb-rs checkout>
 set -euo pipefail
@@ -20,4 +21,18 @@ for mod in github.com/pingcap/tidb github.com/pingcap/tidb/pkg/parser; do
     status=1
   fi
 done
+# A replace of either module would link another tree while the require line still matches.
+# (The upstream fixes of govec/fixes go through scripts/govec-fixes.sh's own modfile, not here.)
+replaced=$(awk '
+  /^replace[ \t]*\(/ { blk = 1; next }
+  blk && /^\)/ { blk = 0; next }
+  { line = $0; sub(/^replace[ \t]+/, "", line) }
+  (blk || /^replace[ \t]/) && line ~ /=>/ {
+    split(line, f, /[ \t]+/); m = f[1]; if (m == "") m = f[2]
+    if (m == "github.com/pingcap/tidb" || m == "github.com/pingcap/tidb/pkg/parser") print m
+  }' "$root/govec/go.mod")
+if [ -n "$replaced" ]; then
+  echo "check-reference-lock: govec/go.mod replaces $(echo $replaced): the linked TiDB must be the pinned module version" >&2
+  status=1
+fi
 exit $status

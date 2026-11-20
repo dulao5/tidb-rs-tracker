@@ -4,6 +4,8 @@
 
 Run: tidb-rs `4d918933f8` against Go TiDB v8.5.8, test files from TiDB `4cee7f2084`, 2026-10-30T16:49:44Z on Darwin arm64 Apple M4 Pro, 213 min.
 
+Test files: not from the v8.5.8 reference tree (TiDB master's files). Runs with tidb-rs from tidb-rs#269 on read them from the pinned v8.5.8 tree, so file and statement totals will change at that switch: a change of the denominator, not a regression or a gain.
+
 Each `.test` file runs in hybrid mode on one tiup playground: every statement runs on Go TiDB (A) in the file's sessions, as mysql-tester would run it; read statements (SELECT/TABLE/VALUES/WITH, SHOW, EXPLAIN/DESC) also run on tidb-rs (B), in B sessions that mirror A's database and session statements, and B's answer is compared with A's on the same data. Rows (as multisets unless the query has a top-level ORDER BY and no `--sorted_result`), column metadata, error codes, and with `--enable_warnings` the warnings must be equal. A is the reference, not the `.result` files (those are recorded on TiDB master). Details: tidb-rs `tools/ab/README.md`.
 
 ## Overall

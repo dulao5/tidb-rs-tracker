@@ -590,6 +590,10 @@ def _cell(text, n=100):
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
+# Go TiDB v8.5.8, the commit pinned in tidb-rs tidb-reference.lock.
+REFERENCE_COMMIT = "8b857efa2036"
+
+
 def render_integration(q):
     """reports/integration.md: R1, tidb-rs on TiDB's integration tests."""
     run = dict(q("SELECT key, value FROM rs_run"))
@@ -603,6 +607,16 @@ def render_integration(q):
         + f" against Go TiDB {run.get('tidb_version', '?')}, test files from TiDB `{run.get('tests_commit', '?')[:10]}`,"
         f" {run.get('date', '?')} on {run.get('runner', '?')}, {int(run.get('seconds', 0)) // 60} min.\n"
     )
+    # tidb-rs#269: the test files come from the pinned v8.5.8 tree (tidb-reference.lock); before,
+    # from a local clone of TiDB master. File and statement totals change at the switch.
+    if run.get("tests_commit", "").startswith(REFERENCE_COMMIT):
+        o.append("Test files: from the v8.5.8 reference tree (tidb-rs `tidb-reference.lock`). Runs before "
+                 "this switch used TiDB master's test files, so file and statement totals changed then: "
+                 "a change of the denominator, not a regression or a gain.\n")
+    else:
+        o.append("Test files: not from the v8.5.8 reference tree (TiDB master's files). Runs with tidb-rs "
+                 "from tidb-rs#269 on read them from the pinned v8.5.8 tree, so file and statement totals will "
+                 "change at that switch: a change of the denominator, not a regression or a gain.\n")
     o.append(
         "Each `.test` file runs in hybrid mode on one tiup playground: every statement runs on Go TiDB (A) "
         "in the file's sessions, as mysql-tester would run it; read statements (SELECT/TABLE/VALUES/WITH, "
