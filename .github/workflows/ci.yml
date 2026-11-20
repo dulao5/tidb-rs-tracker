@@ -91,6 +91,16 @@ jobs:
           ref: ${{ steps.tidbrs.outputs.ref }}
           path: tidb-rs
           sparse-checkout: specs
+      # govec must link the Go TiDB commit that tidb-rs pins in tidb-reference.lock (the
+      # tree every Go source of the port comes from). A tidb-rs ref without the lock (a
+      # branch older than the lock) only warns.
+      - name: govec links the commit of tidb-rs tidb-reference.lock
+        run: |
+          if [ -f tidb-rs/tidb-reference.lock ]; then
+            scripts/check-reference-lock.sh tidb-rs
+          else
+            echo "::warning::tidb-rs ${{ steps.tidbrs.outputs.ref }} has no tidb-reference.lock"
+          fi
       - name: govec vet and test (header, coverage, oracle, determinism, FMA model, re-homed tasks.md)
         working-directory: govec
         env:
