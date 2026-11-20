@@ -172,3 +172,29 @@ CREATE TABLE rs_integration_mismatch (
   sql    TEXT NOT NULL,
   PRIMARY KEY (file, line, conn)
 );
+
+-- Coverage census of the integration run (tidb-rs docs/testing/coverage-census.md, #260):
+-- every statement is new_stack / fallback / error / skipped, summing to `expected` (counted
+-- from the test files); new_stack_equal = on the new stack and equal to Go (the coverage).
+CREATE TABLE rs_census (
+  layer            TEXT PRIMARY KEY,   -- integrationtest
+  expected         INTEGER NOT NULL,
+  total            INTEGER NOT NULL,
+  new_stack        INTEGER NOT NULL,
+  fallback         INTEGER NOT NULL,   -- prototype (or 1235 in strict mode); reason in rs_census_reason
+  error            INTEGER NOT NULL,   -- sent to tidb-rs, no route attributable
+  skipped          INTEGER NOT NULL,   -- never sent to tidb-rs
+  new_stack_equal  INTEGER NOT NULL,
+  negative_control TEXT NOT NULL,      -- "failed as required"
+  status           TEXT NOT NULL       -- "ok"
+);
+
+-- Why statements took a path: the router's reason (a blocked-by block, kind, ast, ...) or the
+-- runner's skip reason.
+CREATE TABLE rs_census_reason (
+  layer      TEXT NOT NULL,
+  path       TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  statements INTEGER NOT NULL,
+  PRIMARY KEY (layer, path, reason)
+);
