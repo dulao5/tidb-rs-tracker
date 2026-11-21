@@ -214,7 +214,7 @@ func genConfigTypes() {
 	// Defaults.
 	d := &emitter{}
 	d.header("pkg/config/config.go")
-	d.p("use std::collections::BTreeMap;\n\nuse super::reflect::{AtomicBool, Duration, NullableBool};\nuse super::types_gen::*;\n\n")
+	d.p("use std::collections::BTreeMap;\n\nuse super::reflect::{AtomicBool, NullableBool};\nuse super::types_gen::*;\n\n")
 	d.p("/// `defaultConf` (run-time value of Go `config.NewConfig()` at v8.5.8). `TempStoragePath` is\n/// computed at start-up from the environment in Go (`tempStorageDirName`), here too.\n")
 	d.p("// glue: defaultConf (generated from the run-time value)\npub(crate) fn default_conf() -> Config {\n    %s\n}\n", rustValue2(reflect.ValueOf(*config.NewConfig()), "    ", "Config"))
 	d.p("\n/// `tikvcfg.DefaultConfig()` (client-go), the default of the global client-go config.\n// glue: tikvcfg.DefaultConfig (generated from the run-time value)\npub(crate) fn tikv_default_config() -> TikvConfig {\n    %s\n}\n", rustValue2(reflect.ValueOf(tikvcfg.DefaultConfig()), "    ", ""))
@@ -227,7 +227,8 @@ func time0() any { return config.OpenTracingSampler{}.SamplingRefreshInterval }
 func rustValue2(v reflect.Value, ind, path string) string {
 	t := v.Type()
 	if t == durationType {
-		return fmt.Sprintf("Duration(%d)", v.Int())
+		// time.Duration is tidb_base::gostd::time::Duration, an i64 of nanoseconds.
+		return strconv.FormatInt(v.Int(), 10)
 	}
 	switch t.String() {
 	case "config.nullableBool":
