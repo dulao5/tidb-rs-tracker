@@ -80,6 +80,8 @@ crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	Select
 crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	comment-only stub above the test module: crossValidationSelectivity (D10.6 part 2, needs GetColumnRowCount)
 crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	D11.2: recordUsedItemStatsStatus needs StatementContext.UsedStatsInfo (D11.2 tasks P1-1); records nothing, the estimate does not depend on it
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
+crates/planner/src/core/explain.rs	explain_stub	D10.9	temporary	VS1-27: ExplainInfo / ExplainNormalizedInfo of the 8 physical operators of the slice (explain.go), the EXPLAIN text of D10.9 (VS1-31); panics with the blocked error like PointGetPlan.ExplainInfo
+crates/planner/src/core/expression_codec_fn.rs	tidb_codec_func_helper	D08.9	temporary	VS1-27: tidbCodecFuncHelper (10 methods), the key codec of the tidb_decode_key / tidb_encode_record_key / tidb_encode_index_key builtins, whose function classes are not ported (D08.9): no caller yet
 crates/planner/src/core/expression_rewriter.rs	build_simple_expr	D09.2	temporary	D09.2 part 2: the plan-less rewriter buildSimpleExpr (BuildOptions, ParseSimpleExpr; handed over from P1)
 crates/planner/src/core/expression_rewriter.rs	cast_target_type	D02.2	temporary	a CAST target type the Rust parser builds as a placeholder (parser AST, D02.2)
 crates/planner/src/core/expression_rewriter.rs	enter	D09.15	temporary	VALUES(col): only meaningful in INSERT ... ON DUPLICATE KEY UPDATE (write-path plans D09.15, NewValuesFunc)
@@ -94,12 +96,15 @@ crates/planner/src/core/expression_rewriter.rs	leave	D09.15	temporary	DEFAULT(co
 crates/planner/src/core/expression_rewriter.rs	leave	D09.2	temporary	D09.2 part 2: system variables @@x (the rewriter does not get the session variables yet)
 crates/planner/src/core/expression_rewriter.rs	leave	D09.4	temporary	GROUPING() needs the Expand operator of ROLLUP (aggregate / window building, D09.4)
 crates/planner/src/core/expression_rewriter.rs	to_column	D09.2	temporary	D09.2 part 2: a column of buildSimpleExpr's source table (ParseSimpleExpr)
-crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
 crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
 crates/planner/src/core/logical_plan_builder.rs	get_uint_from_node	D13.1	temporary	VS1-15: the value EXECUTE binds to a LIMIT parameter marker
 crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
+crates/planner/src/core/physical_plans.rs	detach_root_table_scan_plan	D10.1	temporary	VS1-27: detachRootTableScanPlan, only the index lookup push down calls it (outside the slice); returns a pointer to a parent node, needs a design on the shared Arc tree
+crates/planner/src/core/physical_plans.rs	get_avg_row_size	D10.5	temporary	VS1-27: PhysicalTableReader.GetAvgRowSize needs getTblStats of the cost model v1 (plan_cost_ver1.go)
+crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27: PhysicalTableReader.LoadTableStats needs loadTableStats (stats.go), the sync stats load of FindBestTask (VS1-28)
+crates/planner/src/core/physical_plans.rs	resolve_correlated_columns	D10.1	temporary	VS1-27: PhysicalTableScan.ResolveCorrelatedColumns needs SubstituteCorCol2Constant (D10.1 tasks.md P1-1: the correlated value lives in the executor eval state); only Apply / index join executors call it, outside the slice
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
-crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-10: enforce_property (blocked-by:D10.1)
+crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-27: enforceProperty of an MPP task (MppTask.enforceExchanger): MPP is outside the slice
 crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan_cache.rs	adjust_cached_plan	D13.1	temporary	the plan cache hit path: the plan-cache exception A3, spec not confirmed
@@ -116,7 +121,7 @@ crates/planner/src/core/plan_cacheable_checker.rs	cacheable	D13.1	temporary	Cach
 crates/planner/src/core/plan_cacheable_checker.rs	check_table_cacheable	D13.1	temporary	the non-prepared plan cache's stricter table check: not used by the new stack
 crates/planner/src/core/plan_cacheable_checker.rs	enter	D13.3	temporary	ignore_plan_cache(): optimizer hint names are not parsed in the Rust AST
 crates/planner/src/core/plan_cacheable_checker.rs	is_ast_cacheable	D02.2	temporary	INSERT / UPDATE / DELETE are not in the Rust AST
-crates/planner/src/core/plan_cacheable_checker.rs	is_physical_plan_cacheable	D10.1	temporary	PhysicalTableReader / PhysicalTableScan fields: the physical operators (VS1-27)
+crates/planner/src/core/plan_cacheable_checker.rs	is_physical_plan_cacheable	D10.9	temporary	VS1-27: the TableScan arm reads isFullScan (explain.go, D10.9) only under an index merge, which the new stack never builds
 crates/planner/src/core/plan_cacheable_checker.rs	non_prepared_plan_cacheable_with_ctx	D13.1	temporary	the non-prepared plan cache checks: not used by the new stack
 crates/planner/src/core/plan_cacheable_checker.rs	unported	D02.2	temporary	AST nodes the Rust AST does not have (Unported): the checker does not guess
 crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-30: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
@@ -154,6 +159,12 @@ crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadat
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
 crates/planner/src/core/rule_eliminate_projection.rs	eliminate_physical_projection	D10.1	temporary	D10.1: the physical half of projection elimination (postOptimize, VS1-24) needs PhysicalProjection / PhysicalTableReader / physical aggregation
+crates/planner/src/core/task.rs	attach2_task_limit	D10.1	temporary	VS1-27: PhysicalLimit.Attach2Task on a cop task with index merge partial plans (sinkIntoIndexMerge): index merge is outside the slice
+crates/planner/src/core/task.rs	attach2_task_top_n	D10.1	temporary	VS1-27: PhysicalTopN.Attach2Task on an index merge with advisory sort items (handleAdvisorySortItemsForIndexMerge): index merge is outside the slice
+crates/planner/src/core/task.rs	compute_partial_cursor_offset	D08.11	temporary	VS1-27: computePartialCursorOffset needs aggregation.NeedCount / NeedValue (aggregate functions, D08.11); only the aggregation push down calls it
+crates/planner/src/core/task.rs	finish_index_plan	D10.1	temporary	VS1-27: CopTask.finishIndexPlan of an index lookup (both index and table plan; Go writes the stats version through the shared stats object): index lookup is outside the slice
+crates/planner/src/core/task_base.rs	convert_to_root_task_impl	D10.1	temporary	VS1-27: CopTask.convertToRootTaskImpl of index merge / index lookup / index read and of a scan that gains virtual columns (Go expands the shared scan in place, spec §5); MppTask.ConvertToRootTaskImpl (MPP exchange sender): outside the slice
+crates/planner/src/core/task_base.rs	leaf_table_scan	D10.1	temporary	VS1-27: a join in the table plan of a cop task (PhysicalHashJoin, TiFlash): outside the slice
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)
 crates/planner/src/logicalop/base_logical_plan.rs	extract_fd	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported; FD-based rules and ONLY_FULL_GROUP_BY checks need them
 crates/planner/src/logicalop/base_logical_plan.rs	fds	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported
@@ -164,10 +175,8 @@ crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.14	t
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D10.2	temporary	D10.2: DataSource.IsSingleScan / CheckPartialIndexes / CheckPartialIndexByFilters belong to access path handling
 crates/planner/src/logicalop/logical_limit.rs	limit_hash_code_boundary	D14.2	temporary	D14.2: LogicalLimit.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D09.14	temporary	D09.14: LogicalProjection.ExtractFD needs pkg/planner/funcdep
-crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D10.2	temporary	D10.2: LogicalProjection.tryTransformSortItemPtrs (partial order properties of plan enumeration)
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D10.6	temporary	D10.6: LogicalProjection.getGroupNDVs is only called by DeriveStats (statistics derivation, VS1-29)
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D14.2	temporary	D14.2: LogicalProjection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
-crates/planner/src/logicalop/logical_projection.rs	try_to_get_child_prop	D10.2	temporary	D10.2: LogicalProjection.TryToGetChildProp maps physical properties in plan enumeration
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.13	temporary	D09.13: LogicalSelection.BuildKeyInfo needs rule/util CheckMaxOneRowCond (key-info rule, VS1-24)
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.14	temporary	D09.14: LogicalSelection.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D14.2	temporary	D14.2: LogicalSelection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
@@ -177,7 +186,6 @@ crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_
 crates/planner/src/optimize.rs	optimize_ast_node	D13.3	temporary	OptimizeAstNode = planner.Optimize: hint extraction first (VS1-24)
 crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_stmt (blocked-by:D13.3)
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
-crates/planner/src/physicalop/base_physical_plan.rs	attach2_task	D10.1	temporary	VS1-27: BasePhysicalPlan.Attach2Task (base.Task, attachPlan2Task)
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
 crates/planner/src/util/logicaltrace.rs	append_function_prune_trace_step	D08.11	temporary	D08.11: the trace of pruned aggregate functions needs aggregation.AggFuncDesc
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)

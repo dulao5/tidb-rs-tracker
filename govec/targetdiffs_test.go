@@ -22,6 +22,11 @@ var targetDiffs = []targetDiff{
 		Why: "M-FMA: Histogram.LessRowCountWithBktIdx preCount + frac*(...) fused on arm64 only"},
 	{Domain: "cardinality", Op: "mv_sel", Args: "*", N: 1,
 		Why: "M-FMA: CalcTotalSelectivityForMVIdxPath (sel + t) - t*sel fused on arm64 only"},
+	// physops (D10.1, VS1-27): M-FMA in calcPagingCost (task.go:583 and :588, the
+	// multiply of `pagingCst *= indexSelectivity` fused with `pagingCst - seekFactor`),
+	// fused on arm64 only (go_fma_sites.tsv).
+	{Domain: "physops", Op: "paging", Args: "*", N: 98,
+		Why: "M-FMA: calcPagingCost seekCnt*seek + expectCnt*cpu and pagingCst*sel - seek fused on arm64 only"},
 	// execdetails (D14.0). M-FMA in the dependencies (not in the TiDB packages, which
 	// fuse nothing): influxdata/tdigest's Quantile / weightedAverage (tdigest.go:173,
 	// 181, 182, 260) and Go's math.Sin / math.Asin (sin.go:227-238, asin.go:40,
