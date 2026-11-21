@@ -266,9 +266,16 @@ def cmd_import_integration(args):
             header = f.readline().rstrip("\n").split("\t")
             return [dict(zip(header, line.rstrip("\n").split("\t"))) for line in f]
     out = {}
+    run_extra = []
+    integ = {r[3] for r in read_tsv("tests.tsv")[1] if r[0] == "integration"}
+    partial = len(rows("files.tsv")) < len(integ)
     # The coverage census: required (a run without one cannot show what the new stack ran),
     # checked, and a ratchet: fewer statements or less new-stack coverage than the imported
-    # run is refused unless accepted explicitly.
+    # run is refused unless accepted explicitly, with a reason that is kept and reported. The
+    # census tables are the baseline: a run without a census, or a partial run (fewer files
+    # than the integration tests in tests.tsv), never replaces them.
+    if args.accept_regression is not None and not args.accept_regression.strip():
+        die("--accept-regression needs a reason")
     if os.path.exists(os.path.join(src, "census-summary.tsv")):
         summary, reasons = rows("census-summary.tsv"), rows("census-reasons.tsv")
         errors = census_errors(summary, reasons)
@@ -277,19 +284,27 @@ def cmd_import_integration(args):
         old = {r[0]: dict(zip(TABLES["rs_census.tsv"][0], r)) for r in read_tsv("rs_census.tsv")[1]}
         for v in summary:
             o = old.get(v["layer"])
-            if not o or args.accept_regression:
+            # A partial run is compared with nothing: it never becomes the baseline.
+            if not o or args.accept_regression or partial:
                 continue
             for c, what in (("total", "statements (the denominator)"), ("new_stack_equal", "new-stack coverage")):
                 if int(v[c]) < int(o[c]):
                     die(f"census {v['layer']}: {what} {v[c]} < {o[c]} of the imported run "
                         "(ratchet; --accept-regression to accept)")
-        out["rs_census.tsv"] = [[v[c] for c in TABLES["rs_census.tsv"][0]] for v in summary]
-        out["rs_census_reason.tsv"] = [[v["layer"], v["path"], v["reason"], v["count"]] for v in reasons]
+        if partial:
+            run_extra.append(("census_baseline", "kept: partial run (not a baseline)"))
+            print("partial run: the census baseline (rs_census*.tsv) is kept")
+        else:
+            out["rs_census.tsv"] = [[v[c] for c in TABLES["rs_census.tsv"][0]] for v in summary]
+            out["rs_census_reason.tsv"] = [[v["layer"], v["path"], v["reason"], v["count"]] for v in reasons]
+            if args.accept_regression:
+                run_extra.append(("census_regression_accepted", args.accept_regression.strip()))
     elif not args.no_census:
         die(f"{src}: no census-summary.tsv (a run before tidb-rs #260?); --no-census to import without one")
     else:
-        out["rs_census.tsv"], out["rs_census_reason.tsv"] = [], []
-    out["rs_run.tsv"] = [(r["key"], r["value"]) for r in rows("run.tsv")]
+        run_extra.append(("census_baseline", "kept: run without a census"))
+        print("no census in the run: the census baseline (rs_census*.tsv) is kept")
+    out["rs_run.tsv"] = [(r["key"], r["value"]) for r in rows("run.tsv")] + run_extra
     cols = TABLES["rs_integration.tsv"][0]
     out["rs_integration.tsv"] = [[r[c] for c in cols] for r in rows("files.tsv")]
     stmts = rows("statements.tsv")
@@ -498,9 +513,10 @@ def check_integration(data):
     ccols, crows = data["rs_census.tsv"]
     rcols, rrows = data["rs_census_reason.tsv"]
     errors += census_errors([dict(zip(ccols, r)) for r in crows], [dict(zip(rcols, r)) for r in rrows])
+    kept = "census_baseline" in dict(data["rs_run.tsv"][1])
     for r in crows:
         v = dict(zip(ccols, r))
-        if v["layer"] == "integrationtest" and rows and int(v["total"]) != tot_statements(data):
+        if v["layer"] == "integrationtest" and rows and not kept and int(v["total"]) != tot_statements(data):
             errors.append(f"rs_census.tsv: integrationtest counts {v['total']} statements, rs_integration.tsv {tot_statements(data)}")
     return errors
 
@@ -753,6 +769,10 @@ def render_integration(q):
         o.append(table(["layer", "statements", "new stack", "**coverage** (new stack, equal to Go)", "fallback",
                         "error", "skipped", "negative control"],
                        [[l, t, ns, f"**{eq}** ({pct(eq, t)})", fb, er, sk, nc] for l, _, t, ns, eq, fb, er, sk, nc in census]))
+        if run.get("census_baseline"):
+            o += ["", f"The census above is the baseline from an earlier run ({run['census_baseline']}).", ""]
+        if run.get("census_regression_accepted"):
+            o += ["", f"**Regression accepted** at import: {run['census_regression_accepted']}", ""]
         fb = q("SELECT reason, sum(statements) FROM rs_census_reason WHERE path = 'fallback'"
                " GROUP BY reason ORDER BY sum(statements) DESC, reason LIMIT 20")
         if fb:
@@ -841,8 +861,9 @@ def main():
     i = sub.add_parser("import-integration")
     i.add_argument("dir")
     i.add_argument("--no-census", action="store_true", help="import a run that has no coverage census")
-    i.add_argument("--accept-regression", action="store_true",
-                   help="accept fewer statements or less new-stack coverage than the imported run")
+    i.add_argument("--accept-regression", metavar="REASON",
+                   help="accept fewer statements or less new-stack coverage than the imported run; "
+                        "the reason is kept in rs_run.tsv and shown in the report")
     i.set_defaults(func=cmd_import_integration)
     args = p.parse_args()
     args.func(args)
