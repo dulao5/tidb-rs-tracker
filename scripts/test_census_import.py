@@ -66,6 +66,9 @@ class CensusImport(unittest.TestCase):
         self.repo = os.path.join(self.tmp, "repo")
         for d in ("scripts", "sql", "data", "reports"):
             shutil.copytree(os.path.join(ROOT, d), os.path.join(self.repo, d))
+        # `report` reads the reference commit from govec/go.mod (#106).
+        os.makedirs(os.path.join(self.repo, "govec"))
+        shutil.copy(os.path.join(ROOT, "govec", "go.mod"), os.path.join(self.repo, "govec", "go.mod"))
         self.files = integration_tests()
         self.n = 0
 
