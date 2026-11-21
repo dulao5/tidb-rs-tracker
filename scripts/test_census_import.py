@@ -107,12 +107,35 @@ class CensusImport(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("new-stack coverage 1 < 2", out)
 
-    def test_partial_run_is_not_a_baseline(self):
+    def data(self):
+        out = {}
+        for n in ("rs_census.tsv", "rs_integration.tsv", "rs_run.tsv"):
+            with open(os.path.join(self.repo, "data", n), encoding="utf-8") as f:
+                out[n] = f.read()
+        return out
+
+    def test_fewer_files_without_partial_is_refused(self):
         self.assertEqual(self.imp(new_stack=3, equal=2)[0], 0)
-        before = self.census()
+        before = self.data()
         rc, out = self.imp(files=self.files[:10], new_stack=3, equal=2)
+        self.assertNotEqual(rc, 0)
+        self.assertIn(f"not a full run: {len(self.files) - 10} test files of tests.tsv missing", out)
+        self.assertEqual(self.data(), before)
+
+    def test_same_count_other_names_is_refused(self):
+        rc, out = self.imp(files=self.files[1:] + ["no/such_test"])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("1 not in tests.tsv (no/such_test)", out)
+        self.assertIn(f"({self.files[0]})", out)
+
+    def test_partial_run_imports_nothing(self):
+        self.assertEqual(self.imp(new_stack=3, equal=2)[0], 0)
+        before = self.data()
+        rc, out = self.imp("--partial", files=self.files[:10], new_stack=3, equal=1)
         self.assertEqual(rc, 0, out)
-        self.assertEqual(self.census(), before)
+        self.assertIn(f"partial run (10 of {len(self.files)} test files", out)
+        self.assertIn("census integrationtest: 10 statements, new_stack 3 (equal to Go 1)", out)
+        self.assertEqual(self.data(), before)
 
     def test_accepting_a_regression_needs_a_reason(self):
         self.assertEqual(self.imp(new_stack=3, equal=2)[0], 0)

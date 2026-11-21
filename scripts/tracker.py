@@ -267,13 +267,27 @@ def cmd_import_integration(args):
             return [dict(zip(header, line.rstrip("\n").split("\t"))) for line in f]
     out = {}
     run_extra = []
-    integ = {r[3] for r in read_tsv("tests.tsv")[1] if r[0] == "integration"}
-    partial = len(rows("files.tsv")) < len(integ)
+    # A run is full only if it ran exactly the integration tests of tests.tsv (by name). A run
+    # that lost files (time budget, a file that failed to load, a changed list) is refused; a
+    # partial run must be declared with --partial, and is then only checked and printed:
+    # nothing in data/ changes.
+    prefix, suffix = "tests/integrationtest/t/", ".test"
+    integ = {r[3][len(prefix):-len(suffix)] for r in read_tsv("tests.tsv")[1]
+             if r[0] == "integration" and r[3].startswith(prefix) and r[3].endswith(suffix)}
+    ran = {r["file"] for r in rows("files.tsv")}
+    missing, extra = sorted(integ - ran), sorted(ran - integ)
+    partial = bool(args.partial)
+    if not partial and (missing or extra):
+        def names(v):
+            return ", ".join(v[:10]) + (f", ... ({len(v)} in all)" if len(v) > 10 else "")
+        die(f"{src}: not a full run: {len(missing)} test files of tests.tsv missing"
+            + (f" ({names(missing)})" if missing else "")
+            + f", {len(extra)} not in tests.tsv" + (f" ({names(extra)})" if extra else "")
+            + "; --partial to only check and print it")
     # The coverage census: required (a run without one cannot show what the new stack ran),
     # checked, and a ratchet: fewer statements or less new-stack coverage than the imported
     # run is refused unless accepted explicitly, with a reason that is kept and reported. The
-    # census tables are the baseline: a run without a census, or a partial run (fewer files
-    # than the integration tests in tests.tsv), never replaces them.
+    # census tables are the baseline: a run without a census never replaces them.
     if args.accept_regression is not None and not args.accept_regression.strip():
         die("--accept-regression needs a reason")
     if os.path.exists(os.path.join(src, "census-summary.tsv")):
@@ -291,15 +305,12 @@ def cmd_import_integration(args):
                 if int(v[c]) < int(o[c]):
                     die(f"census {v['layer']}: {what} {v[c]} < {o[c]} of the imported run "
                         "(ratchet; --accept-regression to accept)")
-        if partial:
-            run_extra.append(("census_baseline", "kept: partial run (not a baseline)"))
-            print("partial run: the census baseline (rs_census*.tsv) is kept")
-        else:
+        if not partial:
             out["rs_census.tsv"] = [[v[c] for c in TABLES["rs_census.tsv"][0]] for v in summary]
             out["rs_census_reason.tsv"] = [[v["layer"], v["path"], v["reason"], v["count"]] for v in reasons]
             if args.accept_regression:
                 run_extra.append(("census_regression_accepted", args.accept_regression.strip()))
-    elif not args.no_census:
+    elif not args.no_census and not partial:
         die(f"{src}: no census-summary.tsv (a run before tidb-rs #260?); --no-census to import without one")
     else:
         run_extra.append(("census_baseline", "kept: run without a census"))
@@ -328,6 +339,18 @@ def cmd_import_integration(args):
             mism.append([r["file"], r["line"], r["conn"], r["class"], r["kind"], n_rej, r["detail"][:300] or "-", r["sql"][:500]])
     out["rs_integration_reason.tsv"] = [[c, o, why, n, len(f)] for (c, o, why), (n, f) in reasons.items()]
     out["rs_integration_mismatch.tsv"] = mism
+    if partial:
+        t = collections.Counter()
+        for r in rows("files.tsv"):
+            t.update({c: int(r[c]) for c in ["statements"] + RS_OUTCOMES})
+        print(f"partial run ({len(ran)} of {len(integ)} test files; {len(missing)} missing, {len(extra)} not in "
+              "tests.tsv): checked, nothing imported")
+        print("  " + ", ".join(f"{c} {t[c]}" for c in ["statements"] + RS_OUTCOMES))
+        for v in (rows("census-summary.tsv") if os.path.exists(os.path.join(src, "census-summary.tsv")) else []):
+            print(f"  census {v['layer']}: {v['total']} statements, new_stack {v['new_stack']} "
+                  f"(equal to Go {v['new_stack_equal']}), fallback {v['fallback']}, error {v['error']}, "
+                  f"skipped {v['skipped']}")
+        return
     for name, data in out.items():
         cols, key = TABLES[name]
         idx = [cols.index(k) for k in key]
@@ -861,6 +884,8 @@ def main():
     i = sub.add_parser("import-integration")
     i.add_argument("dir")
     i.add_argument("--no-census", action="store_true", help="import a run that has no coverage census")
+    i.add_argument("--partial", action="store_true",
+                   help="a run of some test files only: check it and print its numbers, import nothing")
     i.add_argument("--accept-regression", metavar="REASON",
                    help="accept fewer statements or less new-stack coverage than the imported run; "
                         "the reason is kept in rs_run.tsv and shown in the report")
