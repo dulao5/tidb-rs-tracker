@@ -801,6 +801,8 @@ D09.11	VS1-23	pkg/planner/core/operator/logicalop/logical_top_n.go	LogicalTopN.R
 D09.11	VS1-23	pkg/planner/core/operator/logicalop/logical_top_n.go	appendTopNPushDownTraceStep
 D09.11	VS1-23	pkg/planner/core/rule_topn_push_down.go	PushDownTopNOptimizer.Name
 D09.11	VS1-23	pkg/planner/core/rule_topn_push_down.go	PushDownTopNOptimizer.Optimize
+D09.11	VS1-24	pkg/planner/core/rule_derive_topn_from_window.go	DeriveTopNFromWindow.Name
+D09.11	VS1-24	pkg/planner/core/rule_derive_topn_from_window.go	DeriveTopNFromWindow.Optimize
 D09.13	VS1-10	pkg/planner/optimize.go	IsReadOnly
 D09.13	VS1-10	pkg/planner/optimize.go	Optimize
 D09.13	VS1-10	pkg/planner/optimize.go	OptimizeExecStmt
@@ -844,6 +846,9 @@ D09.13	VS1-24	pkg/planner/core/optimizer.go	refineCETrace
 D09.13	VS1-24	pkg/planner/core/optimizer.go	shouldSkipReuseChunkForPhysicalPlan
 D09.13	VS1-24	pkg/planner/core/optimizer.go	transformPhysicalPlan
 D09.13	VS1-24	pkg/planner/core/optimizer.go	tryEnableLateMaterialization
+D09.13	VS1-24	pkg/planner/core/rule/rule_constant_propagation.go	ConstantPropagationSolver.Name
+D09.13	VS1-24	pkg/planner/core/rule/rule_constant_propagation.go	ConstantPropagationSolver.Optimize
+D09.13	VS1-24	pkg/planner/core/rule/rule_constant_propagation.go	ConstantPropagationSolver.execOptimize
 D09.13	VS1-24	pkg/planner/core/rule/util/build_key_info_misc.go	CheckIndexCanBeKey
 D09.13	VS1-24	pkg/planner/core/rule/util/build_key_info_misc.go	CheckMaxOneRowCond
 D09.13	VS1-24	pkg/planner/core/rule_inject_extra_projection.go	InjectExtraProjection
@@ -1726,6 +1731,7 @@ D10.8	VS1-11	pkg/planner/core/point_get_plan.go	subQueryChecker.Enter
 D10.8	VS1-11	pkg/planner/core/point_get_plan.go	subQueryChecker.Leave
 D10.8	VS1-11	pkg/planner/core/point_get_plan.go	tryExtractRowChecksumColumn
 D10.8	VS1-11	pkg/planner/core/point_get_plan.go	tryPointGetPlan
+D10.9	VS1-24	pkg/planner/core/resolve_indices.go	refine4NeighbourProj
 D10.9	VS1-31	pkg/planner/core/access_object.go	DynamicPartitionAccessObject.String
 D10.9	VS1-31	pkg/planner/core/access_object.go	DynamicPartitionAccessObjects.NormalizedString
 D10.9	VS1-31	pkg/planner/core/access_object.go	DynamicPartitionAccessObjects.SetIntoPB
@@ -1759,7 +1765,6 @@ D10.9	VS1-31	pkg/planner/core/resolve_indices.go	PhysicalTableScan.ResolveIndice
 D10.9	VS1-31	pkg/planner/core/resolve_indices.go	PhysicalTopN.ResolveIndices
 D10.9	VS1-31	pkg/planner/core/resolve_indices.go	baseSchemaProducer.ResolveIndices
 D10.9	VS1-31	pkg/planner/core/resolve_indices.go	physicalSchemaProducer.ResolveIndices
-D10.9	VS1-31	pkg/planner/core/resolve_indices.go	refine4NeighbourProj
 D10.9	VS1-31	pkg/planner/core/resolve_indices.go	resolveIndicesForSort
 D10.9	VS1-31	pkg/planner/core/resolve_indices.go	resolveIndicesForVirtualColumn
 D11.1	VS1-29	pkg/statistics/column.go	Column.Copy
