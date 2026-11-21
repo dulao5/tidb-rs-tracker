@@ -16,7 +16,9 @@ jobs:
       - name: Go tools build, vet and test
         run: go vet ./... && go test ./...
       - name: Validate data and check reports are up to date
-        run: python3 scripts/tracker.py check
+        run: |
+          python3 scripts/tracker.py check
+          python3 scripts/test_census_import.py
       # Blocks ported in parts and the boundary-stub registry (scripts/blocks/parts.py):
       # data/stubs.tsv must list exactly the stubs in tidb-rs. A change that adds or removes a
       # stub updates both repositories on branches of the same name; otherwise tidb-rs main.

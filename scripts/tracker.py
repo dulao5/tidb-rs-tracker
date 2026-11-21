@@ -86,12 +86,23 @@ TABLES = {
     "rs_integration_mismatch.tsv": (
         ["file", "line", "conn", "class", "kind", "b_rejected", "detail", "sql"], ["file", "line", "conn"]
     ),
+    # The run's coverage census (tidb-rs census-summary.tsv / census-reasons.tsv, #260).
+    "rs_census.tsv": (
+        ["layer", "expected", "total", "new_stack", "fallback", "error", "skipped", "new_stack_equal",
+         "negative_control", "status"],
+        ["layer"],
+    ),
+    "rs_census_reason.tsv": (["layer", "path", "reason", "statements"], ["layer", "path", "reason"]),
 }
 
 # Statement outcomes of the integration run. The first four are the scored read outcomes.
 RS_SCORED = ["match", "mismatch", "unsupported", "b_error"]
 RS_OUTCOMES = RS_SCORED + ["a_error", "skipped", "write"]
 RS_STATEMENTS = os.path.join(ROOT, "work", "rs_statements.tsv")
+# Census layers and paths (tidb-rs tools/ab/src/census.rs); anything else is an error.
+CENSUS_LAYERS = ["integrationtest", "workload", "workload-strict", "tpch"]
+CENSUS_PATHS = ["new_stack", "fallback", "error", "skipped"]
+CENSUS_CONTROL_OK = "failed as required"
 
 
 def die(msg):
@@ -212,6 +223,42 @@ def rs_reason(outcome, kind, detail):
     return kind  # skipped: why; write: "session" or ""
 
 
+def census_errors(summary, reasons):
+    """Problems of census rows (dicts of strings): unknown names, counts that do not add up,
+    a negative control that did not fail."""
+    errors, totals = [], {}
+    for v in summary:
+        layer = v.get("layer")
+        if layer not in CENSUS_LAYERS:
+            errors.append(f"census: unknown layer {layer!r}")
+            continue
+        try:
+            n = {c: int(v[c]) for c in ["expected", "total", "new_stack_equal"] + CENSUS_PATHS}
+        except (KeyError, ValueError):
+            errors.append(f"census {layer}: missing or non-integer counts")
+            continue
+        totals[layer] = n
+        if sum(n[p] for p in CENSUS_PATHS) != n["total"] or n["total"] != n["expected"] or not n["expected"]:
+            errors.append(f"census {layer}: INCOMPLETE CENSUS ({n['total']} of {n['expected']} statements)")
+        if n["new_stack_equal"] > n["new_stack"]:
+            errors.append(f"census {layer}: more covered than new-stack statements")
+        if v.get("negative_control") != CENSUS_CONTROL_OK:
+            errors.append(f"census {layer}: negative control {v.get('negative_control')!r}")
+        if v.get("status") != "ok":
+            errors.append(f"census {layer}: status {v.get('status')!r}")
+    by = collections.Counter()
+    for v in reasons:
+        if v.get("layer") not in CENSUS_LAYERS or v.get("path") not in CENSUS_PATHS:
+            errors.append(f"census reasons: unknown layer / path {v.get('layer')!r} / {v.get('path')!r}")
+            continue
+        by[(v["layer"], v["path"])] += int(v.get("statements") or v.get("count") or 0)
+    for layer, n in totals.items():
+        for p in CENSUS_PATHS:
+            if by[(layer, p)] != n[p]:
+                errors.append(f"census reasons: {layer} {p} sums to {by[(layer, p)]}, the census says {n[p]}")
+    return errors
+
+
 def cmd_import_integration(args):
     src = args.dir
     def rows(name):
@@ -219,7 +266,56 @@ def cmd_import_integration(args):
             header = f.readline().rstrip("\n").split("\t")
             return [dict(zip(header, line.rstrip("\n").split("\t"))) for line in f]
     out = {}
-    out["rs_run.tsv"] = [(r["key"], r["value"]) for r in rows("run.tsv")]
+    run_extra = []
+    # A run is full only if it ran exactly the integration tests of tests.tsv (by name). A run
+    # that lost files (time budget, a file that failed to load, a changed list) is refused; a
+    # partial run must be declared with --partial, and is then only checked and printed:
+    # nothing in data/ changes.
+    prefix, suffix = "tests/integrationtest/t/", ".test"
+    integ = {r[3][len(prefix):-len(suffix)] for r in read_tsv("tests.tsv")[1]
+             if r[0] == "integration" and r[3].startswith(prefix) and r[3].endswith(suffix)}
+    ran = {r["file"] for r in rows("files.tsv")}
+    missing, extra = sorted(integ - ran), sorted(ran - integ)
+    partial = bool(args.partial)
+    if not partial and (missing or extra):
+        def names(v):
+            return ", ".join(v[:10]) + (f", ... ({len(v)} in all)" if len(v) > 10 else "")
+        die(f"{src}: not a full run: {len(missing)} test files of tests.tsv missing"
+            + (f" ({names(missing)})" if missing else "")
+            + f", {len(extra)} not in tests.tsv" + (f" ({names(extra)})" if extra else "")
+            + "; --partial to only check and print it")
+    # The coverage census: required (a run without one cannot show what the new stack ran),
+    # checked, and a ratchet: fewer statements or less new-stack coverage than the imported
+    # run is refused unless accepted explicitly, with a reason that is kept and reported. The
+    # census tables are the baseline: a run without a census never replaces them.
+    if args.accept_regression is not None and not args.accept_regression.strip():
+        die("--accept-regression needs a reason")
+    if os.path.exists(os.path.join(src, "census-summary.tsv")):
+        summary, reasons = rows("census-summary.tsv"), rows("census-reasons.tsv")
+        errors = census_errors(summary, reasons)
+        if errors:
+            die("census of the run:\n  " + "\n  ".join(errors))
+        old = {r[0]: dict(zip(TABLES["rs_census.tsv"][0], r)) for r in read_tsv("rs_census.tsv")[1]}
+        for v in summary:
+            o = old.get(v["layer"])
+            # A partial run is compared with nothing: it never becomes the baseline.
+            if not o or args.accept_regression or partial:
+                continue
+            for c, what in (("total", "statements (the denominator)"), ("new_stack_equal", "new-stack coverage")):
+                if int(v[c]) < int(o[c]):
+                    die(f"census {v['layer']}: {what} {v[c]} < {o[c]} of the imported run "
+                        "(ratchet; --accept-regression to accept)")
+        if not partial:
+            out["rs_census.tsv"] = [[v[c] for c in TABLES["rs_census.tsv"][0]] for v in summary]
+            out["rs_census_reason.tsv"] = [[v["layer"], v["path"], v["reason"], v["count"]] for v in reasons]
+            if args.accept_regression:
+                run_extra.append(("census_regression_accepted", args.accept_regression.strip()))
+    elif not args.no_census and not partial:
+        die(f"{src}: no census-summary.tsv (a run before tidb-rs #260?); --no-census to import without one")
+    else:
+        run_extra.append(("census_baseline", "kept: run without a census"))
+        print("no census in the run: the census baseline (rs_census*.tsv) is kept")
+    out["rs_run.tsv"] = [(r["key"], r["value"]) for r in rows("run.tsv")] + run_extra
     cols = TABLES["rs_integration.tsv"][0]
     out["rs_integration.tsv"] = [[r[c] for c in cols] for r in rows("files.tsv")]
     stmts = rows("statements.tsv")
@@ -243,6 +339,18 @@ def cmd_import_integration(args):
             mism.append([r["file"], r["line"], r["conn"], r["class"], r["kind"], n_rej, r["detail"][:300] or "-", r["sql"][:500]])
     out["rs_integration_reason.tsv"] = [[c, o, why, n, len(f)] for (c, o, why), (n, f) in reasons.items()]
     out["rs_integration_mismatch.tsv"] = mism
+    if partial:
+        t = collections.Counter()
+        for r in rows("files.tsv"):
+            t.update({c: int(r[c]) for c in ["statements"] + RS_OUTCOMES})
+        print(f"partial run ({len(ran)} of {len(integ)} test files; {len(missing)} missing, {len(extra)} not in "
+              "tests.tsv): checked, nothing imported")
+        print("  " + ", ".join(f"{c} {t[c]}" for c in ["statements"] + RS_OUTCOMES))
+        for v in (rows("census-summary.tsv") if os.path.exists(os.path.join(src, "census-summary.tsv")) else []):
+            print(f"  census {v['layer']}: {v['total']} statements, new_stack {v['new_stack']} "
+                  f"(equal to Go {v['new_stack_equal']}), fallback {v['fallback']}, error {v['error']}, "
+                  f"skipped {v['skipped']}")
+        return
     for name, data in out.items():
         cols, key = TABLES[name]
         idx = [cols.index(k) for k in key]
@@ -425,7 +533,21 @@ def check_integration(data):
         errors.append(f"rs_integration_mismatch.tsv: {n_mism} rows, rs_integration.tsv says {totals['mismatch']} mismatches")
     if rows and not data["rs_run.tsv"][1]:
         errors.append("rs_run.tsv is empty but rs_integration.tsv has rows")
+    ccols, crows = data["rs_census.tsv"]
+    rcols, rrows = data["rs_census_reason.tsv"]
+    errors += census_errors([dict(zip(ccols, r)) for r in crows], [dict(zip(rcols, r)) for r in rrows])
+    kept = "census_baseline" in dict(data["rs_run.tsv"][1])
+    for r in crows:
+        v = dict(zip(ccols, r))
+        if v["layer"] == "integrationtest" and rows and not kept and int(v["total"]) != tot_statements(data):
+            errors.append(f"rs_census.tsv: integrationtest counts {v['total']} statements, rs_integration.tsv {tot_statements(data)}")
     return errors
+
+
+def tot_statements(data):
+    cols, rows = data["rs_integration.tsv"]
+    i = cols.index("statements")
+    return sum(int(r[i]) for r in rows)
 
 
 # ---------------------------------------------------------------- report
@@ -621,9 +743,9 @@ def render_integration(q):
         "Each `.test` file runs in hybrid mode on one tiup playground: every statement runs on Go TiDB (A) "
         "in the file's sessions, as mysql-tester would run it; read statements (SELECT/TABLE/VALUES/WITH, "
         "SHOW, EXPLAIN/DESC) also run on tidb-rs (B), in B sessions that mirror A's database and session "
-        "statements, and B's answer is compared with A's on the same data. Rows (as multisets unless the "
-        "query has a top-level ORDER BY and no `--sorted_result`), column metadata, error codes, and with "
-        "`--enable_warnings` the warnings must be equal. A is the reference, not the `.result` files (those "
+        "statements, and B's answer is compared with A's on the same data by tidb-rs's one result comparator "
+        "(`docs/testing/result-comparison.md`: rows by statement class, column metadata, errors with code, "
+        "SQLSTATE and message, warnings). A is the reference, not the `.result` files (those "
         "are recorded on TiDB master). Details: tidb-rs `tools/ab/README.md`.\n"
     )
     tot = dict(zip(
@@ -652,6 +774,33 @@ def render_integration(q):
         ["write (A only)", tot["write"], ""],
         ["… session statements B rejected", tot["b_set_rejected"], ""],
     ]))
+
+    o += ["", "## New-stack coverage census", ""]
+    census = q("SELECT layer, expected, total, new_stack, new_stack_equal, fallback, error, skipped, negative_control"
+               " FROM rs_census ORDER BY layer")
+    if not census:
+        o.append("No census imported yet (tidb-rs `scripts/integrationtest.sh` writes one since #260).")
+    else:
+        o.append(
+            "Every statement of the run: executed on the new stack (`--new-stack=fallback`), fallen back to "
+            "the prototype (with the router's reason, e.g. the `blocked-by` block), error (sent to tidb-rs, no "
+            "route attributable) or skipped (never sent to tidb-rs). The four add up to the statements of the "
+            "test files, and a negative control must fail, or the run is not imported. **Coverage** = new stack "
+            "and equal to Go; it may only go up (the import refuses a lower one). Details: tidb-rs "
+            "`docs/testing/coverage-census.md`.\n"
+        )
+        o.append(table(["layer", "statements", "new stack", "**coverage** (new stack, equal to Go)", "fallback",
+                        "error", "skipped", "negative control"],
+                       [[l, t, ns, f"**{eq}** ({pct(eq, t)})", fb, er, sk, nc] for l, _, t, ns, eq, fb, er, sk, nc in census]))
+        if run.get("census_baseline"):
+            o += ["", f"The census above is the baseline from an earlier run ({run['census_baseline']}).", ""]
+        if run.get("census_regression_accepted"):
+            o += ["", f"**Regression accepted** at import: {run['census_regression_accepted']}", ""]
+        fb = q("SELECT reason, sum(statements) FROM rs_census_reason WHERE path = 'fallback'"
+               " GROUP BY reason ORDER BY sum(statements) DESC, reason LIMIT 20")
+        if fb:
+            o += ["", "Where statements fall back (router reason; a `D…` name is the `blocked-by` block):", ""]
+            o.append(table(["reason", "statements"], [[f"`{r}`", n] for r, n in fb], ["l", "r"]))
 
     o += ["", "## By statement class", ""]
     cls = collections.defaultdict(collections.Counter)
@@ -734,6 +883,12 @@ def main():
     sub.add_parser("check").set_defaults(func=cmd_check)
     i = sub.add_parser("import-integration")
     i.add_argument("dir")
+    i.add_argument("--no-census", action="store_true", help="import a run that has no coverage census")
+    i.add_argument("--partial", action="store_true",
+                   help="a run of some test files only: check it and print its numbers, import nothing")
+    i.add_argument("--accept-regression", metavar="REASON",
+                   help="accept fewer statements or less new-stack coverage than the imported run; "
+                        "the reason is kept in rs_run.tsv and shown in the report")
     i.set_defaults(func=cmd_import_integration)
     args = p.parse_args()
     args.func(args)
