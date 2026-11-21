@@ -712,8 +712,16 @@ def _cell(text, n=100):
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-# Go TiDB v8.5.8, the commit pinned in tidb-rs tidb-reference.lock.
-REFERENCE_COMMIT = "8b857efa2036"
+def reference_commit():
+    """The 12-hex Go TiDB commit govec links: the pseudo-version suffix of github.com/pingcap/tidb in
+    govec/go.mod. CI (scripts/check-reference-lock.sh) checks it equals tidb-rs tidb-reference.lock,
+    so this is the lock's commit without a second copy of it here."""
+    with open(os.path.join(ROOT, "govec", "go.mod")) as f:
+        for line in f:
+            m = re.match(r"\s*github\.com/pingcap/tidb\s+v\S*-([0-9a-f]{12})\s*$", line)
+            if m:
+                return m.group(1)
+    raise SystemExit("govec/go.mod: no pseudo-version require of github.com/pingcap/tidb")
 
 
 def render_integration(q):
@@ -731,7 +739,7 @@ def render_integration(q):
     )
     # tidb-rs#269: the test files come from the pinned v8.5.8 tree (tidb-reference.lock); before,
     # from a local clone of TiDB master. File and statement totals change at the switch.
-    if run.get("tests_commit", "").startswith(REFERENCE_COMMIT):
+    if run.get("tests_commit", "").startswith(reference_commit()):
         o.append("Test files: from the v8.5.8 reference tree (tidb-rs `tidb-reference.lock`). Runs before "
                  "this switch used TiDB master's test files, so file and statement totals changed then: "
                  "a change of the denominator, not a regression or a gain.\n")
