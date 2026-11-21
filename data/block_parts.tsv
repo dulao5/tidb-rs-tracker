@@ -26,11 +26,11 @@ D09.4	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 6/6
 D09.7	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 18/21
 D09.8	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 34/34
 D10.1	VS1-19	VS1-19	in-progress	tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub
-D10.1	VS1-27	VS1-27	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D10.1	VS1-27	VS1-27	in-progress	tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops
 D10.10	VS1-19	VS1-19	in-progress	tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil
 D10.2	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28)
 D10.2	VS1-28	VS1-28	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D10.3	VS1-27	VS1-27	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D10.3	VS1-27	VS1-27	in-progress	tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust)
 D10.4	VS1-25	VS1-25	done	95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild
 D10.5	VS1-30	VS1-30	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D10.6	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality
