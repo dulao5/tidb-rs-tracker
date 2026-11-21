@@ -27,8 +27,9 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
 | D09.11 | VS1-23 | VS1-23 | in-progress | 31 / 40 | 328 | dulao5/tidb-rs#259: converge 28/31 |
+| D09.11 | VS1-24 | VS1-24 | in-progress | 2 / 40 | 7 | tidb-rs branch vs1/optimizer-driver: converge 2/2 (the DeriveTopNFromWindow rule wrapper the driver runs) |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
-| D09.13 | VS1-24 | VS1-24 | planned | 57 / 211 | 1334 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.13 | VS1-24 | VS1-24 | in-progress | 60 / 211 | 1364 | tidb-rs branch vs1/optimizer-driver: converge 56/60 + 4 stubs |
 | D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
@@ -44,7 +45,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 58 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
 | D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
-| D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.9 | VS1-24 | VS1-24 | in-progress | 1 / 207 | 27 | tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31) |
+| D10.9 | VS1-31 | VS1-31 | planned | 35 / 207 | 636 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
@@ -54,19 +56,19 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.5 | VS1-36 | VS1-36 | planned | 65 / 188 | 1154 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D13.3 | VS1-24 | VS1-24 | planned | 38 / 89 | 837 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D13.3 | VS1-24 | VS1-24 | in-progress | 38 / 89 | 837 | tidb-rs branch vs1/optimizer-driver: converge 38/38 |
 
 ## Boundary stubs by block
 
-300 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+336 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D00.3 | 3 | 0 | 0 |
 | D02.1 | 3 | 0 | 0 |
-| D02.2 | 19 | 0 | 0 |
+| D02.2 | 32 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
-| D04.1 | 3 | 0 | 0 |
+| D04.1 | 4 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
 | D05.4 | 13 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
@@ -82,34 +84,38 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.9 | 4 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
 | D09.1 | 1 | 0 | 0 |
-| D09.12 | 2 | 0 | 0 |
+| D09.10 | 1 | 0 | 0 |
+| D09.12 | 5 | 0 | 0 |
 | D09.13 | 11 | 0 | 0 |
-| D09.14 | 10 | 0 | 0 |
+| D09.14 | 11 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
+| D09.17 | 1 | 0 | 0 |
 | D09.2 | 8 | 0 | 0 |
-| D09.3 | 2 | 0 | 0 |
-| D09.4 | 10 | 0 | 0 |
-| D09.5 | 4 | 0 | 0 |
-| D09.6 | 4 | 0 | 0 |
-| D10.1 | 14 | 0 | 0 |
+| D09.3 | 4 | 0 | 0 |
+| D09.4 | 16 | 0 | 0 |
+| D09.5 | 5 | 0 | 0 |
+| D09.6 | 7 | 0 | 0 |
+| D10.1 | 13 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
-| D10.2 | 6 | 0 | 0 |
+| D10.2 | 8 | 0 | 0 |
 | D10.5 | 2 | 0 | 0 |
-| D10.6 | 7 | 0 | 0 |
+| D10.6 | 8 | 0 | 0 |
 | D10.7 | 3 | 0 | 0 |
 | D10.8 | 2 | 0 | 0 |
 | D10.9 | 10 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
-| D11.2 | 6 | 0 | 0 |
+| D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 2 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 14 | 0 | 0 |
-| D13.3 | 8 | 0 | 0 |
+| D13.1 | 15 | 0 | 0 |
+| D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 7 | 0 | 0 |
+| D15.2 | 1 | 0 | 0 |
+| DEF.MPP | 1 | 0 | 0 |
 | EXC.B | 0 | 1 | 0 |
-| X | 0 | 12 | 0 |
+| X | 1 | 12 | 0 |
