@@ -225,6 +225,10 @@ func sbDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 		o["by"] = lrBy(x.ByItems, f)
 	case *logicalop.LogicalTableDual:
 		o["rows"] = x.RowCount
+	case *logicalop.LogicalTopN:
+		// Only domain "optdriver" has TopN (the logical optimization makes it).
+		o["by"] = lrBy(x.ByItems, f)
+		o["offset"], o["count"] = x.Offset, x.Count
 	default:
 		panic("sbDump: " + p.TP())
 	}
