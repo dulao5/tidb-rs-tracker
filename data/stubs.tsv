@@ -159,6 +159,7 @@ crates/planner/src/core/plan_cacheable_checker.rs	is_physical_plan_cacheable	D10
 crates/planner/src/core/plan_cacheable_checker.rs	non_prepared_plan_cacheable_with_ctx	D13.1	temporary	the non-prepared plan cache checks: not used by the new stack
 crates/planner/src/core/plan_cacheable_checker.rs	unported	D02.2	temporary	AST nodes the Rust AST does not have (Unported): the checker does not guess
 crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-30: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
+crates/planner/src/core/plan_cost_ver2.rs	get_plan_cost_impl	EXC.B	permanent	VS1-30: the cost model v1 (tidb_cost_model_version=1) is exception B5 (a non-default path), not ported; getPlanCost returns the boundary error instead of calling GetPlanCostVer1
 crates/planner/src/core/planbuilder.rs	append_visit_info_is_restricted_user	D04.1	temporary	VS1-10: append_visit_info_is_restricted_user (blocked-by:D04.1)
 crates/planner/src/core/planbuilder.rs	build	D09.16	temporary	PlanBuilder.Build: SELECT ... INTO (buildSelectInto)
 crates/planner/src/core/planbuilder.rs	build	D09.5	temporary	PlanBuilder.Build: set operations (buildSetOpr)
