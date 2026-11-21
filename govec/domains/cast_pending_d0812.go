@@ -38,9 +38,9 @@ func castExemptD0812() map[string]string {
 		"PosFromPositionExpr":               toPosition,
 		"ParamMarkerInPrepareChecker.Enter": toPrepareChecker,
 		"ParamMarkerInPrepareChecker.Leave": toPrepareChecker,
-		"ParamMarkerExpression": "owned by D09.2: builds the Constant of a parser-driver ParamMarkerExpr (`?` of " +
-			"prepared statements) for the expression rewriter and point-get builder; listed in tidb-rs " +
-			"specs/D09.2-rewriter/tasks.md",
+		"ParamMarkerExpression": "ported (tidb-rs crates/expression/src/util.rs): replayed by the rewrite domain " +
+			"through every `?` marker (with and without the plan cache); that domain is registered for its own " +
+			"block only",
 		"SubstituteCorCol2Constant": "owned by D10.1: reads CorrelatedColumn.Data, which tidb-rs keeps in the " +
 			"EvalState (D08.1 spec §3.2); its callers are the physical plans and the index-lookup executor " +
 			"(D12.1), which decide where the values come from; listed in tidb-rs specs/D10.1-physical-plans/tasks.md",

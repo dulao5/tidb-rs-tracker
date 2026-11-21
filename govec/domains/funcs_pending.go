@@ -40,11 +40,14 @@ func funcsExempt() map[string]string {
 		"buildIntParam":                   toString,
 		"ParseSimpleExprWithTableInfo":    toRewriter,
 		"ParseSimpleExpr":                 toRewriter,
-		"FindFieldName":                   toRewriter,
-		"FindFieldNameIdxByColName":       toRewriter,
-		"ifFoldHandler":                   ctrlFold,
-		"ifNullFoldHandler":               ctrlFold,
-		"caseWhenHandler":                 ctrlFold,
+		"FindFieldName": "ported (tidb-rs crates/expression/src/simple_rewriter.rs): replayed by the rewrite domain " +
+			"(the planner's expression rewriter resolves every column name with it); that domain is registered " +
+			"for its own block only",
+		"FindFieldNameIdxByColName": "ported (tidb-rs crates/expression/src/simple_rewriter.rs): a name lookup used " +
+			"by views (buildProjUponView, SHOW's tryFillViewColumnType); no op reaches it",
+		"ifFoldHandler":     ctrlFold,
+		"ifNullFoldHandler": ctrlFold,
+		"caseWhenHandler":   ctrlFold,
 	}
 	for _, f := range []string{"NewGroupingSets", "GroupingSets.Merge", "GroupingSets.MergeOne", "GroupingSets.TargetOne",
 		"GroupingSets.NeedCloneColumn", "GroupingSet.IsEmpty", "GroupingSet.AllColIDs", "GroupingSet.ExtractCols",
