@@ -188,13 +188,15 @@ func physopsGenerate(g *vec.Gen, rng *rand.Rand) {
 		leaves := []string{}
 		total := 0.0
 		for j := 0; j < 1+rng.IntN(3); j++ {
-			r := rows[rng.IntN(len(rows))] * (0.5 + rng.Float64())
+			// float64(...) rounds the product: no FMA in the generator (arguments must be
+			// the same on every target).
+			r := float64(rows[rng.IntN(len(rows))] * (0.5 + rng.Float64()))
 			total += r
 			leaves = append(leaves, phF(r))
 		}
-		indexRows := total * (0.05 + rng.Float64())
+		indexRows := float64(total * (0.05 + rng.Float64()))
 		if rng.IntN(4) == 0 {
-			indexRows = rows[rng.IntN(len(rows))] * rng.Float64()
+			indexRows = float64(rows[rng.IntN(len(rows))] * rng.Float64())
 		}
 		expect := []uint64{0, 1, 10, 128, 129, 1000, 5000, 100000, math.MaxUint32}[rng.IntN(9)]
 		factors := []string{"", "0.1", "1.7", "33.3"}
