@@ -29,6 +29,8 @@ import (
 	"math"
 	"math/rand/v2"
 	"strconv"
+	"sync"
+	gotime "time"
 	"unsafe"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -41,6 +43,7 @@ import (
 	"github.com/pingcap/tidb/pkg/planner/core/operator/logicalop"
 	"github.com/pingcap/tidb/pkg/planner/property"
 	plannerutil "github.com/pingcap/tidb/pkg/planner/util"
+	"github.com/pingcap/tidb/pkg/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/mock"
@@ -87,6 +90,37 @@ var physopsCoverage = map[string]vec.Coverage{
 }
 
 func phF(f float64) string { return strconv.FormatFloat(f, 'g', -1, 64) }
+
+var (
+	phMu  sync.Mutex
+	phCtx *mock.Context
+)
+
+// phSession: one mock context for all records (core.MockContext builds a mock domain with a
+// stats handle, too heavy per record), with the statement context, the plan ids and the
+// session variables the records set reset to their defaults.
+func phSession() *mock.Context {
+	if phCtx == nil {
+		phCtx = core.MockContext()
+	}
+	sv := phCtx.GetSessionVars()
+	sv.PlanColumnID.Store(0)
+	sv.PlanID.Store(0)
+	sv.StmtCtx = stmtctx.NewStmtCtxWithTimeZone(gotime.UTC)
+	for name, v := range map[string]string{
+		variable.TiDBAllowMPPExecution: "ON",
+		variable.TiDBOptSeekFactor:     phF(variable.DefOptSeekFactor),
+		variable.TiDBOptCPUFactor:      phF(variable.DefOptCPUFactor),
+	} {
+		if err := sv.SetSystemVar(name, v); err != nil {
+			panic(err)
+		}
+	}
+	sv.LimitPushDownThreshold = variable.DefOptLimitPushDownThreshold
+	sv.OptPartialOrderedIndexForTopN = variable.DefTiDBOptPartialOrderedIndexForTopN
+	sv.AllowProjectionPushDown = variable.DefOptEnableProjectionPushDown
+	return phCtx
+}
 
 func phCol(uid, id int64) *expression.Column {
 	return &expression.Column{UniqueID: uid, ID: id, RetType: types.NewFieldType(mysql.TypeLonglong)}
@@ -280,6 +314,8 @@ func phExhaustCases(rng *rand.Rand) []phCase {
 // ---------------------------------------------------------------- exec
 
 func physopsExec(op string, args []json.RawMessage) (out any, err error) {
+	phMu.Lock()
+	defer phMu.Unlock()
 	switch op {
 	case "read_req":
 		return core.ReadReqType(arg[int](args, 0)).Name(), nil
@@ -375,7 +411,7 @@ func phExpand(args []json.RawMessage) any {
 func phPaging(args []json.RawMessage) any {
 	indexRowsS, leaves, expect := arg[string](args, 0), arg[[]string](args, 1), arg[uint64](args, 2)
 	indexRows, _ := strconv.ParseFloat(indexRowsS, 64)
-	sctx := core.MockContext()
+	sctx := phSession()
 	for i, name := range []string{variable.TiDBOptSeekFactor, variable.TiDBOptCPUFactor} {
 		if v := arg[string](args, 3+i); v != "" {
 			if err := sctx.GetSessionVars().SetSystemVar(name, v); err != nil {
@@ -411,7 +447,7 @@ func phDataSource(sctx *mock.Context, child string) *logicalop.DataSource {
 }
 
 func phExhaust(in phExhaustIn) (any, error) {
-	sctx := core.MockContext()
+	sctx := phSession()
 	sv := sctx.GetSessionVars()
 	mpp := "OFF"
 	if in.MPP {
