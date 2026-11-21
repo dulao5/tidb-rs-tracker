@@ -25,13 +25,13 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
-| D09.1 | VS1-21 | VS1-21 | planned | 43 / 48 | 1980 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
 | D09.11 | VS1-23 | VS1-23 | in-progress | 31 / 40 | 328 | dulao5/tidb-rs#259: converge 28/31 |
 | D09.13 | VS1-10 | VS1-10 | in-progress | 10 / 211 | 547 | tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs |
 | D09.13 | VS1-24 | VS1-24 | planned | 57 / 211 | 1334 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D09.4 | VS1-21 | VS1-21 | planned | 6 / 116 | 313 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
 | D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
@@ -57,17 +57,17 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-252 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+291 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D00.3 | 3 | 0 | 0 |
 | D02.1 | 3 | 0 | 0 |
-| D02.2 | 15 | 0 | 0 |
+| D02.2 | 19 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
 | D04.1 | 3 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
-| D05.4 | 12 | 0 | 0 |
+| D05.4 | 13 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
 | D06.4 | 16 | 0 | 0 |
@@ -80,16 +80,20 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 3 | 0 | 0 |
 | D09.0 | 2 | 0 | 0 |
-| D09.1 | 3 | 0 | 0 |
-| D09.13 | 7 | 0 | 0 |
-| D09.14 | 6 | 0 | 0 |
-| D09.15 | 6 | 0 | 0 |
+| D09.1 | 1 | 0 | 0 |
+| D09.12 | 2 | 0 | 0 |
+| D09.13 | 11 | 0 | 0 |
+| D09.14 | 10 | 0 | 0 |
+| D09.15 | 8 | 0 | 0 |
+| D09.16 | 1 | 0 | 0 |
 | D09.2 | 8 | 0 | 0 |
-| D09.4 | 1 | 0 | 0 |
-| D09.5 | 1 | 0 | 0 |
-| D09.6 | 1 | 0 | 0 |
+| D09.3 | 2 | 0 | 0 |
+| D09.4 | 10 | 0 | 0 |
+| D09.5 | 4 | 0 | 0 |
+| D09.6 | 4 | 0 | 0 |
 | D10.1 | 10 | 0 | 0 |
-| D10.2 | 5 | 0 | 0 |
+| D10.11 | 1 | 0 | 0 |
+| D10.2 | 7 | 0 | 0 |
 | D10.5 | 1 | 0 | 0 |
 | D10.6 | 7 | 0 | 0 |
 | D10.7 | 3 | 0 | 0 |
@@ -102,8 +106,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.12 | 2 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 13 | 0 | 0 |
-| D13.3 | 6 | 0 | 0 |
+| D13.1 | 14 | 0 | 0 |
+| D13.3 | 8 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 7 | 0 | 0 |
 | X | 0 | 12 | 0 |

@@ -96,7 +96,41 @@ crates/planner/src/core/expression_rewriter.rs	leave	D09.4	temporary	GROUPING() 
 crates/planner/src/core/expression_rewriter.rs	to_column	D09.2	temporary	D09.2 part 2: a column of buildSimpleExpr's source table (ParseSimpleExpr)
 crates/planner/src/core/initialize.rs	init_physical_operator	D10.1	temporary	VS1-10: init_physical_operator (blocked-by:D10.1)
 crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
+crates/planner/src/core/logical_plan_builder.rs	add_alias_name	D09.15	temporary	addAliasName: aliases of the select fields of CREATE VIEW (capFlag canExpandAST), the write-path / DDL plans
+crates/planner/src/core/logical_plan_builder.rs	add_extra_phys_tbl_id_column4_ds	D09.12	temporary	addExtraPhysTblIDColumn4DS: the physical table id column of partitioned tables (FOR UPDATE, union scan)
+crates/planner/src/core/logical_plan_builder.rs	all_col_from_agg_expr_node	D09.4	temporary	allColFromAggExprNode: correlated aggregates and the ONLY_FULL_GROUP_BY check with aggregates
+crates/planner/src/core/logical_plan_builder.rs	all_col_from_expr_node	D09.4	temporary	allColFromExprNode / colNameResolver: the ONLY_FULL_GROUP_BY check with GROUP BY
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D02.2	temporary	buildDataSource: TABLESAMPLE (the Rust AST has no table sample; the preprocessor stops first)
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D05.4	temporary	buildDataSource: a plan builder without the statement InfoSchema (PlanBuilder.Init got none)
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.1	temporary	buildDataSource: views (BuildDataSourceFromView), virtual generated columns and a clustered primary key over a non-public column: part 2 of the SELECT builder
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.12	temporary	buildDataSource: partitioned tables (partition pruning flags, global stats, the partitioned table; the table layer of D06.4 part 1 only marks them)
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.14	temporary	buildDataSource: LogicalUnionScan for a table the transaction wrote, a local temporary table or a cached table
+crates/planner/src/core/logical_plan_builder.rs	build_data_source	D10.11	temporary	buildDataSource: memory tables (buildMemTable: information_schema, performance_schema, metrics_schema)
+crates/planner/src/core/logical_plan_builder.rs	build_join	D02.2	temporary	buildJoin: a join without a left side from the Rust parser
+crates/planner/src/core/logical_plan_builder.rs	build_join	D09.3	temporary	buildJoin: joins of two table sources (the join builder, LogicalJoin)
+crates/planner/src/core/logical_plan_builder.rs	build_projection	D09.14	temporary	buildProjection: the new ONLY_FULL_GROUP_BY check (LogicalProjection.ExtractFD, pkg/planner/funcdep)
+crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.14	temporary	buildProjectionField: MapHashCode2UniqueID4ExtendedCol of the new ONLY_FULL_GROUP_BY check (functional dependencies)
+crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.3	temporary	buildProjectionField: findColFromNaturalUsingJoin, the redundant columns of NATURAL / USING joins
+crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D02.2	temporary	buildResultSetNode: a FROM clause the Rust parser builds as a placeholder
+crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D09.5	temporary	buildResultSetNode: set operations (buildSetOpr)
+crates/planner/src/core/logical_plan_builder.rs	build_select	D13.3	temporary	buildSelect: table hints of a query block (pushTableHints, hint.ParsePlanHints)
+crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.4	temporary	buildSelect: GROUP BY (resolveGbyExprs) and window functions (resolveWindowFunction)
+crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.5	temporary	buildSelect: WITH (buildWith, common table expressions)
+crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.14	temporary	buildSelect: SELECT ... FOR UPDATE / FOR SHARE (buildSelectLock, LogicalLock)
+crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.4	temporary	buildSelect: aggregation (buildAggregation) and SELECT DISTINCT (buildDistinct)
+crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by	D09.4	temporary	checkOnlyFullGroupBy with GROUP BY (checkOnlyFullGroupByWithGroupClause); unreachable while GROUP BY stops first
+crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by_with_out_group_clause	D09.4	temporary	checkOnlyFullGroupByWithOutGroupClause: aggregates mixed with plain columns need the functional dependencies of WHERE and the joins
+crates/planner/src/core/logical_plan_builder.rs	check_order_by_in_distinct	D09.4	temporary	checkOrderByInDistinct: only SELECT DISTINCT (an aggregation) calls it
+crates/planner/src/core/logical_plan_builder.rs	check_param_type_int64_or_uint64	D13.1	temporary	CheckParamTypeInt64orUint64: the value of a parameter marker in LIMIT (the Rust marker carries no value; the plan cache)
+crates/planner/src/core/logical_plan_builder.rs	collect_generate_column	D09.13	temporary	collectGenerateColumn of the generated column rule: only virtual generated columns, which the data source does not build yet
+crates/planner/src/core/logical_plan_builder.rs	compare_items	D09.4	temporary	compareItems / getAllByItems / restoreByItemText: grouping of window functions
+crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransformer.Enter: ORDER BY ? (the position node of the Rust AST has no parameter marker)
+crates/planner/src/core/logical_plan_builder.rs	extract_singe_value_col_names_from_where	D09.4	temporary	extractSingeValueColNamesFromWhere: the ONLY_FULL_GROUP_BY check with aggregates
+crates/planner/src/core/logical_plan_builder.rs	find_column_name_by_unique_id	D09.6	temporary	findColumnNameByUniqueID: the outer columns referred by subqueries
+crates/planner/src/core/logical_plan_builder.rs	get_table_offset	D09.15	temporary	getTableOffset / collectTableName: UPDATE and DELETE
 crates/planner/src/core/logical_plan_builder.rs	get_uint_from_node	D13.1	temporary	VS1-15: the value EXECUTE binds to a LIMIT parameter marker
+crates/planner/src/core/logical_plan_builder.rs	resolve_correlated_aggregates	D09.6	temporary	resolveCorrelatedAggregates: aggregates of the outer query inside subqueries
+crates/planner/src/core/logical_plan_builder.rs	resolve_having_and_order_by	D09.6	temporary	resolveHavingAndOrderBy: the correlated columns of an ORDER BY subquery
 crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-10: enforce_property (blocked-by:D10.1)
@@ -107,7 +141,7 @@ crates/planner/src/core/plan_cache.rs	generate_new_plan	D13.1	temporary	putting 
 crates/planner/src/core/plan_cache.rs	get_plan_from_plan_cache	D13.1	temporary	plan cache lookup always misses: the plan-cache exception A3
 crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser
-crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D09.1	temporary	PlanBuilder.Build returns no plan before buildSelect (VS1-21): no column definitions, so PREPARE stops here
+crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D09.13	temporary	GeneratePlanCacheStmtWithAST: PlanBuilder.Build needs the planning context (PlanCtx) the optimizer driver sets up (VS1-24); PREPARE has none yet
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
 crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
 crates/planner/src/core/plan_cache_utils.rs	not_resident	D06.3	temporary	synchronous table lookup of the planner: a table not loaded into the InfoSchema table cache before planning (loading reads TiKV; the session loads the statement's tables first, InfoSchema spec D06.3 §11.2)
@@ -121,11 +155,15 @@ crates/planner/src/core/plan_cacheable_checker.rs	non_prepared_plan_cacheable_wi
 crates/planner/src/core/plan_cacheable_checker.rs	unported	D02.2	temporary	AST nodes the Rust AST does not have (Unported): the checker does not guess
 crates/planner/src/core/plan_cost_ver1.rs	get_avg_row_size	D10.5	temporary	VS1-30: PointGetPlan.GetAvgRowSize (tidb_replica_read=closest-adaptive)
 crates/planner/src/core/planbuilder.rs	append_visit_info_is_restricted_user	D04.1	temporary	VS1-10: append_visit_info_is_restricted_user (blocked-by:D04.1)
-crates/planner/src/core/planbuilder.rs	build	D09.1	temporary	VS1-10: build (blocked-by:D09.1)
+crates/planner/src/core/planbuilder.rs	build	D09.16	temporary	PlanBuilder.Build: SELECT ... INTO (buildSelectInto)
+crates/planner/src/core/planbuilder.rs	build	D09.5	temporary	PlanBuilder.Build: set operations (buildSetOpr)
 crates/planner/src/core/planbuilder.rs	build	D12.12	temporary	VS1-10: build (blocked-by:D12.12)
 crates/planner/src/core/planbuilder.rs	build_execute	D09.2	temporary	EXECUTE ... USING @var: the variables need the expression rewriter (b.rewrite); the binary protocol's arguments are values and do not
+crates/planner/src/core/planbuilder.rs	check_auto_force_index_look_up_push_down	D10.2	temporary	checkAutoForceIndexLookUpPushDown: the force policies of tidb_index_lookup_pushdown_policy (checkIndexLookUpPushDownSupported)
 crates/planner/src/core/planbuilder.rs	check_hinted_sql	D13.3	temporary	VS1-10: check_hinted_sql (blocked-by:D13.3)
 crates/planner/src/core/planbuilder.rs	get_hint_state	D13.3	temporary	VS1-10: get_hint_state (blocked-by:D13.3)
+crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D10.2	temporary	getPossibleAccessPaths: hypothetical indexes / TiFlash replicas of EXPLAIN and the newest index states of the domain (GetLatestIndexInfo) for reads for update / READ COMMITTED
+crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D13.3	temporary	getPossibleAccessPaths: index hints (USE / FORCE / IGNORE INDEX) and HYPO_INDEX hints
 crates/planner/src/core/point_get_plan.rs	check_tbl_index_for_point_plan	D06.5	temporary	VS1-17: GetLatestIndexInfo (FOR UPDATE / READ COMMITTED with a connection)
 crates/planner/src/core/point_get_plan.rs	explain_info	D10.9	temporary	VS1-31: AccessObject of the point get (EXPLAIN text)
 crates/planner/src/core/point_get_plan.rs	explain_normalized_info	D10.9	temporary	VS1-31: AccessObject of the point get (EXPLAIN text)
@@ -155,6 +193,7 @@ crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
 crates/planner/src/core/rule_eliminate_projection.rs	eliminate_physical_projection	D10.1	temporary	D10.1: the physical half of projection elimination (postOptimize, VS1-24) needs PhysicalProjection / PhysicalTableReader / physical aggregation
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)
+crates/planner/src/core/util.rs	table_has_dirty_content	D09.13	temporary	tableHasDirtyContent: the session dirty-table check comes through the planning context (PlanCtx.has_dirty_content), set by the optimizer driver (VS1-24)
 crates/planner/src/logicalop/base_logical_plan.rs	extract_fd	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported; FD-based rules and ONLY_FULL_GROUP_BY checks need them
 crates/planner/src/logicalop/base_logical_plan.rs	fds	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported
 crates/planner/src/logicalop/base_logical_plan.rs	task_map	D10.2	temporary	D10.2: the FindBestTask memo (taskMap) is a side table keyed by PlanId, comes with physical optimization
@@ -173,7 +212,7 @@ crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.14	temp
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D14.2	temporary	D14.2: LogicalSelection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_table_dual.rs	table_dual_hash_code_boundary	D14.2	temporary	D14.2: LogicalTableDual.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/optimize.rs	ast_is_read_only	D02.2	temporary	the parser's ast.IsReadOnly walks the whole statement for user variable assignments; the Rust AST has no visitor (the EXECUTE branch of planner IsReadOnly is ported)
-crates/planner/src/optimize.rs	build_logical_plan	D09.1	temporary	VS1-10: build_logical_plan (blocked-by:D09.1)
+crates/planner/src/optimize.rs	build_logical_plan	D09.13	temporary	buildLogicalPlan / optimize: the planning context of the statement and the rewrite-phase state of the statement context (VS1-24), then DoOptimize
 crates/planner/src/optimize.rs	optimize_ast_node	D13.3	temporary	OptimizeAstNode = planner.Optimize: hint extraction first (VS1-24)
 crates/planner/src/optimize.rs	optimize_stmt	D13.3	temporary	VS1-10: optimize_stmt (blocked-by:D13.3)
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)

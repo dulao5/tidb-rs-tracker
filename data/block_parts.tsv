@@ -16,13 +16,13 @@ D07.2	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.3	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.0	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess
 D09.0	VS1-11	VS1-11	in-progress	dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx
-D09.1	VS1-21	VS1-21	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D09.1	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 29/43 + 14 stubs
 D09.11	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 28/31
 D09.13	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 3/10, accounted 7 stubs
 D09.13	VS1-24	VS1-24	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.14	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 59/91
 D09.2	VS1-22	VS1-22	planned	tidb-rs specs/VS1-vertical-slice (#205)
-D09.4	VS1-21	VS1-21	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D09.4	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 6/6
 D09.7	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 18/21
 D09.8	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 34/34
 D10.1	VS1-19	VS1-19	in-progress	tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub

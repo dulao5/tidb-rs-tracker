@@ -125,7 +125,6 @@ func rewriteExempt() map[string]string {
 	ex["expressionRewriter.evalFieldDefaultValue"] = "DEFAULT(col) reads column defaults (D09.15 write-path plans): boundary stub; D09.2 spec §4"
 	ex["hasCurrentDatetimeDefault"] = "DEFAULT(col) reads column defaults (D09.15 write-path plans): boundary stub; D09.2 spec §4"
 	ex["expressionRewriter.funcCallToExpressionWithPlanCtx"] = "GROUPING() needs ROLLUP's Expand (D09.4): boundary stub; D09.2 spec §4"
-	ex["expressionRewriter.positionToScalarFunc"] = "ORDER BY / GROUP BY positions: only reached through buildSelect (D09.1 plan vectors); D09.2 spec §4"
 	ex["expressionRewriter.collectPrivsForCount"] = "COUNT() is reached through an aggregate map (buildSelect, D09.1 plan vectors); D09.2 spec §4"
 	ex["buildSimpleExpr"] = "the plan-less rewriter (ParseSimpleExpr, handed over from P1): D09.2 part 2; D09.2 spec §2"
 	ex["evalAstExpr"] = "the plan-less rewriter (ParseSimpleExpr, handed over from P1): D09.2 part 2; D09.2 spec §2"
