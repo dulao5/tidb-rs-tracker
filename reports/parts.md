@@ -41,7 +41,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.2 | VS1-28 | VS1-28 | planned | 89 / 181 | 2759 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
-| D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 58 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
 | D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-31 | VS1-31 | planned | 36 / 207 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -58,7 +58,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-299 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+300 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -111,4 +111,5 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D13.3 | 8 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 7 | 0 | 0 |
+| EXC.B | 0 | 1 | 0 |
 | X | 0 | 12 | 0 |

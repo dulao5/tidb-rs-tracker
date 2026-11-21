@@ -27,6 +27,14 @@ var targetDiffs = []targetDiff{
 	// fused on arm64 only (go_fma_sites.tsv).
 	{Domain: "physops", Op: "paging", Args: "*", N: 98,
 		Why: "M-FMA: calcPagingCost seekCnt*seek + expectCnt*cpu and pagingCst*sel - seek fused on arm64 only"},
+	// costver2 (D10.5, VS1-30): the v2 formulas call math.Log2 (scanCostVer2's
+	// log2(row-size), orderCostVer2's log2(n)): log10.go:36 is fused on arm64 and Log is
+	// assembly on amd64 (log_amd64.s), so the last bits of a cost can differ. No line of
+	// plan_cost_ver2.go itself is in go_fma_sites.tsv.
+	{Domain: "costver2", Op: "plan", Args: "*", N: 12,
+		Why: "math.Log2: FMA on arm64 (log10.go:36), assembly Log on amd64"},
+	{Domain: "costver2", Op: "formula", Args: "*", N: 8,
+		Why: "math.Log2: FMA on arm64 (log10.go:36), assembly Log on amd64"},
 	// execdetails (D14.0). M-FMA in the dependencies (not in the TiDB packages, which
 	// fuse nothing): influxdata/tdigest's Quantile / weightedAverage (tdigest.go:173,
 	// 181, 182, 260) and Go's math.Sin / math.Asin (sin.go:227-238, asin.go:40,
