@@ -37,7 +37,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | planned | 110 / 354 | 1830 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
-| D10.2 | VS1-28 | VS1-28 | planned | 98 / 181 | 3127 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
+| D10.2 | VS1-28 | VS1-28 | planned | 89 / 181 | 2759 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.3 | VS1-27 | VS1-27 | planned | 22 / 103 | 368 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
 | D10.5 | VS1-30 | VS1-30 | planned | 32 / 58 | 641 | tidb-rs specs/VS1-vertical-slice (#205) |
