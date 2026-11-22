@@ -39,11 +39,11 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.1 | VS1-27 | VS1-27 | in-progress | 110 / 354 | 1830 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
 | D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
-| D10.2 | VS1-28 | VS1-28 | planned | 89 / 181 | 2759 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D10.2 | VS1-28 | VS1-28 | in-progress | 89 / 181 | 2759 | tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
 | D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 58 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
-| D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality |
+| D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality; the DeriveStats / ExtractColGroups of the slice's operators ported with VS1-28 (tidb-rs branch vs1/find-best-task): matched 48/54, 6 stubs |
 | D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-24 | VS1-24 | in-progress | 1 / 207 | 27 | tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31) |
 | D10.9 | VS1-31 | VS1-31 | planned | 35 / 207 | 636 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -60,20 +60,20 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-336 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+352 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D00.3 | 3 | 0 | 0 |
 | D02.1 | 3 | 0 | 0 |
-| D02.2 | 32 | 0 | 0 |
+| D02.2 | 33 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
 | D04.1 | 4 | 0 | 0 |
 | D05.3 | 4 | 0 | 0 |
 | D05.4 | 13 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
-| D06.4 | 16 | 0 | 0 |
+| D06.4 | 17 | 0 | 0 |
 | D06.5 | 14 | 0 | 0 |
 | D07.1 | 13 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
@@ -85,36 +85,37 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.0 | 2 | 0 | 0 |
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
-| D09.12 | 5 | 0 | 0 |
+| D09.12 | 7 | 0 | 0 |
 | D09.13 | 11 | 0 | 0 |
-| D09.14 | 11 | 0 | 0 |
+| D09.14 | 10 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
-| D09.17 | 1 | 0 | 0 |
+| D09.17 | 2 | 0 | 0 |
 | D09.2 | 8 | 0 | 0 |
 | D09.3 | 4 | 0 | 0 |
 | D09.4 | 16 | 0 | 0 |
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
-| D10.1 | 13 | 0 | 0 |
+| D10.1 | 16 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
-| D10.2 | 8 | 0 | 0 |
+| D10.2 | 9 | 0 | 0 |
+| D10.3 | 1 | 0 | 0 |
 | D10.5 | 2 | 0 | 0 |
-| D10.6 | 8 | 0 | 0 |
-| D10.7 | 3 | 0 | 0 |
-| D10.8 | 2 | 0 | 0 |
+| D10.6 | 7 | 0 | 0 |
+| D10.7 | 8 | 0 | 0 |
+| D10.8 | 3 | 0 | 0 |
 | D10.9 | 10 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
-| D12.12 | 2 | 0 | 0 |
+| D12.12 | 3 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
 | D13.1 | 15 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
-| D14.2 | 7 | 0 | 0 |
+| D14.2 | 8 | 0 | 0 |
 | D15.2 | 1 | 0 | 0 |
 | DEF.MPP | 1 | 0 | 0 |
 | EXC.B | 0 | 1 | 0 |
