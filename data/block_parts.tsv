@@ -4,6 +4,7 @@ D03.1	VS1-16	VS1-16	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D05.3	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported
 D05.3	VS1-14b	VS1-14b	in-progress	tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15
 D05.3	VS1-14m	VS1-14m	in-progress	tidb-rs branch vs1/read-mdl (read-path metadata lock per Go, #146 part 1): converge matched 1/2 (RemoveLockDDLJobs; InitMDLVariable is a stub, D06.5)
+D05.3	sessionexpr	VS1-37	in-progress	tidb-rs branch vs1/execute-compile (D05.3 tasks P1-1, the session expression context; Compile wired to planner.Optimize for EXECUTE): pkg/expression/sessionexpr converge 53/57 + 4 stubs
 D05.4	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported
 D06.2	1		done	130/240, dulao5/tidb-rs D06.2 part 1
 D06.3	1		done	184/270, dulao5/tidb-rs#176 #177

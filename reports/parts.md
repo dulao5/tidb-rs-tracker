@@ -13,6 +13,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
 | D05.3 | VS1-14b | VS1-14b | in-progress | 5 / 325 | 139 | tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15 |
 | D05.3 | VS1-14m | VS1-14m | in-progress | 2 / 325 | 50 | tidb-rs branch vs1/read-mdl (read-path metadata lock per Go, #146 part 1): converge matched 1/2 (RemoveLockDDLJobs; InitMDLVariable is a stub, D06.5) |
+| D05.3 | sessionexpr | VS1-37 | in-progress | — | — | tidb-rs branch vs1/execute-compile (D05.3 tasks P1-1, the session expression context; Compile wired to planner.Optimize for EXECUTE): pkg/expression/sessionexpr converge 53/57 + 4 stubs |
 | D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
 | D06.3 | 1 | — | done | — | — | 184/270, dulao5/tidb-rs#176 #177 |
@@ -60,20 +61,20 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-336 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+337 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
-| D00.3 | 3 | 0 | 0 |
+| D00.3 | 4 | 0 | 0 |
 | D02.1 | 3 | 0 | 0 |
 | D02.2 | 32 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
-| D04.1 | 4 | 0 | 0 |
-| D05.3 | 4 | 0 | 0 |
-| D05.4 | 13 | 0 | 0 |
+| D04.1 | 5 | 0 | 0 |
+| D05.3 | 2 | 0 | 0 |
+| D05.4 | 14 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
-| D06.4 | 16 | 0 | 0 |
+| D06.4 | 17 | 0 | 0 |
 | D06.5 | 14 | 0 | 0 |
 | D07.1 | 13 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
@@ -82,16 +83,16 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 4 | 0 | 0 |
-| D09.0 | 2 | 0 | 0 |
+| D09.0 | 1 | 0 | 0 |
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
 | D09.12 | 5 | 0 | 0 |
-| D09.13 | 11 | 0 | 0 |
+| D09.13 | 9 | 0 | 0 |
 | D09.14 | 11 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
 | D09.17 | 1 | 0 | 0 |
-| D09.2 | 8 | 0 | 0 |
+| D09.2 | 9 | 0 | 0 |
 | D09.3 | 4 | 0 | 0 |
 | D09.4 | 16 | 0 | 0 |
 | D09.5 | 5 | 0 | 0 |
@@ -111,7 +112,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.12 | 2 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 15 | 0 | 0 |
+| D13.1 | 16 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 7 | 0 | 0 |
