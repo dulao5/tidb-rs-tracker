@@ -37,7 +37,7 @@ const sessionexprPorted = "ported (tidb-rs crates/session/src/sessionexpr.rs, D0
 // sessionexprStubs: the sessionexpr functions that are boundary stubs in tidb-rs (data/stubs.tsv).
 var sessionexprStubs = map[string]string{
 	"currentUserProp": "boundary stub (blocked-by:D04.1): SessionVars has no User / ActiveRoles in tidb-rs; " +
-		"the provider is not registered (D05.3 spec §8.3)",
+		"the property is registered, taking it is the boundary (D05.3 spec §8.3)",
 	"sequenceOperator.GetSequenceID":      "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
 	"sequenceOperator.GetSequenceNextVal": "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
 	"sequenceOperator.SetSequenceVal":     "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
