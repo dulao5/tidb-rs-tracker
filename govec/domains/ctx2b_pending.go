@@ -1,7 +1,7 @@
 // Generated from data/func_blocks.tsv (block D00.1 part 2b), then edited: the functions of
 // the part 2b files no ctx2b op covers, with the reason. The block is closed
-// (data/blocks_done.tsv): each entry is ported (unit tests), or owned by another block and
-// listed in that block's tasks.md in tidb-rs.
+// (data/blocks_done.tsv): each entry is ported (unit tests), a boundary stub, or owned by
+// another block and listed in that block's tasks.md in tidb-rs.
 
 package domains
 
@@ -28,11 +28,23 @@ var sessionexprFuncs = []string{
 	"sequenceOperator.SetSequenceVal", "sequenceOperatorProp", "sqlExecutorProp",
 }
 
+// sessionexprPorted: the reason of the ported sessionexpr functions (D05.3 tasks P1-1).
+const sessionexprPorted = "ported (tidb-rs crates/session/src/sessionexpr.rs, D05.3 spec §8): the ExprContext / " +
+	"EvalContext over a view of the live session (N2); each function hands the session's state over, " +
+	"no computation to replay; Rust unit tests (crates/session/src/tests.rs session_eval_context_*, " +
+	"session_build_context_shares_the_session_state)"
+
+// sessionexprStubs: the sessionexpr functions that are boundary stubs in tidb-rs (data/stubs.tsv).
+var sessionexprStubs = map[string]string{
+	"currentUserProp": "boundary stub (blocked-by:D04.1): SessionVars has no User / ActiveRoles in tidb-rs; " +
+		"the property is registered, taking it is the boundary (D05.3 spec §8.3)",
+	"sequenceOperator.GetSequenceID":      "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
+	"sequenceOperator.GetSequenceNextVal": "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
+	"sequenceOperator.SetSequenceVal":     "boundary stub (blocked-by:D06.4): the sequence table of util.GetSequenceByName",
+}
+
 func ctx2bExempt() map[string]string {
 	const (
-		toSession = "owned by D05.3: pkg/expression/sessionexpr is the ExprContext / EvalContext over a live " +
-			"session (SessionVars, StmtCtx, InfoSchema, sequences, SQL executor); tidb-rs builds it with the " +
-			"session (N2); listed in tidb-rs specs/D05.3-session/tasks.md"
 		toSessionVars = "owned by D05.3: the SessionVars provider of the builtins (N2: EvalContext is Send + Sync, " +
 			"SessionVars belongs to the session task); listed in tidb-rs specs/D05.3-session/tasks.md"
 		toDistSQL = "owned by D07.3: DistSQLContext's fields are D14.0 runtime stats and the D07.2 coprocessor " +
@@ -58,7 +70,10 @@ func ctx2bExempt() map[string]string {
 			"listed in tidb-rs specs/D07.1-store/tasks.md", // pkg/sessionctx/context.go
 	}
 	for _, f := range sessionexprFuncs {
-		m["pkg/expression/sessionexpr/sessionctx.go:"+f] = toSession
+		m["pkg/expression/sessionexpr/sessionctx.go:"+f] = sessionexprPorted
+	}
+	for f, why := range sessionexprStubs {
+		m["pkg/expression/sessionexpr/sessionctx.go:"+f] = why
 	}
 	return m
 }
