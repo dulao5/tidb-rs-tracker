@@ -17,11 +17,12 @@ crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cac
 crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
 crates/executor/src/builder.rs	new_closest_read_adjuster	D07.3	temporary	VS1-34: DistSQLContext and kv.Request.MatchStoreLabels (table reader only)
+crates/executor/src/compiler.rs	compile	D13.1	temporary	EXECUTE on the new stack: running an Execute plan (IsSafeToReusePointGetExecutor belongs to the plan-cache exception A3; ExecuteExec is D12.12)
 crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
-crates/executor/src/compiler.rs	planner_is_read_only	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
-crates/executor/src/compiler.rs	planner_optimize	D09.13	temporary	VS1-10: planner.IsReadOnly / planner.Optimize
-crates/executor/src/compiler.rs	preprocess	D09.0	temporary	VS1-10: preprocessor
+crates/executor/src/compiler.rs	planner_optimize	D05.4	temporary	Compile: a session without the transaction's InfoSchema (sessiontxn GetTxnInfoSchema)
+crates/executor/src/compiler.rs	planner_stmt_node	D05.3	temporary	Compile plans only EXECUTE: a plain statement's AST is shared with the transaction manager and has no Clone (session ownership of the statement)
+crates/executor/src/compiler.rs	planner_stmt_node	D09.2	temporary	EXECUTE ... USING @v (text protocol, never routed): the expression rewriter of buildExecute
 crates/executor/src/detach.rs	index_look_up_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	index_look_up_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	index_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
@@ -288,9 +289,6 @@ crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: comm
 crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
 crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
-crates/session/src/session.rs	get_expr_ctx	D05.3	temporary	VS1-14: sessionexpr ExprContext (D05.3 tasks P1-1)
-crates/session/src/session.rs	get_plan_ctx	D05.3	temporary	VS1-14: the session's PlanContext over sessionexpr (D05.3 tasks P1-1)
-crates/session/src/session.rs	get_ranger_ctx	D05.3	temporary	VS1-14: the session's RangerContext over sessionexpr (D05.3 tasks P1-1)
 crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the server's session manager
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
 crates/session/src/session.rs	get_table_ctx	D06.4	temporary	VS1-14: tblctx table context
@@ -305,6 +303,10 @@ crates/session/src/session.rs	show_process	D00.3	temporary	VS1-14: util.ProcessI
 crates/session/src/session.rs	update_process_info	D00.3	temporary	VS1-14: util.ProcessInfo
 crates/session/src/session.rs	validate_statement_in_txn	D02.2	temporary	VS1-14: ast.ImportIntoStmt not in the Rust AST (nothing to refuse)
 crates/session/src/session.rs	validate_statement_read_only_in_staleness	D05.4	temporary	VS1-14: statements in stale read transactions (D05.4 part 2)
+crates/session/src/sessionexpr.rs	current_user_prop	D04.1	temporary	sessionexpr currentUserProp: SessionVars has no User / ActiveRoles (privileges); the property is registered, taking it is this boundary
+crates/session/src/sessionexpr.rs	new_eval_context	D05.3	temporary	sessionexpr NewEvalContext: the session variables provider (tasks P1-2) and the advisory lock table are registered as properties, taking them is this boundary
+crates/session/src/sessionexpr.rs	sequence_operator_prop	D06.4	temporary	sessionexpr sequenceOperator: util.GetSequenceByName and the sequence table; the property is registered, taking it is this boundary
+crates/session/src/sessionexpr.rs	sql_executor_prop	D00.3	temporary	sessionexpr sqlExecutorProp: the session's restricted SQL executor (util/sqlexec); the property is registered, taking it is this boundary
 crates/session/src/tidb.rs	is_read_only	D09.13	temporary	VS1-14: ExecStmt.IsReadOnly (planner IsReadOnly) in finishStmt; its error is the statement's
 crates/sessiontxn/src/isolation/base.rs	on_local_temporary_table_created_base	D06.4	temporary	D06.4 part 2: local temporary tables
 crates/sessiontxn/src/staleread/provider.rs	activate_txn	D05.4	temporary	D05.4 part 2: stale read transactions (the InfoSchema at a ts, D06.5)
