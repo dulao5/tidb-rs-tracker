@@ -243,7 +243,7 @@ crates/planner/src/core/rule_inject_extra_projection.rs	inject_proj_below_union	
 crates/planner/src/core/stats.rs	check_partial_indexes	D10.2	temporary	D10.2 part 2: partial indexes (CheckPartialIndexByFilters, the partial index condition parser)
 crates/planner/src/core/stats.rs	generate_index_merge_path	D10.7	temporary	D10.7: index merge paths: OR conditions over two or more paths, multi-valued indexes (Go adds no path otherwise)
 crates/planner/src/core/stats.rs	init_stats	D14.2	temporary	D14.2: getTblInfoForUsedStatsByPhysicalID and the statement record of the used statistics (slow log, EXPLAIN ANALYZE): not carried
-crates/planner/src/core/stats.rs	of	D10.7	temporary	D10.7: a possible access path outside AllPossibleAccessPaths (index merge alternatives); Go shares the path pointers
+crates/planner/src/core/stats.rs	path_aliases_of	D10.7	temporary	D10.7: a possible access path outside AllPossibleAccessPaths (index merge alternatives); Go shares the path pointers
 crates/planner/src/core/task.rs	attach2_task_limit	D10.1	temporary	VS1-27: PhysicalLimit.Attach2Task on a cop task with index merge partial plans (sinkIntoIndexMerge): index merge is outside the slice
 crates/planner/src/core/task.rs	attach2_task_top_n	D10.1	temporary	VS1-27: PhysicalTopN.Attach2Task on an index merge with advisory sort items (handleAdvisorySortItemsForIndexMerge): index merge is outside the slice
 crates/planner/src/core/task.rs	compute_partial_cursor_offset	D08.11	temporary	VS1-27: computePartialCursorOffset needs aggregation.NeedCount / NeedValue (aggregate functions, D08.11); only the aggregation push down calls it
