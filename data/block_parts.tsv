@@ -4,6 +4,7 @@ D03.1	VS1-16	VS1-16	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D05.3	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported
 D05.3	VS1-14b	VS1-14b	in-progress	tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15
 D05.3	VS1-14m	VS1-14m	in-progress	tidb-rs branch vs1/read-mdl (read-path metadata lock per Go, #146 part 1): converge matched 1/2 (RemoveLockDDLJobs; InitMDLVariable is a stub, D06.5)
+D05.3	VS1-20	VS1-20	in-progress	tidb-rs branch vs1/c2a-integration (VS1-20): session.loadCommonGlobalVariablesIfNeeded L2 (the domain sysvar cache is a stand-in), converge --item VS1-20 matched 1/1
 D05.3	sessionexpr	VS1-37	in-progress	tidb-rs branch vs1/execute-compile (D05.3 tasks P1-1, the session expression context; Compile wired to planner.Optimize for EXECUTE): pkg/expression/sessionexpr converge 53/57 + 4 stubs
 D05.4	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported
 D06.2	1		done	130/240, dulao5/tidb-rs D06.2 part 1
@@ -13,6 +14,7 @@ D06.4	VS1-12	VS1-12	in-progress	dulao5/tidb-rs#234: converge 54/57 + 3 stubs, 46
 D06.5	VS1-17	VS1-17	in-progress	tidb-rs branch vs1/infoschema-load (schema loading, part 1): converge matched 15/16, accounted 1 stub
 D06.5	VS1-17b	VS1-17b	planned	schema validator / checker, reload loop and lease (left for part 2: the lease rules wait for the cluster-protocol exception N11)
 D07.1	VS1-18	VS1-18	in-progress	dulao5/tidb-rs#221: converge 40/40
+D07.1	VS1-20	VS1-20	in-progress	tidb-rs branch vs1/c2a-store-txn (the store as kv.Storage, Begin, the read part of tikvTxn for the point select of VS1-20): converge --item VS1-20 matched 10/12, accounted 2 stubs (tikvTxn.Iter / IterReverse)
 D07.2	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D07.3	VS1-33	VS1-33	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D09.0	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess

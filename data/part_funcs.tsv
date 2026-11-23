@@ -227,6 +227,7 @@ D05.3	VS1-14b	pkg/session/session.go	session.GetSessionPlanCache
 D05.3	VS1-14b	pkg/session/session.go	session.PrepareStmt
 D05.3	VS1-14m	pkg/session/session.go	InitMDLVariable
 D05.3	VS1-14m	pkg/session/session.go	RemoveLockDDLJobs
+D05.3	VS1-20	pkg/session/session.go	session.loadCommonGlobalVariablesIfNeeded
 D05.4	VS1-14	pkg/sessiontxn/interface.go	AdviseOptimizeWithPlanAndThenWarmUp
 D05.4	VS1-14	pkg/sessiontxn/interface.go	ErrorAction
 D05.4	VS1-14	pkg/sessiontxn/interface.go	NewTxn
@@ -463,6 +464,18 @@ D07.1	VS1-18	pkg/store/driver/txn/snapshot.go	tikvSnapshot.Iter
 D07.1	VS1-18	pkg/store/driver/txn/snapshot.go	tikvSnapshot.IterReverse
 D07.1	VS1-18	pkg/store/driver/txn/snapshot.go	tikvSnapshot.SetOption
 D07.1	VS1-18	pkg/store/driver/txn/snapshot.go	toTiKVKeys
+D07.1	VS1-20	pkg/store/driver/tikv_driver.go	tikvStore.Begin
+D07.1	VS1-20	pkg/store/driver/tikv_driver.go	tikvStore.Close
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	NewTiKVTxn
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.BatchGet
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.Commit
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.Get
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.GetOption
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.GetSnapshot
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.Iter
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.IterReverse
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.SetOption
+D07.1	VS1-20	pkg/store/driver/txn/txn_driver.go	tikvTxn.extractKeyErr
 D07.2	VS1-33	pkg/store/copr/coprocessor.go	BuildKeyRanges
 D07.2	VS1-33	pkg/store/copr/coprocessor.go	CopClient.BuildCopIterator
 D07.2	VS1-33	pkg/store/copr/coprocessor.go	CopClient.Send

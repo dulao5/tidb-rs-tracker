@@ -13,6 +13,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.3 | VS1-14 | VS1-14 | in-progress | 124 / 325 | 1985 | dulao5/tidb-rs#235 merged (VS1-14 part 1): converge matched 88/104, accounted 16 stubs, 20 not ported |
 | D05.3 | VS1-14b | VS1-14b | in-progress | 5 / 325 | 139 | tidb-rs branch vs1/prepared (VS1-14b, prepared statements; spec §6): converge matched 5/5 (L2), the prepare executor and PlanCacheStmt stay stubs for VS1-15 |
 | D05.3 | VS1-14m | VS1-14m | in-progress | 2 / 325 | 50 | tidb-rs branch vs1/read-mdl (read-path metadata lock per Go, #146 part 1): converge matched 1/2 (RemoveLockDDLJobs; InitMDLVariable is a stub, D06.5) |
+| D05.3 | VS1-20 | VS1-20 | in-progress | 1 / 325 | 43 | tidb-rs branch vs1/c2a-integration (VS1-20): session.loadCommonGlobalVariablesIfNeeded L2 (the domain sysvar cache is a stand-in), converge --item VS1-20 matched 1/1 |
 | D05.3 | sessionexpr | VS1-37 | in-progress | — | — | tidb-rs branch vs1/execute-compile (D05.3 tasks P1-1, the session expression context; Compile wired to planner.Optimize for EXECUTE): pkg/expression/sessionexpr converge 53/57 + 4 stubs |
 | D05.4 | VS1-14 | VS1-14 | in-progress | 41 / 157 | 682 | dulao5/tidb-rs#219 + #235 merged (VS1-14 part 1): converge matched 35/36, accounted 1 stub, 5 not ported |
 | D06.2 | 1 | — | done | — | — | 130/240, dulao5/tidb-rs D06.2 part 1 |
@@ -22,6 +23,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D06.5 | VS1-17 | VS1-17 | in-progress | 16 / 363 | 464 | tidb-rs branch vs1/infoschema-load (schema loading, part 1): converge matched 15/16, accounted 1 stub |
 | D06.5 | VS1-17b | VS1-17b | planned | 20 / 363 | 356 | schema validator / checker, reload loop and lease (left for part 2: the lease rules wait for the cluster-protocol exception N11) |
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
+| D07.1 | VS1-20 | VS1-20 | in-progress | 12 / 193 | 214 | tidb-rs branch vs1/c2a-store-txn (the store as kv.Storage, Begin, the read part of tikvTxn for the point select of VS1-20): converge --item VS1-20 matched 10/12, accounted 2 stubs (tikvTxn.Iter / IterReverse) |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
@@ -75,8 +77,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
 | D06.4 | 18 | 0 | 0 |
-| D06.5 | 14 | 0 | 0 |
-| D07.1 | 13 | 0 | 0 |
+| D06.5 | 13 | 0 | 0 |
+| D07.1 | 18 | 0 | 0 |
 | D07.3 | 3 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.11 | 2 | 0 | 0 |
@@ -87,7 +89,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
 | D09.12 | 7 | 0 | 0 |
-| D09.13 | 9 | 0 | 0 |
+| D09.13 | 7 | 0 | 0 |
 | D09.14 | 10 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
@@ -113,7 +115,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
 | D12.5 | 1 | 0 | 0 |
-| D13.1 | 16 | 0 | 0 |
+| D13.1 | 14 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 8 | 0 | 0 |
