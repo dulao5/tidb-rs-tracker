@@ -122,4 +122,4 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D15.2 | 1 | 0 | 0 |
 | DEF.MPP | 1 | 0 | 0 |
 | EXC.B | 0 | 1 | 0 |
-| X | 1 | 14 | 0 |
+| X | 1 | 12 | 2 |
