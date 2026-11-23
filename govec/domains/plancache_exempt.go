@@ -11,7 +11,7 @@ var plancacheExempt = map[string]string{
 	"GetParamSQLFromAST":                           "the non-prepared plan cache (tidb_enable_non_prepared_plan_cache): not used by the new stack",
 	"GetPlanFromPlanCache":                         "ported in tidb-rs (VS1-15 prepared-statement planning) with Rust unit tests: a Go-vs-Rust record needs the plan builder and optimizer (D09.1, D13.3) to produce a statement and a plan first",
 	"GetPreparedStmt":                              "reads the EXECUTE statement node, which the Rust AST does not have (D02.2)",
-	"IsSafeToReusePointGetExecutor":                "the session's point get executor reuse (PlanCacheStmt.PointGet): not ported yet (A3 spec §1.1 last row; tidb-rs builds a new point get executor for every EXECUTE)",
+	"IsSafeToReusePointGetExecutor":                "ported in tidb-rs (the point plan short path, VS1-20b) with Rust session tests of each condition: it reads the session (stale read flag, autocommit, transaction state) and the prepared statement's schema version, so a record needs a session context; the executor reuse it is named after is still not ported (A3 spec §1.1 last row: tidb-rs builds a new point get executor for every EXECUTE)",
 	"LRUPlanCache.Close":                           "the session-level plan cache: not ported (tidb-rs has only the instance-level cache, the plan-cache exception A3 spec §1.2)",
 	"LRUPlanCache.Delete":                          "the session-level plan cache: not ported (tidb-rs has only the instance-level cache, the plan-cache exception A3 spec §1.2)",
 	"LRUPlanCache.DeleteAll":                       "the session-level plan cache: not ported (tidb-rs has only the instance-level cache, the plan-cache exception A3 spec §1.2)",

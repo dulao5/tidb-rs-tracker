@@ -59,6 +59,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.5 | VS1-36 | VS1-36 | planned | 65 / 188 | 1154 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D13.1 | VS1-20b | VS1-20b | in-progress | 1 / 100 | 13 | the point plan short path (IsSafeToReusePointGetExecutor, D05.3 spec §10): converge 1/1 |
 | D13.1 | VS1-39 | VS1-39 | in-progress | 29 / 100 | 848 | the instance plan cache, first stage (A3 spec §7): converge 22/29 + 2 stubs + 5 exceptions (EXC.A3) |
 | D13.3 | VS1-24 | VS1-24 | in-progress | 38 / 89 | 837 | tidb-rs branch vs1/optimizer-driver: converge 38/38 |
 

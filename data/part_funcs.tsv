@@ -2195,6 +2195,7 @@ D13.1	VS1-15	pkg/planner/core/plan_cacheable_checker.go	getColType
 D13.1	VS1-15	pkg/planner/core/plan_cacheable_checker.go	getMaxParamLimit
 D13.1	VS1-15	pkg/planner/core/plan_cacheable_checker.go	isPhysicalPlanCacheable
 D13.1	VS1-15	pkg/planner/core/plan_cacheable_checker.go	isPlanCacheable
+D13.1	VS1-20b	pkg/planner/core/plan_cache.go	IsSafeToReusePointGetExecutor
 D13.1	VS1-39	pkg/planner/core/plan_cache_instance.go	NewInstancePlanCache
 D13.1	VS1-39	pkg/planner/core/plan_cache_instance.go	init
 D13.1	VS1-39	pkg/planner/core/plan_cache_instance.go	instancePlanCache.Evict
