@@ -68,8 +68,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D00.3 | 4 | 0 | 0 |
-| D02.1 | 3 | 0 | 0 |
-| D02.2 | 33 | 0 | 0 |
+| D02.1 | 4 | 0 | 0 |
+| D02.2 | 32 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
 | D04.1 | 5 | 0 | 0 |
 | D05.3 | 3 | 0 | 0 |

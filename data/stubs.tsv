@@ -5,6 +5,7 @@ crates/executor/src/adapter.rs	get_lazy_stmt_text	D02.1	temporary	D02.1: parser.
 crates/executor/src/adapter.rs	get_text_to_log	D02.1	temporary	D02.1: parser.NormalizeKeepHint (tidb_redact_log=ON text)
 crates/executor/src/adapter.rs	handle_no_delay	X	permanent	not ported (write path: pessimistic locks, table delta)
 crates/executor/src/adapter.rs	on_fetch_returned	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/adapter.rs	plan_replayer_task_key	D02.1	temporary	D02.1: the SQL digest (parser.NormalizeDigest) and plan digest that match a plan replayer capture task; reached only when a plan replayer handle has tasks (the new stack has no handle), before the statement executes
 crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
@@ -79,7 +80,6 @@ crates/planner/src/cardinality/selectivity.rs	out_of_range_eq_selectivity	D10.6	
 crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	Selectivity returns blocked-by:D10.6 when TopN-assisted estimation (GetSelectivityByFilter) would run (tidb_default_string_match_selectivity = 0)
 crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	comment-only stub above the test module: crossValidationSelectivity (D10.6 part 2, needs GetColumnRowCount)
 crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	D11.2: recordUsedItemStatsStatus needs StatementContext.UsedStatsInfo (D11.2 tasks P1-1); records nothing, the estimate does not depend on it
-crates/planner/src/core/collect_column_stats_usage.rs	collect_column_stats_usage	D02.2	temporary	D02.2: the plan replayer capture (recordTableRuntimeStats) of the column statistics usage
 crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/explain.rs	explain_stub	D10.9	temporary	VS1-27: ExplainInfo / ExplainNormalizedInfo of the 8 physical operators of the slice (explain.go), the EXPLAIN text of D10.9 (VS1-31); panics with the blocked error like PointGetPlan.ExplainInfo
 crates/planner/src/core/expression_codec_fn.rs	tidb_codec_func_helper	D08.9	temporary	VS1-27: tidbCodecFuncHelper (10 methods), the key codec of the tidb_decode_key / tidb_encode_record_key / tidb_encode_index_key builtins, whose function classes are not ported (D08.9): no caller yet
