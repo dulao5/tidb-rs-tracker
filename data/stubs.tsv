@@ -7,7 +7,7 @@ crates/executor/src/adapter.rs	handle_no_delay	X	permanent	not ported (write pat
 crates/executor/src/adapter.rs	on_fetch_returned	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
 crates/executor/src/adapter.rs	plan_replayer_task_key	D02.1	temporary	D02.1: the SQL digest (parser.NormalizeDigest) and plan digest that match a plan replayer capture task; reached only when a plan replayer handle has tasks (the new stack has no handle), before the statement executes
 crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
-crates/executor/src/adapter.rs	send_plan_replayer_dump_task	X	permanent	not ported: the plan replayer dump task (session bindings, encoded plan, the handle's dump worker); returns a boundary before execution instead of panicking once the digests are ported
+crates/executor/src/adapter.rs	send_plan_replayer_dump_task	X	delegated	delegated (the block table puts pkg/domain/plan_replayer.go in X: it writes mysql.plan_replayer_status and dump files). Each node captures only the statements it executes itself, so statements sent to a tidb-rs node are captured by no node: the plan replayer dump task (session bindings, encoded plan, the handle's dump worker); returns a boundary before execution instead of panicking once the digests are ported
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
@@ -33,7 +33,7 @@ crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: sele
 crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	table_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	table_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/glue.rs	get_plan_replayer_handle	X	permanent	not ported: the plan replayer handle (task collector of mysql.plan_replayer_task, dump worker); returns None, so tidb-rs nodes never execute PLAN REPLAYER CAPTURE tasks (docs/compatibility.md known limitation)
+crates/executor/src/glue.rs	get_plan_replayer_handle	X	delegated	delegated (the block table puts pkg/domain/plan_replayer.go in X: it writes mysql.plan_replayer_status and dump files). Each node captures only the statements it executes itself, so statements sent to a tidb-rs node are captured by no node: the plan replayer handle (task collector of mysql.plan_replayer_task, dump worker); returns None, so tidb-rs nodes never execute PLAN REPLAYER CAPTURE tasks (docs/compatibility.md known limitation)
 crates/executor/src/internal/builder/builder_utils.rs	construct_dag_req	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/builder/builder_utils.rs	to_pb	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
