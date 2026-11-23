@@ -2,8 +2,9 @@ package domains
 
 // Domain "plancache": block D13.1 (the plan cache), the part prepared-statement planning
 // ports (tidb-rs VS1-15): the cacheability check of a prepared statement,
-// pkg/planner/core/plan_cacheable_checker.go IsASTCacheable. The cache itself is the
-// plan-cache exception A3 and is not covered.
+// pkg/planner/core/plan_cacheable_checker.go IsASTCacheable; and the parameter type check of
+// the instance plan cache's lookup (the plan-cache exception A3, first stage, VS1-39),
+// checkTypesCompatibility4PC (op "types_compat", plancache_types.go).
 //
 // Records:
 //   - "ast": args [sess, tables, sql] -> {"c": cacheable, "r": reason} of
@@ -61,6 +62,7 @@ func init() {
 var plancacheCoverage = map[string]vec.Coverage{
 	"ast": {Min: 60, GoFuncs: []string{"CacheableWithCtx", "IsASTCacheable", "cacheableChecker.Enter",
 		"cacheableChecker.Leave", "checkTableCacheable", "getMaxParamLimit", "enablePlanCacheForGeneratedCols"}},
+	"types_compat": {Min: 500, GoFuncs: []string{"checkTypesCompatibility4PC"}},
 }
 
 type pcSess struct {
@@ -98,6 +100,9 @@ func pcTables() []*model.TableInfo {
 }
 
 func plancacheExec(op string, args []json.RawMessage) (any, error) {
+	if op == "types_compat" {
+		return plancacheTypesExec(args), nil
+	}
 	if op != "ast" {
 		return nil, errors.Errorf("unknown op %s", op)
 	}
@@ -140,7 +145,8 @@ func plancacheExec(op string, args []json.RawMessage) (any, error) {
 	return map[string]any{"c": c, "r": vec.GoString(r)}, nil
 }
 
-func plancacheGenerate(g *vec.Gen, _ *rand.Rand) {
+func plancacheGenerate(g *vec.Gen, r *rand.Rand) {
+	plancacheTypesGenerate(g, r)
 	var tjs []string
 	for _, t := range pcTables() {
 		b, err := json.Marshal(t)

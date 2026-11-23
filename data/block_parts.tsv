@@ -50,4 +50,5 @@ D12.2	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#235 merged (VS1-14 part 1): Reset
 D12.2	VS1-35	VS1-35	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.5	VS1-36	VS1-36	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D13.1	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D13.1	VS1-39	VS1-39	in-progress	the instance plan cache, first stage (A3 spec §7): converge 22/29 + 2 stubs + 5 exceptions (EXC.A3)
 D13.3	VS1-24	VS1-24	in-progress	tidb-rs branch vs1/optimizer-driver: converge 38/38

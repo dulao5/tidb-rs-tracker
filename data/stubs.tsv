@@ -135,7 +135,6 @@ crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.4	temporar
 crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by	D09.4	temporary	checkOnlyFullGroupBy with GROUP BY (checkOnlyFullGroupByWithGroupClause); unreachable while GROUP BY stops first
 crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by_with_out_group_clause	D09.4	temporary	checkOnlyFullGroupByWithOutGroupClause: aggregates mixed with plain columns need the functional dependencies of WHERE and the joins
 crates/planner/src/core/logical_plan_builder.rs	check_order_by_in_distinct	D09.4	temporary	checkOrderByInDistinct: only SELECT DISTINCT (an aggregation) calls it
-crates/planner/src/core/logical_plan_builder.rs	check_param_type_int64_or_uint64	D13.1	temporary	CheckParamTypeInt64orUint64: the value of a parameter marker in LIMIT (the Rust marker carries no value; the plan cache)
 crates/planner/src/core/logical_plan_builder.rs	collect_generate_column	D09.13	temporary	collectGenerateColumn of the generated column rule: only virtual generated columns, which the data source does not build yet
 crates/planner/src/core/logical_plan_builder.rs	compare_items	D09.4	temporary	compareItems / getAllByItems / restoreByItemText: grouping of window functions
 crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransformer.Enter: ORDER BY ? (the position node of the Rust AST has no parameter marker)
@@ -181,15 +180,13 @@ crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-27: enforceProperty of an MPP task (MppTask.enforceExchanger): MPP is outside the slice
 crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
-crates/planner/src/core/plan_cache.rs	adjust_cached_plan	D13.1	temporary	the plan cache hit path: the plan-cache exception A3, spec not confirmed
-crates/planner/src/core/plan_cache.rs	generate_new_plan	D13.1	temporary	putting a plan into the plan cache: the plan-cache exception A3, nothing is cached
-crates/planner/src/core/plan_cache.rs	get_plan_from_plan_cache	D13.1	temporary	plan cache lookup always misses: the plan-cache exception A3
 crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
+crates/planner/src/core/plan_cache_rebuild.rs	build_range_for_index_scan	D10.1	temporary	updateRange / buildRangeForIndexScan: the range rebuild of a cached index join or index scan; their operators are not ported, so such plans are not cached (instance plan cache, A3 first stage)
+crates/planner/src/core/plan_cache_rebuild.rs	build_range_for_table_scan	D10.2	temporary	GroupRangesByCols of a cached table scan with GroupByColIdxs (the merge sort of grouped ranges, D10.2 part 2)
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
-crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D13.1	temporary	the plan cache key: the plan-cache exception A3 (stand-in key for cleanRetryInfo only)
+crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D04.1	temporary	the user and host of the instance plan cache key are empty until the session carries the user identity: different users must not share plans once identity exists
 crates/planner/src/core/plan_cache_utils.rs	not_resident	D06.3	temporary	synchronous table lookup of the planner: a table not loaded into the InfoSchema table cache before planning (loading reads TiKV; the session loads the statement's tables first, InfoSchema spec D06.3 §11.2)
-crates/planner/src/core/plan_cache_utils.rs	parse_param_types	D13.1	temporary	the parameter types of the plan cache key: the plan-cache exception A3
 crates/planner/src/core/plan_cacheable_checker.rs	cacheable	D13.1	temporary	Cacheable: Go test helper with a nil context, not used
 crates/planner/src/core/plan_cacheable_checker.rs	check_table_cacheable	D13.1	temporary	the non-prepared plan cache's stricter table check: not used by the new stack
 crates/planner/src/core/plan_cacheable_checker.rs	enter	D13.3	temporary	ignore_plan_cache(): optimizer hint names are not parsed in the Rust AST
