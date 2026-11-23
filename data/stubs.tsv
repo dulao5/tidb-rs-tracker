@@ -18,11 +18,10 @@ crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cac
 crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
 crates/executor/src/builder.rs	new_closest_read_adjuster	D07.3	temporary	VS1-34: DistSQLContext and kv.Request.MatchStoreLabels (table reader only)
+crates/executor/src/compiler.rs	check_execute_using	D09.2	temporary	EXECUTE ... USING @v (text protocol, never routed): the expression rewriter of buildExecute
 crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
 crates/executor/src/compiler.rs	planner_optimize	D05.4	temporary	Compile: a session without the transaction's InfoSchema (sessiontxn GetTxnInfoSchema)
-crates/executor/src/compiler.rs	planner_stmt_node	D05.3	temporary	Compile plans only EXECUTE: a plain statement's AST is shared with the transaction manager and has no Clone (session ownership of the statement)
-crates/executor/src/compiler.rs	planner_stmt_node	D09.2	temporary	EXECUTE ... USING @v (text protocol, never routed): the expression rewriter of buildExecute
 crates/executor/src/detach.rs	index_look_up_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	index_look_up_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	index_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
