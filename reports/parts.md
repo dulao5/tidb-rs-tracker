@@ -56,7 +56,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
-| D12.2 | VS1-35 | VS1-35 | in-progress | 35 / 72 | 663 | dulao5/tidb-rs#338 (VS1-35, basic executors part 1): converge 35/35, no stubs; govec basicexec |
+| D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#329 (issue): converge 59/65 + 6 stubs; govec sortexec |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-20b | VS1-20b | in-progress | 1 / 100 | 13 | the point plan short path (IsSafeToReusePointGetExecutor, D05.3 spec §10): converge 1/1 |
@@ -65,7 +65,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-369 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+371 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -116,7 +116,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.0 | 3 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
-| D12.2 | 4 | 0 | 0 |
+| D12.2 | 6 | 0 | 0 |
 | D12.5 | 10 | 0 | 0 |
 | D13.1 | 8 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
