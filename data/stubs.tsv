@@ -13,7 +13,6 @@ crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log 
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/builder.rs	build	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
-crates/executor/src/builder.rs	build	D12.5	temporary	VS1-36: sort / top-n executors
 crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)
 crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
@@ -48,6 +47,26 @@ crates/executor/src/point_get.rs	verify_txn_scope	D07.3	temporary	D07.3: distsql
 crates/executor/src/prepared.rs	next	D02.1	temporary	prepared-statement planning (VS1-15): the Rust parser's syntax error / warning text differs from Go's, the PoC answers
 crates/executor/src/prepared.rs	next	D05.4	temporary	prepared-statement planning (VS1-15): no transaction InfoSchema (PrepareStmt always sets one)
 crates/executor/src/select.rs	reset_context_of_stmt	D02.2	temporary	VS1-14: ResetContextOfStmt of statements outside the Rust AST (INSERT/UPDATE/DELETE/EXPLAIN...)
+crates/executor/src/sortexec/sort.rs	append_result_to_chunk_in_parallel_mode	D12.5	temporary	VS1-36: the parallel sort's result channel (D12.5 outside VS1-36); unreachable: Open stops at the parallel path
+crates/executor/src/sortexec/sort.rs	external_sorting	D01.10	temporary	VS1-36: the multi-way merge of spilled sort partitions; unreachable: a sort never spills (spill to disk is D01.10, the spill action is not registered)
+crates/executor/src/sortexec/sort.rs	fetch_chunks_from_child	D12.5	temporary	VS1-36: the parallel sort's chunk fetcher (D12.5 outside VS1-36); unreachable: Open stops at the parallel path
+crates/executor/src/sortexec/sort.rs	fetch_chunks_parallel	D12.5	temporary	VS1-36: the parallel sort's workers and merge (D12.5 outside VS1-36); unreachable: Open stops at the parallel path
+crates/executor/src/sortexec/sort.rs	generate_result	D12.5	temporary	VS1-36: the parallel sort's result generator (D12.5 outside VS1-36); unreachable: Open stops at the parallel path
+crates/executor/src/sortexec/sort.rs	generate_result_from_memory	D12.5	temporary	VS1-36: the parallel sort's in-memory multi-way merge (D12.5 outside VS1-36); unreachable: Open stops at the parallel path
+crates/executor/src/sortexec/sort.rs	open	D12.5	temporary	VS1-36: Go's SortExec.Open always takes the parallel path (sort.go:170); returns Blocked(D12.5) before opening the child until the parallel sort is ported (owner question on tidb-rs#329)
+crates/executor/src/sortexec/sort.rs	switch_to_new_sort_partition	D01.10	temporary	VS1-36: registering the partition's spill action on the session memory tracker (spill to disk D01.10; the Rust session has no memory tracker yet, exception A1); a sort never spills
+crates/executor/src/sortexec/sort_spill.rs	action	D01.10	temporary	VS1-36: sortPartitionSpillDiskAction.Action (spill a sort partition to disk, D01.10); never called: the action is not registered
+crates/executor/src/sortexec/sort_util.rs	reload_cursor	D01.10	temporary	VS1-36: reloads a cursor from the disk chunks of a spilled partition (D01.10); unreachable without spill
+crates/executor/src/sortexec/topn.rs	execute_rank_top_n	D12.5	temporary	VS1-36: the rank top-n (prefix-key truncation, D12.5 outside VS1-36); the builder sets RankInfo, so a rank top-n stops here
+crates/executor/src/sortexec/topn.rs	execute_top_n_when_spill_triggered	D01.10	temporary	VS1-36: the top-n after spill (workers, spilled heaps, D01.10); unreachable: a top-n never spills
+crates/executor/src/sortexec/topn.rs	fetch_chunks_from_child	D01.10	temporary	VS1-36: the top-n's chunk fetcher for its spill workers (D01.10); unreachable without spill
+crates/executor/src/sortexec/topn.rs	generate_top_n_results_when_spill_triggered	D01.10	temporary	VS1-36: the multi-way merge of spilled top-n heaps (D01.10); unreachable without spill
+crates/executor/src/sortexec/topn.rs	init_before_loading_chunks	D12.5	temporary	VS1-36: the rank top-n's type context and prefix keys (D12.5 outside VS1-36); returns Blocked for a rank top-n
+crates/executor/src/sortexec/topn.rs	load_chunks_until_total_limit_for_rank_top_n	D12.5	temporary	VS1-36: the rank top-n's loading (D12.5 outside VS1-36)
+crates/executor/src/sortexec/topn.rs	open	D01.10	temporary	VS1-36: the spill helper's workers and the spill action on the session memory tracker (spill to disk D01.10; the Rust session has no memory tracker yet, exception A1); a top-n never spills
+crates/executor/src/sortexec/topn.rs	open	D12.5	temporary	VS1-36: a rank top-n (the planner's PrefixCol, e.typeCtx in Open) stops with Blocked in Open, before the child opens, so the router can still hand the statement to Go TiDB
+crates/executor/src/sortexec/topn.rs	spill_top_n_exec_heap	D01.10	temporary	VS1-36: spills the top-n heap to disk (D01.10); unreachable without spill
+crates/executor/src/sortexec/topn_chunk_heap.rs	test_kill_signal_in_top_n	D01.10	temporary	VS1-36: a test hook of the spill tests (D01.10)
 crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families

@@ -42,6 +42,7 @@ rule). It is not a fix: no `vec.Fix`, no probe — a build without it does not c
 | Shim | Exports | Domains |
 |---|---|---|
 | `pkg/server/govec_export.go` | `pkg/server/internal/{column,util}` (`Info.Dump`, `DumpTextRow`, `DumpBinaryRow`, `ConvertColumnInfo`, `AppendFormatFloat`, the result encoder, the input decoder) and the unexported `parseBinaryParams`, through `Govec*` wrappers | protocol |
+| `pkg/executor/sortexec/govec_export.go` | `pkg/executor/internal/exec` (the executor base, `NewFirstChunk`): `GovecSortRun` builds `SortExec` (unparallel, as `sort_spill_test.go` switches it after `Open`) or `TopNExec` over a source of fixed chunks and runs `Open` / `Next` / `Close` | sortexec |
 
 Adding a fix: copy the v8.5.8 file to `fixes/<path>.fixed`, apply the upstream
 change with a comment citing it, add the mapping to `scripts/govec-fixes.sh`,
