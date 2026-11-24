@@ -49,7 +49,8 @@ D12.1	VS1-34	VS1-34	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.12	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.2	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt
 D12.2	VS1-35	VS1-35	in-progress	dulao5/tidb-rs#328 (issue; VS1-35, basic executors part 1; first try #338 reverted): converge 35/35, no stubs; govec basicexec
-D12.5	VS1-36	VS1-36	in-progress	dulao5/tidb-rs#329 (issue): converge 59/65 + 6 stubs; govec sortexec
+D12.5	D12.5-PS	D12.5-PS	in-progress	tidb-rs branch claude/issue-339 (#339, the parallel sort): converge 44/46 + 2 stubs (D01.10 spill); govec sortexec op psort 137 records
+D12.5	VS1-36	VS1-36	in-progress	dulao5/tidb-rs#349 merged (#329): converge 59/65 + 6 stubs; the three parallel sort stubs ported by #339: converge 62/65 + 3 stubs (D01.10); govec sortexec
 D13.1	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D13.1	VS1-20b	VS1-20b	in-progress	the point plan short path (IsSafeToReusePointGetExecutor, D05.3 spec §10): converge 1/1
 D13.1	VS1-39	VS1-39	in-progress	the instance plan cache, first stage (A3 spec §7): converge 22/29 + 2 stubs + 5 exceptions (EXC.A3)

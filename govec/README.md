@@ -612,13 +612,15 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 - 记录里有 Go 的 panic（tidb-rs 必须同样 panic，由连接循环恢复）：TIME 列小数位 31 的文本输出、二进制参数中长度编码 NULL 的 DECIMAL（空指针）、截断的长度编码整数。
 - 本领域的整数与位运算在两个目标上相同；amd64 文件取自 tracker CI 的产物。
 
-## sortexec（块 D12.5：`pkg/executor/sortexec` 的内存中 Sort 与 TopN，tidb-rs VS1-36）
+## sortexec（块 D12.5：`pkg/executor/sortexec` 的内存中 Sort 与 TopN，tidb-rs VS1-36；并行 sort，tidb-rs#339）
 
-- 记录格式见 `domains/sortexec.go` 文件头：op `sort`（`SortExec`，`Open` 之后照 `sort_spill_test.go` 的做法设 `IsUnparallel = true` 并调用 `InitUnparallelModeForTest`）与 `topn`（`TopNExec`，不落盘），数据源每次 `Next` 返回一个固定的 chunk。`pkg/executor/internal/exec` 是 internal 包，经导出垫片 `fixes/pkg/executor/sortexec/govec_export.go.fixed` 调用（见 [fixes/README.md](fixes/README.md)）。
-- 生产中 v8.5.8 的 `SortExec.Open` 总是走并行分支（`sort.go` L170），并行 worker 与多路归并不在本任务（tidb-rs#339）；块内其余函数（并行排序、落盘、TopN 的落盘路径）列在 `sortexec_exempt.go`。
-- 两个目标的记录完全相同（1164 条）。tracker CI 的产物下载不到（沙箱的代理不放行产物存储），按维护者在 tidb-rs#329 的决定（方案 2，与 `postprocess` 相同）两份文件都在本地生成，生成器 commit `206a466`：
-  - `amd64/sortexec.jsonl.gz`：在本地 x86_64 机器上直接运行 `scripts/govec.sh sortexec`（`GOAMD64=v1`），sha256 `e7abbd8c3c19e5ceb9fb83afe7dd6765469cbfd4a64feff62a4a62c7a9331829`；
-  - `arm64/sortexec.jsonl.gz`：同一次运行中为 linux/arm64 交叉编译的同一生成器（`CGO_ENABLED=0`）在 qemu-user 下运行（`GOVEC_RUN_arm64=/usr/bin/qemu-aarch64-static`），sha256 `0818ccad18279589fe7dac2148ef1a99421447f82f21854466ed6138e7da3161`。
+- 记录格式见 `domains/sortexec.go` 文件头：op `sort`（`SortExec`，`Open` 之后照 `sort_spill_test.go` 的做法设 `IsUnparallel = true` 并调用 `InitUnparallelModeForTest`）、`psort`（`SortExec` 的并行路径，worker 数 1 至 20，即 `tidb_executor_concurrency`）与 `topn`（`TopNExec`，不落盘），数据源每次 `Next` 返回一个固定的 chunk。`pkg/executor/internal/exec` 是 internal 包，经导出垫片 `fixes/pkg/executor/sortexec/govec_export.go.fixed` 调用（见 [fixes/README.md](fixes/README.md)）。
+- 生产中 v8.5.8 的 `SortExec.Open` 总是走并行分支（`sort.go` L170）。`psort` 中排序键相等的行之间的先后取决于 worker 的调度，Go 自己每次运行都可能不同：写出之前，把每一段相邻且按 `compareRow`（排序键取自 `GetSortMetaForTest`）比较相等的行按各格的编码（null 标志加 `Row.GetRaw`）重新排列（`sortexecTieOrder`），tidb-rs 的回放对自己的输出做同样的整理；比较函数不能给出一致顺序的值不进 `psort` 记录（`sortexecConsistent`：浮点 NaN；大小写不敏感排序规则下不是合法 UTF-8 的字节，`compareCommon` 遇到这种字节就返回 0）。块内其余函数（落盘、TopN 的落盘路径、rank topn）列在 `sortexec_exempt.go`。
+- 两个目标的记录完全相同（1301 条：`sort` 582、`topn` 582、`psort` 137；前 1164 条与上一版相同）。tracker CI 的产物下载不到（沙箱的代理不放行产物存储），按维护者在 tidb-rs#329 的决定（方案 2，与 `postprocess` 相同）两份文件都在本地生成，生成器 commit `ffbe2ce`：
+  - `amd64/sortexec.jsonl.gz`：在本地 x86_64 机器上直接运行 `scripts/govec.sh sortexec`（`GOAMD64=v1`），sha256 `6197aa52e0dd93d2134d0eac265d37987bf2c5217a6b5f89c5f343ba4ddd9f8f`；
+  - `arm64/sortexec.jsonl.gz`：同一次运行中为 linux/arm64 交叉编译的同一生成器（`CGO_ENABLED=0`）在 qemu-user 下运行（`GOVEC_RUN_arm64=/usr/bin/qemu-aarch64-static`），sha256 `c2d2bbeb69ee55ebcf8008a70a29c2ff8f942c6afb0517e366e89f4076b546a9`。
+
+  `psort` 用了多个 worker，提交前在本机对两个目标各重新生成两次（`GOVEC_RUN_arm64=... scripts/govec.sh --check --all sortexec`），解压后的内容逐字节相同。
 
   CI 的 `govec.sh --check` 在两个架构的 runner 上各自重新生成并逐字节比较解压后的内容。
 
