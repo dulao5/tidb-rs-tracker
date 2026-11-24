@@ -26,6 +26,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | VS1-20 | VS1-20 | in-progress | 12 / 193 | 214 | tidb-rs branch vs1/c2a-store-txn (the store as kv.Storage, Begin, the read part of tikvTxn for the point select of VS1-20): converge --item VS1-20 matched 10/12, accounted 2 stubs (tikvTxn.Iter / IterReverse) |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D08.11 | D08.11-AB | D08.11-AB | in-progress | 62 / 69 | 942 | tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
@@ -40,7 +41,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | in-progress | 110 / 354 | 1830 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
-| D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
+| D10.10 | VS1-19 | VS1-19 | in-progress | 135 / 161 | 1338 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
 | D10.2 | VS1-28 | VS1-28 | in-progress | 89 / 181 | 2759 | tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
