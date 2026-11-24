@@ -12,8 +12,6 @@ crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/builder.rs	build	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
-crates/executor/src/builder.rs	build	D12.5	temporary	VS1-36: sort / top-n executors
 crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)
 crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
