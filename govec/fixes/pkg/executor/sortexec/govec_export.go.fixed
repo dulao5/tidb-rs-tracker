@@ -87,3 +87,48 @@ func GovecSortRun(ctx sessionctx.Context, schema *expression.Schema, batches []*
 	}
 	return out, "", nil
 }
+
+// GovecParallelSortRun is one run of a SortExec on its parallel path (Open always takes it;
+// the workers are sessionVars.ExecutorConcurrency), over a source returning batches, read
+// like GovecSortRun. It also returns the sort keys Next built (GetSortMetaForTest), with
+// which the caller orders rows of equal keys (their order depends on how the workers were
+// scheduled).
+func GovecParallelSortRun(ctx sessionctx.Context, schema *expression.Schema, batches []*chunk.Chunk,
+	byItems []*plannerutil.ByItems, reqs []int) (out []*chunk.Chunk, step string, keyColumns []int,
+	keyCmpFuncs []chunk.CompareFunc, byItemsDesc []bool, err error) {
+	src := &govecSource{BaseExecutor: exec.NewBaseExecutor(ctx, schema, 1), batches: batches}
+	e := &SortExec{
+		BaseExecutor: exec.NewBaseExecutor(ctx, schema, 2, src),
+		ByItems:      byItems,
+		ExecSchema:   schema,
+	}
+	out, step, err = govecRun(ctx, e, reqs)
+	keyColumns, keyCmpFuncs, byItemsDesc = e.GetSortMetaForTest()
+	return out, step, keyColumns, keyCmpFuncs, byItemsDesc, err
+}
+
+// govecRun opens e, reads it as GovecSortRun does and closes it.
+func govecRun(ctx sessionctx.Context, e exec.Executor, reqs []int) (out []*chunk.Chunk, step string, err error) {
+	bg := context.Background()
+	if err := e.Open(bg); err != nil {
+		return nil, "open", err
+	}
+	chk := exec.NewFirstChunk(e)
+	for i := 0; ; i++ {
+		if i < len(reqs) && reqs[i] > 0 {
+			chk.SetRequiredRows(reqs[i], ctx.GetSessionVars().MaxChunkSize)
+		}
+		if err := e.Next(bg, chk); err != nil {
+			_ = e.Close()
+			return out, "next", err
+		}
+		if chk.NumRows() == 0 {
+			break
+		}
+		out = append(out, chk.CopyConstruct())
+	}
+	if err := e.Close(); err != nil {
+		return out, "close", err
+	}
+	return out, "", nil
+}
