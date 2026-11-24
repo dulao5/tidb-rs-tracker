@@ -609,3 +609,13 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
   - `arm64/sortexec.jsonl.gz`：同一次运行中为 linux/arm64 交叉编译的同一生成器（`CGO_ENABLED=0`）在 qemu-user 下运行（`GOVEC_RUN_arm64=/usr/bin/qemu-aarch64-static`），sha256 `0818ccad18279589fe7dac2148ef1a99421447f82f21854466ed6138e7da3161`。
 
   CI 的 `govec.sh --check` 在两个架构的 runner 上各自重新生成并逐字节比较解压后的内容。
+
+## postprocess（块 D10.9 第 1 部分：切片算子的 ResolveIndices、ToPB、access object，tidb-rs VS1-31）
+
+- 记录格式见 `domains/postprocess.go` 文件头。`plan`：语句按 `findbest` 的方式规划（`core.DoOptimize`，最后一步是 `ResolveIndices`），记录每个算子解析后的列下标（表达式中列引用的 `Index`，按先序）、每个 TableReader 的 DAG（`TablePlans` 逐个 `ToPB(TiKV)`、table plan 的 `ToPB(TiFlash)`，marshal 后的十六进制）、根上 Selection / Projection / TopN / Limit / Sort 的 `ToPB(TiKV)`（错误路径），以及 TableScan、点查、TableReader（未导出的 `accessObject`，用 `go:linkname` 调用）的 access object（`String`、`NormalizedString`、`SetIntoPB` 后 `tipb.ExplainOperator` 的字节）。`missing`：给第 k 个算子加一个子节点没有的列，再调它的 `ResolveIndices`，记录错误。`access`：用字段直接构造 access object（`DynamicPartitionAccessObject` 未导出的 `err` 用 `reflect` + `unsafe` 写）。
+- `BuildPBContext` 取 `mock.Context.GetBuildPBCtx()`：client 是 `mock.Client`（`kv.RequestTypeSupportedChecker`），`TiFlashFineGrainedShuffleBatchSize` 是会话默认的 8192。
+- 表在 `findbest` 的基础上加两张没有二级索引的表：聚簇 common handle `tch`、隐藏行 ID `tn`（剩下索引路径的计划在 tidb-rs 中是 D10.2 的边界）。
+- TableReader 的 schema 列不记录：Go 中它和 table plan 共用同一批 `*Column`，`PhysicalTableScan.ResolveIndicesItself` 写它们的 `Index`；tidb-rs 每个节点有自己的 schema（tidb-rs `specs/D10.9-postprocess/spec.md` §5 第 1 条）。
+- 分区表在没有全局统计信息时，plan builder 会关掉 dynamic 裁剪，所以计划中的 `getDynamicAccessPartition` 总是返回 nil；动态分区 access object 的各种形状由 `access` 覆盖。
+- 块 D10.9 中不属于本任务的函数（EXPLAIN 文本 VS1-38、plan 编码、计划克隆、`pb_to_plan.go`、切片之外算子的这三部分）列在 `postprocess_exempt.go`。
+- 两个目标的记录完全相同。amd64 在本地 x86_64 上生成，arm64 由为 linux/arm64 编译的同一生成器在 qemu-user 下运行生成（tracker CI 的产物下载不到时的做法，见 tidb-rs#329）；CI 的 `govec.sh --check` 在两个架构上逐字节比较。

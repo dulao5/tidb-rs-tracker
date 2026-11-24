@@ -40,7 +40,7 @@ D10.5	VS1-30	VS1-30	in-progress	tidb-rs branch vs1/cost-model-v2: converge match
 D10.6	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality; the DeriveStats / ExtractColGroups of the slice's operators ported with VS1-28 (tidb-rs branch vs1/find-best-task): matched 48/54, 6 stubs
 D10.8	VS1-11	VS1-11	in-progress	dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan
 D10.9	VS1-24	VS1-24	in-progress	tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31)
-D10.9	VS1-31	VS1-31	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D10.9	VS1-31	VS1-31	in-progress	tidb-rs branch claude/issue-330 (#330): converge 37/37 (IndexAccess.ToPB and PhysicalTableScan.ExplainID added); govec postprocess
 D11.1	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality
 D12.0	VS1-13	VS1-13	in-progress	dulao5/tidb-rs#222: converge 123/123
 D12.1	VS1-12	VS1-12	in-progress	dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget
