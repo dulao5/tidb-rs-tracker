@@ -65,8 +65,6 @@ var minedGoTests = map[string][]string{
 	"ctx2b": domains.Ctx2bMinedTests(),
 	// Scenarios of pkg/util/execdetails/execdetails_test.go (D14.0), as records.
 	"execdetails": domains.ExecdetailsMinedTests(),
-	// The case tables of pkg/executor/executor_required_rows_test.go (D12.2).
-	"basicexec": {"TestLimitRequiredRows", "TestSelectionRequiredRows"},
 	"memory": {
 		"TestSetLabel", "TestSetLabel2", "TestConsume", "TestRelease", "TestBufferedConsumeAndRelease",
 		"TestOOMAction", "TestAttachTo", "TestDetach", "TestReplaceChild", "TestToString", "TestMaxConsumed",
