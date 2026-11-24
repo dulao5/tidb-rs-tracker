@@ -603,7 +603,7 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 - `adjust_required_rows`：`[begin, end, cursor, required, max]`，`LimitExec.adjustRequiredRows`（未导出，经 `go:linkname`）。计划 `Offset = begin`、`Count = end - begin`（回绕，所以 `end = Offset + Count`），`cursor` 经反射写入；输出调整后 chunk 的 requiredRows。边界：cursor 在 begin 前、上、后，接近 MaxUint64 的值，requiredRows 越界（`SetRequiredRows` 改为 `max`）。
 - `table_dual`：`[row_count, ncols, max, nexts]`：0 行、1 行（没有列时是 1 个虚拟行），以及构建器对其他行数的报错（`err.name = "other"`）。
 - VS1-35 的其余函数豁免：并行投影（并发与 panic 恢复，没有输入输出表，Go 的投影测试在 tidb-rs 中移植为单元测试）、`SelectionExec.unBatchedNext`（只有不可向量化的过滤条件才走，即用户变量赋值）、`checkMaxExecutionTimeExceeded`（依赖时钟）、`globalPanicOnExceed`、`setOptionForTopSQL`（只给 kv snapshot 设 Top SQL 选项）。
-- 都是整数运算，两个目标的记录相同；arm64 文件取自 tracker CI 的产物。
+- 都是整数运算，两个目标的记录相同（只有文件头不同）。作者的环境下载不到 CI 的产物：amd64 文件在本地 x86_64 上生成，arm64 文件由为 linux/arm64 编译的同一个生成器在 qemu-user 下生成。CI 在两个架构的 runner 上各自重新生成，用 `scripts/govec.sh --check`（`Committed vectors of this target are up to date` 步骤）逐字节核对已提交的文件。
 
 ## protocol（块 D03.1 第 1 部分：结果编码与二进制参数，tidb-rs VS1-16；以及 D08.12 的 `ExecBinaryParam`）
 
