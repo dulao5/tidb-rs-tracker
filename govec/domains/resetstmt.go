@@ -48,17 +48,25 @@ var resetstmtCoverage = map[string]vec.Coverage{
 	"reset": {Min: 300, GoFuncs: []string{"ResetContextOfStmt", "isWeakConsistencyRead"}},
 }
 
-// resetstmtExempt: the rest of D12.2. The basic executors of tidb-rs VS1-35 are the
-// basicexec domain's; the others are not in a part yet.
+// resetstmtExempt: the rest of D12.2 (the basic executors) is VS1-35.
 func resetstmtExempt() map[string]string {
-	later := "D12.2, not in a part yet (MAX ONE ROW, UNION ALL, TABLESAMPLE, the memory-table scan)"
+	later := "D12.2 part VS1-35 (the basic executors: Selection, Limit, Projection, TableDual, ...)"
 	write := "write path: tidb-rs is read-only (N11 D8)"
 	out := map[string]string{}
 	for _, f := range []string{
-		"executorBuilder.buildMaxOneRow", "executorBuilder.buildTableSample", "executorBuilder.buildUnionAll",
-		"MaxOneRowExec.Next", "MaxOneRowExec.Open", "Start", "Stop",
-		"TableScanExec.Next", "TableScanExec.Open", "TableScanExec.nextChunk4InfoSchema",
-		"pkg/executor/select.go:init",
+		"executorBuilder.buildLimit", "executorBuilder.buildMaxOneRow", "executorBuilder.buildProjection",
+		"executorBuilder.buildSelection", "executorBuilder.buildTableDual",
+		"executorBuilder.buildTableSample", "executorBuilder.buildUnionAll",
+		"ProjectionExec.Close", "ProjectionExec.Next", "ProjectionExec.Open", "ProjectionExec.drainInputCh",
+		"ProjectionExec.drainOutputCh", "ProjectionExec.isUnparallelExec", "ProjectionExec.open",
+		"ProjectionExec.parallelExecute", "ProjectionExec.prepare", "ProjectionExec.unParallelExecute",
+		"newProjectionExecutorContext", "projectionInputFetcher.run", "projectionWorker.run", "readProjection",
+		"recoveryProjection", "LimitExec.Close", "LimitExec.Next", "LimitExec.Open", "LimitExec.adjustRequiredRows",
+		"MaxOneRowExec.Next", "MaxOneRowExec.Open", "SelectionExec.Close", "SelectionExec.Next", "SelectionExec.Open",
+		"SelectionExec.open", "SelectionExec.unBatchedNext", "Start", "Stop", "TableDualExec.Next",
+		"TableDualExec.Open", "TableScanExec.Next", "TableScanExec.Open", "TableScanExec.nextChunk4InfoSchema",
+		"checkMaxExecutionTimeExceeded", "globalPanicOnExceed.Action", "globalPanicOnExceed.GetPriority",
+		"pkg/executor/select.go:init", "newSelectionExecutorContext", "setOptionForTopSQL",
 		"UnionExec.Close", "UnionExec.Next", "UnionExec.Open", "UnionExec.initialize", "UnionExec.resultPuller",
 		"UnionExec.sendResult", "UnionExec.waitAllFinished",
 	} {
