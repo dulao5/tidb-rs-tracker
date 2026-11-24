@@ -600,6 +600,16 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 - 记录里有 Go 的 panic（tidb-rs 必须同样 panic，由连接循环恢复）：TIME 列小数位 31 的文本输出、二进制参数中长度编码 NULL 的 DECIMAL（空指针）、截断的长度编码整数。
 - 本领域的整数与位运算在两个目标上相同；amd64 文件取自 tracker CI 的产物。
 
+## sortexec（块 D12.5：`pkg/executor/sortexec` 的内存中 Sort 与 TopN，tidb-rs VS1-36）
+
+- 记录格式见 `domains/sortexec.go` 文件头：op `sort`（`SortExec`，`Open` 之后照 `sort_spill_test.go` 的做法设 `IsUnparallel = true` 并调用 `InitUnparallelModeForTest`）与 `topn`（`TopNExec`，不落盘），数据源每次 `Next` 返回一个固定的 chunk。`pkg/executor/internal/exec` 是 internal 包，经导出垫片 `fixes/pkg/executor/sortexec/govec_export.go.fixed` 调用（见 [fixes/README.md](fixes/README.md)）。
+- 生产中 v8.5.8 的 `SortExec.Open` 总是走并行分支（`sort.go` L170），并行 worker 与多路归并不在本任务（tidb-rs#339）；块内其余函数（并行排序、落盘、TopN 的落盘路径）列在 `sortexec_exempt.go`。
+- 两个目标的记录完全相同（1164 条）。tracker CI 的产物下载不到（沙箱的代理不放行产物存储），按维护者在 tidb-rs#329 的决定（方案 2，与 `postprocess` 相同）两份文件都在本地生成，生成器 commit `206a466`：
+  - `amd64/sortexec.jsonl.gz`：在本地 x86_64 机器上直接运行 `scripts/govec.sh sortexec`（`GOAMD64=v1`），sha256 `e7abbd8c3c19e5ceb9fb83afe7dd6765469cbfd4a64feff62a4a62c7a9331829`；
+  - `arm64/sortexec.jsonl.gz`：同一次运行中为 linux/arm64 交叉编译的同一生成器（`CGO_ENABLED=0`）在 qemu-user 下运行（`GOVEC_RUN_arm64=/usr/bin/qemu-aarch64-static`），sha256 `0818ccad18279589fe7dac2148ef1a99421447f82f21854466ed6138e7da3161`。
+
+  CI 的 `govec.sh --check` 在两个架构的 runner 上各自重新生成并逐字节比较解压后的内容。
+
 ## postprocess（块 D10.9 第 1 部分：切片算子的 ResolveIndices、ToPB、access object，tidb-rs VS1-31）
 
 - 记录格式见 `domains/postprocess.go` 文件头。`plan`：语句按 `findbest` 的方式规划（`core.DoOptimize`，最后一步是 `ResolveIndices`），记录每个算子解析后的列下标（表达式中列引用的 `Index`，按先序）、每个 TableReader 的 DAG（`TablePlans` 逐个 `ToPB(TiKV)`、table plan 的 `ToPB(TiFlash)`，marshal 后的十六进制）、根上 Selection / Projection / TopN / Limit / Sort 的 `ToPB(TiKV)`（错误路径），以及 TableScan、点查、TableReader（未导出的 `accessObject`，用 `go:linkname` 调用）的 access object（`String`、`NormalizedString`、`SetIntoPB` 后 `tipb.ExplainOperator` 的字节）。`missing`：给第 k 个算子加一个子节点没有的列，再调它的 `ResolveIndices`，记录错误。`access`：用字段直接构造 access object（`DynamicPartitionAccessObject` 未导出的 `err` 用 `reflect` + `unsafe` 写）。

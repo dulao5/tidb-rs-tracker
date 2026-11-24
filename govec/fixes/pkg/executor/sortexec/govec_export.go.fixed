@@ -1,0 +1,89 @@
+// Export shim for govec (tidb-rs-tracker); not an upstream fix and no change of behaviour.
+// Go's internal-package rule keeps pkg/executor/internal/exec (the executor base, Open /
+// Next / Close) out of reach of the govec module, so this file (a new file of package
+// sortexec, added to govec's copy of the module by scripts/govec-fixes.sh) builds SortExec
+// and TopNExec over a source of fixed chunks and runs them unchanged for the `sortexec`
+// domain (govec/domains/sortexec.go).
+
+package sortexec
+
+import (
+	"context"
+
+	"github.com/pingcap/tidb/pkg/executor/internal/exec"
+	"github.com/pingcap/tidb/pkg/expression"
+	plannercore "github.com/pingcap/tidb/pkg/planner/core"
+	plannerutil "github.com/pingcap/tidb/pkg/planner/util"
+	"github.com/pingcap/tidb/pkg/sessionctx"
+	"github.com/pingcap/tidb/pkg/util/chunk"
+)
+
+// govecSource returns one of its chunks per Next (whole, like testutil.MockDataSource's
+// prepared chunks), then empty chunks.
+type govecSource struct {
+	exec.BaseExecutor
+	batches []*chunk.Chunk
+	ptr     int
+}
+
+func (s *govecSource) Next(_ context.Context, req *chunk.Chunk) error {
+	req.Reset()
+	if s.ptr >= len(s.batches) {
+		return nil
+	}
+	b := s.batches[s.ptr]
+	req.Append(b, 0, b.NumRows())
+	s.ptr++
+	return nil
+}
+
+// GovecSortRun is one run of a SortExec (unparallel, as the tests of sort_spill_test.go
+// switch it after Open) or, with topN, a TopNExec with Limit{Offset: offset, Count: count}
+// (Concurrency 5, as buildTopNExec in topn_spill_test.go), over a source returning batches.
+// The result chunks are created by exec.NewFirstChunk and set to required rows reqs[i]
+// (when i < len(reqs) and reqs[i] > 0) before the i-th Next. It returns a copy of each
+// non-empty result chunk, and the first error with the step that returned it ("open",
+// "next", "close").
+func GovecSortRun(ctx sessionctx.Context, schema *expression.Schema, batches []*chunk.Chunk,
+	byItems []*plannerutil.ByItems, topN bool, offset, count uint64, reqs []int) (out []*chunk.Chunk, step string, err error) {
+	src := &govecSource{BaseExecutor: exec.NewBaseExecutor(ctx, schema, 1), batches: batches}
+	sortExec := SortExec{
+		BaseExecutor: exec.NewBaseExecutor(ctx, schema, 2, src),
+		ByItems:      byItems,
+		ExecSchema:   schema,
+	}
+	var e exec.Executor
+	var se *SortExec
+	if topN {
+		e = &TopNExec{SortExec: sortExec, Limit: &plannercore.PhysicalLimit{Offset: offset, Count: count}, Concurrency: 5}
+	} else {
+		se = &sortExec
+		e = se
+	}
+	bg := context.Background()
+	if err := e.Open(bg); err != nil {
+		return nil, "open", err
+	}
+	if se != nil {
+		se.IsUnparallel = true
+		se.InitUnparallelModeForTest()
+	}
+	chk := exec.NewFirstChunk(e)
+	for i := 0; ; i++ {
+		if i < len(reqs) && reqs[i] > 0 {
+			chk.SetRequiredRows(reqs[i], ctx.GetSessionVars().MaxChunkSize)
+		}
+		if err := e.Next(bg, chk); err != nil {
+			_ = e.Close()
+			return out, "next", err
+		}
+		if chk.NumRows() == 0 {
+			break
+		}
+		out = append(out, chk.CopyConstruct())
+	}
+	if err := e.Close(); err != nil {
+		return out, "close", err
+	}
+	return out, "", nil
+}
