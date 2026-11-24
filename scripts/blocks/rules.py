@@ -370,6 +370,11 @@ RULES = [
     ("D07.3", r"pkg/distsql/", None),
     # --- D08 ---
     ("D08.10", r"pkg/expression/builtin_json", None),
+    # The legacy evaluators of pkg/expression/aggregation (the Aggregation interface): only the
+    # mock store calls them (D08.11 spec §2.3, decision point 1 A).
+    ("X", r"pkg/expression/aggregation/(avg|sum|count|max_min|first_row|bit_and|bit_or|bit_xor|concat|util)\.go$", None),
+    ("X", r"pkg/expression/aggregation/aggregation\.go$", r"^(NewDistAggFunc|newAggFunc|aggFunction\.(CreateContext|ResetContext|updateSum))$"),
+    ("X", r"pkg/expression/aggregation/descriptor\.go$", r"^AggFuncDesc\.GetAggFunc$"),
     ("D08.11", r"pkg/expression/aggregation/", None),
     ("D08.3", r"pkg/expression/(infer_pushdown|expr_to_pb|distsql_builtin|expression_codec)", None),
     ("D08.4", r"pkg/expression/builtin_compare", None),
@@ -441,6 +446,9 @@ RULES = [
     ("D10.1", r"pkg/planner/core/(physical_plans|task|task_base|common_plans|operator/physicalop/)", None),
     ("D10.4", r"pkg/util/ranger/", None),
     ("D10.6", r"pkg/planner/cardinality/", None),
+    # ByItems moves down to the aggregate function descriptors, whose ORDER BY items they are
+    # (N0 §4; D08.11 spec §4.7, decision point 2 A).
+    ("D08.11", r"pkg/planner/util/byitem\.go$", None),
     ("D10.10", r"pkg/planner/(property|util)/", None),
     ("D10.1", r"pkg/planner/core/", None),
     # --- D11 ---

@@ -82,12 +82,17 @@ func PlanutilMinedTests() []string {
 	return []string{"TestCompareCol2Len", "TestOnlyPointRange", "TestIndexInfo2Cols"}
 }
 
+const byitemGo = "pkg/planner/util/byitem.go"
+
 func init() {
 	vec.Register(&vec.Domain{
 		Name:     "planutil",
 		Seed:     planutilSeed,
 		Coverage: planutilCoverage,
 		Blocks:   []string{"D10.10"},
+		// byitem.go moved to D08.11 with the aggregate function descriptors (domain aggdesc);
+		// this domain keeps covering it.
+		Files:    []string{byitemGo},
 		Exempt:   planutilExempt(),
 		Gzip:     true,
 		Generate: planutilGenerate,
@@ -132,8 +137,8 @@ var planutilCoverage = map[string]vec.Coverage{
 	"split_cor": {Min: 200, GoFuncs: []string{"AccessPath.SplitCorColAccessCondFromFilters", "isColEqConstant",
 		"isColEqCorCol", "isColEqExpr", "AccessPath.GetCol2LenFromAccessConds", "ExtractCol2Len",
 		"extractCol2LenFromExpr"}},
-	"byitems": {Min: 100, GoFuncs: []string{"ByItems.StringWithCtx", "ByItems.Clone", "ByItems.Equal",
-		"ByItems.MemoryUsage", "StringifyByItemsWithCtx"}},
+	"byitems": {Min: 100, GoFuncs: []string{byitemGo + ":ByItems.StringWithCtx", byitemGo + ":ByItems.Clone",
+		byitemGo + ":ByItems.Equal", byitemGo + ":ByItems.MemoryUsage", byitemGo + ":StringifyByItemsWithCtx"}},
 	"misc": {Min: 100, GoFuncs: []string{"EncodeIntAsUint32", "GetMaxSortPrefix", "QueryTimeRange.Condition",
 		"QueryTimeRange.MemoryUsage", "MPPPartitionType.ToExchangeType", "GetCollateIDByNameForPartition",
 		"GetCollateNameByIDForPartition", "ExplainColumnList", "PhysicalPropMatchResult.Matched", "SortItem.String",
@@ -142,10 +147,10 @@ var planutilCoverage = map[string]vec.Coverage{
 
 func planutilExempt() map[string]string {
 	ex := map[string]string{
-		"SortItem.Hash64": "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
-		"SortItem.Equals": "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
-		"ByItems.Hash64":  "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
-		"ByItems.Equals":  "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
+		"SortItem.Hash64":            "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
+		"SortItem.Equals":            "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
+		byitemGo + ":ByItems.Hash64": "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
+		byitemGo + ":ByItems.Equals": "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)",
 		"PhysicalProperty.String": "test-only String: Go prints the sort items by reflection, i.e. the *Column " +
 			"addresses; not reproducible, Rust unit test",
 		"AccessPath.Clone":  "structural copy (the immutable expressions and columns are shared, M-EXPR); Rust unit test",

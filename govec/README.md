@@ -609,3 +609,11 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 - 分区表在没有全局统计信息时，plan builder 会关掉 dynamic 裁剪，所以计划中的 `getDynamicAccessPartition` 总是返回 nil；动态分区 access object 的各种形状由 `access` 覆盖。
 - 块 D10.9 中不属于本任务的函数（EXPLAIN 文本 VS1-38、plan 编码、计划克隆、`pb_to_plan.go`、切片之外算子的这三部分）列在 `postprocess_exempt.go`。
 - 两个目标的记录完全相同。amd64 在本地 x86_64 上生成，arm64 由为 linux/arm64 编译的同一生成器在 qemu-user 下运行生成（tracker CI 的产物下载不到时的做法，见 tidb-rs#329）；CI 的 `govec.sh --check` 在两个架构上逐字节比较。
+
+## aggdesc（块 D08.11 A、B 部分：`pkg/expression/aggregation` 的聚合函数描述符及其 protobuf 转换）
+
+- 记录格式见 `domains/aggdesc.go` 文件头。A 部分（tidb-rs `crates/expression/tests/govec_aggdesc.rs` 回放）：`new`（`NewAggFuncDesc`：各聚合与窗口函数名 × 33 种参数类型 × 常量，含类型推导、`WrapCastForAggArgs` 后的参数和错误）、`wrap`（直接调 `WrapCastForAggArgs`）、`notnull`（`UpdateNotNullFlag4RetType`）、`default`（`GetDefaultValue`）、`outer`（`EvalNullValueInOuterJoin`）、`split`（partial / final 拆分）、`string`、`mem`（`MemoryUsage`）、`avgsum`、`finalcount`、`equal`、`names`、`mode`、`allfirst`、`window`（`NewWindowFuncDesc`）。B 部分（tidb-rs `crates/expr-pushdown/tests/govec_aggdesc_pb.rs` 回放）：`push`（`CheckAggPushDown` 等，含下推黑名单）、`topb`（`AggFuncToPBExpr`，四种 store 类型）、`mode2pb`、`pb2mode`、`frompb`（`PBExprToAggFuncDesc`，含改坏的消息：未知类型、缺 mode、mode 7、缺 field type、坏的子表达式）、`tipb`。
+- 记录里有 Go 的 panic（tidb-rs 必须同样 panic）：窗口函数描述符的 nil 参数、`PBExprToAggFuncDesc` 缺 field type 时的空指针。
+- `WrapCastForAggArgs` 的时间分支把 `RetTp` 本身交给 `WrapWithCastAsTime`，转换就地修改它（Go 的别名，base_func.go:455）；`wrap` 与 `new` 的记录包含这种情况，tidb-rs 照 Go 模拟。
+- 旧的求值器（avg.go、sum.go、count.go 等 49 个函数）归块 X，不移植，不出向量；窗口函数的第 C 部分、`ExplainAggFunc`（第 D 部分）和 cascades 的 `Hash64` / `Equals`（例外 B）在豁免表中写明。
+- 种子 20261124，5575 条记录（A 部分 4531 条，B 部分 1044 条）。两个目标的记录完全相同。amd64 在本地 x86_64 上生成，arm64 由为 linux/arm64 编译的同一生成器在 qemu-user 下运行生成（`GOVEC_RUN_arm64=/usr/bin/qemu-aarch64-static scripts/govec.sh aggdesc`，与 tracker#122、#124、#125 相同）；CI 的 `govec.sh --check` 在两个架构上逐字节比较。
