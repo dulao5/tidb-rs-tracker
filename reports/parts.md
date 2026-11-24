@@ -26,6 +26,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | VS1-20 | VS1-20 | in-progress | 12 / 193 | 214 | tidb-rs branch vs1/c2a-store-txn (the store as kv.Storage, Begin, the read part of tikvTxn for the point select of VS1-20): converge --item VS1-20 matched 10/12, accounted 2 stubs (tikvTxn.Iter / IterReverse) |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D08.11 | D08.11-AB | D08.11-AB | in-progress | 62 / 69 | 942 | tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
@@ -40,7 +41,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | in-progress | 110 / 354 | 1830 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
-| D10.10 | VS1-19 | VS1-19 | in-progress | 142 / 168 | 1387 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
+| D10.10 | VS1-19 | VS1-19 | in-progress | 135 / 161 | 1338 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
 | D10.2 | VS1-28 | VS1-28 | in-progress | 89 / 181 | 2759 | tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
@@ -57,7 +58,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
 | D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D12.5 | VS1-36 | VS1-36 | planned | 65 / 188 | 1154 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#329 (issue): converge 59/65 + 6 stubs; govec sortexec |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-20b | VS1-20b | in-progress | 1 / 100 | 13 | the point plan short path (IsSafeToReusePointGetExecutor, D05.3 spec §10): converge 1/1 |
 | D13.1 | VS1-39 | VS1-39 | in-progress | 29 / 100 | 848 | the instance plan cache, first stage (A3 spec §7): converge 22/29 + 2 stubs + 5 exceptions (EXC.A3) |
@@ -65,11 +66,12 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-353 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+372 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
 | D00.3 | 4 | 0 | 0 |
+| D01.10 | 10 | 0 | 0 |
 | D02.1 | 4 | 0 | 0 |
 | D02.2 | 32 | 0 | 0 |
 | D03.1 | 2 | 0 | 0 |
@@ -116,7 +118,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 6 | 0 | 0 |
-| D12.5 | 1 | 0 | 0 |
+| D12.5 | 10 | 0 | 0 |
 | D13.1 | 8 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
