@@ -57,7 +57,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
-| D12.2 | VS1-35 | VS1-35 | planned | 35 / 72 | 663 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D12.2 | VS1-35 | VS1-35 | in-progress | 35 / 72 | 663 | dulao5/tidb-rs#328 (issue; VS1-35, basic executors part 1; first try #338 reverted): converge 35/35, no stubs; govec basicexec |
 | D12.5 | D12.5-PS | D12.5-PS | in-progress | 46 / 188 | 659 | tidb-rs branch claude/issue-339 (#339, the parallel sort): converge 44/46 + 2 stubs (D01.10 spill); govec sortexec op psort 137 records |
 | D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#349 merged (#329): converge 59/65 + 6 stubs; the three parallel sort stubs ported by #339: converge 62/65 + 3 stubs (D01.10); govec sortexec |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -67,7 +67,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-369 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+367 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -118,7 +118,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.0 | 3 | 0 | 0 |
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
-| D12.2 | 6 | 0 | 0 |
+| D12.2 | 4 | 0 | 0 |
 | D12.5 | 4 | 0 | 0 |
 | D13.1 | 8 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
