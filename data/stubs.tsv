@@ -157,7 +157,6 @@ crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransf
 crates/planner/src/core/logical_plan_builder.rs	extract_singe_value_col_names_from_where	D09.4	temporary	extractSingeValueColNamesFromWhere: the ONLY_FULL_GROUP_BY check with aggregates
 crates/planner/src/core/logical_plan_builder.rs	find_column_name_by_unique_id	D09.6	temporary	findColumnNameByUniqueID: the outer columns referred by subqueries
 crates/planner/src/core/logical_plan_builder.rs	get_table_offset	D09.15	temporary	getTableOffset / collectTableName: UPDATE and DELETE
-crates/planner/src/core/logical_plan_builder.rs	get_uint_from_node	D13.1	temporary	VS1-15: the value EXECUTE binds to a LIMIT parameter marker
 crates/planner/src/core/logical_plan_builder.rs	resolve_correlated_aggregates	D09.6	temporary	resolveCorrelatedAggregates: aggregates of the outer query inside subqueries
 crates/planner/src/core/logical_plan_builder.rs	resolve_having_and_order_by	D09.6	temporary	resolveHavingAndOrderBy: the correlated columns of an ORDER BY subquery
 crates/planner/src/core/optimizer.rs	AGGREGATION_ELIMINATOR	D09.4	temporary	optRuleList: AggregationEliminator (aggregation rules, D09.4); only aggregations set its flag, and the builder stops at them
