@@ -43,6 +43,8 @@ DEFAULT_PKGS = [
     # D10.1 / D10.3 (tidb-rs VS1-27): calcPagingCost of the cop task; the cost model v1
     # (D10.5) and the index join enumeration are in the same package.
     "github.com/pingcap/tidb/pkg/planner/core",
+    # D12.4 part B1 (tidb-rs#386): VAR / STDDEV intermediate and merge variance formulas.
+    "github.com/pingcap/tidb/pkg/executor/aggfuncs",
 ]
 
 # (column, GOARCH, extra env). Column names are the TSV columns (tracker.py TABLES).
