@@ -10,6 +10,7 @@ crates/executor/src/adapter.rs	rebuild_plan	D09.0	temporary	VS1-10: preprocessor
 crates/executor/src/adapter.rs	send_plan_replayer_dump_task	X	delegated	delegated (the block table puts pkg/domain/plan_replayer.go in X: it writes mysql.plan_replayer_status and dump files). Each node captures only the statements it executes itself, so statements sent to a tidb-rs node are captured by no node: the plan replayer dump task (session bindings, encoded plan, the handle's dump worker); returns a boundary before execution instead of panicking once the digests are ported
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
+crates/executor/src/aggfuncs/builder.rs	build_not_ported	D12.4	temporary	D12.4 parts B1 / B2 (aggregate functions not yet ported): Build for GROUP_CONCAT, VAR / STDDEV, JSON_ARRAYAGG / JSON_OBJECTAGG, APPROX_COUNT_DISTINCT, APPROX_PERCENTILE, and buildCount for COUNT(DISTINCT); removed when those parts merge (tidb-rs spec D12.4 §4)
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)

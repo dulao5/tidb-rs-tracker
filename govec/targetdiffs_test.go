@@ -141,6 +141,19 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: Datum.ToInt64 of a NaN float datum is int64(NaN)"},
 	{Domain: "datum", Op: "d_convert_recv", Args: "*", N: 20,
 		Why: "M-F2I: d_convert_recv repeats d_convert's NaN float datum to integer / YEAR / TIME conversions (int64(NaN)) over every field type"},
+	// aggfuncs (D12.4 part A, the core aggregate functions): a float SUM / AVG that adds
+	// +Inf and -Inf (func_sum.go:100, :111, :348; func_avg.go:377, :438, :446, :486) gets
+	// the hardware default NaN of an invalid operation: x86 0xFFF8000000000000 (negative),
+	// ARM 0x7FF8000000000000. The records have no NaN inputs (afGen.noNaN), so only the
+	// sign of that default NaN differs. Go and Rust both use the hardware add, so each
+	// target replays its own file. The outputs are chunk cells, so diffKind does not
+	// classify them.
+	{Domain: "aggfuncs", Op: "update_final", Args: "*", N: 93,
+		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG: x86 negative, ARM positive"},
+	{Domain: "aggfuncs", Op: "reset_reuse", Args: "*", N: 57,
+		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG: x86 negative, ARM positive"},
+	{Domain: "aggfuncs", Op: "merge", Args: "*", N: 49,
+		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG (Update and MergePartialResult): x86 negative, ARM positive"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far
