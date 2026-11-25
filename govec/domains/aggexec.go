@@ -908,7 +908,18 @@ func (g *aeGen) parallelRecord(s aeShape, pCon, fCon int, allowErr bool) *aePara
 		rows = rows[n:]
 	}
 	if allowErr && g.intn(14) == 0 {
-		cfg.ErrAt = g.intn(len(cfg.Batches) + 1)
+		errAt := g.intn(len(cfg.Batches) + 1)
+		// Never combine a child error (err_at) with input data that itself triggers an error
+		// in a partial worker (e.g. DECIMAL(65,30) group-key truncation): in parallel HashAgg,
+		// fetcher and partial workers race to send into finalOutputCh, making which error wins
+		// non-deterministic.
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			panic(err)
+		}
+		if _, dataErr := aeExecHashAggUnparallel(raw); dataErr == nil {
+			cfg.ErrAt = errAt
+		}
 	}
 	return &aeParallelGenCfg{
 		aeGenCfg:   *cfg,
