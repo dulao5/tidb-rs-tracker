@@ -141,19 +141,22 @@ var targetDiffs = []targetDiff{
 		Why: "M-F2I: Datum.ToInt64 of a NaN float datum is int64(NaN)"},
 	{Domain: "datum", Op: "d_convert_recv", Args: "*", N: 20,
 		Why: "M-F2I: d_convert_recv repeats d_convert's NaN float datum to integer / YEAR / TIME conversions (int64(NaN)) over every field type"},
-	// aggfuncs (D12.4 part A, the core aggregate functions): a float SUM / AVG that adds
-	// +Inf and -Inf (func_sum.go:100, :111, :348; func_avg.go:377, :438, :446, :486) gets
-	// the hardware default NaN of an invalid operation: x86 0xFFF8000000000000 (negative),
-	// ARM 0x7FF8000000000000. The records have no NaN inputs (afGen.noNaN), so only the
-	// sign of that default NaN differs. Go and Rust both use the hardware add, so each
-	// target replays its own file. The outputs are chunk cells, so diffKind does not
-	// classify them.
-	{Domain: "aggfuncs", Op: "update_final", Args: "*", N: 93,
-		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG: x86 negative, ARM positive"},
-	{Domain: "aggfuncs", Op: "reset_reuse", Args: "*", N: 57,
-		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG: x86 negative, ARM positive"},
-	{Domain: "aggfuncs", Op: "merge", Args: "*", N: 49,
-		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG (Update and MergePartialResult): x86 negative, ARM positive"},
+	// aggfuncs (D12.4 parts A & B1):
+	// - Part A (SUM / AVG): adding +Inf and -Inf (func_sum.go:100, :111, :348; func_avg.go:377,
+	//   :438, :446, :486) gets the hardware default NaN of an invalid operation: x86
+	//   0xFFF8000000000000 (negative), ARM 0x7FF8000000000000 (93 update_final, 57 reset_reuse,
+	//   49 merge).
+	// - Part B1 (VAR_POP / VAR_SAMP / STDDEV_POP / STDDEV_SAMP): M-FMA at func_varpop.go:69
+	//   (FNMSUBD), :97 (FNMSUBD), and :98 (FMADDD), fused on arm64 only (data/go_fma_sites.tsv):
+	//   rounding differences and unfused product overflow to Inf -> Inf-Inf = NaN on amd64 where
+	//   fused FNMSUBD on arm64 stays finite/Inf (44 update_final, 15 reset_reuse, 54 merge).
+	// Go and Rust follow the same hardware ops and M-FMA sites, so each target replays its own file.
+	{Domain: "aggfuncs", Op: "update_final", Args: "*", N: 137,
+		Why: "93: hardware default NaN of Inf + -Inf in float SUM / AVG; 44: M-FMA in VAR / STDDEV (func_varpop.go:69) fused on arm64 only"},
+	{Domain: "aggfuncs", Op: "reset_reuse", Args: "*", N: 72,
+		Why: "57: hardware default NaN of Inf + -Inf in float SUM / AVG; 15: M-FMA in VAR / STDDEV (func_varpop.go:69) fused on arm64 only"},
+	{Domain: "aggfuncs", Op: "merge", Args: "*", N: 103,
+		Why: "49: hardware default NaN of Inf + -Inf in float SUM / AVG; 54: M-FMA in VAR / STDDEV (func_varpop.go:69, :97, :98) fused on arm64 only"},
 	// aggexec (D12.3 parts A & B, stream and hash aggregation executors): the same default
 	// NaN when a group's float SUM / AVG adds +Inf and -Inf (the aggfuncs entry above); the
 	// records have no NaN inputs either.
