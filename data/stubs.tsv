@@ -1,4 +1,6 @@
 file	symbol	block	kind	note
+crates/chunk/src/chunk_in_disk.rs	add	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec decision 4): DataInDiskByChunks.Add writes spilled chunks to disk (D01.10); unreachable unless single-threaded HashAgg enters spill mode
+crates/chunk/src/chunk_in_disk.rs	get_chunk	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec decision 4): DataInDiskByChunks.GetChunk reads spilled chunks from disk (D01.10); unreachable unless single-threaded HashAgg has spilled chunks on disk
 crates/domain/src/domain.rs	get_timestamp_for_schema_version_with_non_empty_diff	D07.1	temporary	the commit ts of the schema diff needs store/helper's MVCC debug API (GetMvccByEncodedKeyWithTS, store driver D07.1); until then the error Go returns for a non-TiKV store, schemaTs 0
 crates/executor/src/adapter.rs	exec	X	permanent	not ported (write path: pessimistic locks, table delta)
 crates/executor/src/adapter.rs	get_lazy_stmt_text	D02.1	temporary	D02.1: parser.NormalizeDigest (tidb_redact_log=ON text)
@@ -11,6 +13,9 @@ crates/executor/src/adapter.rs	send_plan_replayer_dump_task	X	delegated	delegate
 crates/executor/src/adapter.rs	try_detach	D12.12	temporary	D12.12: static record set of cursors
 crates/executor/src/adapter.rs	update_prev_stmt	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
 crates/executor/src/aggfuncs/builder.rs	build_not_ported	D12.4	temporary	D12.4 parts B1 / B2 (aggregate functions not yet ported): Build for GROUP_CONCAT, VAR / STDDEV, JSON_ARRAYAGG / JSON_OBJECTAGG, APPROX_COUNT_DISTINCT, APPROX_PERCENTILE, and buildCount for COUNT(DISTINCT); removed when those parts merge (tidb-rs spec D12.4 §4)
+crates/executor/src/aggregate/agg_hash_executor.rs	spill	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3 & decision 5): HashAggExec.spill serializes partial worker results to partitioned disk files (D01.10, ported in D12.3 part C); reports blocked-by:D01.10 via process_error when parallel spill triggers
+crates/executor/src/aggregate/agg_hash_final_worker.rs	run	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.run disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
+crates/executor/src/aggregate/agg_hash_final_worker.rs	send_final_result	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.sendFinalResult disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)
