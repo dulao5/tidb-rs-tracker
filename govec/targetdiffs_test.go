@@ -154,6 +154,11 @@ var targetDiffs = []targetDiff{
 		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG: x86 negative, ARM positive"},
 	{Domain: "aggfuncs", Op: "merge", Args: "*", N: 49,
 		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG (Update and MergePartialResult): x86 negative, ARM positive"},
+	// aggexec (D12.3 part A, the stream aggregation executor): the same default NaN when a
+	// group's float SUM / AVG adds +Inf and -Inf (the aggfuncs entry above); the records
+	// have no NaN inputs either.
+	{Domain: "aggexec", Op: "stream_agg", Args: "*", N: 61,
+		Why: "hardware default NaN of Inf + -Inf in a float SUM / AVG of a group: x86 negative, ARM positive"},
 }
 
 // targetsPending: domains whose vectors are committed for one target only so far

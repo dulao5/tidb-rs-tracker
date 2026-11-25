@@ -52,12 +52,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.9 | VS1-24 | VS1-24 | in-progress | 1 / 207 | 27 | tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31) |
 | D10.9 | VS1-31 | VS1-31 | in-progress | 37 / 207 | 654 | tidb-rs branch claude/issue-330 (#330): converge 37/37 (IndexAccess.ToPB and PhysicalTableScan.ExplainID added); govec postprocess |
 | D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
+| D12.0 | D12.3-A | D12.3-A | in-progress | 8 / 211 | 485 | tidb-rs branch claude/issue-376 (#376, stream aggregation part A): the vecgroupchecker file, 8/8, ported with the stream aggregation executor (D12.3 spec decision 3); govec aggexec |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
 | D12.2 | VS1-35 | VS1-35 | in-progress | 35 / 72 | 663 | dulao5/tidb-rs#328 (issue; VS1-35, basic executors part 1; first try #338 reverted): converge 35/35, no stubs; govec basicexec |
+| D12.3 | D12.3-A | D12.3-A | in-progress | 11 / 107 | 222 | tidb-rs branch claude/issue-376 (#376, stream aggregation part A): converge 10/10 + buildStreamAgg not ported until the physical stream aggregation plan (D10.1); no stubs; govec aggexec |
 | D12.4 | D12.4-A | D12.4-A | in-progress | 189 / 663 | 2147 | tidb-rs branch claude/issue-375 (#375, the core aggregate functions): converge 189/189 + 1 temporary stub (the parts B1 / B2 names in Build); govec aggfuncs 17881 records (4295 blocked until the parts B1 / B2) |
 | D12.5 | D12.5-PS | D12.5-PS | in-progress | 46 / 188 | 659 | tidb-rs branch claude/issue-339 (#339, the parallel sort): converge 44/46 + 2 stubs (D01.10 spill); govec sortexec op psort 137 records |
 | D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#349 merged (#329): converge 59/65 + 6 stubs; the three parallel sort stubs ported by #339: converge 62/65 + 3 stubs (D01.10); govec sortexec |
