@@ -1223,6 +1223,9 @@ var sbFixed = []string{
 	"SELECT a FROM t2 WHERE ROW_NUMBER() OVER () > 1",
 	"SELECT a FROM t2 GROUP BY ROW_NUMBER() OVER ()",
 	"SELECT SUM(ROW_NUMBER() OVER ()) OVER () FROM t2",
+	// Pin Go's flagSetter.Leave (no SetCollateExpr case) and early checkWindowFuncArgs #402 clearing.
+	"SELECT GROUP_CONCAT(c) COLLATE utf8mb4_bin FROM sbtest1",
+	"SELECT LEAD(k, 1, 0) OVER (ORDER BY k), FIRST_VALUE(k) OVER (ORDER BY id) FROM sbtest1",
 }
 
 type sbWinOpCase struct {
