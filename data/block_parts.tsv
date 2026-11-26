@@ -59,7 +59,7 @@ D11.1	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matche
 D12.0	D12.3-A	D12.3-A	in-progress	tidb-rs branch claude/issue-376 (#376, stream aggregation part A): the vecgroupchecker file, 8/8, ported with the stream aggregation executor (D12.3 spec decision 3); govec aggexec
 D12.0	VS1-13	VS1-13	in-progress	dulao5/tidb-rs#222: converge 123/123
 D12.1	VS1-12	VS1-12	in-progress	dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget
-D12.1	VS1-34	VS1-34	planned	tidb-rs specs/VS1-vertical-slice (#205)
+D12.1	VS1-34	VS1-34	in-progress	dulao5/tidb-rs#426 (TableReader Part 2A): converge 28/28 + 1 exception (DEF.MPP); govec readexec 379 records (0 blocked)
 D12.12	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)
 D12.2	VS1-14	VS1-14	in-progress	dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt
 D12.2	VS1-35	VS1-35	in-progress	dulao5/tidb-rs#328 (issue; VS1-35, basic executors part 1; first try #338 reverted): converge 35/35, no stubs; govec basicexec
