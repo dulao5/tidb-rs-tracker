@@ -718,6 +718,12 @@ D08.11	D08.11-AB	pkg/planner/util/byitem.go	ByItems.Hash64
 D08.11	D08.11-AB	pkg/planner/util/byitem.go	ByItems.MemoryUsage
 D08.11	D08.11-AB	pkg/planner/util/byitem.go	ByItems.StringWithCtx
 D08.11	D08.11-AB	pkg/planner/util/byitem.go	StringifyByItemsWithCtx
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	NeedFrame
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	NewWindowFuncDesc
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	UseDefaultFrame
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	WindowFuncDesc.CanPushDownToTiFlash
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	WindowFuncDesc.Clone
+D08.11	D08.11-C	pkg/expression/aggregation/window_func.go	WindowFuncToPBExpr
 D09.0	VS1-10	pkg/planner/core/core_init.go	init
 D09.0	VS1-10	pkg/planner/core/initialize.go	BatchPointGetPlan.Init
 D09.0	VS1-10	pkg/planner/core/initialize.go	PhysicalLimit.Init

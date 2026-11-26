@@ -1,8 +1,8 @@
 package domains
 
-// Domain "aggdesc", block D08.11 parts A and B: the aggregate function descriptors of
-// pkg/expression/aggregation (tidb-rs specs/D08.11-aggregation §7) and the ByItems they hold
-// (pkg/planner/util/byitem.go, moved to D08.11 with them).
+// Domain "aggdesc", block D08.11 parts A, B and C: the aggregate and window function
+// descriptors of pkg/expression/aggregation (tidb-rs specs/D08.11-aggregation §6.2) and the
+// ByItems they hold (pkg/planner/util/byitem.go, moved to D08.11 with them).
 //
 // A descriptor is given as a spec and built with NewAggFuncDesc (type inference included) or,
 // with "raw", from its fields as the planner and PBExprToAggFuncDesc build it:
@@ -36,7 +36,7 @@ package domains
 //   - "window": [spec] -> NewAggFuncDescForWindowFunc of a WindowFuncDesc built from the spec's
 //     fields (rt null: the safety check's NewAggFuncDesc).
 //
-// Records (part B, replayed by tidb-rs crates/expr-pushdown/tests/govec_aggdesc_pb.rs):
+// Records (part B and C push-down/tipb, replayed by tidb-rs crates/expr-pushdown/tests/govec_aggdesc_pb.rs):
 //   - "push": [spec, blacklist] -> CheckAggPushDown for TiKV, TiFlash, TiDB, UnSpecified and
 //     CheckAggPushFlash.
 //   - "topb": [spec, client mode, group_concat_max_len, storeType] -> AggFuncToPBExpr
@@ -44,6 +44,13 @@ package domains
 //   - "mode2pb": [mode] -> AggFunctionModeToPB; "pb2mode": [mode|null] -> PBAggFuncModeToAggFuncMode.
 //   - "frompb": [pb hex, [ftIn...], nc] -> PBExprToAggFuncDesc.
 //   - "tipb": [name, tryWindowDesc] -> baseFuncDesc.GetTiPBExpr.
+//   - "window_to_pb": [spec, client mode] -> WindowFuncToPBExpr (marshalled bytes) or null.
+//   - "window_tiflash": [spec, blacklist] -> WindowFuncDesc.CanPushDownToTiFlash.
+//
+// Records (part C descriptors, replayed by tidb-rs crates/expression/tests/govec_aggdesc.rs):
+//   - "new_window_desc": [spec, skipCheckArgs] -> NewWindowFuncDesc + WindowFuncDesc.Clone
+//     (dumped base descriptor, clone, StringWithCtx), null, or error/panic.
+//   - "window_frame": [name] -> UseDefaultFrame + NeedFrame.
 //
 // The context is exprstatic's with the current time fixed (a constant cast to a time type
 // folds with today's date).
@@ -52,6 +59,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math/rand/v2"
+	"strings"
 	gotime "time"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -112,27 +120,24 @@ var aggdescCoverage = map[string]vec.Coverage{
 	"topb":     {Min: 300, GoFuncs: []string{"AggFuncToPBExpr", "AggFunctionModeToPB", "baseFuncDesc.GetTiPBExpr"}},
 	"mode2pb":  {Min: 5, GoFuncs: []string{"AggFunctionModeToPB"}},
 	"pb2mode":  {Min: 6, GoFuncs: []string{"PBAggFuncModeToAggFuncMode"}},
-	"frompb":   {Min: 140, GoFuncs: []string{"PBExprToAggFuncDesc", "PBAggFuncModeToAggFuncMode", "baseFuncDesc.WrapCastForAggArgs"}},
-	"tipb":     {Min: 40, GoFuncs: []string{"baseFuncDesc.GetTiPBExpr"}},
+	"frompb":          {Min: 140, GoFuncs: []string{"PBExprToAggFuncDesc", "PBAggFuncModeToAggFuncMode", "baseFuncDesc.WrapCastForAggArgs"}},
+	"tipb":            {Min: 40, GoFuncs: []string{"baseFuncDesc.GetTiPBExpr"}},
+	"new_window_desc": {Min: 400, GoFuncs: []string{"NewWindowFuncDesc", "WindowFuncDesc.Clone"}},
+	"window_frame":    {Min: 40, GoFuncs: []string{"UseDefaultFrame", "NeedFrame"}},
+	"window_to_pb":    {Min: 150, GoFuncs: []string{"WindowFuncToPBExpr", "baseFuncDesc.GetTiPBExpr"}},
+	"window_tiflash":  {Min: 150, GoFuncs: []string{"WindowFuncDesc.CanPushDownToTiFlash"}},
 }
 
 func aggdescExempt() map[string]string {
 	const cascades = "EXC.B: cascades base.HashEquals (D08.1 spec §4 item 2)"
-	const partC = "window function descriptors, part C of the block (D08.11 spec §2.1): a later task"
 	return map[string]string{
-		"baseFuncDesc.Hash64":                 cascades,
-		"baseFuncDesc.Equals":                 cascades,
-		"AggFuncDesc.Hash64":                  cascades,
-		"AggFuncDesc.Equals":                  cascades,
-		"ByItems.Hash64":                      cascades,
-		"ByItems.Equals":                      cascades,
-		"NewWindowFuncDesc":                   partC,
-		"UseDefaultFrame":                     partC,
-		"NeedFrame":                           partC,
-		"WindowFuncDesc.Clone":                partC,
-		"WindowFuncToPBExpr":                  partC,
-		"WindowFuncDesc.CanPushDownToTiFlash": partC,
-		"ExplainAggFunc":                      "EXPLAIN text, part D of the block (D08.11 spec §2.1): after the expressions' ExplainInfo (D10.9 tasks P1-1)",
+		"baseFuncDesc.Hash64": cascades,
+		"baseFuncDesc.Equals": cascades,
+		"AggFuncDesc.Hash64":  cascades,
+		"AggFuncDesc.Equals":  cascades,
+		"ByItems.Hash64":      cascades,
+		"ByItems.Equals":      cascades,
+		"ExplainAggFunc":      "EXPLAIN text, part D of the block (D08.11 spec §2.1): after the expressions' ExplainInfo (D10.9 tasks P1-1)",
 	}
 }
 
@@ -275,6 +280,18 @@ func adWindow(d *aggregation.AggFuncDesc) *aggregation.WindowFuncDesc {
 	w := &aggregation.WindowFuncDesc{}
 	w.Name, w.Args, w.RetTp = d.Name, d.Args, d.RetTp
 	return w
+}
+
+func adDumpWindow(w *aggregation.WindowFuncDesc) any {
+	args := []any{}
+	for _, a := range w.Args {
+		args = append(args, adArg(a))
+	}
+	var rt any
+	if w.RetTp != nil {
+		rt = sfFtIn(w.RetTp)
+	}
+	return map[string]any{"n": vec.GoString(w.Name), "a": args, "rt": rt}
 }
 
 // ---------------------------------------------------------------- exec
@@ -431,6 +448,66 @@ func aggdescExec(op string, p []json.RawMessage) (out any, err error) {
 		d := &aggregation.AggFuncDesc{}
 		d.Name = arg[string](p, 0)
 		return int(d.GetTiPBExpr(arg[bool](p, 1))), nil
+	case "new_window_desc":
+		s := adSpec(p[0])
+		ctx := adCtx(s)
+		ectx := ctx.GetEvalCtx()
+		collate.SetNewCollationEnabledForTest(s.NC)
+		w, err := aggregation.NewWindowFuncDesc(ctx, s.N, adArgs(ctx, s), arg[bool](p, 1))
+		if err != nil {
+			return exErr(err), nil
+		}
+		if w == nil {
+			return nil, nil
+		}
+		c := w.Clone()
+		return map[string]any{
+			"w":     adDumpWindow(w),
+			"clone": adDumpWindow(c),
+			"s":     vec.GoString(w.StringWithCtx(ectx, errors.RedactLogDisable)),
+		}, nil
+	case "window_frame":
+		n := arg[string](p, 0)
+		ok, frame := aggregation.UseDefaultFrame(n)
+		return map[string]any{
+			"use":   ok,
+			"tp":    int(frame.Type),
+			"start": []any{int(frame.Extent.Start.Type), frame.Extent.Start.UnBounded},
+			"end":   []any{int(frame.Extent.End.Type), frame.Extent.End.UnBounded},
+			"need":  aggregation.NeedFrame(n),
+		}, nil
+	case "window_to_pb":
+		s := adSpec(p[0])
+		ctx := adCtx(s)
+		ectx := ctx.GetEvalCtx()
+		collate.SetNewCollationEnabledForTest(s.NC)
+		w := &aggregation.WindowFuncDesc{}
+		w.Name = s.N
+		w.Args = adArgs(ctx, s)
+		if string(s.RT) != "null" && len(s.RT) > 0 {
+			w.RetTp = d2FtIn(exArr(s.RT))
+		}
+		pb := aggregation.WindowFuncToPBExpr(ectx, &pdClient{mode: arg[int](p, 1)}, w)
+		if pb == nil {
+			return nil, nil
+		}
+		b, err := pb.Marshal()
+		must(err)
+		return map[string]any{"pb": hex.EncodeToString(b)}, nil
+	case "window_tiflash":
+		s := adSpec(p[0])
+		ctx := adCtx(s)
+		ectx := ctx.GetEvalCtx()
+		collate.SetNewCollationEnabledForTest(s.NC)
+		expression.DefaultExprPushDownBlacklist.Store(pdBlacklist(arg[[][]any](p, 1)))
+		w := &aggregation.WindowFuncDesc{}
+		w.Name = s.N
+		w.Args = adArgs(ctx, s)
+		if string(s.RT) != "null" && len(s.RT) > 0 {
+			w.RetTp = d2FtIn(exArr(s.RT))
+		}
+		pctx := expression.NewPushDownContext(ectx, &pdClient{}, false, nil, nil, 1024)
+		return w.CanPushDownToTiFlash(pctx), nil
 	}
 	return nil, errors.Errorf("aggdesc: unknown op %s", op)
 }
@@ -836,6 +913,168 @@ func aggdescGenerate(gen *vec.Gen, rng *rand.Rand) {
 	for _, n := range names {
 		gen.Add("tipb", "tipb", n, false)
 		gen.Add("tipb", "tipb", n, true)
+	}
+
+	// Part C: window function descriptors (window_func.go).
+	g.genPartC(gen, rng, blacklists)
+}
+
+func (g *adGen) genPartC(gen *vec.Gen, rng *rand.Rand, blacklists [][][]any) {
+	const nn, un, bin = mysql.NotNullFlag, mysql.UnsignedFlag, mysql.BinaryFlag
+	intFt := pdFt(mysql.TypeLonglong, bin, 20, 0, "binary", "binary")
+	intNNFt := pdFt(mysql.TypeLonglong, bin|nn, 20, 0, "binary", "binary")
+	uintNNFt := pdFt(mysql.TypeLonglong, bin|un|nn, 20, 0, "binary", "binary")
+	varNNFt := pdFt(mysql.TypeVarchar, nn, 20, 0, "utf8mb4", "utf8mb4_bin")
+
+	winNames := []string{
+		ast.WindowFuncRowNumber, ast.WindowFuncRank, ast.WindowFuncDenseRank, ast.WindowFuncCumeDist,
+		ast.WindowFuncPercentRank, ast.WindowFuncNtile, ast.WindowFuncLead, ast.WindowFuncLag,
+		ast.WindowFuncFirstValue, ast.WindowFuncLastValue, ast.WindowFuncNthValue,
+		ast.AggFuncCount, ast.AggFuncApproxCountDistinct, ast.AggFuncSum, ast.AggFuncAvg,
+		ast.AggFuncMax, ast.AggFuncMin, ast.AggFuncFirstRow,
+		ast.AggFuncBitAnd, ast.AggFuncBitOr, ast.AggFuncBitXor,
+		ast.AggFuncVarPop, ast.AggFuncStddevSamp,
+	}
+	var casedNames []string
+	for _, n := range winNames {
+		casedNames = append(casedNames, n, strings.ToUpper(n))
+	}
+	casedNames = append(casedNames, "Row_Number", "Percent_Rank", "Bit_And", "Lead", "First_Value", "unknown_win")
+
+	mkSpec := func(name string, args []any, nc bool) map[string]any {
+		return map[string]any{"n": name, "a": args, "d": false, "m": 0, "ob": []any{}, "raw": false, "rt": nil, "nc": nc, "dpi": 0}
+	}
+
+	// 1. new_window_desc: every function in lower & upper case across representative arg types + skipCheckArgs.
+	for _, n := range casedNames {
+		lo := strings.ToLower(n)
+		for _, skip := range []bool{false, true} {
+			s := g.spec(lo)
+			s["n"] = n
+			gen.Add("win/new", "new_window_desc", s, skip)
+		}
+	}
+	// Specific arg validation for nth_value, ntile, lead, lag (0, 1, -1, u64::MAX, NULL, non-const, string).
+	checkVals := []any{
+		adConst([]any{types.KindInt64, 0}, intFt),
+		adConst([]any{types.KindInt64, 1}, intFt),
+		adConst([]any{types.KindInt64, 5}, intFt),
+		adConst([]any{types.KindInt64, -1}, intFt),
+		adConst([]any{types.KindUint64, uint64(18446744073709551615)}, pdFt(mysql.TypeLonglong, bin|un, 20, 0, "binary", "binary")),
+		adConst([]any{types.KindNull}, pdFt(mysql.TypeNull, bin, 0, 0, "binary", "binary")),
+		adConst([]any{types.KindNull}, intFt),
+		adConst([]any{types.KindString, "2", "utf8mb4_bin"}, pdFt(mysql.TypeVarString, 0, 1, 0, "utf8mb4", "utf8mb4_bin")),
+		adCol(9, intFt),
+	}
+	for _, v := range checkVals {
+		for _, skip := range []bool{false, true} {
+			for _, n := range []string{ast.WindowFuncNthValue, "NTH_VALUE"} {
+				gen.Add("win/nth_value", "new_window_desc", mkSpec(n, []any{adCol(1, intNNFt), v}, true), skip)
+			}
+			for _, n := range []string{ast.WindowFuncNtile, "NTILE"} {
+				gen.Add("win/ntile", "new_window_desc", mkSpec(n, []any{v}, true), skip)
+			}
+			for _, n := range []string{ast.WindowFuncLead, "LEAD", ast.WindowFuncLag, "LAG"} {
+				gen.Add("win/leadlag_off", "new_window_desc", mkSpec(n, []any{adCol(1, intNNFt), v}, true), skip)
+				gen.Add("win/leadlag_off3", "new_window_desc", mkSpec(n, []any{adCol(1, intNNFt), v, adCol(2, intNNFt)}, true), skip)
+			}
+		}
+	}
+	// lead / lag: 1 arg, 3 args (NOT NULL unsigned/signed/mixed/nullable), and collation conflicts.
+	oneConst := adConst([]any{types.KindInt64, 1}, intFt)
+	for _, n := range []string{ast.WindowFuncLead, "LEAD", ast.WindowFuncLag, "LAG"} {
+		gen.Add("win/leadlag_1arg", "new_window_desc", mkSpec(n, []any{adCol(1, uintNNFt)}, true), false)
+		for _, pair := range [][2][]any{
+			{uintNNFt, uintNNFt},
+			{uintNNFt, intNNFt},
+			{intNNFt, uintNNFt},
+			{intNNFt, intNNFt},
+			{uintNNFt, intFt},
+			{intFt, uintNNFt},
+			{varNNFt, varNNFt},
+		} {
+			gen.Add("win/leadlag_3arg", "new_window_desc",
+				mkSpec(n, []any{adCol(1, pair[0]), oneConst, adCol(2, pair[1])}, true), false)
+		}
+		// Collation conflicts (triggers nil RetTp panic in Go).
+		for _, coer := range []int{0, 2} {
+			a0 := map[string]any{"col": []any{1, 0, pdFt(mysql.TypeVarchar, nn, 20, 0, "utf8mb4", "utf8mb4_unicode_ci"), ""}, "coer": coer}
+			a2 := map[string]any{"col": []any{3, 2, pdFt(mysql.TypeVarchar, nn, 20, 0, "utf8mb4", "utf8mb4_general_ci"), ""}, "coer": coer}
+			for _, nc := range []bool{true, false} {
+				gen.Add("win/leadlag_coll", "new_window_desc", mkSpec(n, []any{a0, oneConst, a2}, nc), false)
+			}
+		}
+	}
+	// first_value / last_value / nth_value / firstrow: M-FT aliasing over all Expr kinds & ENUM/SET.
+	for _, n := range []string{ast.WindowFuncFirstValue, "FIRST_VALUE", ast.WindowFuncLastValue, ast.WindowFuncNthValue, ast.AggFuncFirstRow} {
+		for _, arg0 := range []any{
+			adCol(1, intNNFt),
+			adCol(1, pdFt(mysql.TypeEnum, nn, 1, 0, "utf8mb4", "utf8mb4_bin", "a", "b")),
+			adCol(1, pdFt(mysql.TypeSet, nn, 3, 0, "utf8mb4", "utf8mb4_bin", "x", "y")),
+			adConst([]any{types.KindInt64, 7}, intNNFt),
+			map[string]any{"f": []any{"plus", nil, []any{adCol(1, intNNFt), oneConst}}},
+			map[string]any{"castf": []any{pdFt(mysql.TypeFloat, bin|nn, 12, -1, "binary", "binary"), adCol(1, intNNFt)}},
+		} {
+			args := []any{arg0}
+			if n == ast.WindowFuncNthValue {
+				args = append(args, oneConst)
+			}
+			gen.Add("win/alias", "new_window_desc", mkSpec(n, args, true), false)
+		}
+	}
+	// Random new_window_desc shapes.
+	for i := 0; i < 120; i++ {
+		n := casedNames[rng.IntN(len(casedNames)-1)] // exclude unknown_win here
+		s := g.spec(strings.ToLower(n))
+		s["n"] = n
+		gen.Add("win/rand_new", "new_window_desc", s, rng.IntN(2) == 0)
+	}
+
+	// 2. window_frame: UseDefaultFrame + NeedFrame across lower/upper/mixed/unknown names.
+	for _, n := range append(append([]string{}, casedNames...), "", "foo", "ROW_NUMBER", "row_number", "CUME_DIST", "FIRST_VALUE") {
+		gen.Add("win/frame", "window_frame", n)
+	}
+
+	// 3. window_to_pb: raw descriptors across every name, field type, arg shape, and client mode.
+	for _, n := range casedNames {
+		lo := strings.ToLower(n)
+		for _, mode := range []int{0, 1, 2} {
+			s := g.rawSpec(lo)
+			s["n"] = n
+			gen.Add("win/topb", "window_to_pb", s, mode)
+		}
+	}
+	// Extra window_to_pb with diverse return types and non-pushable / foldable args.
+	for _, ft := range g.fts {
+		for _, n := range []string{ast.WindowFuncRowNumber, ast.WindowFuncLead, ast.WindowFuncFirstValue, ast.AggFuncSum} {
+			s := g.rawSpec(n)
+			s["rt"] = ft
+			if len(s["a"].([]any)) > 0 {
+				s["a"].([]any)[0] = adCol(1, ft)
+			}
+			gen.Add("win/topb_types", "window_to_pb", s, 0)
+		}
+	}
+	// Nil RetTp in WindowFuncToPBExpr (Go panics in ToPBFieldType).
+	gen.Add("win/topb_nilrt", "window_to_pb", map[string]any{
+		"n": ast.WindowFuncRowNumber, "a": []any{}, "d": false, "m": 0, "ob": []any{}, "raw": true, "rt": nil, "nc": true, "dpi": 0,
+	}, 0)
+
+	// 4. window_tiflash: CanPushDownToTiFlash across names (lower/upper/unknown), arg types, and blacklists.
+	for _, n := range casedNames {
+		lo := strings.ToLower(n)
+		for i := 0; i < 4; i++ {
+			s := g.rawSpec(lo)
+			s["n"] = n
+			gen.Add("win/tiflash", "window_tiflash", s, blacklists[rng.IntN(len(blacklists))])
+		}
+	}
+	for _, ft := range g.fts {
+		for _, n := range []string{ast.WindowFuncLead, ast.WindowFuncFirstValue, ast.WindowFuncLastValue, ast.WindowFuncNthValue, ast.AggFuncSum} {
+			s := g.rawSpec(n)
+			s["a"].([]any)[0] = adCol(1, ft)
+			gen.Add("win/tiflash_types", "window_tiflash", s, nil)
+		}
 	}
 }
 
