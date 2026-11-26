@@ -6,7 +6,8 @@ package domains
 func pointgetExempt() map[string]string {
 	vs12 := "VS1-12 function without a decode_row_val record: covered by tidb-rs unit tests (crates/executor/src/point_get.rs: the executor over a mock snapshot, the builder), or a boundary stub"
 	part2a := "D12.1 Part 2A function without a readexec record: covered by tidb-rs unit tests (crates/executor/src/table_reader.rs)"
-	rest := "D12.1 outside the ported parts (VS1-12 and Part 2A); not yet ported"
+	part2b := "D12.1 Part 2B function without a readexec record: covered by tidb-rs unit tests (crates/executor/src/distsql.rs; correlated-column substitution stops at D10.1)"
+	rest := "D12.1 outside the ported parts (VS1-12, Part 2A, and Part 2B); not yet ported"
 	return map[string]string{
 		"pkg/executor/batch_point_get.go:BatchPointGetExec.Close":                               rest,
 		"pkg/executor/batch_point_get.go:BatchPointGetExec.Next":                                rest,
@@ -29,14 +30,12 @@ func pointgetExempt() map[string]string {
 		"pkg/executor/builder.go:buildIndexScanOutputOffsets":                                   rest,
 		"pkg/executor/builder.go:buildIndexUsageReporter":                                       vs12,
 		"pkg/executor/builder.go:buildNoRangeIndexLookUpReader":                                 rest,
-		"pkg/executor/builder.go:buildNoRangeIndexReader":                                       rest,
 		"pkg/executor/builder.go:buildTableReq":                                                 rest,
 		"pkg/executor/builder.go:collectColIdxFromByItems":                                      rest,
 		"pkg/executor/builder.go:collectColumnIndexFromExpr":                                    rest,
 		"pkg/executor/builder.go:dedupHandles":                                                  rest,
 		"pkg/executor/builder.go:executorBuilder.buildBatchPointGet":                            rest,
 		"pkg/executor/builder.go:executorBuilder.buildIndexLookUpReader":                        rest,
-		"pkg/executor/builder.go:executorBuilder.buildIndexReader":                              rest,
 		"pkg/executor/builder.go:executorBuilder.buildIndexUsageReporter":                       vs12,
 		"pkg/executor/builder.go:executorBuilder.buildUnionScanExec":                            rest,
 		"pkg/executor/builder.go:executorBuilder.buildUnionScanFromReader":                      rest,
@@ -97,15 +96,6 @@ func pointgetExempt() map[string]string {
 		"pkg/executor/distsql.go:IndexLookUpRunTimeStats.Merge":                                 rest,
 		"pkg/executor/distsql.go:IndexLookUpRunTimeStats.String":                                rest,
 		"pkg/executor/distsql.go:IndexLookUpRunTimeStats.Tp":                                    rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.Close":                                     rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.Next":                                      rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.Open":                                      rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.Table":                                     rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.buildKVRangesForIndexReader":               rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.buildKVReq":                                rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.open":                                      rest,
-		"pkg/executor/distsql.go:IndexReaderExecutor.setDummy":                                  rest,
-		"pkg/executor/distsql.go:buildKeyRanges":                                                rest,
 		"pkg/executor/distsql.go:getDatumRow":                                                   rest,
 		"pkg/executor/distsql.go:getIndexScanMaxInFlight":                                       rest,
 		"pkg/executor/distsql.go:getMergeSortIndexScanConcurrency":                              rest,
@@ -125,12 +115,10 @@ func pointgetExempt() map[string]string {
 		"pkg/executor/distsql.go:lookupTableTask.Len":                                           rest,
 		"pkg/executor/distsql.go:lookupTableTask.Less":                                          rest,
 		"pkg/executor/distsql.go:lookupTableTask.Swap":                                          rest,
-		"pkg/executor/distsql.go:needMergeSort":                                                 rest,
 		"pkg/executor/distsql.go:newIndexLookUpExecutorContext":                                 rest,
-		"pkg/executor/distsql.go:newIndexReaderExecutorContext":                                 rest,
 		"pkg/executor/distsql.go:newSelectResultList":                                           rest,
 		"pkg/executor/distsql.go:newSelectResultRowIterList":                                    rest,
-		"pkg/executor/distsql.go:rebuildIndexRanges":                                            rest,
+		"pkg/executor/distsql.go:rebuildIndexRanges":                                            part2b,
 		"pkg/executor/distsql.go:selectResultList.Close":                                        rest,
 		"pkg/executor/distsql.go:selectResultWithMeta.Close":                                    rest,
 		"pkg/executor/distsql.go:tableWorker.compareData":                                       rest,

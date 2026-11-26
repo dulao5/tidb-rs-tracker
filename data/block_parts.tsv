@@ -58,6 +58,7 @@ D10.9	VS1-31	VS1-31	in-progress	tidb-rs branch claude/issue-330 (#330): converge
 D11.1	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality
 D12.0	D12.3-A	D12.3-A	in-progress	tidb-rs branch claude/issue-376 (#376, stream aggregation part A): the vecgroupchecker file, 8/8, ported with the stream aggregation executor (D12.3 spec decision 3); govec aggexec
 D12.0	VS1-13	VS1-13	in-progress	dulao5/tidb-rs#222: converge 123/123
+D12.1	D12.1-2B	D12.1-2B	in-progress	dulao5/tidb-rs#432 (IndexReader Part 2B): converge 14/14; unblocks IndexReaderExecutor.Detach and indexReaderExecutorContext.Detach; govec readexec 578 records (199 index_reader, 0 blocked, 0 diffs)
 D12.1	VS1-12	VS1-12	in-progress	dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget
 D12.1	VS1-34	VS1-34	in-progress	dulao5/tidb-rs#426 (TableReader Part 2A): converge 28/28 + 1 exception (DEF.MPP); govec readexec 379 records (0 blocked)
 D12.12	VS1-15	VS1-15	planned	tidb-rs specs/VS1-vertical-slice (#205)

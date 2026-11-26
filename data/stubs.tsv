@@ -16,7 +16,9 @@ crates/executor/src/aggregate/agg_hash_executor.rs	spill	D01.10	temporary	D12.3-
 crates/executor/src/aggregate/agg_hash_final_worker.rs	run	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.run disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/aggregate/agg_hash_final_worker.rs	send_final_result	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.sendFinalResult disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
-crates/executor/src/builder.rs	build	D12.1	temporary	D12.1 parts 2B/2C/3A/3C/3D: IndexReader, IndexLookUp, BatchPointGet, UnionScan, TableSample executors
+crates/executor/src/builder.rs	build	D12.1	temporary	D12.1 parts 2C/3A/3C/3D: IndexLookUp, BatchPointGet, UnionScan, TableSample executors
+crates/executor/src/builder.rs	build_index_reader	D06.4	temporary	D12.1 part 2B (D12.1-2B): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
+crates/executor/src/builder.rs	build_no_range_index_reader	D06.4	temporary	D12.1 part 2B (D12.1-2B): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
 crates/executor/src/builder.rs	build_no_range_table_reader	D06.4	temporary	D12.1 part 2A (VS1-34): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
 crates/executor/src/builder.rs	build_table_reader	D09.12	temporary	D12.1 part 2A (VS1-34): dynamic partition pruning in buildTableReader (part 3B after D09.12 partition pruning)
 crates/executor/src/builder.rs	build_table_reader	DEF.MPP	temporary	D12.1 part 2A (VS1-34): TiFlash / MPP / BatchCop TableReader (not ported, DEF.MPP)
@@ -29,8 +31,6 @@ crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	tempo
 crates/executor/src/compiler.rs	planner_optimize	D05.4	temporary	Compile: a session without the transaction's InfoSchema (sessiontxn GetTxnInfoSchema)
 crates/executor/src/detach.rs	index_look_up_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	index_look_up_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/detach.rs	index_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/detach.rs	index_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/detach.rs	projection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	projection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
