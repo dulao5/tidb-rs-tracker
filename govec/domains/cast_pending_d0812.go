@@ -19,8 +19,6 @@ func castExemptD0812() map[string]string {
 	const (
 		toExplain = "owned by D10.9: EXPLAIN / plan-digest printing of expressions, called by the plans' " +
 			"ExplainInfo (planner/core/explain.go); listed in tidb-rs specs/D10.9-postprocess/tasks.md"
-		toPrepareChecker = "owned by D09.4: AST visitor over the parser driver's ParamMarkerExpr, used by the " +
-			"window frame builder (buildWindowFunctionFrameBound); listed in tidb-rs specs/D09.4-agg-window/tasks.md"
 		toDigestText = "owned by D08.9: the SQL-digest text retriever of TIDB_DECODE_SQL_DIGESTS (builtin_info.go; " +
 			"also read by the infoschema reader, D12.13), needs an SQLExecutor over statements_summary; listed in " +
 			"tidb-rs specs/D08.9-misc-funcs/tasks.md"
@@ -35,8 +33,10 @@ func castExemptD0812() map[string]string {
 			"pos_from_position_expr_literal_and_param and replayed by selectbuild through GROUP BY / GROUP_CONCAT ORDER BY positions",
 		"PosFromPositionExpr": "ported (tidb-rs crates/expression/src/util.rs, D09.4 part A): unit test " +
 			"pos_from_position_expr_literal_and_param and replayed by selectbuild through GROUP BY / GROUP_CONCAT ORDER BY positions",
-		"ParamMarkerInPrepareChecker.Enter": toPrepareChecker,
-		"ParamMarkerInPrepareChecker.Leave": toPrepareChecker,
+		"ParamMarkerInPrepareChecker.Enter": "ported (tidb-rs crates/expression/src/util.rs, D09.4 part B): unit test " +
+			"param_marker_in_prepare_checker_prepare_vs_execute and replayed by selectbuild through window frame bounds and arguments",
+		"ParamMarkerInPrepareChecker.Leave": "ported (tidb-rs crates/expression/src/util.rs, D09.4 part B): unit test " +
+			"param_marker_in_prepare_checker_prepare_vs_execute and replayed by selectbuild through window frame bounds and arguments",
 		"ParamMarkerExpression": "ported (tidb-rs crates/expression/src/util.rs): replayed by the rewrite domain " +
 			"through every `?` marker (with and without the plan cache); that domain is registered for its own " +
 			"block only",

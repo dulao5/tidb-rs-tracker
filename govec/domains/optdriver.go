@@ -133,7 +133,7 @@ func odDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 func odSupported(p base.LogicalPlan) string {
 	switch p.(type) {
 	case *logicalop.DataSource, *logicalop.LogicalSelection, *logicalop.LogicalProjection, *logicalop.LogicalLimit,
-		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalTopN:
+		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalTopN, *logicalop.LogicalWindow:
 	default:
 		return p.TP()
 	}

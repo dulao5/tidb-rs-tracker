@@ -100,7 +100,8 @@ var selectbuildCoverage = map[string]vec.Coverage{
 		"itemTransformer.Enter", "itemTransformer.Leave", "PlanBuilder.buildLimit", "PlanBuilder.unfoldWildStar",
 		"unfoldWildStar", "resolveFromSelectFields", "appendVisitInfo", "extractLimitCountOffset", "getUintFromNode",
 		"extractSingeValueColNamesFromWhere", "colNameResolver.Enter", "colNameResolver.Leave", "allColFromExprNode",
-		// D09.4: HAVING / ORDER BY resolution, aggregation, DISTINCT, GROUP BY, ONLY_FULL_GROUP_BY (VS1-21 + part A).
+		"compareItems", "getAllByItems", "restoreByItemText",
+		// D09.4: HAVING / ORDER BY resolution, aggregation, DISTINCT, GROUP BY, ONLY_FULL_GROUP_BY, window functions (VS1-21 + part A + part B).
 		"PlanBuilder.resolveHavingAndOrderBy", "havingWindowAndOrderbyExprResolver.Enter",
 		"havingWindowAndOrderbyExprResolver.Leave", "havingWindowAndOrderbyExprResolver.resolveFromPlan",
 		"havingWindowAndOrderbyExprResolver.pushCurClause", "havingWindowAndOrderbyExprResolver.popCurClause",
@@ -116,13 +117,24 @@ var selectbuildCoverage = map[string]vec.Coverage{
 		"buildFuncDependCol", "buildWhereFuncDepend", "checkColFuncDepend",
 		"checkExprInGroupByOrIsSingleValue", "addGbyOrSingleValueColName",
 		"LogicalAggregation.Init",
+		"PlanBuilder.resolveWindowFunction", "PlanBuilder.buildWindowFunctions",
+		"PlanBuilder.buildProjectionForWindow", "PlanBuilder.buildByItemsForWindow",
+		"PlanBuilder.buildArgs4WindowFunc", "PlanBuilder.buildWindowFunctionFrame",
+		"PlanBuilder.buildWindowFunctionFrameBound", "PlanBuilder.handleDefaultFrame",
+		"PlanBuilder.groupWindowFuncs", "PlanBuilder.checkWindowFuncArgs",
+		"PlanBuilder.checkOriginWindowFuncs", "PlanBuilder.checkOriginWindowSpec",
+		"PlanBuilder.checkOriginWindowFrameBound",
+		"buildWindowSpecs", "resolveWindowSpec", "mergeWindowSpec", "appendIfAbsentWindowSpec",
+		"extractWindowFuncs", "sortWindowSpecs", "specEqual", "getWindowName",
+		"LogicalWindow.Init",
 		// D10.2: the access paths and the handle column helper.
 		"getPossibleAccessPaths", "fillContentForTablePath", "genTiFlashPath", "filterPathByIsolationRead",
 		"removeIgnoredPaths", "removeGlobalIndexPaths", "checkAutoForceIndexLookUpPushDown",
 		"handleColHelper.pushMap", "handleColHelper.popMap",
-		// D09.0: the planbuilder helpers + AggregateFuncExtractor (D09.4 part A).
+		// D09.0: the planbuilder helpers + AggregateFuncExtractor / WindowFuncExtractor (D09.4 part A / B).
 		"PlanBuilder.Build", "PlanBuilder.detectSelectWindow", "isForUpdateReadSelectLock",
 		"AggregateFuncExtractor.Enter", "AggregateFuncExtractor.Leave",
+		"WindowFuncExtractor.Enter", "WindowFuncExtractor.Leave",
 		// D09.2: ORDER BY positions.
 		"expressionRewriter.positionToScalarFunc",
 	}},
@@ -142,6 +154,18 @@ var selectbuildCoverage = map[string]vec.Coverage{
 		"LogicalAggregation.getGroupNDVs",
 		// D10.2: co-ported LogicalAggregation.PreparePossibleProperties.
 		"LogicalAggregation.PreparePossibleProperties",
+	}},
+	"winop": {Min: 15, GoFuncs: []string{
+		// D09.4 part B: LogicalWindow / WindowFrame / FrameBound operator methods.
+		"LogicalWindow.GetPartitionBy", "LogicalWindow.GetPartitionByCols",
+		"LogicalWindow.GetPartitionKeys", "LogicalWindow.GetWindowResultColumns",
+		"LogicalWindow.GetGroupNDVs", "LogicalWindow.ReplaceExprColumns",
+		"LogicalWindow.extractUsedCols", "LogicalWindow.CheckComparisonForTiFlash",
+		"WindowFrame.Clone", "FrameBound.Clone",
+		"FrameBound.UpdateCompareCols", "FrameBound.UpdateCmpFuncsAndCmpDataType",
+		"FrameBound.ToPB",
+		// D10.2: co-ported LogicalWindow.PreparePossibleProperties.
+		"LogicalWindow.PreparePossibleProperties",
 	}},
 }
 
@@ -274,6 +298,42 @@ func sbDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 		o["gby"] = lrExprs(x.GroupByItems, f)
 		o["prefer_agg_type"] = x.PreferAggType
 		o["prefer_agg_to_cop"] = x.PreferAggToCop
+	case *logicalop.LogicalWindow:
+		wfs := []any{}
+		for _, w := range x.WindowFuncDescs {
+			wfs = append(wfs, []any{w.Name, lrExprs(w.Args, f), sfFtIn(w.RetTp)})
+		}
+		pby := []any{}
+		for _, it := range x.PartitionBy {
+			pby = append(pby, []any{f(it.Col), it.Desc})
+		}
+		oby := []any{}
+		for _, it := range x.OrderBy {
+			oby = append(oby, []any{f(it.Col), it.Desc})
+		}
+		var frame any
+		if x.Frame != nil {
+			dumpBound := func(b *logicalop.FrameBound) any {
+				if b == nil {
+					return nil
+				}
+				return []any{
+					int(b.Type), b.UnBounded, b.Num,
+					lrExprs(b.CalcFuncs, f),
+					int(b.CmpDataType),
+					b.IsExplicitRange,
+				}
+			}
+			frame = map[string]any{
+				"type":  int(x.Frame.Type),
+				"start": dumpBound(x.Frame.Start),
+				"end":   dumpBound(x.Frame.End),
+			}
+		}
+		o["wfs"] = wfs
+		o["pby"] = pby
+		o["oby"] = oby
+		o["frame"] = frame
 	default:
 		panic("sbDump: " + p.TP())
 	}
@@ -289,7 +349,7 @@ func sbDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 func sbSupported(p base.LogicalPlan) string {
 	switch p.(type) {
 	case *logicalop.DataSource, *logicalop.LogicalSelection, *logicalop.LogicalProjection, *logicalop.LogicalLimit,
-		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalAggregation:
+		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalAggregation, *logicalop.LogicalWindow:
 	default:
 		return p.TP()
 	}
@@ -385,6 +445,8 @@ func selectbuildExec(op string, p []json.RawMessage) (out any, err error) {
 			"col_id": vars.PlanColumnID.Load(), "opt_flag": builder.GetOptFlag(), "vi": vis, "w": warns}, nil
 	case "aggop":
 		return sbExecAggOp(is, arg[string](p, 1), arg[sbAggSpec](p, 2))
+	case "winop":
+		return sbExecWinOp(is, arg[string](p, 1), arg[sbWinSpec](p, 2))
 	}
 	return nil, fmt.Errorf("selectbuild: unknown op %s", op)
 }
@@ -640,6 +702,256 @@ func sbExecAggOp(is infoschema.InfoSchema, sql string, spec sbAggSpec) (any, err
 	return nil, fmt.Errorf("aggop: unknown kind %s", spec.Kind)
 }
 
+type sbWinSpec struct {
+	Kind      string  `json:"kind"`
+	Keep      []int   `json:"keep,omitempty"`
+	PredCols  []int   `json:"pred_cols,omitempty"`
+	GroupNDVs [][]int `json:"group_ndvs,omitempty"`
+	ColGroups [][]int `json:"col_groups,omitempty"`
+}
+
+func sbFindWindow(p base.LogicalPlan) *logicalop.LogicalWindow {
+	if w, ok := p.(*logicalop.LogicalWindow); ok {
+		return w
+	}
+	for _, c := range p.Children() {
+		if w := sbFindWindow(c); w != nil {
+			return w
+		}
+	}
+	return nil
+}
+
+func sbExecWinOp(is infoschema.InfoSchema, sql string, spec sbWinSpec) (any, error) {
+	sctx := rbSession(rbDefaultOpts)
+	vars := sctx.GetSessionVars()
+	vars.SQLMode = mysql.ModeOnlyFullGroupBy
+	stmt, err := parser.New().ParseOneStmt(sql, "", "")
+	if err != nil {
+		return nil, err
+	}
+	nodeW := resolve.NewNodeW(stmt)
+	ret := &core.PreprocessorReturn{InfoSchema: is}
+	if err := core.Preprocess(context.Background(), sctx, nodeW, core.WithPreprocessorReturn(ret)); err != nil {
+		return nil, err
+	}
+	builder, _ := core.NewPlanBuilder().Init(sctx.GetPlanCtx(), is, utilhint.NewQBHintHandler(nil))
+	plan, err := builder.Build(context.Background(), nodeW)
+	if err != nil {
+		return nil, err
+	}
+	lp := plan.(base.LogicalPlan)
+	win := sbFindWindow(lp)
+	if win == nil {
+		return nil, fmt.Errorf("winop: no LogicalWindow in %s", sql)
+	}
+	f := sbExprF(sctx)
+	switch spec.Kind {
+	case "inspect":
+		pby := []any{}
+		for _, it := range win.GetPartitionBy() {
+			pby = append(pby, []any{it.Col.UniqueID, it.Desc})
+		}
+		pbyCols := []any{}
+		for _, c := range win.GetPartitionByCols() {
+			pbyCols = append(pbyCols, c.UniqueID)
+		}
+		partKeys := []any{}
+		for _, k := range win.GetPartitionKeys() {
+			partKeys = append(partKeys, []any{k.Col.UniqueID, k.CollateID})
+		}
+		resCols := []any{}
+		for _, c := range win.GetWindowResultColumns() {
+			resCols = append(resCols, c.UniqueID)
+		}
+		corCols := []any{}
+		for _, c := range win.ExtractCorrelatedCols() {
+			corCols = append(corCols, c.UniqueID)
+		}
+		childCols := win.Children()[0].Schema().Columns
+		colGroupsIn := [][]*expression.Column{}
+		for _, g := range spec.ColGroups {
+			cs := []*expression.Column{}
+			for _, idx := range g {
+				cs = append(cs, childCols[idx])
+			}
+			colGroupsIn = append(colGroupsIn, cs)
+		}
+		colGroupsOut := []any{}
+		for _, g := range win.ExtractColGroups(colGroupsIn) {
+			uids := []any{}
+			for _, c := range g {
+				uids = append(uids, c.UniqueID)
+			}
+			colGroupsOut = append(colGroupsOut, uids)
+		}
+		return map[string]any{
+			"pby":        pby,
+			"pby_cols":   pbyCols,
+			"part_keys":  partKeys,
+			"res_cols":   resCols,
+			"cor_cols":   corCols,
+			"col_groups": colGroupsOut,
+		}, nil
+	case "frame":
+		if win.Frame == nil {
+			return map[string]any{"frame": nil}, nil
+		}
+		cloned := win.Frame.Clone()
+		orderByCols := make([]*expression.Column, 0, len(win.OrderBy))
+		for _, it := range win.OrderBy {
+			orderByCols = append(orderByCols, it.Col)
+		}
+		dumpBoundOp := func(b *logicalop.FrameBound) (any, error) {
+			if b == nil {
+				return nil, nil
+			}
+			if err := b.UpdateCompareCols(sctx, orderByCols); err != nil {
+				return nil, err
+			}
+			tiflashOK := win.CheckComparisonForTiFlash(b)
+			pb, err := b.ToPB(sctx.GetBuildPBCtx())
+			if err != nil {
+				return nil, err
+			}
+			var pbRange any
+			if pb.FrameRange != nil {
+				pbRange = []any{int32(pb.FrameRange.Tp), int32(pb.FrameRange.Sig)}
+			}
+			var pbCmp any
+			if pb.CmpDataType != nil {
+				pbCmp = int32(*pb.CmpDataType)
+			}
+			var pbOff any
+			if pb.Offset != nil {
+				pbOff = *pb.Offset
+			}
+			return map[string]any{
+				"cmp_cols":      lrExprs(b.CompareCols, f),
+				"cmp_data_type": int(b.CmpDataType),
+				"tiflash_ok":    tiflashOK,
+				"pb": []any{
+					int32(pb.Type), pb.Unbounded, pbOff, pbCmp, pbRange,
+				},
+			}, nil
+		}
+		st, err := dumpBoundOp(cloned.Start)
+		if err != nil {
+			return nil, err
+		}
+		en, err := dumpBoundOp(cloned.End)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"type":  int(cloned.Type),
+			"start": st,
+			"end":   en,
+		}, nil
+	case "replace":
+		oldCol := win.Children()[0].Schema().Columns[0]
+		newCol := oldCol.Clone().(*expression.Column)
+		newCol.UniqueID = 9999
+		win.ReplaceExprColumns(map[string]*expression.Column{string(oldCol.HashCode()): newCol})
+		return map[string]any{"plan": sbDump(sctx, win)}, nil
+	case "ppd":
+		opt := optimizetrace.DefaultLogicalOptimizeOption()
+		preds := []expression.Expression{}
+		winCols := win.Schema().Columns
+		for _, idx := range spec.PredCols {
+			pred, err := expression.NewFunction(sctx.GetExprCtx(), "gt", types.NewFieldType(mysql.TypeTiny), winCols[idx], expression.NewOne())
+			if err != nil {
+				return nil, err
+			}
+			preds = append(preds, pred)
+		}
+		rem, newP := win.PredicatePushDown(preds, opt)
+		return map[string]any{"plan": sbDump(sctx, newP), "rem": lrExprs(rem, f)}, nil
+	case "prune":
+		opt := optimizetrace.DefaultLogicalOptimizeOption()
+		used := []*expression.Column{}
+		for _, idx := range spec.Keep {
+			used = append(used, lp.Schema().Columns[idx])
+		}
+		newP, err := lp.PruneColumns(used, opt)
+		if err != nil {
+			return sbErr(err), nil
+		}
+		return map[string]any{"plan": sbDump(sctx, newP)}, nil
+	case "stats":
+		child := win.Children()[0]
+		childCols := child.Schema().Columns
+		colNDVs := map[int64]float64{}
+		for i, c := range childCols {
+			colNDVs[c.UniqueID] = float64(10 * (i + 1))
+		}
+		groupNDVs := []property.GroupNDV{}
+		for _, g := range spec.GroupNDVs {
+			cols := []int64{}
+			for _, idx := range g {
+				cols = append(cols, childCols[idx].UniqueID)
+			}
+			groupNDVs = append(groupNDVs, property.GroupNDV{Cols: cols, NDV: 42.0})
+		}
+		childStats := &property.StatsInfo{RowCount: 1000.0, ColNDVs: colNDVs, GroupNDVs: groupNDVs}
+		colGroups := [][]*expression.Column{}
+		for _, g := range spec.ColGroups {
+			cs := []*expression.Column{}
+			for _, idx := range g {
+				cs = append(cs, childCols[idx])
+			}
+			colGroups = append(colGroups, cs)
+		}
+		gndvOut := func(gs []property.GroupNDV) []any {
+			res := []any{}
+			for _, g := range gs {
+				cs := []any{}
+				for _, c := range g.Cols {
+					cs = append(cs, c)
+				}
+				res = append(res, []any{cs, strconv.FormatFloat(g.NDV, 'g', -1, 64)})
+			}
+			return res
+		}
+		s1, err := win.DeriveStats([]*property.StatsInfo{childStats}, win.Schema(), []*expression.Schema{child.Schema()}, nil)
+		if err != nil {
+			return nil, err
+		}
+		gndvs1 := gndvOut(s1.GroupNDVs)
+		s2, err := win.DeriveStats([]*property.StatsInfo{childStats}, win.Schema(), []*expression.Schema{child.Schema()}, colGroups)
+		if err != nil {
+			return nil, err
+		}
+		uids := make([]int64, 0, len(s2.ColNDVs))
+		for k := range s2.ColNDVs {
+			uids = append(uids, k)
+		}
+		sort.Slice(uids, func(i, j int) bool { return uids[i] < uids[j] })
+		ndvOut := []any{}
+		for _, k := range uids {
+			ndvOut = append(ndvOut, []any{k, strconv.FormatFloat(s2.ColNDVs[k], 'g', -1, 64)})
+		}
+		return map[string]any{
+			"row_count": strconv.FormatFloat(s2.RowCount, 'g', -1, 64),
+			"col_ndvs":  ndvOut,
+			"gndvs1":    gndvs1,
+			"gndvs2":    gndvOut(s2.GroupNDVs),
+		}, nil
+	case "props":
+		ret := win.PreparePossibleProperties(win.Schema())
+		res := []any{}
+		for _, p := range ret {
+			uids := []any{}
+			for _, c := range p {
+				uids = append(uids, c.UniqueID)
+			}
+			res = append(res, uids)
+		}
+		return map[string]any{"ret": res}, nil
+	}
+	return nil, fmt.Errorf("winop: unknown kind %s", spec.Kind)
+}
+
 // sbTableNames: the table name of each CREATE TABLE statement.
 func sbTableNames(ddls []string) []string {
 	names := []string{}
@@ -862,6 +1174,82 @@ var sbFixed = []string{
 	"SELECT SUM(1 + 2)",
 	"SELECT DISTINCT 1, 2",
 	"SELECT 1 GROUP BY 1",
+	// D09.4 part B: window functions, frames, named WINDOW specs, window+agg, errors.
+	"SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t2",
+	"SELECT a, RANK() OVER (ORDER BY a), DENSE_RANK() OVER (ORDER BY a) FROM t2",
+	"SELECT a, CUME_DIST() OVER (ORDER BY a), PERCENT_RANK() OVER (ORDER BY a) FROM t2",
+	"SELECT a, NTILE(4) OVER (PARTITION BY b ORDER BY a) FROM t2",
+	"SELECT a, LEAD(a) OVER (ORDER BY b), LAG(a, 2) OVER (ORDER BY b), LEAD(a, 1, 0) OVER (ORDER BY b) FROM t2",
+	"SELECT k, FIRST_VALUE(k) OVER (ORDER BY id), LAST_VALUE(k) OVER (ORDER BY id), NTH_VALUE(k, 2) OVER (ORDER BY id) FROM sbtest1",
+	"SELECT a, SUM(c) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t2",
+	"SELECT a, AVG(c) OVER (ORDER BY a ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t2",
+	"SELECT a, MAX(c) OVER (ORDER BY a ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t2",
+	"SELECT a, MIN(c) OVER (ORDER BY a ROWS 2 PRECEDING) FROM t2",
+	"SELECT a, SUM(c) OVER (ORDER BY a RANGE BETWEEN 1 PRECEDING AND 2 FOLLOWING) FROM t2",
+	"SELECT a, SUM(c) OVER (ORDER BY a DESC RANGE BETWEEN 1.5 PRECEDING AND 2.5 FOLLOWING) FROM t2",
+	"SELECT a, SUM(c) OVER (ORDER BY e RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t2",
+	"SELECT y, SUM(y) OVER (ORDER BY z RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW) FROM t3",
+	"SELECT a, SUM(c) OVER w, AVG(c) OVER w FROM t2 WINDOW w AS (PARTITION BY a ORDER BY b)",
+	"SELECT a, ROW_NUMBER() OVER w1, SUM(c) OVER (w1 ROWS 1 PRECEDING) FROM t2 WINDOW w AS (PARTITION BY a), w1 AS (w ORDER BY b)",
+	"SELECT a, SUM(c) OVER (PARTITION BY a), SUM(c) OVER (PARTITION BY a ORDER BY b), SUM(c) OVER (PARTITION BY b ORDER BY a) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a) FROM t2 ORDER BY ROW_NUMBER() OVER (ORDER BY b)",
+	"SELECT a, SUM(c), SUM(SUM(c)) OVER (ORDER BY a) FROM t2 GROUP BY a",
+	"SELECT a, ROW_NUMBER() OVER (ORDER BY SUM(c)) FROM t2 GROUP BY a",
+	"SELECT a, SUM(c) OVER (PARTITION BY a + 1 ORDER BY b) FROM t2",
+	"SELECT a, SUM(c) OVER (w ORDER BY b) FROM t2 WINDOW w AS (PARTITION BY a)",
+	"SELECT a, COUNT(a) OVER () FROM t2 WHERE a > 1 ORDER BY a LIMIT 5",
+	"SELECT a, ROW_NUMBER() OVER w FROM t2 WINDOW w AS (ORDER BY unknown)",
+	"SELECT a, ROW_NUMBER() OVER w FROM t2",
+	"SELECT a, ROW_NUMBER() OVER w FROM t2 WINDOW w AS (ORDER BY a), w AS (ORDER BY b)",
+	"SELECT a, ROW_NUMBER() OVER w1 FROM t2 WINDOW w1 AS (w2), w2 AS (w1)",
+	"SELECT a, ROW_NUMBER() OVER (w ORDER BY b) FROM t2 WINDOW w AS (ORDER BY a)",
+	"SELECT a, ROW_NUMBER() OVER (w PARTITION BY b) FROM t2 WINDOW w AS (PARTITION BY a)",
+	"SELECT a, SUM(a) OVER (w ROWS 1 PRECEDING) FROM t2 WINDOW w AS (ORDER BY a ROWS 2 PRECEDING)",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN UNBOUNDED FOLLOWING AND CURRENT ROW) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN CURRENT ROW AND UNBOUNDED PRECEDING) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN 1 FOLLOWING AND 1 PRECEDING) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN 1 FOLLOWING AND CURRENT ROW) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN CURRENT ROW AND 1 PRECEDING) FROM t2",
+	"SELECT a, SUM(a) OVER (RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a, b RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY b RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t2",
+	"SELECT y, SUM(y) OVER (ORDER BY z RANGE BETWEEN INTERVAL -1 DAY PRECEDING AND CURRENT ROW) FROM t3",
+	"SELECT y, SUM(y) OVER (ORDER BY z RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t3",
+	"SELECT a, NTILE(0) OVER () FROM t2",
+	"SELECT a, NTH_VALUE(a, 0) OVER () FROM t2",
+	"SELECT a, LEAD(a, 0) OVER () FROM t2",
+	"SELECT a, GROUP_CONCAT(b) OVER () FROM t2",
+	"SELECT a, SUM(a) OVER (ORDER BY a ROWS BETWEEN 0 PRECEDING AND 0 FOLLOWING) FROM t2",
+	"SELECT a FROM t2 WHERE ROW_NUMBER() OVER () > 1",
+	"SELECT a FROM t2 GROUP BY ROW_NUMBER() OVER ()",
+	"SELECT SUM(ROW_NUMBER() OVER ()) OVER () FROM t2",
+	// Pin Go's flagSetter.Leave (no SetCollateExpr case) and early checkWindowFuncArgs #402 clearing.
+	"SELECT GROUP_CONCAT(c) COLLATE utf8mb4_bin FROM sbtest1",
+	"SELECT LEAD(k, 1, 0) OVER (ORDER BY k), FIRST_VALUE(k) OVER (ORDER BY id) FROM sbtest1",
+}
+
+type sbWinOpCase struct {
+	sql  string
+	spec sbWinSpec
+}
+
+var sbWinOpCases = []sbWinOpCase{
+	{"SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "inspect", ColGroups: [][]int{{0}, {0, 1}}}},
+	{"SELECT x, SUM(y) OVER (PARTITION BY x ORDER BY y) FROM t3", sbWinSpec{Kind: "inspect", ColGroups: [][]int{{0, 1}}}},
+	{"SELECT a, SUM(c) OVER () FROM t2", sbWinSpec{Kind: "inspect"}},
+	{"SELECT a, SUM(c) OVER (ORDER BY a RANGE BETWEEN 1 PRECEDING AND 2 FOLLOWING) FROM t2", sbWinSpec{Kind: "frame"}},
+	{"SELECT a, SUM(c) OVER (ORDER BY a DESC RANGE BETWEEN 1.5 PRECEDING AND 2.5 FOLLOWING) FROM t2", sbWinSpec{Kind: "frame"}},
+	{"SELECT a, SUM(c) OVER (ORDER BY e RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t2", sbWinSpec{Kind: "frame"}},
+	{"SELECT a, SUM(c) OVER (ORDER BY a ROWS BETWEEN 1 PRECEDING AND 2 FOLLOWING) FROM t2", sbWinSpec{Kind: "frame"}},
+	{"SELECT a, SUM(c) OVER (ORDER BY b) FROM t2", sbWinSpec{Kind: "frame"}},
+	{"SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "replace"}},
+	{"SELECT a, b, SUM(c) OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "ppd", PredCols: []int{0, 1}}},
+	{"SELECT a, b, SUM(c) OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "prune", Keep: []int{0, 2}}},
+	{"SELECT a, b, SUM(c) OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "prune", Keep: []int{2}}},
+	{"SELECT a, b, SUM(c) OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "stats", GroupNDVs: [][]int{{0, 1}}, ColGroups: [][]int{{0, 1}}}},
+	{"SELECT a, SUM(c) OVER () FROM t2", sbWinSpec{Kind: "stats"}},
+	{"SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t2", sbWinSpec{Kind: "props"}},
+	{"SELECT a, ROW_NUMBER() OVER () FROM t2", sbWinSpec{Kind: "props"}},
 }
 
 type sbAggOpCase struct {
@@ -917,6 +1305,9 @@ func selectbuildGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, c := range sbAggOpCases {
 		g.Add("sys/aggop", "aggop", sbDDLs, c.sql, c.spec)
 	}
+	for _, c := range sbWinOpCases {
+		g.Add("sys/winop", "winop", sbDDLs, c.sql, c.spec)
+	}
 	for n := 0; n < 1500; n++ {
 		sbAdd(g, "rand/query", sbRandQuery(rng), sbModes(rng))
 	}
@@ -924,6 +1315,94 @@ func selectbuildGenerate(g *vec.Gen, rng *rand.Rand) {
 		o := sbModes(rng)
 		sbAdd(g, "rand/agg", sbRandAggQuery(rng, o.Mode), o)
 	}
+	for n := 0; n < 250; n++ {
+		o := sbModes(rng)
+		sbAdd(g, "rand/win", sbRandWindowQuery(rng), o)
+	}
+}
+
+func sbRandWindowFunc(rng *rand.Rand, t lrTable) string {
+	switch rng.IntN(10) {
+	case 0:
+		return "ROW_NUMBER()"
+	case 1:
+		return "RANK()"
+	case 2:
+		return "DENSE_RANK()"
+	case 3:
+		return "CUME_DIST()"
+	case 4:
+		return "PERCENT_RANK()"
+	case 5:
+		return fmt.Sprintf("NTILE(%d)", 1+rng.IntN(4))
+	case 6:
+		return fmt.Sprintf("SUM(%s)", lrPick(rng, t.ints))
+	case 7:
+		return fmt.Sprintf("COUNT(%s)", lrPick(rng, t.cols))
+	case 8:
+		return fmt.Sprintf("FIRST_VALUE(%s)", lrPick(rng, t.cols))
+	default:
+		if rng.IntN(2) == 0 {
+			return fmt.Sprintf("LEAD(%s, %d)", lrPick(rng, t.cols), 1+rng.IntN(2))
+		}
+		return fmt.Sprintf("LAG(%s, %d)", lrPick(rng, t.cols), 1+rng.IntN(2))
+	}
+}
+
+func sbRandWindowSpec(rng *rand.Rand, t lrTable) string {
+	parts := []string{}
+	if rng.IntN(2) == 0 {
+		parts = append(parts, "PARTITION BY "+lrPick(rng, t.cols))
+	}
+	hasOrder := false
+	ordCol := ""
+	if rng.IntN(3) != 0 {
+		hasOrder = true
+		ordCol = lrPick(rng, t.ints)
+		ord := "ORDER BY " + ordCol
+		if rng.IntN(2) == 0 {
+			ord += " DESC"
+		}
+		parts = append(parts, ord)
+	}
+	if rng.IntN(3) == 0 {
+		switch rng.IntN(3) {
+		case 0:
+			parts = append(parts, fmt.Sprintf("ROWS BETWEEN %d PRECEDING AND %d FOLLOWING", rng.IntN(3), rng.IntN(3)))
+		case 1:
+			parts = append(parts, "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW")
+		default:
+			if hasOrder {
+				parts = append(parts, fmt.Sprintf("RANGE BETWEEN %d PRECEDING AND %d FOLLOWING", rng.IntN(3), rng.IntN(3)))
+			}
+		}
+	}
+	return "(" + strings.Join(parts, " ") + ")"
+}
+
+func sbRandWindowQuery(rng *rand.Rand) string {
+	t := lrPick(rng, sbTables)
+	c := lrPick(rng, t.cols)
+	if rng.IntN(4) == 0 {
+		// Named window spec.
+		return fmt.Sprintf("SELECT %s, %s OVER w, %s OVER (w) FROM %s WINDOW w AS %s",
+			c, sbRandWindowFunc(rng, t), sbRandWindowFunc(rng, t), t.name, sbRandWindowSpec(rng, t))
+	}
+	q := fmt.Sprintf("SELECT %s, %s OVER %s", c, sbRandWindowFunc(rng, t), sbRandWindowSpec(rng, t))
+	if rng.IntN(2) == 0 {
+		q += fmt.Sprintf(", %s OVER %s", sbRandWindowFunc(rng, t), sbRandWindowSpec(rng, t))
+	}
+	q += " FROM " + t.name
+	if rng.IntN(3) == 0 {
+		q += " WHERE " + sbCond(rng, t)
+	}
+	if rng.IntN(3) == 0 {
+		q += " ORDER BY " + c
+	}
+	if rng.IntN(3) == 0 {
+		q += fmt.Sprintf(" LIMIT %d", 1+rng.IntN(10))
+	}
+	return q
 }
 
 func sbRandAggExpr(rng *rand.Rand, t lrTable) string {

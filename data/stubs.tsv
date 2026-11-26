@@ -146,12 +146,10 @@ crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.14	te
 crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.3	temporary	buildProjectionField: findColFromNaturalUsingJoin, the redundant columns of NATURAL / USING joins
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D02.2	temporary	buildResultSetNode: a FROM clause the Rust parser builds as a placeholder
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D09.5	temporary	buildResultSetNode: set operations (buildSetOpr)
-crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.4	temporary	buildSelect: window functions (resolveWindowFunction, D09.4 part B)
 crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.5	temporary	buildSelect: WITH (buildWith, common table expressions)
 crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.14	temporary	buildSelect: SELECT ... FOR UPDATE / FOR SHARE (buildSelectLock, LogicalLock)
 crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.4	temporary	buildSelect: GROUP BY ... WITH ROLLUP (buildExpand, D09.4 part C)
 crates/planner/src/core/logical_plan_builder.rs	collect_generate_column	D09.13	temporary	collectGenerateColumn of the generated column rule: only virtual generated columns, which the data source does not build yet
-crates/planner/src/core/logical_plan_builder.rs	compare_items	D09.4	temporary	compareItems / getAllByItems / restoreByItemText: grouping of window functions
 crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransformer.Enter / gbyResolver.Enter / aggOrderByResolver.Enter: ORDER BY ?, GROUP BY ?, GROUP_CONCAT ORDER BY ? (the position node of the Rust AST has no parameter marker)
 crates/planner/src/core/logical_plan_builder.rs	find_column_name_by_unique_id	D09.6	temporary	findColumnNameByUniqueID: the outer columns referred by subqueries
 crates/planner/src/core/logical_plan_builder.rs	get_table_offset	D09.15	temporary	getTableOffset / collectTableName: UPDATE and DELETE
@@ -278,11 +276,13 @@ crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D10.2	te
 crates/planner/src/logicalop/logical_limit.rs	limit_hash_code_boundary	D14.2	temporary	D14.2: LogicalLimit.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D09.14	temporary	D09.14: LogicalProjection.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D14.2	temporary	D14.2: LogicalProjection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/logicalop/logical_selection.rs	derive_top_n	D09.11	temporary	D09.11: LogicalSelection.DeriveTopN over LogicalWindow (DeriveTopNFromWindow rule)
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.13	temporary	D09.13: LogicalSelection.BuildKeyInfo needs rule/util CheckMaxOneRowCond (key-info rule, VS1-24)
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D09.14	temporary	D09.14: LogicalSelection.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_selection.rs	selection_boundary	D14.2	temporary	D14.2: LogicalSelection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_show.rs	show_find_best_task_boundary	D12.12	temporary	D12.12: the FindBestTask of LogicalShow / LogicalShowDDLJobs (SHOW is not routed to the new stack)
 crates/planner/src/logicalop/logical_table_dual.rs	table_dual_hash_code_boundary	D14.2	temporary	D14.2: LogicalTableDual.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
+crates/planner/src/logicalop/logical_window.rs	exhaust_physical_plans	D10.3	temporary	D10.3: LogicalWindow.ExhaustPhysicalPlans (physical window enumeration)
 crates/planner/src/optimize.rs	build_and_optimize_with_builder	D09.17	temporary	the cascades planner (tidb_enable_cascades_planner / USE_CASCADES, D09.17)
 crates/planner/src/optimize.rs	get_plan_from_non_prepared_plan_cache	D13.1	temporary	the non-prepared plan cache (off by default) is the plan-cache exception A3
 crates/planner/src/optimize.rs	hypo_index_checker	D02.2	temporary	hypoIndexChecker: only HYPO_INDEX hints call it (the parser's hint grammar)
