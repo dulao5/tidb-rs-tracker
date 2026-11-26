@@ -1,7 +1,8 @@
 package domains
 
-// Domain "distsql": block D07.3 part 1 (pkg/distsql: request building, range encoding,
-// Select / SelectWithRuntimeStats, TypeChunk / TypeDefault decoding, selectResultRuntimeStats)
+// Domain "distsql": block D07.3 parts 1 & 2 (pkg/distsql: request building, range/handle/index
+// encoding, Select / SelectWithRuntimeStats, TypeChunk / TypeDefault decoding,
+// sortedSelectResults, selectResultIter / selRespChannelIter, selectResultRuntimeStats)
 // plus the D00.3 leaf utility files pkg/util/ppcpuusage/cpuusages.go and
 // pkg/util/resourcegrouptag/resource_group_tag.go.
 //
@@ -18,6 +19,13 @@ package domains
 //     GetSelectResultConcurrency + Next / NextRaw + Close over an in-process mock kv.Client
 //     (deterministic RespTime, no wall clock); or args ["stats", spec] ->
 //     selectResultRuntimeStats.{mergeCopRuntimeStats,Clone,Merge,String,Tp,calcCacheHit}.
+//   - "index_and_handles": args ["table_handles", tid, handles] | ["part_handles", handles] |
+//     ["index_ranges", tid, idxID, ranges, tzOffset, strict, interrupt] ->
+//     TableHandlesToKVRanges / PartitionHandlesToKVRanges / SetTableHandles /
+//     SetPartitionsAndHandles / IndexRangesToKVRanges* (D07.3 part 2).
+//   - "sorted_and_iter": args ["sorted", spec] | ["iter", spec] ->
+//     NewSortedSelectResults (min-heap merge sort, tie-breaking, IntoIter, NextRaw, Close)
+//     and selectResult.IntoIter / selectResultIter / selRespChannelIter (D07.3 part 2).
 
 import (
 	"context"
@@ -27,6 +35,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"reflect"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -36,9 +45,12 @@ import (
 	"github.com/pingcap/tidb/pkg/distsql"
 	distsqlctx "github.com/pingcap/tidb/pkg/distsql/context"
 	"github.com/pingcap/tidb/pkg/errctx"
+	"github.com/pingcap/tidb/pkg/expression"
+	"github.com/pingcap/tidb/pkg/expression/exprstatic"
 	isctx "github.com/pingcap/tidb/pkg/infoschema/context"
 	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	plannerutil "github.com/pingcap/tidb/pkg/planner/util"
 	"github.com/pingcap/tidb/pkg/store/copr"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/chunk"
@@ -159,6 +171,47 @@ var distsqlCoverage = map[string]vec.Coverage{
 			"selectResultRuntimeStats.String",
 			"selectResultRuntimeStats.Tp",
 			"selectResultRuntimeStats.calcCacheHit",
+		},
+	},
+	"index_and_handles": {
+		Min: 150,
+		GoFuncs: []string{
+			"RequestBuilder.SetTableHandles",
+			"RequestBuilder.SetPartitionsAndHandles",
+			"TableHandlesToKVRanges",
+			"PartitionHandlesToKVRanges",
+			"IndexRangesToKVRanges",
+			"IndexRangesToKVRangesWithInterruptSignal",
+			"indexRangesToKVRangesForTablesWithInterruptSignal",
+			"indexRangesToKVWithoutSplit",
+		},
+	},
+	"sorted_and_iter": {
+		Min: 150,
+		GoFuncs: []string{
+			"chunkRowHeap.Len",
+			"chunkRowHeap.Less",
+			"chunkRowHeap.Swap",
+			"chunkRowHeap.Push",
+			"chunkRowHeap.Pop",
+			"NewSortedSelectResults",
+			"sortedSelectResults.updateCachedChunk",
+			"sortedSelectResults.initCompareFuncs",
+			"sortedSelectResults.buildKeyColumns",
+			"sortedSelectResults.lessRow",
+			"sortedSelectResults.NextRaw",
+			"sortedSelectResults.Next",
+			"sortedSelectResults.IntoIter",
+			"sortedSelectResults.Close",
+			"selectResult.IntoIter",
+			"newSelRespChannelIter",
+			"selRespChannelIter.Channel",
+			"selRespChannelIter.Next",
+			"selRespChannelIter.nextChunk",
+			"selRespChannelIter.fillChunkFromDefault",
+			"newSelectResultIter",
+			"selectResultIter.Next",
+			"selectResultIter.Close",
 		},
 	},
 }
@@ -571,6 +624,24 @@ func distsqlExec(op string, args []json.RawMessage) (any, error) {
 			return dsqlExecStats(&spec), nil
 		default:
 			panic("select_decode: unknown sub " + sub)
+		}
+
+	case "index_and_handles":
+		return dsqlExecIndexAndHandles(args), nil
+
+	case "sorted_and_iter":
+		sub := arg[string](args, 0)
+		switch sub {
+		case "sorted":
+			var spec dsqlSortedSpec
+			must(json.Unmarshal(args[1], &spec))
+			return dsqlExecSorted(&spec), nil
+		case "iter":
+			var spec dsqlIterSpec
+			must(json.Unmarshal(args[1], &spec))
+			return dsqlExecIter(&spec), nil
+		default:
+			panic("sorted_and_iter: unknown sub " + sub)
 		}
 
 	default:
@@ -1034,6 +1105,324 @@ func dsqlExecStats(spec *dsqlStatsOpSpec) any {
 		"clone0":   cStrBefore,
 		"merged":   aStrAfter,
 		"clone1":   cStrAfter,
+	}
+}
+
+// ---------------------------------------------------------------- Part 2 specs & exec
+
+type dsqlHandleSpec struct {
+	K   string          `json:"k"`
+	V   int64           `json:"v,omitempty"`
+	Hex string          `json:"hex,omitempty"`
+	PID int64           `json:"pid,omitempty"`
+	H   *dsqlHandleSpec `json:"h,omitempty"`
+}
+
+func dsqlHandleIn(s dsqlHandleSpec) kv.Handle {
+	switch s.K {
+	case "int":
+		return kv.IntHandle(s.V)
+	case "common":
+		raw := coprUnhex(s.Hex)
+		ch, err := kv.NewCommonHandle(raw)
+		must(err)
+		return ch
+	case "part":
+		inner := dsqlHandleIn(*s.H)
+		return kv.NewPartitionHandle(s.PID, inner)
+	default:
+		panic("dsqlHandleIn: unknown kind " + s.K)
+	}
+}
+
+func dsqlExecIndexAndHandles(args []json.RawMessage) any {
+	sub := arg[string](args, 0)
+	switch sub {
+	case "table_handles":
+		tid := arg[int64](args, 1)
+		hSpecs := arg[[]dsqlHandleSpec](args, 2)
+		hs := make([]kv.Handle, len(hSpecs))
+		for i, hsSpec := range hSpecs {
+			hs[i] = dsqlHandleIn(hsSpec)
+		}
+		krs, hints := distsql.TableHandlesToKVRanges(tid, hs)
+		if hints == nil {
+			hints = []int{}
+		}
+		// Rebuild fresh handles for SetTableHandles to avoid any aliasing concerns.
+		hs2 := make([]kv.Handle, len(hSpecs))
+		for i, hsSpec := range hSpecs {
+			hs2[i] = dsqlHandleIn(hsSpec)
+		}
+		req, err := (&distsql.RequestBuilder{}).SetTableHandles(tid, hs2).Build()
+		must(err)
+		return map[string]any{
+			"ranges": coprRangesOut(krs),
+			"hints":  hints,
+			"reqKR":  dsqlKeyRangesOut(req.KeyRanges),
+		}
+	case "part_handles":
+		hSpecs := arg[[]dsqlHandleSpec](args, 1)
+		hs := make([]kv.Handle, len(hSpecs))
+		for i, hsSpec := range hSpecs {
+			hs[i] = dsqlHandleIn(hsSpec)
+		}
+		krs, hints := distsql.PartitionHandlesToKVRanges(hs)
+		if hints == nil {
+			hints = []int{}
+		}
+		hs2 := make([]kv.Handle, len(hSpecs))
+		for i, hsSpec := range hSpecs {
+			hs2[i] = dsqlHandleIn(hsSpec)
+		}
+		req, err := (&distsql.RequestBuilder{}).SetPartitionsAndHandles(hs2).Build()
+		must(err)
+		return map[string]any{
+			"ranges": coprRangesOut(krs),
+			"hints":  hints,
+			"reqKR":  dsqlKeyRangesOut(req.KeyRanges),
+		}
+	case "index_ranges":
+		tid := arg[int64](args, 1)
+		idxID := arg[int64](args, 2)
+		rs := rangesIn(args[3])
+		tzOffset := arg[int](args, 4)
+		strict := arg[bool](args, 5)
+		interrupt := arg[bool](args, 6)
+		dctx := &distsqlctx.DistSQLContext{
+			Location: dsqlLoc(tzOffset),
+			ErrCtx:   dsqlErrCtx(strict),
+		}
+		var sig atomic.Value
+		sig.Store(interrupt)
+		tracker := memory.NewTracker(-1, -1)
+		if interrupt {
+			krSig, err := distsql.IndexRangesToKVRangesWithInterruptSignal(dctx, tid, idxID, rs, tracker, &sig)
+			if err != nil {
+				return map[string]any{"err": err.Error()}
+			}
+			return map[string]any{"krSig": dsqlKeyRangesOut(krSig)}
+		}
+		kr, err := distsql.IndexRangesToKVRanges(dctx, tid, idxID, rs)
+		if err != nil {
+			return map[string]any{"err": err.Error()}
+		}
+		krSig, err2 := distsql.IndexRangesToKVRangesWithInterruptSignal(dctx, tid, idxID, rs, tracker, &sig)
+		if err2 != nil {
+			return map[string]any{"err": err2.Error()}
+		}
+		return map[string]any{
+			"kr":    dsqlKeyRangesOut(kr),
+			"krSig": dsqlKeyRangesOut(krSig),
+		}
+	default:
+		panic("index_and_handles: unknown sub " + sub)
+	}
+}
+
+type dsqlByColSpec struct {
+	Col  int  `json:"col"`
+	Desc bool `json:"desc"`
+}
+
+type dsqlSortedSpec struct {
+	Cols        []dsqlColSpec   `json:"cols"`
+	Children    [][]string      `json:"children"`
+	UseSchema   bool            `json:"useSchema"`
+	By          []dsqlByColSpec `json:"by"`
+	ReqRows     []int           `json:"reqRows"`
+	TzOffset    int             `json:"tzOffset"`
+	TestNextRaw bool            `json:"testNextRaw,omitempty"`
+}
+
+func dsqlExecSorted(spec *dsqlSortedSpec) any {
+	fts := make([]*types.FieldType, len(spec.Cols))
+	cols := make([]*expression.Column, len(spec.Cols))
+	for i, c := range spec.Cols {
+		fts[i] = dsqlFieldType(c.Tp, c.Flag, c.Flen, c.Dec, c.Charset, c.Collate)
+		cols[i] = &expression.Column{
+			ID:       int64(i + 1),
+			UniqueID: int64(i + 1),
+			Index:    i,
+			RetType:  fts[i],
+		}
+	}
+	var schema *expression.Schema
+	if spec.UseSchema {
+		schema = expression.NewSchema(cols...)
+	}
+	byItems := make([]*plannerutil.ByItems, len(spec.By))
+	for i, b := range spec.By {
+		byItems[i] = &plannerutil.ByItems{
+			Expr: cols[b.Col],
+			Desc: b.Desc,
+		}
+	}
+
+	children := make([]distsql.SelectResult, len(spec.Children))
+	for i, pktsHex := range spec.Children {
+		pkts := make([]dsqlMockPacket, len(pktsHex))
+		for j, h := range pktsHex {
+			pkts[j] = dsqlMockPacket{DataHex: h}
+		}
+		dctx := &distsqlctx.DistSQLContext{
+			Client:      &dsqlMockClient{resp: &dsqlMockResp{packets: pkts, conc: 1}},
+			WarnHandler: &dsqlWarnRecorder{},
+			Location:    dsqlLoc(spec.TzOffset),
+			ErrCtx:      errctx.StrictNoWarningContext,
+			SQLKiller:   &sqlkiller.SQLKiller{},
+			CPUUsage:    &ppcpuusage.SQLCPUUsages{},
+			ExecDetails: &execdetails.SyncExecDetails{},
+			KVVars:      tikvkv.NewVariables(nil),
+		}
+		sr, err := distsql.Select(context.Background(), dctx, &kv.Request{Tp: kv.ReqTypeDAG, StoreType: kv.TiKV}, fts)
+		must(err)
+		children[i] = sr
+	}
+
+	tracker := memory.NewTracker(-1, -1)
+	ectx := exprstatic.NewEvalContext()
+	ssr := distsql.NewSortedSelectResults(ectx, children, schema, byItems, tracker)
+
+	_, intoErr := ssr.IntoIter(nil)
+	intoIterErrStr := ""
+	if intoErr != nil {
+		intoIterErrStr = intoErr.Error()
+	}
+
+	nextRawPanic := ""
+	if spec.TestNextRaw {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					nextRawPanic = fmt.Sprint(r)
+				}
+			}()
+			_, _ = ssr.NextRaw(context.Background())
+		}()
+	}
+
+	batches := [][]string{}
+	var nextErr string
+	step := 0
+	for {
+		reqRows := 32
+		if len(spec.ReqRows) > 0 {
+			if step < len(spec.ReqRows) {
+				reqRows = spec.ReqRows[step]
+			} else {
+				reqRows = spec.ReqRows[len(spec.ReqRows)-1]
+			}
+		}
+		step++
+		chk := chunk.NewChunkWithCapacity(fts, 32)
+		chk.SetRequiredRows(reqRows, 1024)
+		e := ssr.Next(context.Background(), chk)
+		if e != nil {
+			nextErr = e.Error()
+			break
+		}
+		if chk.NumRows() == 0 {
+			break
+		}
+		rows := make([]string, chk.NumRows())
+		for r := 0; r < chk.NumRows(); r++ {
+			rows[r] = chk.GetRow(r).ToString(fts)
+		}
+		batches = append(batches, rows)
+		if step > 200 {
+			panic("sorted_and_iter: runaway Next loop")
+		}
+	}
+	_ = ssr.Close()
+	return map[string]any{
+		"batches":      batches,
+		"err":          nextErr,
+		"intoIterErr":  intoIterErrStr,
+		"nextRawPanic": nextRawPanic,
+	}
+}
+
+type dsqlIterSpec struct {
+	MainCols       []dsqlColSpec   `json:"mainCols"`
+	InterCols      [][]dsqlColSpec `json:"interCols"`
+	Packets        []string        `json:"packets"`
+	PassInterCount int             `json:"passInterCount"`
+	TzOffset       int             `json:"tzOffset"`
+	CheckPostIter  bool            `json:"checkPostIter,omitempty"`
+}
+
+func dsqlExecIter(spec *dsqlIterSpec) any {
+	mainFTs := make([]*types.FieldType, len(spec.MainCols))
+	for i, c := range spec.MainCols {
+		mainFTs[i] = dsqlFieldType(c.Tp, c.Flag, c.Flen, c.Dec, c.Charset, c.Collate)
+	}
+	allInterFTs := make([][]*types.FieldType, len(spec.InterCols))
+	for i, cols := range spec.InterCols {
+		allInterFTs[i] = make([]*types.FieldType, len(cols))
+		for j, c := range cols {
+			allInterFTs[i][j] = dsqlFieldType(c.Tp, c.Flag, c.Flen, c.Dec, c.Charset, c.Collate)
+		}
+	}
+	passInterFTs := allInterFTs
+	if spec.PassInterCount >= 0 && spec.PassInterCount <= len(allInterFTs) {
+		passInterFTs = allInterFTs[:spec.PassInterCount]
+	}
+
+	pkts := make([]dsqlMockPacket, len(spec.Packets))
+	for i, h := range spec.Packets {
+		pkts[i] = dsqlMockPacket{DataHex: h}
+	}
+	warns := &dsqlWarnRecorder{}
+	dctx := &distsqlctx.DistSQLContext{
+		Client:      &dsqlMockClient{resp: &dsqlMockResp{packets: pkts, conc: 1}},
+		WarnHandler: warns,
+		Location:    dsqlLoc(spec.TzOffset),
+		ErrCtx:      errctx.StrictNoWarningContext,
+		SQLKiller:   &sqlkiller.SQLKiller{},
+		CPUUsage:    &ppcpuusage.SQLCPUUsages{},
+		ExecDetails: &execdetails.SyncExecDetails{},
+		KVVars:      tikvkv.NewVariables(nil),
+	}
+	sr, err := distsql.Select(context.Background(), dctx, &kv.Request{Tp: kv.ReqTypeDAG, StoreType: kv.TiKV}, mainFTs)
+	must(err)
+	iter, err := sr.IntoIter(passInterFTs)
+	must(err)
+
+	var postErrs []string
+	if spec.CheckPostIter {
+		_, e1 := sr.NextRaw(context.Background())
+		e2 := sr.Next(context.Background(), chunk.NewChunkWithCapacity(mainFTs, 1))
+		_, e3 := sr.IntoIter(passInterFTs)
+		e4 := sr.Close()
+		postErrs = []string{e1.Error(), e2.Error(), e3.Error(), e4.Error()}
+	}
+
+	rows := [][2]any{}
+	var iterErr string
+	for {
+		row, e := iter.Next(context.Background())
+		if e != nil {
+			iterErr = e.Error()
+			break
+		}
+		if row.IsEmpty() {
+			break
+		}
+		var fts []*types.FieldType
+		if row.ChannelIndex == len(passInterFTs) {
+			fts = mainFTs
+		} else {
+			fts = passInterFTs[row.ChannelIndex]
+		}
+		rows = append(rows, [2]any{row.ChannelIndex, row.ToString(fts)})
+	}
+	_ = iter.Close()
+	return map[string]any{
+		"rows":     rows,
+		"err":      iterErr,
+		"warns":    warns.warns,
+		"postErrs": postErrs,
 	}
 }
 
@@ -1678,6 +2067,485 @@ func distsqlGenerate(g *vec.Gen, rng *rand.Rand) {
 			FallbackB:    uint64(rng.IntN(3)),
 			BuildNsB:     int64(rng.IntN(5)) * 1_000_000,
 			CacheEnabled: rng.IntN(2) == 0,
+		})
+	}
+
+	// 5. index_and_handles (Part 2, target >= 150)
+	mkCommonHandleHex := func(datums ...types.Datum) string {
+		b, err := codec.EncodeKey(time.UTC, nil, datums...)
+		must(err)
+		return hex.EncodeToString(b)
+	}
+	chHexes := []string{
+		mkCommonHandleHex(types.NewIntDatum(1)),
+		mkCommonHandleHex(types.NewIntDatum(2), types.NewStringDatum("abc")),
+		mkCommonHandleHex(types.NewStringDatum("hello"), types.NewUintDatum(99)),
+		mkCommonHandleHex(types.NewIntDatum(-100), types.NewStringDatum("z")),
+		mkCommonHandleHex(types.NewStringDatum("longer-common-handle-key-value")),
+	}
+	// Targeted table_handles cases (empty, continuous, gaps, MaxInt64, MinInt64, common, partition mixed)
+	emit("index_and_handles", "table_handles", int64(1), []dsqlHandleSpec{})
+	emit("index_and_handles", "table_handles", int64(1), []dsqlHandleSpec{
+		{K: "int", V: 0}, {K: "int", V: 2}, {K: "int", V: 3}, {K: "int", V: 4},
+		{K: "int", V: 5}, {K: "int", V: 10}, {K: "int", V: 11}, {K: "int", V: 100},
+		{K: "int", V: math.MaxInt64 - 1}, {K: "int", V: math.MaxInt64},
+	})
+	emit("index_and_handles", "table_handles", int64(7), []dsqlHandleSpec{
+		{K: "int", V: math.MinInt64}, {K: "int", V: math.MinInt64 + 1},
+		{K: "int", V: -1}, {K: "int", V: 0}, {K: "int", V: 1},
+		{K: "int", V: math.MaxInt64}, {K: "int", V: math.MaxInt64},
+	})
+	emit("index_and_handles", "table_handles", int64(11), []dsqlHandleSpec{
+		{K: "common", Hex: chHexes[0]}, {K: "common", Hex: chHexes[1]}, {K: "common", Hex: chHexes[4]},
+	})
+	emit("index_and_handles", "table_handles", int64(0), []dsqlHandleSpec{
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: 0}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 2}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 3}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 4}},
+		{K: "part", PID: 3, H: &dsqlHandleSpec{K: "int", V: 5}},
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: math.MaxInt64 - 1}},
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: math.MaxInt64}},
+	})
+	// Targeted part_handles cases
+	emit("index_and_handles", "part_handles", []dsqlHandleSpec{})
+	emit("index_and_handles", "part_handles", []dsqlHandleSpec{
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: 0}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 2}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 3}},
+		{K: "part", PID: 2, H: &dsqlHandleSpec{K: "int", V: 4}},
+		{K: "part", PID: 3, H: &dsqlHandleSpec{K: "int", V: 5}},
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: math.MaxInt64 - 1}},
+		{K: "part", PID: 1, H: &dsqlHandleSpec{K: "int", V: math.MaxInt64}},
+	})
+	emit("index_and_handles", "part_handles", []dsqlHandleSpec{
+		{K: "part", PID: 10, H: &dsqlHandleSpec{K: "common", Hex: chHexes[0]}},
+		{K: "part", PID: 20, H: &dsqlHandleSpec{K: "common", Hex: chHexes[2]}},
+		{K: "part", PID: 20, H: &dsqlHandleSpec{K: "common", Hex: chHexes[4]}},
+	})
+	// Random table_handles & part_handles (100 cases)
+	for i := 0; i < 50; i++ {
+		tid := int64(1 + rng.IntN(200))
+		n := rng.IntN(12)
+		hs := make([]dsqlHandleSpec, 0, n)
+		if rng.IntN(3) == 0 {
+			// common handles
+			for j := 0; j < n; j++ {
+				hs = append(hs, dsqlHandleSpec{K: "common", Hex: chHexes[rng.IntN(len(chHexes))]})
+			}
+		} else {
+			cur := int64(rng.IntN(20) - 10)
+			for j := 0; j < n; j++ {
+				if j > 0 {
+					step := int64(rng.IntN(4))
+					if step == 0 {
+						step = 1
+					}
+					cur += step
+				}
+				if rng.IntN(10) == 0 {
+					cur = math.MaxInt64 - int64(rng.IntN(2))
+				}
+				hs = append(hs, dsqlHandleSpec{K: "int", V: cur})
+			}
+		}
+		emit("index_and_handles", "table_handles", tid, hs)
+	}
+	for i := 0; i < 50; i++ {
+		n := rng.IntN(12)
+		hs := make([]dsqlHandleSpec, 0, n)
+		if rng.IntN(3) == 0 {
+			for j := 0; j < n; j++ {
+				pid := int64(1 + rng.IntN(4))
+				hs = append(hs, dsqlHandleSpec{K: "part", PID: pid, H: &dsqlHandleSpec{K: "common", Hex: chHexes[rng.IntN(len(chHexes))]}})
+			}
+		} else {
+			cur := int64(rng.IntN(20) - 5)
+			pid := int64(1 + rng.IntN(3))
+			for j := 0; j < n; j++ {
+				if j > 0 {
+					if rng.IntN(3) == 0 {
+						pid = int64(1 + rng.IntN(4))
+					}
+					cur += int64(1 + rng.IntN(2))
+					if rng.IntN(2) == 0 {
+						cur-- // create consecutive pairs
+					}
+				}
+				hs = append(hs, dsqlHandleSpec{K: "part", PID: pid, H: &dsqlHandleSpec{K: "int", V: cur}})
+			}
+		}
+		emit("index_and_handles", "part_handles", hs)
+	}
+	// Targeted & random index_ranges (65 cases, including >8 ranges to hit checkSignalStep=8 and interrupt=true)
+	var manyIdxRanges []any
+	for i := int64(0); i < 12; i++ {
+		manyIdxRanges = append(manyIdxRanges, dsqlMakeRange([]any{dsqlIntDatum(i * 10)}, []any{dsqlIntDatum(i*10 + 5)}, nil, i%2 == 1, i%3 == 0))
+	}
+	emit("index_and_handles", "index_ranges", int64(12), int64(15), []any{}, 0, true, false)
+	emit("index_and_handles", "index_ranges", int64(12), int64(15), manyIdxRanges, 0, true, false)
+	emit("index_and_handles", "index_ranges", int64(12), int64(15), manyIdxRanges, 0, true, true)
+	emit("index_and_handles", "index_ranges", int64(0), int64(0), []any{
+		dsqlMakeRange([]any{dsqlIntDatum(1)}, []any{dsqlIntDatum(4)}, nil, false, false),
+	}, 0, true, false)
+	for i := 0; i < 61; i++ {
+		tid := int64(rng.IntN(200))
+		idxID := int64(rng.IntN(30))
+		tzOff := []int{0, -10800, 28800}[rng.IntN(3)]
+		strict := rng.IntN(2) == 0
+		interrupt := i%10 == 0
+		nR := 1 + rng.IntN(10)
+		rs := make([]any, 0, nR)
+		for j := 0; j < nR; j++ {
+			switch rng.IntN(5) {
+			case 0:
+				lo := int64(rng.IntN(200) - 100)
+				hi := lo + int64(rng.IntN(50))
+				rs = append(rs, dsqlMakeRange([]any{dsqlIntDatum(lo)}, []any{dsqlIntDatum(hi)}, nil, rng.IntN(2) == 0, rng.IntN(2) == 0))
+			case 1:
+				lo := uint64(rng.IntN(500))
+				hi := lo + uint64(rng.IntN(100))
+				rs = append(rs, dsqlMakeRange([]any{dsqlUintDatum(lo), dsqlStrDatum("a", "utf8mb4_bin")}, []any{dsqlUintDatum(hi), dsqlStrDatum("z", "utf8mb4_bin")}, nil, rng.IntN(2) == 0, rng.IntN(2) == 0))
+			case 2:
+				rs = append(rs, dsqlMakeRange([]any{dsqlNullDatum()}, []any{dsqlMaxVal()}, nil, false, false))
+			case 3:
+				rs = append(rs, dsqlMakeRange([]any{dsqlMinNotNull(), dsqlDecDatum("-12.34")}, []any{dsqlMaxVal(), dsqlDecDatum("99.99")}, nil, rng.IntN(2) == 0, rng.IntN(2) == 0))
+			case 4:
+				t1 := types.NewTime(types.FromDate(2024, 1+rng.IntN(12), 1+rng.IntN(28), rng.IntN(24), rng.IntN(60), rng.IntN(60), 0), mysql.TypeTimestamp, 0)
+				t2 := types.NewTime(types.FromDate(2025, 1+rng.IntN(12), 1+rng.IntN(28), rng.IntN(24), rng.IntN(60), rng.IntN(60), 0), mysql.TypeTimestamp, 0)
+				rs = append(rs, dsqlMakeRange([]any{[]any{types.KindMysqlTime, uint64(t1.CoreTime())}}, []any{[]any{types.KindMysqlTime, uint64(t2.CoreTime())}}, nil, rng.IntN(2) == 0, rng.IntN(2) == 0))
+			}
+		}
+		emit("index_and_handles", "index_ranges", tid, idxID, rs, tzOff, strict, interrupt)
+	}
+
+	// 6. sorted_and_iter (Part 2, target >= 150)
+	// Helper to encode a SelectResponse with optional IntermediateOutputs
+	dsqlEncodeIterPacket := func(
+		mainCols []dsqlColSpec,
+		mainRows [][]types.Datum,
+		mainEnc tipb.EncodeType,
+		mainChunkSizes []int,
+		interCols [][]dsqlColSpec,
+		interRows [][][]types.Datum,
+		interEncs []tipb.EncodeType,
+		tzOffset int,
+		warns []*tipb.Error,
+	) string {
+		encodeChunks := func(cols []dsqlColSpec, rows [][]types.Datum, enc tipb.EncodeType, sizes []int) []tipb.Chunk {
+			if len(rows) == 0 {
+				return nil
+			}
+			fts := make([]*types.FieldType, len(cols))
+			for i, c := range cols {
+				fts[i] = dsqlFieldType(c.Tp, c.Flag, c.Flen, c.Dec, c.Charset, c.Collate)
+			}
+			if len(sizes) == 0 {
+				sizes = []int{len(rows)}
+			}
+			var out []tipb.Chunk
+			pos := 0
+			for _, sz := range sizes {
+				if pos >= len(rows) {
+					break
+				}
+				end := pos + sz
+				if end > len(rows) {
+					end = len(rows)
+				}
+				sub := rows[pos:end]
+				pos = end
+				if enc == tipb.EncodeType_TypeChunk {
+					chk := chunk.NewChunkWithCapacity(fts, len(sub))
+					for _, row := range sub {
+						for ci, d := range row {
+							chk.AppendDatum(ci, &d)
+						}
+					}
+					out = append(out, tipb.Chunk{RowsData: chunk.NewCodec(fts).Encode(chk)})
+				} else {
+					loc := dsqlLoc(tzOffset)
+					var buf []byte
+					for _, row := range sub {
+						var err error
+						buf, err = codec.EncodeValue(loc, buf, row...)
+						must(err)
+					}
+					out = append(out, tipb.Chunk{RowsData: buf})
+				}
+			}
+			return out
+		}
+		sr := &tipb.SelectResponse{
+			EncodeType: mainEnc,
+			Chunks:     encodeChunks(mainCols, mainRows, mainEnc, mainChunkSizes),
+			Warnings:   warns,
+		}
+		for i := range interCols {
+			var sizes []int
+			if len(interRows[i]) > 2 {
+				sizes = []int{2, len(interRows[i]) - 2}
+			}
+			io := &tipb.IntermediateOutput{
+				EncodeType: interEncs[i],
+				Chunks:     encodeChunks(interCols[i], interRows[i], interEncs[i], sizes),
+			}
+			sr.IntermediateOutputs = append(sr.IntermediateOutputs, io)
+		}
+		b, err := sr.Marshal()
+		must(err)
+		return hex.EncodeToString(b)
+	}
+
+	// 6a. sortedSelectResults cases (85 cases: multi-partition, ASC/DESC, ties, NULLs, schema vs nil, empty children, NextRaw panic)
+	sortCols := []dsqlColSpec{
+		{Tp: mysql.TypeLonglong, Flen: 20, Charset: "binary", Collate: "binary"},
+		{Tp: mysql.TypeVarchar, Flen: 16, Charset: "utf8mb4", Collate: "utf8mb4_bin"},
+		{Tp: mysql.TypeNewDecimal, Flen: 10, Dec: 2, Charset: "binary", Collate: "binary"},
+	}
+	// Targeted sorted cases: empty children, single child, ties across 3 children, testNextRaw
+	emit("sorted_and_iter", "sorted", dsqlSortedSpec{
+		Cols:        sortCols,
+		Children:    [][]string{{}, {}},
+		UseSchema:   false,
+		By:          []dsqlByColSpec{{Col: 0, Desc: false}},
+		ReqRows:     []int{4},
+		TestNextRaw: true,
+	})
+	for i := 0; i < 84; i++ {
+		nChildren := 1 + rng.IntN(4)
+		useSchema := rng.IntN(2) == 0
+		var by []dsqlByColSpec
+		if !useSchema {
+			// schema == nil sorts by first k columns (0, 1, ...)
+			k := 1 + rng.IntN(2)
+			for c := 0; c < k; c++ {
+				by = append(by, dsqlByColSpec{Col: c, Desc: rng.IntN(2) == 0})
+			}
+		} else {
+			switch rng.IntN(4) {
+			case 0:
+				by = []dsqlByColSpec{{Col: 0, Desc: false}, {Col: 1, Desc: true}}
+			case 1:
+				by = []dsqlByColSpec{{Col: 1, Desc: false}, {Col: 0, Desc: false}}
+			case 2:
+				by = []dsqlByColSpec{{Col: 2, Desc: true}, {Col: 0, Desc: false}}
+			case 3:
+				by = []dsqlByColSpec{{Col: 0, Desc: true}}
+			}
+		}
+		// Build sorted rows per child matching `by` order (with ties & NULLs!).
+		children := make([][]string, nChildren)
+		for ch := 0; ch < nChildren; ch++ {
+			enc := tipb.EncodeType_TypeChunk
+			if rng.IntN(2) == 0 {
+				enc = tipb.EncodeType_TypeDefault
+			}
+			nRows := rng.IntN(10)
+			if nRows == 0 {
+				children[ch] = []string{}
+				continue
+			}
+			type sortRow struct {
+				k0Null bool
+				k0     int64
+				k1Null bool
+				k1     string
+				k2Null bool
+				k2     int64 // cents
+			}
+			srows := make([]sortRow, nRows)
+			for r := 0; r < nRows; r++ {
+				srows[r] = sortRow{
+					k0Null: rng.IntN(6) == 0,
+					k0:     int64(rng.IntN(8) - 3), // small range creates frequent ties!
+					k1Null: rng.IntN(6) == 0,
+					k1:     fmt.Sprintf("s%d", rng.IntN(5)),
+					k2Null: rng.IntN(6) == 0,
+					k2:     int64(rng.IntN(10) - 4),
+				}
+			}
+			// Sort each child stream by `by` so merge preconditions hold.
+			for a := 0; a < len(srows); a++ {
+				for b := a + 1; b < len(srows); b++ {
+					less := false
+					for _, item := range by {
+						var cmp int
+						switch item.Col {
+						case 0:
+							if srows[b].k0Null && srows[a].k0Null {
+								cmp = 0
+							} else if srows[b].k0Null {
+								cmp = -1
+							} else if srows[a].k0Null {
+								cmp = 1
+							} else if srows[b].k0 < srows[a].k0 {
+								cmp = -1
+							} else if srows[b].k0 > srows[a].k0 {
+								cmp = 1
+							}
+						case 1:
+							if srows[b].k1Null && srows[a].k1Null {
+								cmp = 0
+							} else if srows[b].k1Null {
+								cmp = -1
+							} else if srows[a].k1Null {
+								cmp = 1
+							} else if srows[b].k1 < srows[a].k1 {
+								cmp = -1
+							} else if srows[b].k1 > srows[a].k1 {
+								cmp = 1
+							}
+						case 2:
+							if srows[b].k2Null && srows[a].k2Null {
+								cmp = 0
+							} else if srows[b].k2Null {
+								cmp = -1
+							} else if srows[a].k2Null {
+								cmp = 1
+							} else if srows[b].k2 < srows[a].k2 {
+								cmp = -1
+							} else if srows[b].k2 > srows[a].k2 {
+								cmp = 1
+							}
+						}
+						if item.Desc {
+							cmp = -cmp
+						}
+						if cmp < 0 {
+							less = true
+							break
+						} else if cmp > 0 {
+							break
+						}
+					}
+					if less {
+						srows[a], srows[b] = srows[b], srows[a]
+					}
+				}
+			}
+			datums := make([][]types.Datum, nRows)
+			for r, sr := range srows {
+				d0 := types.NewDatum(nil)
+				if !sr.k0Null {
+					d0 = types.NewIntDatum(sr.k0)
+				}
+				d1 := types.NewDatum(nil)
+				if !sr.k1Null {
+					d1 = types.NewStringDatum(sr.k1)
+				}
+				d2 := types.NewDatum(nil)
+				if !sr.k2Null {
+					var dec types.MyDecimal
+					_ = dec.FromString([]byte(fmt.Sprintf("%d.00", sr.k2)))
+					d2 = types.NewDecimalDatum(&dec)
+				}
+				datums[r] = []types.Datum{d0, d1, d2}
+			}
+			// Split across 1 or 2 packets
+			if nRows > 3 && rng.IntN(2) == 0 {
+				mid := nRows / 2
+				children[ch] = []string{
+					dsqlEncodePacket(sortCols, datums[:mid], enc, 0, nil, nil, nil, nil),
+					dsqlEncodePacket(sortCols, datums[mid:], enc, 0, nil, nil, nil, nil),
+				}
+			} else {
+				children[ch] = []string{
+					dsqlEncodePacket(sortCols, datums, enc, 0, nil, nil, nil, nil),
+				}
+			}
+		}
+		reqRows := []int{1 + rng.IntN(6), 1 + rng.IntN(16)}
+		emit("sorted_and_iter", "sorted", dsqlSortedSpec{
+			Cols:        sortCols,
+			Children:    children,
+			UseSchema:   useSchema,
+			By:          by,
+			ReqRows:     reqRows,
+			TestNextRaw: i == 0,
+		})
+	}
+
+	// 6b. selectResultIter / selRespChannelIter cases (80 cases: main + 0..2 intermediate outputs, mixed TypeChunk/TypeDefault, empty responses, mismatch err, post-IntoIter err)
+	iterMainCols := []dsqlColSpec{
+		{Tp: mysql.TypeLonglong, Flen: 20, Charset: "binary", Collate: "binary"},
+		{Tp: mysql.TypeVarchar, Flen: 16, Charset: "utf8mb4", Collate: "utf8mb4_bin"},
+	}
+	iterInter0Cols := []dsqlColSpec{
+		{Tp: mysql.TypeLonglong, Flen: 20, Charset: "binary", Collate: "binary"},
+	}
+	iterInter1Cols := []dsqlColSpec{
+		{Tp: mysql.TypeVarchar, Flen: 16, Charset: "utf8mb4", Collate: "utf8mb4_bin"},
+		{Tp: mysql.TypeTimestamp, Flen: 19, Dec: 0, Charset: "binary", Collate: "binary"},
+	}
+	for i := 0; i < 80; i++ {
+		tzOff := []int{0, -10800, 3600}[rng.IntN(3)]
+		nInter := rng.IntN(3) // 0, 1, or 2 intermediate channels
+		var interCols [][]dsqlColSpec
+		if nInter >= 1 {
+			interCols = append(interCols, iterInter0Cols)
+		}
+		if nInter >= 2 {
+			interCols = append(interCols, iterInter1Cols)
+		}
+		nPkt := 1 + rng.IntN(3)
+		pkts := make([]string, nPkt)
+		for p := 0; p < nPkt; p++ {
+			mainEnc := tipb.EncodeType_TypeChunk
+			if rng.IntN(2) == 0 {
+				mainEnc = tipb.EncodeType_TypeDefault
+			}
+			nMain := rng.IntN(6)
+			mainRows := make([][]types.Datum, nMain)
+			for r := 0; r < nMain; r++ {
+				mainRows[r] = []types.Datum{
+					types.NewIntDatum(int64(p*100 + r)),
+					types.NewStringDatum(fmt.Sprintf("m%d_%d", p, r)),
+				}
+			}
+			var mainSizes []int
+			if nMain > 2 {
+				mainSizes = []int{2, nMain - 2}
+			}
+			interRows := make([][][]types.Datum, nInter)
+			interEncs := make([]tipb.EncodeType, nInter)
+			for c := 0; c < nInter; c++ {
+				if rng.IntN(2) == 0 {
+					interEncs[c] = tipb.EncodeType_TypeChunk
+				} else {
+					interEncs[c] = tipb.EncodeType_TypeDefault
+				}
+				nr := rng.IntN(6)
+				interRows[c] = make([][]types.Datum, nr)
+				for r := 0; r < nr; r++ {
+					if c == 0 {
+						interRows[c][r] = []types.Datum{types.NewIntDatum(int64(1000 + p*10 + r))}
+					} else {
+						tm := types.NewTime(types.FromDate(2024, 1+(r%12), 1+(p+r)%28, 10, r, p, 0), mysql.TypeTimestamp, 0)
+						interRows[c][r] = []types.Datum{
+							types.NewStringDatum(fmt.Sprintf("i%d_%d", p, r)),
+							types.NewTimeDatum(tm),
+						}
+					}
+				}
+			}
+			var warns []*tipb.Error
+			if rng.IntN(4) == 0 {
+				warns = []*tipb.Error{{Code: 1292, Msg: fmt.Sprintf("iw%d", p)}}
+			}
+			pkts[p] = dsqlEncodeIterPacket(iterMainCols, mainRows, mainEnc, mainSizes, interCols, interRows, interEncs, tzOff, warns)
+		}
+		passCount := -1
+		if i%16 == 15 && nInter > 0 {
+			passCount = nInter - 1 // test length mismatch error!
+		}
+		emit("sorted_and_iter", "iter", dsqlIterSpec{
+			MainCols:       iterMainCols,
+			InterCols:      interCols,
+			Packets:        pkts,
+			PassInterCount: passCount,
+			TzOffset:       tzOff,
+			CheckPostIter:  i < 5,
 		})
 	}
 }

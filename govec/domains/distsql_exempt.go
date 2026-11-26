@@ -38,43 +38,6 @@ func distsqlExempt() map[string]string {
 		ex[f] = "not ported (X / D12.14, D07.3 spec §3.3): ANALYZE / CHECKSUM / ADMIN / BR / Lightning paths are outside the read-only SQL scope"
 	}
 
-	// D07.3 Part 2 (31 functions, D07.3 spec §3.2)
-	for _, f := range []string{
-		"RequestBuilder.SetTableHandles",
-		"RequestBuilder.SetPartitionsAndHandles",
-		"TableHandlesToKVRanges",
-		"PartitionHandlesToKVRanges",
-		"IndexRangesToKVRanges",
-		"IndexRangesToKVRangesWithInterruptSignal",
-		"indexRangesToKVRangesForTablesWithInterruptSignal",
-		"indexRangesToKVWithoutSplit",
-		"chunkRowHeap.Len",
-		"chunkRowHeap.Less",
-		"chunkRowHeap.Swap",
-		"chunkRowHeap.Push",
-		"chunkRowHeap.Pop",
-		"NewSortedSelectResults",
-		"sortedSelectResults.updateCachedChunk",
-		"sortedSelectResults.initCompareFuncs",
-		"sortedSelectResults.buildKeyColumns",
-		"sortedSelectResults.lessRow",
-		"sortedSelectResults.NextRaw",
-		"sortedSelectResults.Next",
-		"sortedSelectResults.IntoIter",
-		"sortedSelectResults.Close",
-		"selectResult.IntoIter",
-		"newSelRespChannelIter",
-		"selRespChannelIter.Channel",
-		"selRespChannelIter.Next",
-		"selRespChannelIter.nextChunk",
-		"selRespChannelIter.fillChunkFromDefault",
-		"newSelectResultIter",
-		"selectResultIter.Next",
-		"selectResultIter.Close",
-	} {
-		ex[f] = "D07.3 part 2 (D07.3 spec §3.2): index/handle encoding, sortedSelectResults, and SelectResultIter"
-	}
-
 	// D00.3 leaf utility pkg/util/ppcpuusage/cpuusages.go (7 functions, ported whole with D07.3 part 1)
 	for _, f := range []string{
 		"pkg/util/ppcpuusage/cpuusages.go:CPUUsages.Reset",

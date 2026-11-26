@@ -28,7 +28,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | VS1-18 | VS1-18 | in-progress | 40 / 193 | 591 | dulao5/tidb-rs#221: converge 40/40 |
 | D07.1 | VS1-20 | VS1-20 | in-progress | 12 / 193 | 214 | tidb-rs branch vs1/c2a-store-txn (the store as kv.Storage, Begin, the read part of tikvTxn for the point select of VS1-20): converge --item VS1-20 matched 10/12, accounted 2 stubs (tikvTxn.Iter / IterReverse) |
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
-| D07.3 | VS1-33 | VS1-33 | in-progress | 66 / 118 | 1124 | tidb-rs branch nora/issue-418 (#418, D07.3 distsql part 1): converge 66/66 + 1 temporary stub (selectResult.IntoIter, D07.3 part 2); govec distsql; also ports D00.1 P1-1 (3), D00.3 ppcpuusage (7) and resourcegrouptag (4) |
+| D07.3 | D07.3-2 | D07.3-2 | in-progress | 31 / 118 | 443 | tidb-rs branch nora/issue-434 (#434, D07.3 distsql part 2): converge 31/31 (total 97/97, 21 non-ported per spec §3.3), removes selectResult.IntoIter stub, wires CopIterator CoprRequestRateLimit; govec distsql |
+| D07.3 | VS1-33 | VS1-33 | done | 66 / 118 | 1124 | dulao5/tidb-rs#424 merged (#418, D07.3 distsql part 1): converge 66/66; govec distsql; also ports D00.1 P1-1 (3), D00.3 ppcpuusage (7) and resourcegrouptag (4) |
 | D08.11 | D08.11-AB | D08.11-AB | in-progress | 62 / 69 | 942 | tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records |
 | D08.11 | D08.11-C | D08.11-C | in-progress | 6 / 69 | 96 | tidb-rs branch nora/issue-397 (#397, window function descriptors): converge 6/6; govec aggdesc 6813 records (+1238 part C) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
@@ -80,7 +81,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-367 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+366 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -97,7 +98,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D06.4 | 18 | 0 | 0 |
 | D06.5 | 13 | 0 | 0 |
 | D07.1 | 18 | 0 | 0 |
-| D07.3 | 2 | 0 | 0 |
+| D07.3 | 1 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
 | D08.11 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
