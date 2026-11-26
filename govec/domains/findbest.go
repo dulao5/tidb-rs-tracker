@@ -518,6 +518,16 @@ func findbestGenerate(g *vec.Gen, rng *rand.Rand) {
 			odOpts{Mode: m.Mode, KeepOrder: m.KeepOrder, Stable: rng.IntN(3) == 0, Dynamic: rng.IntN(2) == 0})
 	}
 	fbGenPrune(g, rng)
+	// Clustered common-handle table without secondary indexes so single-read TableRangeScan
+	// GroupRangesByCols vectors (including the 2048/2049 cap) run without hitting the D10.2
+	// double-read boundary on tc's prefix index ip(b(3)).
+	tchDDLs := []string{
+		"CREATE TABLE tch (a INT, b VARCHAR(10), c INT, PRIMARY KEY (b, a) CLUSTERED)",
+	}
+	g.Add("sys/tables", "tables", tchDDLs)
+	for _, sql := range fbClusteredGroupRangeQueries {
+		g.Add("sys/index", "plan", tchDDLs, sql, noMerge)
+	}
 }
 
 // fbIndexQueries: shapes on tables with secondary indexes (the skyline pruning keeps or
@@ -544,14 +554,51 @@ var fbIndexQueries = []string{
 	"SELECT k FROM sbtest1 WHERE k BETWEEN 1 AND 100",
 }
 
+// fbBalancedOr builds a balanced binary OR tree of `terms` (depth O(log n)) so 2048/2049
+// distinct point predicates exercise GroupRangesByCols's maxGroupCount=2048 boundary without
+// hitting IN (D08.9) or deep parser/rewriter recursion.
+func fbBalancedOr(terms []string) string {
+	if len(terms) == 1 {
+		return terms[0]
+	}
+	mid := len(terms) / 2
+	return "(" + fbBalancedOr(terms[:mid]) + " OR " + fbBalancedOr(terms[mid:]) + ")"
+}
+
+func fbIntOrQuery(n int) string {
+	terms := make([]string, n)
+	for i := 0; i < n; i++ {
+		terms[i] = fmt.Sprintf("a = %d", i*2)
+	}
+	return "SELECT a, b FROM tm WHERE " + fbBalancedOr(terms) + " ORDER BY b LIMIT 10"
+}
+
+func fbStrOrQuery(n int) string {
+	terms := make([]string, n)
+	for i := 0; i < n; i++ {
+		terms[i] = fmt.Sprintf("b = 'k%04d'", i)
+	}
+	return "SELECT * FROM tch WHERE " + fbBalancedOr(terms) + " ORDER BY a LIMIT 10"
+}
+
 // fbGroupRangeQueries: multi-point OR queries with index merge disabled so Go and Rust both
-// exercise GroupRangesByCols on single-read IndexScan and clustered TableScan without hitting
-// the D10.7 index-merge boundary.
+// exercise GroupRangesByCols on single-read IndexScan without hitting the D10.7 index-merge
+// boundary (including the maxGroupCount = 2048 / 2049 boundary).
 var fbGroupRangeQueries = []string{
 	"SELECT a, b FROM tm WHERE (a = 1 OR a = 3 OR a = 5) ORDER BY b",
 	"SELECT a, b FROM tm WHERE (a = 1 OR a = 3 OR a = 5) ORDER BY b LIMIT 5",
 	"SELECT b, c FROM tm WHERE (b = 1 OR b = 4) ORDER BY c LIMIT 4",
 	"SELECT * FROM tc WHERE (b = 'a' OR b = 'b') ORDER BY a LIMIT 5",
+	fbIntOrQuery(2048),
+	fbIntOrQuery(2049),
+}
+
+// fbClusteredGroupRangeQueries: same GroupRangesByCols + 2048/2049 boundary on a clustered
+// common-handle table with no secondary indexes (`tch`).
+var fbClusteredGroupRangeQueries = []string{
+	"SELECT * FROM tch WHERE (b = 'a' OR b = 'b') ORDER BY a LIMIT 5",
+	fbStrOrQuery(2048),
+	fbStrOrQuery(2049),
 }
 
 func fbRandTM(rng *rand.Rand) string {
