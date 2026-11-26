@@ -139,6 +139,9 @@ P = r"pkg/"
 RULES = [
     # --- exceptions / scope first ---
     ("EXC.B", r"pkg/planner/(cascades|memo|pattern|implementation)/", None),
+    # Active in cost model v2 / executor builder (D12.1 Part 2 review #411):
+    ("D10.1", r"pkg/planner/core/plan_cost_ver1\.go$", r"^Physical(Table|Index)Reader\.GetNetDataSize$"),
+    ("D10.5", r"pkg/planner/core/plan_cost_ver1\.go$", r"^getTblStats$"),
     ("EXC.B", r"pkg/planner/core/plan_cost_ver1\.go$", None),
     ("DEF.MPP", r"pkg/planner/core/(fragment|tiflash_selection_late_materialization|runtime_filter|runtime_filter_generator)\.go$", None),
     ("DEF.MPP", r"pkg/executor/(mpp_gather|internal/mpp/|mppcoordmanager/)", None),
