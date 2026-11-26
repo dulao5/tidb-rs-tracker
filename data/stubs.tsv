@@ -356,7 +356,6 @@ crates/statistics/src/table.rs	generate_hist_coll_from_column_info	D10.7	tempora
 crates/statistics/src/table.rs	pseudo_table	D11.1	temporary	comment-only stub after this fn: CheckAnalyzeVerOnTable (D11.1 part 2, analyze / global stats)
 crates/statistics/src/table.rs	pseudo_table	D11.2	temporary	comment-only stubs after this fn: HistColl.SetAllIndexFullLoadForBootstrap, HistColl.DropEvicted, Table.ColumnIsLoadNeeded, Table.IndexIsLoadNeeded (D11.2 loading / eviction)
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
-crates/store/src/distsql/select_result.rs	into_iter	D07.3	temporary	D07.3 part 2: push-down IndexLookUp SelectResultIter (D07.3 spec §5)
 crates/store/src/driver/mod.rs	get_min_safe_ts	D07.1	temporary	client-go KVStore.GetMinSafeTS keeps each store's safe ts (updated in the background); client-rust has none. Only stale reads ask, and they never reach the new stack (router step 0); a panic with the blocked text (the trait returns u64)
 crates/store/src/driver/mod.rs	uuid	D07.1	temporary	client-go KVStore.UUID is tikv-<PD cluster id>; client-rust does not expose the cluster id. Not called on the read path; a panic with the blocked text (the trait returns String)
 crates/store/src/driver/tikv.rs	get_low_resolution_timestamp	D07.1	temporary	client-go pdOracle keeps the last TSO, refreshed every tidb_low_resolution_tso_update_interval; client-rust keeps none. tidb_low_resolution_tso is not synced by the router, so such sessions stay on the PoC
