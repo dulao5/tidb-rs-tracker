@@ -133,7 +133,6 @@ crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28
 crates/planner/src/core/logical_plan_builder.rs	add_alias_name	D09.15	temporary	addAliasName: aliases of the select fields of CREATE VIEW (capFlag canExpandAST), the write-path / DDL plans
 crates/planner/src/core/logical_plan_builder.rs	add_extra_phys_tbl_id_column4_ds	D09.12	temporary	addExtraPhysTblIDColumn4DS: the physical table id column of partitioned tables (FOR UPDATE, union scan)
 crates/planner/src/core/logical_plan_builder.rs	all_col_from_agg_expr_node	D09.4	temporary	allColFromAggExprNode: correlated aggregates and the ONLY_FULL_GROUP_BY check with aggregates
-crates/planner/src/core/logical_plan_builder.rs	all_col_from_expr_node	D09.4	temporary	allColFromExprNode / colNameResolver: the ONLY_FULL_GROUP_BY check with GROUP BY
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D02.2	temporary	buildDataSource: TABLESAMPLE (the Rust AST has no table sample; the preprocessor stops first)
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D05.4	temporary	buildDataSource: a plan builder without the statement InfoSchema (PlanBuilder.Init got none)
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.1	temporary	buildDataSource: views (BuildDataSourceFromView), virtual generated columns and a clustered primary key over a non-public column: part 2 of the SELECT builder
@@ -147,35 +146,31 @@ crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.14	te
 crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.3	temporary	buildProjectionField: findColFromNaturalUsingJoin, the redundant columns of NATURAL / USING joins
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D02.2	temporary	buildResultSetNode: a FROM clause the Rust parser builds as a placeholder
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D09.5	temporary	buildResultSetNode: set operations (buildSetOpr)
-crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.4	temporary	buildSelect: GROUP BY (resolveGbyExprs) and window functions (resolveWindowFunction)
+crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.4	temporary	buildSelect: window functions (resolveWindowFunction, D09.4 part B)
 crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.5	temporary	buildSelect: WITH (buildWith, common table expressions)
 crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.14	temporary	buildSelect: SELECT ... FOR UPDATE / FOR SHARE (buildSelectLock, LogicalLock)
-crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.4	temporary	buildSelect: aggregation (buildAggregation) and SELECT DISTINCT (buildDistinct)
-crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by	D09.4	temporary	checkOnlyFullGroupBy with GROUP BY (checkOnlyFullGroupByWithGroupClause); unreachable while GROUP BY stops first
-crates/planner/src/core/logical_plan_builder.rs	check_only_full_group_by_with_out_group_clause	D09.4	temporary	checkOnlyFullGroupByWithOutGroupClause: aggregates mixed with plain columns need the functional dependencies of WHERE and the joins
-crates/planner/src/core/logical_plan_builder.rs	check_order_by_in_distinct	D09.4	temporary	checkOrderByInDistinct: only SELECT DISTINCT (an aggregation) calls it
+crates/planner/src/core/logical_plan_builder.rs	build_select_rest	D09.4	temporary	buildSelect: GROUP BY ... WITH ROLLUP (buildExpand, D09.4 part C)
 crates/planner/src/core/logical_plan_builder.rs	collect_generate_column	D09.13	temporary	collectGenerateColumn of the generated column rule: only virtual generated columns, which the data source does not build yet
 crates/planner/src/core/logical_plan_builder.rs	compare_items	D09.4	temporary	compareItems / getAllByItems / restoreByItemText: grouping of window functions
-crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransformer.Enter: ORDER BY ? (the position node of the Rust AST has no parameter marker)
-crates/planner/src/core/logical_plan_builder.rs	extract_singe_value_col_names_from_where	D09.4	temporary	extractSingeValueColNamesFromWhere: the ONLY_FULL_GROUP_BY check with aggregates
+crates/planner/src/core/logical_plan_builder.rs	enter	D02.2	temporary	itemTransformer.Enter / gbyResolver.Enter / aggOrderByResolver.Enter: ORDER BY ?, GROUP BY ?, GROUP_CONCAT ORDER BY ? (the position node of the Rust AST has no parameter marker)
 crates/planner/src/core/logical_plan_builder.rs	find_column_name_by_unique_id	D09.6	temporary	findColumnNameByUniqueID: the outer columns referred by subqueries
 crates/planner/src/core/logical_plan_builder.rs	get_table_offset	D09.15	temporary	getTableOffset / collectTableName: UPDATE and DELETE
 crates/planner/src/core/logical_plan_builder.rs	resolve_correlated_aggregates	D09.6	temporary	resolveCorrelatedAggregates: aggregates of the outer query inside subqueries
 crates/planner/src/core/logical_plan_builder.rs	resolve_having_and_order_by	D09.6	temporary	resolveHavingAndOrderBy: the correlated columns of an ORDER BY subquery
-crates/planner/src/core/optimizer.rs	AGGREGATION_ELIMINATOR	D09.4	temporary	optRuleList: AggregationEliminator (aggregation rules, D09.4); only aggregations set its flag, and the builder stops at them
-crates/planner/src/core/optimizer.rs	AGGREGATION_PUSH_DOWN_SOLVER	D09.4	temporary	optRuleList: AggregationPushDownSolver (aggregation rules, D09.4)
+crates/planner/src/core/optimizer.rs	AGGREGATION_ELIMINATOR	D09.9	temporary	optRuleList: AggregationEliminator (aggregation rules, D09.9)
+crates/planner/src/core/optimizer.rs	AGGREGATION_PUSH_DOWN_SOLVER	D09.9	temporary	optRuleList: AggregationPushDownSolver (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	BUILD_KEY_SOLVER	D09.13	temporary	optRuleList: BuildKeySolver (the key-info rule); only aggregations, DISTINCT and subqueries set its flag; needs DataSource / LogicalSelection BuildKeyInfo
 crates/planner/src/core/optimizer.rs	CONVERT_OUTER_TO_INNER_JOIN	D09.3	temporary	optRuleList: ConvertOuterToInnerJoin (joins, D09.3)
 crates/planner/src/core/optimizer.rs	CORRELATE_SOLVER	D09.6	temporary	optRuleList: CorrelateSolver (subqueries, D09.6)
 crates/planner/src/core/optimizer.rs	DECORRELATE_SOLVER	D09.6	temporary	optRuleList: DecorrelateSolver (subqueries, D09.6)
 crates/planner/src/core/optimizer.rs	GC_SUBSTITUTER	D09.13	temporary	optRuleList: GcSubstituter (generated column substitution); only virtual generated columns set its flag, the builder stops at them
 crates/planner/src/core/optimizer.rs	JOIN_RE_ORDER_SOLVER	D09.10	temporary	optRuleList: JoinReOrderSolver (join reorder, D09.10)
-crates/planner/src/core/optimizer.rs	MAX_MIN_ELIMINATOR	D09.4	temporary	optRuleList: MaxMinEliminator (aggregation rules, D09.4)
+crates/planner/src/core/optimizer.rs	MAX_MIN_ELIMINATOR	D09.9	temporary	optRuleList: MaxMinEliminator (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	OUTER_JOIN_ELIMINATOR	D09.3	temporary	optRuleList: OuterJoinEliminator (joins, D09.3)
 crates/planner/src/core/optimizer.rs	PUSH_DOWN_SEQUENCE_SOLVER	D09.14	temporary	optRuleList: PushDownSequenceSolver (the sequence operator)
 crates/planner/src/core/optimizer.rs	RESOLVE_EXPAND	D09.4	temporary	optRuleList: ResolveExpand (the Expand operator of GROUP BY ... WITH ROLLUP, D09.4)
 crates/planner/src/core/optimizer.rs	SEMI_JOIN_REWRITER	D09.6	temporary	optRuleList: SemiJoinRewriter (subqueries, D09.6)
-crates/planner/src/core/optimizer.rs	SKEW_DISTINCT_AGG_REWRITER	D09.4	temporary	optRuleList: SkewDistinctAggRewriter (aggregation rules, D09.4)
+crates/planner/src/core/optimizer.rs	SKEW_DISTINCT_AGG_REWRITER	D09.9	temporary	optRuleList: SkewDistinctAggRewriter (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	check_no_partitioned_data_source	D09.12	temporary	PartitionProcessor (partition pruning): a partitioned data source is a boundary; tables without partitions are left as Go leaves them
 crates/planner/src/core/optimizer.rs	check_privilege	D04.1	temporary	CheckPrivilege: needs the privilege manager (D04.1); the new stack has none (VS1 plan §3.2), Go skips it without one
 crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
@@ -252,7 +247,7 @@ crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.3	temporary	metadat
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadata lock: domain.GetDomain(sctx) when the caller hands in no domain InfoSchema (the session always does)
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	with	D09.5	temporary	VS1-10: with (blocked-by:D09.5)
-crates/planner/src/core/rule_inject_extra_projection.rs	inject_proj_below_agg	D09.4	temporary	InjectProjBelowAgg: the physical aggregations and AggFuncDesc (D09.4); no plan has them yet
+crates/planner/src/core/rule_inject_extra_projection.rs	inject_proj_below_agg	D10.1	temporary	InjectProjBelowAgg: physical aggregation operators (PhysicalHashAgg / PhysicalStreamAgg, D10.1)
 crates/planner/src/core/rule_inject_extra_projection.rs	inject_proj_below_union	D09.5	temporary	injectProjBelowUnion: PhysicalUnionAll (set operations, D09.5); no plan has one yet
 crates/planner/src/core/stats.rs	check_partial_indexes	D10.2	temporary	D10.2 part 2: partial indexes (CheckPartialIndexByFilters, the partial index condition parser)
 crates/planner/src/core/stats.rs	generate_index_merge_path	D10.7	temporary	D10.7: index merge paths: OR conditions over two or more paths, multi-valued indexes (Go adds no path otherwise)
@@ -274,6 +269,9 @@ crates/planner/src/hint/hint_query_block.rs	handle_view_hints	D02.2	temporary	ha
 crates/planner/src/hint/hint_query_block.rs	is_hint4_view	D02.2	temporary	isHint4View: reads a hint's contents (the parser's hint grammar)
 crates/planner/src/logicalop/base_logical_plan.rs	extract_fd	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported; FD-based rules and ONLY_FULL_GROUP_BY checks need them
 crates/planner/src/logicalop/base_logical_plan.rs	fds	D09.14	temporary	D09.14: functional dependency sets (pkg/planner/funcdep) are not ported
+crates/planner/src/logicalop/logical_aggregation.rs	exhaust_physical_plans	D10.3	temporary	LogicalAggregation.ExhaustPhysicalPlans: physical aggregation enumeration (D10.3)
+crates/planner/src/logicalop/logical_aggregation.rs	explain_info	D10.9	temporary	LogicalAggregation.ExplainInfo: SortedExplainExpressionList / ExplainAggFunc (D10.9 / D08.11 part D)
+crates/planner/src/logicalop/logical_aggregation.rs	extract_fd	D09.14	temporary	LogicalAggregation.ExtractFD: functional dependency sets (pkg/planner/funcdep, D09.14)
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.13	temporary	D09.13: DataSource.BuildKeyInfo needs rule/util CheckIndexCanBeKey and GetLatestIndexInfo (key-info rule, VS1-24)
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.14	temporary	D09.14: DataSource.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D10.2	temporary	D10.2: DataSource.IsSingleScan / CheckPartialIndexes / CheckPartialIndexByFilters belong to access path handling
@@ -293,7 +291,6 @@ crates/planner/src/optimize.rs	optimize_stmt	D02.2	temporary	Optimize: the optim
 crates/planner/src/optimize.rs	optimize_stmt_on_success	D15.2	temporary	Optimize's deferred RESOURCE_GROUP hint: resource control (D15.2); hints are not parsed yet
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
-crates/planner/src/util/logicaltrace.rs	append_function_prune_trace_step	D08.11	temporary	D08.11: the trace of pruned aggregate functions needs aggregation.AggFuncDesc
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
 crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
 crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session

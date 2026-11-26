@@ -19,9 +19,6 @@ func castExemptD0812() map[string]string {
 	const (
 		toExplain = "owned by D10.9: EXPLAIN / plan-digest printing of expressions, called by the plans' " +
 			"ExplainInfo (planner/core/explain.go); listed in tidb-rs specs/D10.9-postprocess/tasks.md"
-		toPosition = "owned by D09.4: GROUP BY / ORDER BY position items (ast.PositionExpr with a parser-driver " +
-			"ParamMarkerExpr: `ORDER BY ?`) resolved by the aggregation builder; listed in tidb-rs " +
-			"specs/D09.4-agg-window/tasks.md"
 		toPrepareChecker = "owned by D09.4: AST visitor over the parser driver's ParamMarkerExpr, used by the " +
 			"window frame builder (buildWindowFunctionFrameBound); listed in tidb-rs specs/D09.4-agg-window/tasks.md"
 		toDigestText = "owned by D08.9: the SQL-digest text retriever of TIDB_DECODE_SQL_DIGESTS (builtin_info.go; " +
@@ -34,8 +31,10 @@ func castExemptD0812() map[string]string {
 			"expression op reaches"
 	)
 	m := map[string]string{
-		"ConstructPositionExpr":             toPosition,
-		"PosFromPositionExpr":               toPosition,
+		"ConstructPositionExpr": "ported (tidb-rs crates/expression/src/util.rs, D09.4 part A): unit test " +
+			"pos_from_position_expr_literal_and_param and replayed by selectbuild through GROUP BY / GROUP_CONCAT ORDER BY positions",
+		"PosFromPositionExpr": "ported (tidb-rs crates/expression/src/util.rs, D09.4 part A): unit test " +
+			"pos_from_position_expr_literal_and_param and replayed by selectbuild through GROUP BY / GROUP_CONCAT ORDER BY positions",
 		"ParamMarkerInPrepareChecker.Enter": toPrepareChecker,
 		"ParamMarkerInPrepareChecker.Leave": toPrepareChecker,
 		"ParamMarkerExpression": "ported (tidb-rs crates/expression/src/util.rs): replayed by the rewrite domain " +

@@ -40,6 +40,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.13 | VS1-24 | VS1-24 | in-progress | 60 / 211 | 1364 | tidb-rs branch vs1/optimizer-driver: converge 56/60 + 4 stubs |
 | D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.4 | D09.4-A | D09.4-A | in-progress | 47 / 116 | 1281 | tidb-rs branch nora/issue-427 (#427, D09.4 aggregation plan building part A): converge 41/47 + 2 temporary stubs (ExplainInfo D10.9, ExtractFD D09.14) + 4 exceptions (EXC.B Hash64/Equals/CopyAggHints/IsCompleteModeAgg); govec selectbuild 2449 records (0 diffs); also ports D08.12 P1-2 (2), D02.1 ExpressionDeepEqual, D09.0 AggregateFuncExtractor (2), D09.1 (4), D09.13 AppendFunctionPruneTraceStep, D09.15 (4), and LogicalAggregation rule methods (D09.6/D09.7/D09.8/D10.2/D10.6) |
 | D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
 | D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
@@ -78,7 +79,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-370 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+367 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -97,7 +98,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.1 | 18 | 0 | 0 |
 | D07.3 | 2 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
-| D08.11 | 2 | 0 | 0 |
+| D08.11 | 1 | 0 | 0 |
 | D08.6 | 1 | 0 | 0 |
 | D08.7 | 1 | 0 | 0 |
 | D08.9 | 4 | 0 | 0 |
@@ -106,24 +107,25 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.10 | 1 | 0 | 0 |
 | D09.12 | 9 | 0 | 0 |
 | D09.13 | 7 | 0 | 0 |
-| D09.14 | 10 | 0 | 0 |
+| D09.14 | 11 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
 | D09.17 | 2 | 0 | 0 |
 | D09.2 | 9 | 0 | 0 |
 | D09.3 | 4 | 0 | 0 |
-| D09.4 | 16 | 0 | 0 |
+| D09.4 | 6 | 0 | 0 |
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
-| D10.1 | 17 | 0 | 0 |
+| D09.9 | 4 | 0 | 0 |
+| D10.1 | 18 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
 | D10.2 | 10 | 0 | 0 |
-| D10.3 | 1 | 0 | 0 |
+| D10.3 | 2 | 0 | 0 |
 | D10.5 | 2 | 0 | 0 |
 | D10.6 | 7 | 0 | 0 |
 | D10.7 | 8 | 0 | 0 |
 | D10.8 | 3 | 0 | 0 |
-| D10.9 | 9 | 0 | 0 |
+| D10.9 | 10 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
