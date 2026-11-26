@@ -170,8 +170,6 @@ var preprocessExempt = map[string]string{
 	"pkg/planner/core/util.go:BuildPhysicalJoinSchema":                              "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/util.go:GetStatsInfo":                                         "VS1-10 function without a preprocess record: ported with a Rust unit test, or a boundary stub (tidb-rs core/)",
 	"pkg/planner/core/util.go:GetStatsInfoFromFlatPlan":                             "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-	"pkg/planner/core/util.go:WindowFuncExtractor.Enter":                            "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-	"pkg/planner/core/util.go:WindowFuncExtractor.Leave":                            "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/util.go:baseSchemaProducer.CloneWithNewCtx":                   "VS1-10 function without a preprocess record: ported with a Rust unit test, or a boundary stub (tidb-rs core/)",
 	"pkg/planner/core/util.go:baseSchemaProducer.MemoryUsage":                       "VS1-10 function without a preprocess record: ported with a Rust unit test, or a boundary stub (tidb-rs core/)",
 	"pkg/planner/core/util.go:baseSchemaProducer.OutputNames":                       "VS1-10 function without a preprocess record: ported with a Rust unit test, or a boundary stub (tidb-rs core/)",

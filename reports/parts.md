@@ -41,6 +41,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D09.4 | D09.4-A | D09.4-A | in-progress | 47 / 116 | 1281 | tidb-rs branch nora/issue-427 (#427, D09.4 aggregation plan building part A): converge 41/47 + 2 temporary stubs (ExplainInfo D10.9, ExtractFD D09.14) + 4 exceptions (EXC.B Hash64/Equals/CopyAggHints/IsCompleteModeAgg); govec selectbuild 2449 records (0 diffs); also ports D08.12 P1-2 (2), D02.1 ExpressionDeepEqual, D09.0 AggregateFuncExtractor (2), D09.1 (4), D09.13 AppendFunctionPruneTraceStep, D09.15 (4), and LogicalAggregation rule methods (D09.6/D09.7/D09.8/D10.2/D10.6) |
+| D09.4 | D09.4-B | D09.4-B | in-progress | 38 / 116 | 911 | tidb-rs branch nora/issue-433 (#433, D09.4 window plan building part B): converge 35/38 + 3 exceptions (EXC.B EqualPartitionBy/EqualOrderBy/EqualFrame); govec selectbuild 2811 records (0 diffs), optdriver 2686 records (0 diffs), findbest 2424 records (0 diffs); also ports D08.12 ParamMarkerInPrepareChecker (2), D09.0 WindowFuncExtractor (2), D09.1 (3), and LogicalWindow rule methods (D09.6/D09.7/D09.8/D10.2/D10.6) + ExhaustPhysicalPlans stub (D10.3) |
 | D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
 | D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
@@ -105,6 +106,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.0 | 1 | 0 | 0 |
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
+| D09.11 | 1 | 0 | 0 |
 | D09.12 | 9 | 0 | 0 |
 | D09.13 | 7 | 0 | 0 |
 | D09.14 | 11 | 0 | 0 |
@@ -113,14 +115,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.17 | 2 | 0 | 0 |
 | D09.2 | 9 | 0 | 0 |
 | D09.3 | 4 | 0 | 0 |
-| D09.4 | 6 | 0 | 0 |
+| D09.4 | 4 | 0 | 0 |
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
 | D09.9 | 4 | 0 | 0 |
 | D10.1 | 18 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
 | D10.2 | 10 | 0 | 0 |
-| D10.3 | 2 | 0 | 0 |
+| D10.3 | 3 | 0 | 0 |
 | D10.5 | 2 | 0 | 0 |
 | D10.6 | 7 | 0 | 0 |
 | D10.7 | 8 | 0 | 0 |
