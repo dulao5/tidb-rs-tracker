@@ -640,7 +640,7 @@ provider 是会话（`sessionctx.Context`：lazy 事务、预取的 TSO future�
 - 记录里有 Go 的 panic（tidb-rs 必须同样 panic）：窗口函数描述符的 nil 参数、`PBExprToAggFuncDesc` 缺 field type 时的空指针、`NewWindowFuncDesc` 在 3 参数 `lead`/`lag` collation 冲突或未知函数名下的 nil `RetTp` 解引用、`WindowFuncToPBExpr` 传入 nil `RetTp`。
 - `WrapCastForAggArgs` 的时间分支把 `RetTp` 本身交给 `WrapWithCastAsTime`，转换就地修改它（Go 的别名，base_func.go:455）；`NewWindowFuncDesc` 对 `first_value`/`last_value`/`nth_value`/`firstrow` 原地清除共享参数类型的 `NotNullFlag`（window_func.go:76，tidb-rs#402）；`wrap`、`new`、`new_window_desc` 的记录包含这些情况，tidb-rs 照 Go 模拟。
 - 旧的求值器（avg.go、sum.go、count.go 等 49 个函数）归块 X，不移植，不出向量；`ExplainAggFunc`（第 D 部分）和 cascades 的 `Hash64` / `Equals`（例外 B）在豁免表中写明。
-- 种子 20261124，共 6813 条记录（A 部分 4531 条，B 部分 1044 条，C 部分 1238 条：`new_window_desc` 518、`window_frame` 58、`window_to_pb` 289、`window_tiflash` 373；其中 `new_window_desc` 有 45 条在 tidb-rs 中按裁定 R25 / tidb-rs#398 保留 `UnsignedFlag`）。两个目标的记录完全相同。arm64 本地生成（sha256 `1ff076b331bfb03a05f1e815a5943f347cfaaa48690be562a6bed22178db131e`），amd64 由 tracker CI `ubuntu-latest` 产物生成；CI 的 `govec.sh --check` 在两个架构的 runner 上逐字节比较。
+- 种子 20261124，共 6813 条记录（A 部分 4531 条，B 部分 1044 条，C 部分 1238 条：`new_window_desc` 518、`window_frame` 58、`window_to_pb` 289、`window_tiflash` 373；其中 `new_window_desc` 有 45 条在 tidb-rs 中按裁定 R25 / tidb-rs#398 保留 `UnsignedFlag`）。两个目标的记录完全相同（0 条差异）。arm64 本地生成（sha256 `1ff076b331bfb03a05f1e815a5943f347cfaaa48690be562a6bed22178db131e`），amd64 由 tracker CI `ubuntu-latest`（`GOAMD64=v1`，run `45742927680`）产物生成（sha256 `b0fed281ee4e35878a5155c2cbc4fc126a51e79f18237e9a835fb552ed4a40ef`）；CI 的 `govec.sh --check` 在两个架构的 runner 上逐字节比较。
 
 ## aggfuncs（块 D12.4 第 A、B1、B2 部分：`pkg/executor/aggfuncs` 与 `pkg/util/selection/selection.go`，tidb-rs#375、#386、#393）
 
