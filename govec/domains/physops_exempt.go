@@ -440,5 +440,7 @@ func physopsExempt() map[string]string {
 		"pkg/planner/core/task_base.go:RootTask.Plan":                                                                      vs,
 		"pkg/planner/core/task_base.go:RootTask.SetEmpty":                                                                  vs,
 		"pkg/planner/core/task_base.go:RootTask.SetPlan":                                                                   vs,
+		"pkg/planner/core/plan_cost_ver1.go:PhysicalIndexReader.GetNetDataSize":                                            "not yet ported: reclassified from EXC.B to D10.1 (unconditionally called by builder.go:4073, tidb-rs#411); ported with D12.1 Part 2B",
+		"pkg/planner/core/plan_cost_ver1.go:PhysicalTableReader.GetNetDataSize":                                            "not yet ported: reclassified from EXC.B to D10.1 (unconditionally called by builder.go:3708, tidb-rs#411); ported with D12.1 Part 2A",
 	}
 }
