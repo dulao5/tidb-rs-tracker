@@ -46,7 +46,6 @@ crates/executor/src/internal/exec/indexusage.rs	get_table_row_count	D11.2	tempor
 crates/executor/src/metrics.rs	observe	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/point_get.rs	build_point_get	X	permanent	not ported (write path: SELECT ... FOR UPDATE point get)
 crates/executor/src/point_get.rs	lock_key_base	X	permanent	not ported (write path: pessimistic lock of the read key)
-crates/executor/src/point_get.rs	verify_txn_scope	D07.3	temporary	D07.3: distsql.VerifyTxnScope (local txn scopes)
 crates/executor/src/prepared.rs	next	D02.1	temporary	prepared-statement planning (VS1-15): the Rust parser's syntax error / warning text differs from Go's, the PoC answers
 crates/executor/src/prepared.rs	next	D05.4	temporary	prepared-statement planning (VS1-15): no transaction InfoSchema (PrepareStmt always sets one)
 crates/executor/src/select.rs	reset_context_of_stmt	D02.2	temporary	VS1-14: ResetContextOfStmt of statements outside the Rust AST (INSERT/UPDATE/DELETE/EXPLAIN...)
@@ -317,7 +316,6 @@ crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session 
 crates/session/src/session.rs	delete	D13.1	temporary	session plan cache stand-in holds no plans (the plan-cache exception A3); keeps the deleted keys
 crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
 crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
-crates/session/src/session.rs	get_dist_sql_ctx	D07.3	temporary	VS1-14: distsql DistSQLContext (VS1-33)
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
 crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the server's session manager
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
@@ -361,6 +359,7 @@ crates/statistics/src/table.rs	generate_hist_coll_from_column_info	D10.7	tempora
 crates/statistics/src/table.rs	pseudo_table	D11.1	temporary	comment-only stub after this fn: CheckAnalyzeVerOnTable (D11.1 part 2, analyze / global stats)
 crates/statistics/src/table.rs	pseudo_table	D11.2	temporary	comment-only stubs after this fn: HistColl.SetAllIndexFullLoadForBootstrap, HistColl.DropEvicted, Table.ColumnIsLoadNeeded, Table.IndexIsLoadNeeded (D11.2 loading / eviction)
 crates/store/src/copr/coprocessor.rs	build_tidb_mem_cop_tasks	D06.5	temporary	D06.5: TiDB memory-table coprocessor tasks (domain infos)
+crates/store/src/distsql/select_result.rs	into_iter	D07.3	temporary	D07.3 part 2: push-down IndexLookUp SelectResultIter (D07.3 spec §5)
 crates/store/src/driver/mod.rs	get_min_safe_ts	D07.1	temporary	client-go KVStore.GetMinSafeTS keeps each store's safe ts (updated in the background); client-rust has none. Only stale reads ask, and they never reach the new stack (router step 0); a panic with the blocked text (the trait returns u64)
 crates/store/src/driver/mod.rs	uuid	D07.1	temporary	client-go KVStore.UUID is tikv-<PD cluster id>; client-rust does not expose the cluster id. Not called on the read path; a panic with the blocked text (the trait returns String)
 crates/store/src/driver/tikv.rs	get_low_resolution_timestamp	D07.1	temporary	client-go pdOracle keeps the last TSO, refreshed every tidb_low_resolution_tso_update_interval; client-rust keeps none. tidb_low_resolution_tso is not synced by the router, so such sessions stay on the PoC
