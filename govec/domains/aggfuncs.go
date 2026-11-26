@@ -1,12 +1,10 @@
 package domains
 
-// Domain "aggfuncs": block D12.4 parts A and B1, the core and common aggregate functions of
-// pkg/executor/aggfuncs (tidb-rs specs/D12.4-aggfuncs §6.2): Build, COUNT (including
-// DISTINCT and multi-arg encoding), SUM, AVG, FIRST_ROW, MAX / MIN, BIT_*, GROUP_CONCAT,
-// VAR_POP / VAR_SAMP, STDDEV_POP / STDDEV_SAMP, JSON_ARRAYAGG, and JSON_OBJECTAGG, run
-// through the exported AggFunc interface. The names of part B2 (APPROX_COUNT_DISTINCT,
-// APPROX_PERCENTILE) appear only in "build" records; tidb-rs returns a temporary "blocked"
-// for them until part B2 is ported, counted by its replay.
+// Domain "aggfuncs": block D12.4 parts A, B1, and B2, the core, common, and approximate
+// aggregate functions of pkg/executor/aggfuncs (tidb-rs specs/D12.4-aggfuncs §6.2): Build,
+// COUNT (including DISTINCT and multi-arg encoding), SUM, AVG, FIRST_ROW, MAX / MIN, BIT_*,
+// GROUP_CONCAT, VAR_POP / VAR_SAMP, STDDEV_POP / STDDEV_SAMP, JSON_ARRAYAGG, JSON_OBJECTAGG,
+// APPROX_COUNT_DISTINCT, and APPROX_PERCENTILE, run through the exported AggFunc interface.
 //
 // A record carries the complete descriptor, so tidb-rs builds the AggFuncDesc directly and
 // does not run the type inference of D08.11 (covered by the aggdesc domain):
@@ -53,6 +51,7 @@ package domains
 // default).
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -61,6 +60,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dgryski/go-farm"
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
 	"github.com/pingcap/tidb/pkg/executor/aggfuncs"
 	"github.com/pingcap/tidb/pkg/expression"
@@ -94,6 +94,7 @@ func init() {
 		},
 		Coverage: aggfuncsCoverage,
 		Blocks:   []string{"D12.4"},
+		Files:    []string{"pkg/util/selection/selection.go"},
 		Exempt:   aggfuncsExempt(),
 		Gzip:     true,
 		Generate: aggfuncsGenerate,
@@ -147,7 +148,8 @@ var aggfuncsCoverage = map[string]vec.Coverage{
 	"build": {Min: 3000, GoFuncs: []string{"Build", "buildCount", "buildSum", "buildAvg", "buildFirstRow",
 		"buildMaxMin", "buildBitOr", "buildBitXor", "buildBitAnd",
 		"buildGroupConcat", "buildVarPop", "buildStdDevPop", "buildVarSamp", "buildStddevSamp",
-		"buildJSONArrayagg", "buildJSONObjectAgg"}},
+		"buildJSONArrayagg", "buildJSONObjectAgg",
+		"buildApproxCountDistinct", "getEvalTypeForApproxPercentile", "buildApproxPercentile"}},
 	"update_final": {Min: 2500, GoFuncs: append(append(append(afMethods(afAllocResetTypes, "AllocPartialResult"),
 		afMethods(afUpdateTypes, "UpdatePartialResult")...), afMethods(afFinalTypes, "AppendFinalResult2Chunk")...),
 		"calculateIntermediate")},
@@ -185,6 +187,68 @@ var aggfuncsCoverage = map[string]vec.Coverage{
 		"jsonObjectAgg.UpdatePartialResult", "jsonObjectAgg.MergePartialResult",
 		"jsonObjectAgg.AppendFinalResult2Chunk",
 		"getRealJSONValue",
+	}},
+	"approx_count_distinct": {Min: 80, GoFuncs: []string{
+		"NewPartialResult4ApproxCountDistinct", "intHash64",
+		"partialResult4ApproxCountDistinct.InsertHash64",
+		"partialResult4ApproxCountDistinct.Serialize",
+		"partialResult4ApproxCountDistinct.alloc",
+		"partialResult4ApproxCountDistinct.bufSize",
+		"partialResult4ApproxCountDistinct.fixedSize",
+		"partialResult4ApproxCountDistinct.good",
+		"partialResult4ApproxCountDistinct.insertHash",
+		"partialResult4ApproxCountDistinct.insertImpl",
+		"partialResult4ApproxCountDistinct.mask",
+		"partialResult4ApproxCountDistinct.maxFill",
+		"partialResult4ApproxCountDistinct.merge",
+		"partialResult4ApproxCountDistinct.place",
+		"partialResult4ApproxCountDistinct.readAndMerge",
+		"partialResult4ApproxCountDistinct.rehash",
+		"partialResult4ApproxCountDistinct.reinsertImpl",
+		"partialResult4ApproxCountDistinct.reset",
+		"partialResult4ApproxCountDistinct.resize",
+		"partialResult4ApproxCountDistinct.shrinkIfNeed",
+		"baseApproxCountDistinct.AllocPartialResult",
+		"baseApproxCountDistinct.AppendFinalResult2Chunk",
+		"baseApproxCountDistinct.MergePartialResult",
+		"baseApproxCountDistinct.ResetPartialResult",
+		"approxCountDistinctOriginal.UpdatePartialResult",
+		"approxCountDistinctPartial1.AppendFinalResult2Chunk",
+		"approxCountDistinctPartial2.UpdatePartialResult",
+		"approxCountDistinctFinal.AppendFinalResult2Chunk",
+	}},
+	"percentile": {Min: 80, GoFuncs: []string{
+		"percentile",
+		"basePercentile.AllocPartialResult", "basePercentile.ResetPartialResult",
+		"basePercentile.UpdatePartialResult", "basePercentile.AppendFinalResult2Chunk",
+		"partialResult4PercentileInt.Len", "partialResult4PercentileInt.Less", "partialResult4PercentileInt.Swap",
+		"partialResult4PercentileReal.Len", "partialResult4PercentileReal.Less", "partialResult4PercentileReal.Swap",
+		"partialResult4PercentileDecimal.Len", "partialResult4PercentileDecimal.Less", "partialResult4PercentileDecimal.Swap",
+		"partialResult4PercentileTime.Len", "partialResult4PercentileTime.Less", "partialResult4PercentileTime.Swap",
+		"partialResult4PercentileDuration.Len", "partialResult4PercentileDuration.Less", "partialResult4PercentileDuration.Swap",
+		"percentileOriginal4Int.AllocPartialResult", "percentileOriginal4Int.ResetPartialResult",
+		"percentileOriginal4Int.UpdatePartialResult", "percentileOriginal4Int.MergePartialResult",
+		"percentileOriginal4Int.AppendFinalResult2Chunk",
+		"percentileOriginal4Real.AllocPartialResult", "percentileOriginal4Real.ResetPartialResult",
+		"percentileOriginal4Real.UpdatePartialResult", "percentileOriginal4Real.MergePartialResult",
+		"percentileOriginal4Real.AppendFinalResult2Chunk",
+		"percentileOriginal4Decimal.AllocPartialResult", "percentileOriginal4Decimal.ResetPartialResult",
+		"percentileOriginal4Decimal.UpdatePartialResult", "percentileOriginal4Decimal.MergePartialResult",
+		"percentileOriginal4Decimal.AppendFinalResult2Chunk",
+		"percentileOriginal4Time.AllocPartialResult", "percentileOriginal4Time.ResetPartialResult",
+		"percentileOriginal4Time.UpdatePartialResult", "percentileOriginal4Time.MergePartialResult",
+		"percentileOriginal4Time.AppendFinalResult2Chunk",
+		"percentileOriginal4Duration.AllocPartialResult", "percentileOriginal4Duration.ResetPartialResult",
+		"percentileOriginal4Duration.UpdatePartialResult", "percentileOriginal4Duration.MergePartialResult",
+		"percentileOriginal4Duration.AppendFinalResult2Chunk",
+		"pkg/util/selection/selection.go:Select",
+		"pkg/util/selection/selection.go:introselect",
+		"pkg/util/selection/selection.go:medianOfMedians",
+		"pkg/util/selection/selection.go:medianOfMediansPivot",
+		"pkg/util/selection/selection.go:partition",
+		"pkg/util/selection/selection.go:partitionIntro",
+		"pkg/util/selection/selection.go:partition5",
+		"pkg/util/selection/selection.go:randomPivot",
 	}},
 }
 
@@ -255,6 +319,9 @@ type afDesc struct {
 	TruncAsWarn bool        `json:"trunc_warn,omitempty"`
 	OrderBy     []afOrderBy `json:"order_by,omitempty"`
 	ExtraCols   []afType    `json:"extra_cols,omitempty"`
+	HasPct      bool        `json:"has_pct,omitempty"`
+	Pct         int64       `json:"pct,omitempty"`
+	PctBad      bool        `json:"pct_bad,omitempty"`
 }
 
 // make builds the context and the descriptor of d.
@@ -284,6 +351,17 @@ func (d afDesc) make() (*exprstatic.ExprContext, *aggregation.AggFuncDesc) {
 		args = append(args, &expression.Constant{
 			Value:   types.NewStringDatum(string(sepBytes)),
 			RetType: types.NewFieldType(mysql.TypeString),
+		})
+	}
+	if d.PctBad {
+		args = append(args, &expression.Constant{
+			Value:   types.NewStringDatum("not-an-int"),
+			RetType: types.NewFieldType(mysql.TypeString),
+		})
+	} else if d.HasPct {
+		args = append(args, &expression.Constant{
+			Value:   types.NewIntDatum(d.Pct),
+			RetType: types.NewFieldType(mysql.TypeLong),
 		})
 	}
 	desc := &aggregation.AggFuncDesc{Mode: aggregation.AggFunctionMode(d.Mode), HasDistinct: d.Distinct}
@@ -636,6 +714,161 @@ func aggfuncsExec(op string, args []json.RawMessage) (any, error) {
 		default:
 			return nil, fmt.Errorf("aggfuncs group_concat: unknown action %s", action)
 		}
+	case "approx_count_distinct":
+		var action string
+		must(json.Unmarshal(args[0], &action))
+		switch action {
+		case "farm_hash64":
+			var hexStr string
+			must(json.Unmarshal(args[1], &hexStr))
+			b, err := hex.DecodeString(hexStr)
+			must(err)
+			return map[string]any{"hash": strconv.FormatUint(farm.Hash64(b), 10)}, nil
+		case "update_final", "read_err":
+			return afExecUpdateFinal(afDescOf(args[1]), args[2])
+		case "reset_reuse":
+			return afExecResetReuse(afDescOf(args[1]), args[2])
+		case "merge":
+			return afExecMerge(afDescOf(args[1]), afDescOf(args[2]), args[3], args[4])
+		case "wire":
+			p1d := afDescOf(args[1])
+			p2d := afDescOf(args[2])
+			find := afDescOf(args[3])
+			ctx1, desc1 := p1d.make()
+			ctx2, desc2 := p2d.make()
+			ctxf, descf := find.make()
+			f1 := aggfuncs.Build(ctx1, desc1, 0)
+			f2 := aggfuncs.Build(ctx2, desc2, 0)
+			ff := aggfuncs.Build(ctxf, descf, 0)
+			fts1 := p1d.chunkFts()
+			fts2 := p2d.chunkFts()
+			ftsf := find.chunkFts()
+			var parts []afBatches
+			must(json.Unmarshal(args[4], &parts))
+			out := map[string]any{
+				"type":  []string{afTypeName(f1), afTypeName(f2), afTypeName(ff)},
+				"p1":    []any{},
+				"p2":    nil,
+				"final": nil,
+				"step":  "",
+			}
+			p1Out := []any{}
+			p2Rows := [][]json.RawMessage{}
+			for i, part := range parts {
+				pr1, _ := f1.AllocPartialResult()
+				if step, err := afUpdate(ctx1, f1, fts1, part, pr1); err != nil {
+					out["p1"], out["step"] = p1Out, fmt.Sprintf("p1 %d %s", i, step)
+					return out, err
+				}
+				cells1, err := afFinal(ctx1, f1, desc1.RetTp, pr1)
+				p1Out = append(p1Out, cells1)
+				if err != nil {
+					out["p1"], out["step"] = p1Out, fmt.Sprintf("p1 %d final", i)
+					return out, err
+				}
+				rawHex := cells1[0].(map[string]any)["raw"].(string)
+				b, _ := json.Marshal(rawHex)
+				p2Rows = append(p2Rows, []json.RawMessage{b})
+				if i == 0 && len(parts) > 1 {
+					p2Rows = append(p2Rows, []json.RawMessage{json.RawMessage("null")})
+				}
+			}
+			pr2, _ := f2.AllocPartialResult()
+			if step, err := afUpdate(ctx2, f2, fts2, afBatches{p2Rows}, pr2); err != nil {
+				out["p1"], out["step"] = p1Out, "p2 "+step
+				return out, err
+			}
+			cells2, err := afFinal(ctx2, f2, desc2.RetTp, pr2)
+			out["p1"], out["p2"] = p1Out, cells2
+			if err != nil {
+				out["step"] = "p2 final"
+				return out, err
+			}
+			p2Hex := cells2[0].(map[string]any)["raw"].(string)
+			p2HexJSON, _ := json.Marshal(p2Hex)
+			prf, _ := ff.AllocPartialResult()
+			if step, err := afUpdate(ctxf, ff, ftsf, afBatches{{{p2HexJSON}}}, prf); err != nil {
+				out["step"] = "final " + step
+				return out, err
+			}
+			cellsf, err := afFinal(ctxf, ff, descf.RetTp, prf)
+			out["final"] = cellsf
+			if err != nil {
+				out["step"] = "final final"
+			}
+			return out, err
+		case "sketch":
+			var n, base uint64
+			var includeZero bool
+			must(json.Unmarshal(args[1], &n))
+			must(json.Unmarshal(args[2], &base))
+			must(json.Unmarshal(args[3], &includeZero))
+			p := aggfuncs.NewPartialResult4ApproxCountDistinct()
+			if includeZero {
+				p.InsertHash64(0)
+			}
+			var b [8]byte
+			for i := range n {
+				binary.LittleEndian.PutUint64(b[:], base+i)
+				p.InsertHash64(farm.Hash64(b[:]))
+			}
+			ser := p.Serialize()
+			strTp := afType{Tp: mysql.TypeString, Flen: 255, Charset: charset.CharsetBin, Collate: charset.CollationBin, Flag: mysql.BinaryFlag}
+			intTp := afType{Tp: mysql.TypeLonglong, Flen: 20, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+			find := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.FinalMode), Args: []afType{strTp}, Ret: intTp}
+			ctxf, descf := find.make()
+			ff := aggfuncs.Build(ctxf, descf, 0)
+			ftsf := find.chunkFts()
+			serHexJSON, _ := json.Marshal(hex.EncodeToString(ser))
+			prf, _ := ff.AllocPartialResult()
+			if _, err := afUpdate(ctxf, ff, ftsf, afBatches{{{serHexJSON}}}, prf); err != nil {
+				return nil, err
+			}
+			cellsf, err := afFinal(ctxf, ff, descf.RetTp, prf)
+			if err != nil {
+				return nil, err
+			}
+			// Also merge prf (potentially skipDegree > 0) into a fresh smaller partial result (skipDegree = 0).
+			pSmall := aggfuncs.NewPartialResult4ApproxCountDistinct()
+			for i := range uint64(8) {
+				binary.LittleEndian.PutUint64(b[:], base+i+1_000_000)
+				pSmall.InsertHash64(farm.Hash64(b[:]))
+			}
+			smallHexJSON, _ := json.Marshal(hex.EncodeToString(pSmall.Serialize()))
+			prDst, _ := ff.AllocPartialResult()
+			if _, err := afUpdate(ctxf, ff, ftsf, afBatches{{{smallHexJSON}}}, prDst); err != nil {
+				return nil, err
+			}
+			if _, err := ff.MergePartialResult(ctxf.GetEvalCtx(), prf, prDst); err != nil {
+				return nil, err
+			}
+			mergedCells, err := afFinal(ctxf, ff, descf.RetTp, prDst)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{
+				"ser_len":     len(ser),
+				"skip_degree": int(ser[0]),
+				"ser_hash":    strconv.FormatUint(farm.Hash64(ser), 10),
+				"final":       cellsf,
+				"merged":      mergedCells,
+			}, nil
+		default:
+			return nil, fmt.Errorf("aggfuncs approx_count_distinct: unknown action %s", action)
+		}
+	case "percentile":
+		var action string
+		must(json.Unmarshal(args[0], &action))
+		switch action {
+		case "update_final":
+			return afExecUpdateFinal(afDescOf(args[1]), args[2])
+		case "reset_reuse":
+			return afExecResetReuse(afDescOf(args[1]), args[2])
+		case "merge":
+			return afExecMerge(afDescOf(args[1]), afDescOf(args[2]), args[3], args[4])
+		default:
+			return nil, fmt.Errorf("aggfuncs percentile: unknown action %s", action)
+		}
 	}
 	return nil, fmt.Errorf("aggfuncs: unknown op %s", op)
 }
@@ -973,6 +1206,9 @@ func aggfuncsGenerate(vg *vec.Gen, rng *rand.Rand) {
 
 	// ---- Part B1 (D12.4): COUNT(DISTINCT), GROUP_CONCAT, VAR / STDDEV, JSON_*AGG ----
 	afGenPartB1(vg, g)
+
+	// ---- Part B2 (D12.4): APPROX_COUNT_DISTINCT, APPROX_PERCENTILE ----
+	afGenPartB2(vg, g)
 }
 
 func afGenPartB1(vg *vec.Gen, g *afGen) {
@@ -1361,4 +1597,236 @@ func afGenPartB1(vg *vec.Gen, g *afGen) {
 		}
 		vg.Add("group_concat", "group_concat", "merge_err", dErr)
 	}
+}
+
+func afGenPartB2(vg *vec.Gen, g *afGen) {
+	hexS := func(s string) string { return hex.EncodeToString([]byte(s)) }
+	intTp := afType{Tp: mysql.TypeLonglong, Flen: 20, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dblTp := afType{Tp: mysql.TypeDouble, Flen: 22, Decimal: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	fltTp := afType{Tp: mysql.TypeFloat, Flen: 12, Decimal: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	decTp := afType{Tp: mysql.TypeNewDecimal, Flen: 20, Decimal: 5, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dateTp := afType{Tp: mysql.TypeDate, Flen: 10, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dtTp := afType{Tp: mysql.TypeDatetime, Flen: 26, Decimal: 6, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	tsTp := afType{Tp: mysql.TypeTimestamp, Flen: 19, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	durTp := afType{Tp: mysql.TypeDuration, Flen: 13, Decimal: 3, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	strBin := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin"}
+	strGeneral := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_general_ci"}
+	strUnicode := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_unicode_ci"}
+	rawStrTp := afType{Tp: mysql.TypeString, Flen: 255, Charset: charset.CharsetBin, Collate: charset.CollationBin, Flag: mysql.BinaryFlag}
+	jsonTp := afType{Tp: mysql.TypeJSON, Flen: 4294967295, Charset: charset.CharsetBin, Collate: charset.CollationBin, Flag: mysql.BinaryFlag}
+	vecTp := afType{Tp: mysql.TypeTiDBVectorFloat32, Flen: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+
+	// 1. Extra build records for APPROX_COUNT_DISTINCT (Longlong & String & unmatched ret types,
+	// all 5 modes) and APPROX_PERCENTILE (all afArgTypes including Enum/Set with EnumSetAsIntFlag
+	// and Bit, all 5 modes, plus percent eval error -> nil).
+	for _, retTp := range []afType{intTp, rawStrTp, dblTp} {
+		for mode := range 5 {
+			vg.Add("build", "build", afDesc{
+				Name: ast.AggFuncApproxCountDistinct, Mode: mode,
+				Args: []afType{intTp, strBin}, Ret: retTp,
+			})
+		}
+	}
+	for _, at := range afArgTypes {
+		for mode := range 5 {
+			vg.Add("build", "build", afDesc{
+				Name: ast.AggFuncApproxPercentile, Mode: mode,
+				Args: []afType{at}, Ret: at, HasPct: true, Pct: 50,
+			})
+		}
+	}
+	vg.Add("build", "build", afDesc{
+		Name: ast.AggFuncApproxPercentile, Mode: int(aggregation.CompleteMode),
+		Args: []afType{intTp}, Ret: intTp, PctBad: true,
+	})
+
+	// 2. go-farm Hash64 bit-identical vectors across every length branch (<=16, 17..32,
+	// 33..64, 65..96, 97..256, >256) and random binary payloads.
+	farmLens := []int{0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 24, 31, 32, 33, 48, 63, 64, 65, 80, 95, 96, 97, 127, 128, 129, 192, 255, 256, 257, 320, 384, 511, 512, 600}
+	for _, n := range farmLens {
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = byte((i*37 + n*13 + 7) & 0xff)
+		}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "farm_hash64", hex.EncodeToString(b))
+	}
+	for range 20 {
+		n := g.intn(400)
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = byte(g.intn(256))
+		}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "farm_hash64", hex.EncodeToString(b))
+	}
+
+	// 3. APPROX_COUNT_DISTINCT: update_final, reset_reuse, merge, wire round-trip
+	// (Complete/Partial1/Partial2/Final + TypeString partition union), raw-encoding pinning
+	// (#394: ±0.0, Time differing Type/Fsp, Duration differing Fsp), high-cardinality sketch
+	// (>65536 triggering skipDegree > 0, rehash, intHash64, fixedSize), and readAndMerge errors.
+	acdTypes := []afType{intTp, dblTp, decTp, dateTp, dtTp, tsTp, durTp, jsonTp, vecTp, strBin, strGeneral, strUnicode}
+	for _, at := range acdTypes {
+		d := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{at}, Ret: intTp}
+		p1 := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.Partial1Mode), Args: []afType{at}, Ret: rawStrTp}
+		p2 := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.Partial2Mode), Args: []afType{rawStrTp}, Ret: rawStrTp}
+		fin := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.FinalMode), Args: []afType{rawStrTp}, Ret: intTp}
+		g.start(&d)
+		vg.Add("approx_count_distinct", "approx_count_distinct", "update_final", d, g.batches(d.Args))
+		vg.Add("approx_count_distinct", "approx_count_distinct", "reset_reuse", d, [][][][]any{g.batches(d.Args), g.batches(d.Args), g.batches(d.Args)})
+		vg.Add("approx_count_distinct", "approx_count_distinct", "merge", p1, fin, [][][][]any{g.batches(p1.Args), g.batches(p1.Args)}, g.intn(2) == 0)
+		vg.Add("approx_count_distinct", "approx_count_distinct", "wire", p1, p2, fin, [][][][]any{g.batches(p1.Args), g.batches(p1.Args), g.batches(p1.Args)})
+	}
+	// Multi-arg APPROX_COUNT_DISTINCT (2 and 3 columns) + TypeString Complete/Final partition union.
+	for range 8 {
+		t0 := acdTypes[g.intn(len(acdTypes))]
+		t1 := acdTypes[g.intn(len(acdTypes))]
+		d := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{t0, t1}, Ret: intTp}
+		g.start(&d)
+		vg.Add("approx_count_distinct", "approx_count_distinct", "update_final", d, g.batches(d.Args))
+	}
+	{
+		// Partition table union (RetTp = TypeString): Complete->Partial1, Final->Partial2.
+		p1Str := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{intTp}, Ret: rawStrTp}
+		p2Str := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.FinalMode), Args: []afType{rawStrTp}, Ret: rawStrTp}
+		finInt := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.FinalMode), Args: []afType{rawStrTp}, Ret: intTp}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "wire", p1Str, p2Str, finInt, [][][][]any{
+			{{{"1"}, {"2"}, {"3"}, {nil}}},
+			{{{"2"}, {"3"}, {"4"}}},
+		})
+	}
+	// Pin Go v8.5.8 raw encoding (#393 / #394, NOT R23 canonicalized): ±0.0, Time Type/Fsp, Duration Fsp.
+	{
+		posZero := strconv.FormatUint(0, 10)
+		negZero := strconv.FormatUint(1<<63, 10)
+		dF := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{dblTp}, Ret: intTp}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "update_final", dF, [][][]any{{{posZero}, {negZero}}})
+
+		core := strconv.FormatUint(uint64(types.NewTime(types.FromDate(2020, 1, 1, 0, 0, 0, 0), mysql.TypeDatetime, 0).CoreTime()), 10)
+		dT := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{dtTp}, Ret: intTp}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "update_final", dT, [][][]any{{
+			{[]any{core, int(mysql.TypeDate), 0}},
+			{[]any{core, int(mysql.TypeDatetime), 0}},
+			{[]any{core, int(mysql.TypeDatetime), 3}},
+		}})
+
+		dD := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.CompleteMode), Args: []afType{durTp}, Ret: intTp}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "update_final", dD, [][][]any{{
+			{[]any{"1000000000", 0}},
+			{[]any{"1000000000", 3}},
+		}})
+	}
+	// Sketch growth across resize thresholds (initial 16 -> 32 -> 64 -> ... -> 131072 -> skipDegree > 0).
+	for _, sc := range []struct {
+		n, base uint64
+		zero    bool
+	}{
+		{0, 0, false},
+		{0, 0, true},
+		{1, 10, true},
+		{8, 100, false},
+		{9, 200, true},
+		{17, 300, false},
+		{65, 400, true},
+		{500, 500, false},
+		{70000, 0, true},
+		{140000, 100000, false},
+	} {
+		vg.Add("approx_count_distinct", "approx_count_distinct", "sketch", sc.n, sc.base, sc.zero)
+	}
+	// readAndMerge error paths: rhsSize > uniquesHashMaxSize (65536) and invalid uvarint.
+	{
+		fin := afDesc{Name: ast.AggFuncApproxCountDistinct, Mode: int(aggregation.FinalMode), Args: []afType{rawStrTp}, Ret: intTp}
+		var over []byte
+		over = append(over, 0)
+		over = binary.AppendUvarint(over, 65537)
+		vg.Add("approx_count_distinct", "approx_count_distinct", "read_err", fin, [][][]any{{{hex.EncodeToString(over)}}})
+
+		badVarint := []byte{0, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80}
+		vg.Add("approx_count_distinct", "approx_count_distinct", "read_err", fin, [][][]any{{{hex.EncodeToString(badVarint)}}})
+	}
+
+	// 4. APPROX_PERCENTILE: all 5 typed implementations (Int, Real, Decimal, Time, Duration) +
+	// basePercentile (String, Enum, Set, Enum/Set with EnumSetAsIntFlag, Bit, JSON, VectorFloat32)
+	// across percentiles 1, 10, 25, 50, 75, 90, 99, 100, update_final, reset_reuse, and merge.
+	// Inputs exclude values that compare equal with different raw bytes (spec §5.6, §6.2).
+	pcts := []int64{1, 10, 25, 50, 75, 90, 99, 100}
+	pctDecPool := []string{"-1000.5", "-10.25", "-1", "0", "0.125", "1.5", "2.75", "10.5", "99.99", "12345.6789"}
+	pctFresh := func(at afType) any {
+		switch chunkKind(at.ft()) {
+		case "i64":
+			return strconv.FormatInt([]int64{math.MinInt64, -100, -1, 0, 1, 2, 5, 42, 100, math.MaxInt64}[g.intn(10)], 10)
+		case "f32":
+			v := []float32{-100.5, -2.25, 0.0, 0.5, 1.5, 2.0, 3.5, 10.25, 100.0}[g.intn(9)]
+			return strconv.FormatUint(uint64(math.Float32bits(v)), 10)
+		case "f64":
+			v := []float64{-1e9, -2.25, 0.0, 0.125, 1.5, 2.0, 3.25, 42.5, 1e9}[g.intn(9)]
+			return strconv.FormatUint(math.Float64bits(v), 10)
+		case "dec":
+			return pctDecPool[g.intn(len(pctDecPool))]
+		case "time":
+			day := int64(365 + g.intn(2000))
+			t := types.TimeFromDays(day)
+			t.SetType(at.Tp)
+			t.SetFsp(at.Decimal)
+			return []any{strconv.FormatUint(uint64(t.CoreTime()), 10), int(t.Type()), t.Fsp()}
+		case "dur":
+			ns := int64(g.intn(100)-50) * 1_000_000_000
+			return []any{strconv.FormatInt(ns, 10), at.Decimal}
+		default:
+			return g.fresh(at)
+		}
+	}
+	pctBatches := func(at afType) [][][]any {
+		out := [][][]any{}
+		for range []int{0, 1, 2, 3}[g.intn(4)] {
+			n := []int{0, 1, 3, 7, 15}[g.intn(5)]
+			rows := make([][]any, n)
+			for r := range rows {
+				if g.intn(6) == 0 {
+					rows[r] = []any{nil}
+				} else {
+					rows[r] = []any{pctFresh(at)}
+				}
+			}
+			out = append(out, rows)
+		}
+		return out
+	}
+
+	pctTypes := []afType{
+		intTp, fltTp, dblTp, decTp, dateTp, dtTp, tsTp, durTp,
+		strBin,
+		{Tp: mysql.TypeEnum, Flen: 1, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems},
+		{Tp: mysql.TypeEnum, Flag: mysql.EnumSetAsIntFlag, Flen: 1, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems},
+		{Tp: mysql.TypeSet, Flen: 9, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems},
+		{Tp: mysql.TypeSet, Flag: mysql.EnumSetAsIntFlag, Flen: 9, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems},
+		{Tp: mysql.TypeBit, Flag: mysql.UnsignedFlag, Flen: 8, Charset: charset.CharsetBin, Collate: charset.CollationBin},
+		jsonTp, vecTp,
+	}
+	for _, at := range pctTypes {
+		ret := at
+		if at.Tp == mysql.TypeFloat {
+			ret = dblTp
+		}
+		for _, pct := range pcts {
+			d := afDesc{Name: ast.AggFuncApproxPercentile, Mode: int(aggregation.CompleteMode), Args: []afType{at}, Ret: ret, HasPct: true, Pct: pct}
+			p1 := afDesc{Name: ast.AggFuncApproxPercentile, Mode: int(aggregation.Partial1Mode), Args: []afType{at}, Ret: ret, HasPct: true, Pct: pct}
+			fin := afDesc{Name: ast.AggFuncApproxPercentile, Mode: int(aggregation.FinalMode), Args: []afType{at}, Ret: ret, HasPct: true, Pct: pct}
+			g.start(&d)
+			vg.Add("percentile", "percentile", "update_final", d, pctBatches(at))
+			if pct == 1 || pct == 50 || pct == 100 {
+				vg.Add("percentile", "percentile", "reset_reuse", d, [][][][]any{pctBatches(at), pctBatches(at), {{{nil}}}})
+				vg.Add("percentile", "percentile", "merge", p1, fin, [][][][]any{pctBatches(at), pctBatches(at)}, pct == 50)
+			}
+		}
+	}
+	// Larger slice (100 elements) per typed percentile to exercise deeper introselect / medianOfMedians.
+	for _, at := range []afType{intTp, dblTp, decTp, dateTp, durTp} {
+		d := afDesc{Name: ast.AggFuncApproxPercentile, Mode: int(aggregation.CompleteMode), Args: []afType{at}, Ret: at, HasPct: true, Pct: 73}
+		rows := make([][]any, 100)
+		for i := range rows {
+			rows[i] = []any{pctFresh(at)}
+		}
+		vg.Add("percentile", "percentile", "update_final", d, [][][]any{rows})
+	}
+	_ = hexS
 }

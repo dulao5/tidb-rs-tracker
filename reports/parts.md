@@ -9,6 +9,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | block | part | item | status | functions (of block) | Go lines | evidence |
 |---|---|---|---|--:|--:|---|
 | D00.3 | D12.3-B | D12.3-B | in-progress | 1 / 998 | 5 | tidb-rs branch nora/issue-382 (#382, hash aggregation part B): pkg/util/channel/channel.go Clear, converge 1/1 |
+| D00.3 | D12.4-B2 | D12.4-B2 | in-progress | 9 / 998 | 121 | tidb-rs branch nora/issue-393 (#393, approximate aggregates part B2): pkg/util/selection/selection.go, converge 9/9 |
 | D00.3 | VS1-11 | VS1-11 | in-progress | 1 / 998 | 27 | dulao5/tidb-rs#239: converge 1/1 (Reporter.ReportLookupInconsistent) |
 | D01.10 | D12.3-B | D12.3-B | in-progress | 5 / 100 | 29 | tidb-rs branch nora/issue-382 (#382, hash aggregation part B): DataInDiskByChunks 5 non-I/O methods + 2 temporary stubs (Add, GetChunk), converge 5/5 (D12.3 spec decision 4) |
 | D03.1 | VS1-16 | VS1-16 | planned | 96 / 301 | 1943 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -65,6 +66,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.3 | D12.3-B | D12.3-B | in-progress | 74 / 100 | 1394 | tidb-rs branch nora/issue-382 (#382, hash aggregation part B): converge 73/73 + buildHashAgg not ported until the physical hash aggregation plan (D10.1); 3 temporary stubs (D01.10 parallel spill/disk restore); govec aggexec |
 | D12.4 | D12.4-A | D12.4-A | in-progress | 189 / 663 | 2147 | tidb-rs branch claude/issue-375 (#375, the core aggregate functions): converge 189/189 + 1 temporary stub (the parts B1 / B2 names in Build); govec aggfuncs 17881 records (4295 blocked until the parts B1 / B2) |
 | D12.4 | D12.4-B1 | D12.4-B1 | in-progress | 102 / 663 | 1306 | tidb-rs branch nora/issue-386 (#386, other common aggregate functions: COUNT(DISTINCT), GROUP_CONCAT, VAR/STDDEV, JSON_*AGG): converge 100/102 + 2 exceptions (A1 GetDatumMemSize, getValMemDelta); govec aggfuncs 19222 records (560 blocked until part B2) |
+| D12.4 | D12.4-B2 | D12.4-B2 | in-progress | 82 / 663 | 654 | tidb-rs branch nora/issue-393 (#393, approximate aggregate functions: APPROX_COUNT_DISTINCT, APPROX_PERCENTILE): converge 76/82 + 6 exceptions (A1 MemUsage, 5x MemSize), removes build_not_ported stub (ratchet -2); govec aggfuncs 19735 records (0 blocked) |
 | D12.5 | D12.5-PS | D12.5-PS | in-progress | 46 / 188 | 659 | tidb-rs branch claude/issue-339 (#339, the parallel sort): converge 44/46 + 2 stubs (D01.10 spill); govec sortexec op psort 137 records |
 | D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#349 merged (#329): converge 59/65 + 6 stubs; the three parallel sort stubs ported by #339: converge 62/65 + 3 stubs (D01.10); govec sortexec |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -74,7 +76,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-372 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+371 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -126,7 +128,6 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.1 | 7 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 4 | 0 | 0 |
-| D12.4 | 1 | 0 | 0 |
 | D12.5 | 4 | 0 | 0 |
 | D13.1 | 7 | 0 | 0 |
 | D13.3 | 4 | 0 | 0 |
