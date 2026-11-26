@@ -35,7 +35,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -54,6 +56,7 @@ import (
 	"github.com/pingcap/tidb/pkg/util/collate"
 	utilhint "github.com/pingcap/tidb/pkg/util/hint"
 	"github.com/pingcap/tidb/pkg/util/mock"
+	"github.com/pingcap/tidb/pkg/util/ranger"
 )
 
 const findbestSeed = 20261123
@@ -85,7 +88,9 @@ var findbestCoverage = map[string]vec.Coverage{
 		"candidatePath.equalPredicateCount", "getPruningInfo", "isPointGetConvertableSchema", "exploreEnforcedPlan",
 		"indexCoveringColumn", "isIndexColsCoveringCol", "isIndexCoveringColumns", "isIndexCoveringCondition",
 		"isSingleScan", "SplitSelCondsWithVirtualColumn", "splitIndexFilterConditions", "convertToTableScan",
-		"convertToPointGet", "PhysicalTableScan.addPushedDownSelection", "getOriginalPhysicalTableScan",
+		"convertToPointGet", "convertToIndexScan", "PhysicalTableScan.addPushedDownSelection", "getOriginalPhysicalTableScan",
+		"GroupRangesByCols", "PhysicalIndexScan.initSchema", "PhysicalIndexScan.addSelectionConditionForGlobalIndex",
+		"PhysicalIndexScan.addPushedDownSelection", "getOriginalPhysicalIndexScan",
 		"appendCandidate", "pushDownNot",
 		// stats.go
 		"deriveStats4DataSource", "fillIndexPath", "deriveIndexPathStats", "deriveTablePathStats",
@@ -103,8 +108,10 @@ var findbestCoverage = map[string]vec.Coverage{
 		"LogicalProjection.ExtractColGroups", "LogicalSelection.DeriveStats", "LogicalTableDual.DeriveStats",
 		"LogicalTopN.DeriveStats", "LogicalProjection.getGroupNDVs",
 		"AdjustRowCountForTableScanByLimit", "crossEstimateTableRowCount",
-		// D09.0 / D13.1 helpers of the table and point get tasks
-		"PointGetPlan.Init", "optimizeByShuffle", "isSafePointGetPath4PlanCache", "isSafePointGetPath4PlanCacheScenario1",
+		"AdjustRowCountForIndexScanByLimit", "crossEstimateIndexRowCount",
+		// D09.0 / D13.1 helpers of the table, index and point get tasks
+		"PointGetPlan.Init", "PhysicalIndexScan.Init", "PhysicalIndexReader.Init",
+		"optimizeByShuffle", "isSafePointGetPath4PlanCache", "isSafePointGetPath4PlanCacheScenario1",
 		// the index pruning's ShouldPreferIndexMerge (skyline pruning)
 		"ShouldPreferIndexMerge",
 		// the statistics loading point: the interesting columns and the index pruning
@@ -155,6 +162,36 @@ func fbBy(sctx *mock.Context, by []*plannerutil.ByItems) []any {
 	return out
 }
 
+// fbGroupedRanges normalizes GroupedRanges deterministically: Go's GroupRangesByCols
+// iterates a map in random order, so groups are sorted lexicographically by their
+// canonical range string list (M-MAPORDER).
+func fbGroupedRanges(groups [][]*ranger.Range) []any {
+	if len(groups) == 0 {
+		return []any{}
+	}
+	type entry struct {
+		key string
+		val []any
+	}
+	entries := make([]entry, 0, len(groups))
+	for _, g := range groups {
+		strs := make([]string, 0, len(g))
+		vals := make([]any, 0, len(g))
+		for _, r := range g {
+			s := r.String()
+			strs = append(strs, s)
+			vals = append(vals, vec.GoString(s))
+		}
+		entries = append(entries, entry{key: strings.Join(strs, "\x00"), val: vals})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].key < entries[j].key })
+	out := make([]any, len(entries))
+	for i, e := range entries {
+		out[i] = e.val
+	}
+	return out
+}
+
 func fbDump(sctx *mock.Context, p base.PhysicalPlan) map[string]any {
 	o := map[string]any{"tp": p.TP(), "id": p.ID(), "schema": fbStrs(sctx, p.Schema().Columns)}
 	switch x := p.(type) {
@@ -168,8 +205,43 @@ func fbDump(sctx *mock.Context, p base.PhysicalPlan) map[string]any {
 			ranges = append(ranges, vec.GoString(r.String()))
 		}
 		o["ranges"] = ranges
+		if len(x.GroupedRanges) > 0 || len(x.GroupByColIdxs) > 0 {
+			o["groupedRanges"] = fbGroupedRanges(x.GroupedRanges)
+			idxs := make([]any, 0, len(x.GroupByColIdxs))
+			for _, idx := range x.GroupByColIdxs {
+				idxs = append(idxs, idx)
+			}
+			o["groupByColIdxs"] = idxs
+		}
 		o["access"] = fbStrs(sctx, x.AccessCondition)
 		o["keep"], o["desc"] = x.KeepOrder, x.Desc
+	case *core.PhysicalIndexReader:
+		idxPlans := make([]any, 0, len(x.IndexPlans))
+		for _, ip := range x.IndexPlans {
+			idxPlans = append(idxPlans, []any{ip.TP(), ip.ID()})
+		}
+		o["indexPlans"] = idxPlans
+		if len(x.IndexPlans) > 0 {
+			o["idx"] = fbDump(sctx, x.IndexPlans[len(x.IndexPlans)-1])
+		}
+		o["outputCols"] = fbStrs(sctx, x.OutputColumns)
+	case *core.PhysicalIndexScan:
+		o["table"] = x.Table.Name.O
+		o["index"] = x.Index.Name.O
+		ranges := []any{}
+		for _, r := range x.Ranges {
+			ranges = append(ranges, vec.GoString(r.String()))
+		}
+		o["ranges"] = ranges
+		o["groupedRanges"] = fbGroupedRanges(x.GroupedRanges)
+		idxs := make([]any, 0, len(x.GroupByColIdxs))
+		for _, idx := range x.GroupByColIdxs {
+			idxs = append(idxs, idx)
+		}
+		o["groupByColIdxs"] = idxs
+		o["access"] = fbStrs(sctx, x.AccessCondition)
+		o["keep"], o["desc"] = x.KeepOrder, x.Desc
+		o["doubleRead"] = x.DoubleRead
 	case *core.PointGetPlan:
 		o["table"] = x.TblInfo.Name.O
 		if x.Handle != nil {
@@ -289,6 +361,11 @@ func fbPlan(p []json.RawMessage) (out any, err error) {
 	o := arg[odOpts](p, 2)
 	sctx, restore := fbSession()
 	defer restore()
+	if o.NoIndexMerge {
+		prev := sctx.GetSessionVars().GetEnableIndexMerge()
+		sctx.GetSessionVars().SetEnableIndexMerge(false)
+		defer sctx.GetSessionVars().SetEnableIndexMerge(prev)
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			out, err = map[string]any{"panic": vec.GoString(fmt.Sprint(r))}, nil
@@ -425,6 +502,10 @@ func findbestGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, sql := range fbIndexQueries {
 		g.Add("sys/index", "plan", fbDDLs, sql, def)
 	}
+	noMerge := odOpts{Mode: mysql.ModeOnlyFullGroupBy, NoIndexMerge: true}
+	for _, sql := range fbGroupRangeQueries {
+		g.Add("sys/index", "plan", fbDDLs, sql, noMerge)
+	}
 	for n := 0; n < 1500; n++ {
 		m := sbModes(rng)
 		var sql string
@@ -437,6 +518,16 @@ func findbestGenerate(g *vec.Gen, rng *rand.Rand) {
 			odOpts{Mode: m.Mode, KeepOrder: m.KeepOrder, Stable: rng.IntN(3) == 0, Dynamic: rng.IntN(2) == 0})
 	}
 	fbGenPrune(g, rng)
+	// Clustered common-handle table without secondary indexes so single-read TableRangeScan
+	// GroupRangesByCols vectors (including the 2048/2049 cap) run without hitting the D10.2
+	// double-read boundary on tc's prefix index ip(b(3)).
+	tchDDLs := []string{
+		"CREATE TABLE tch (a INT, b VARCHAR(10), c INT, PRIMARY KEY (b, a) CLUSTERED)",
+	}
+	g.Add("sys/tables", "tables", tchDDLs)
+	for _, sql := range fbClusteredGroupRangeQueries {
+		g.Add("sys/index", "plan", tchDDLs, sql, noMerge)
+	}
 }
 
 // fbIndexQueries: shapes on tables with secondary indexes (the skyline pruning keeps or
@@ -460,6 +551,54 @@ var fbIndexQueries = []string{
 	"SELECT * FROM tm WHERE b = 1 ORDER BY a LIMIT 2",
 	"SELECT d FROM tm WHERE c > 2",
 	"SELECT * FROM tm",
+	"SELECT k FROM sbtest1 WHERE k BETWEEN 1 AND 100",
+}
+
+// fbBalancedOr builds a balanced binary OR tree of `terms` (depth O(log n)) so 2048/2049
+// distinct point predicates exercise GroupRangesByCols's maxGroupCount=2048 boundary without
+// hitting IN (D08.9) or deep parser/rewriter recursion.
+func fbBalancedOr(terms []string) string {
+	if len(terms) == 1 {
+		return terms[0]
+	}
+	mid := len(terms) / 2
+	return "(" + fbBalancedOr(terms[:mid]) + " OR " + fbBalancedOr(terms[mid:]) + ")"
+}
+
+func fbIntOrQuery(n int) string {
+	terms := make([]string, n)
+	for i := 0; i < n; i++ {
+		terms[i] = fmt.Sprintf("a = %d", i*2)
+	}
+	return "SELECT a, b FROM tm WHERE " + fbBalancedOr(terms) + " ORDER BY b LIMIT 10"
+}
+
+func fbStrOrQuery(n int) string {
+	terms := make([]string, n)
+	for i := 0; i < n; i++ {
+		terms[i] = fmt.Sprintf("b = 'k%04d'", i)
+	}
+	return "SELECT * FROM tch WHERE " + fbBalancedOr(terms) + " ORDER BY a LIMIT 10"
+}
+
+// fbGroupRangeQueries: multi-point OR queries with index merge disabled so Go and Rust both
+// exercise GroupRangesByCols on single-read IndexScan without hitting the D10.7 index-merge
+// boundary (including the maxGroupCount = 2048 / 2049 boundary).
+var fbGroupRangeQueries = []string{
+	"SELECT a, b FROM tm WHERE (a = 1 OR a = 3 OR a = 5) ORDER BY b",
+	"SELECT a, b FROM tm WHERE (a = 1 OR a = 3 OR a = 5) ORDER BY b LIMIT 5",
+	"SELECT b, c FROM tm WHERE (b = 1 OR b = 4) ORDER BY c LIMIT 4",
+	"SELECT * FROM tc WHERE (b = 'a' OR b = 'b') ORDER BY a LIMIT 5",
+	fbIntOrQuery(2048),
+	fbIntOrQuery(2049),
+}
+
+// fbClusteredGroupRangeQueries: same GroupRangesByCols + 2048/2049 boundary on a clustered
+// common-handle table with no secondary indexes (`tch`).
+var fbClusteredGroupRangeQueries = []string{
+	"SELECT * FROM tch WHERE (b = 'a' OR b = 'b') ORDER BY a LIMIT 5",
+	fbStrOrQuery(2048),
+	fbStrOrQuery(2049),
 }
 
 func fbRandTM(rng *rand.Rand) string {

@@ -33,8 +33,6 @@ var preprocessExempt = map[string]string{
 	"pkg/planner/core/initialize.go:PhysicalIndexLookUpReader.Init":                 "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/initialize.go:PhysicalIndexMergeJoin.Init":                    "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/initialize.go:PhysicalIndexMergeReader.Init":                  "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-	"pkg/planner/core/initialize.go:PhysicalIndexReader.Init":                       "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-	"pkg/planner/core/initialize.go:PhysicalIndexScan.Init":                         "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/initialize.go:PhysicalLimit.Init":                             "VS1-10 function without a preprocess record: ported with a Rust unit test, or a boundary stub (tidb-rs core/)",
 	"pkg/planner/core/initialize.go:PhysicalLock.Init":                              "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 	"pkg/planner/core/initialize.go:PhysicalMaxOneRow.Init":                         "D09.0 outside the VS1-10 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",

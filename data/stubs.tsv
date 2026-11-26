@@ -86,6 +86,7 @@ crates/infoschema/src/tables/mod.rs	new_cached_table	D06.4	temporary	D06.4 part 
 crates/infoschema/src/tables/mod.rs	new_partitioned_table	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
 crates/infoschema/src/tables/mod.rs	partitioned	D06.4	temporary	D06.4 part 2: partitioned tables (partition.go); the planner refuses them (D09.12, VS1-21)
 crates/infoschema/src/tables/mod.rs	temp_table_from_meta	D06.4	temporary	D06.4 part 2: temporary tables
+crates/planner/src/cardinality/cross_estimation.rs	cross_estimate_index_row_count	D10.6	temporary	D10.6 part 2: the cross estimation of an index scan under a limit over real statistics (getMostCorrCol4Index); the new stack only has pseudo statistics, on which Go skips it
 crates/planner/src/cardinality/cross_estimation.rs	cross_estimate_table_row_count	D10.6	temporary	D10.6 part 2: the cross estimation of a table scan under a limit over real statistics (getMostCorrCol4Handle); the new stack only has pseudo statistics, on which Go skips it
 crates/planner/src/cardinality/row_count_column.rs	between_row_count_on_column	D11.1	temporary	D11.1 part 2: betweenRowCountOnColumn (TopN.BetweenCount); estimation from real statistics, never reached with pseudo statistics
 crates/planner/src/cardinality/row_count_column.rs	equal_row_count_on_column	D11.1	temporary	D11.1 part 2: equalRowCountOnColumn (TopN, CMSketch, Histogram.OutOfRange); never reached with pseudo statistics
@@ -100,7 +101,6 @@ crates/planner/src/cardinality/selectivity.rs	selectivity	D10.6	temporary	Select
 crates/planner/src/cardinality/selectivity.rs	tests	D10.6	temporary	comment-only stub above the test module: crossValidationSelectivity (D10.6 part 2, needs GetColumnRowCount)
 crates/planner/src/cardinality/trace.rs	record_used_item_stats_status	D11.2	temporary	D11.2: recordUsedItemStatsStatus needs StatementContext.UsedStatsInfo (D11.2 tasks P1-1); records nothing, the estimate does not depend on it
 crates/planner/src/core/access_object.rs	get_dynamic_access_partition	D09.12	temporary	VS1-31: the partitions a partitioned table reader accesses under dynamic pruning need PartitionPruning (D09.12); partitioned tables stop in the plan builder, so it is not reached; a table that is not partitioned returns nil as in Go
-crates/planner/src/core/common_plans.rs	is_point_get_with_pk_or_unique_key_by_auto_commit	D10.1	temporary	VS1-27: PhysicalProjection / PhysicalIndexReader / PhysicalTableReader checks of IsPointGetWithPKOrUniqueKeyByAutoCommit
 crates/planner/src/core/explain.rs	explain_stub	D10.9	temporary	VS1-27: ExplainInfo / ExplainNormalizedInfo of the 8 physical operators of the slice (explain.go), the EXPLAIN text of D10.9 (VS1-31); panics with the blocked error like PointGetPlan.ExplainInfo
 crates/planner/src/core/expression_codec_fn.rs	tidb_codec_func_helper	D08.9	temporary	VS1-27: tidbCodecFuncHelper (10 methods), the key codec of the tidb_decode_key / tidb_encode_record_key / tidb_encode_index_key builtins, whose function classes are not ported (D08.9): no caller yet
 crates/planner/src/core/expression_rewriter.rs	build_simple_expr	D09.2	temporary	D09.2 part 2: the plan-less rewriter buildSimpleExpr (BuildOptions, ParseSimpleExpr; handed over from P1)
@@ -117,17 +117,17 @@ crates/planner/src/core/expression_rewriter.rs	leave	D09.15	temporary	DEFAULT(co
 crates/planner/src/core/expression_rewriter.rs	leave	D09.2	temporary	D09.2 part 2: system variables @@x (the rewriter does not get the session variables yet)
 crates/planner/src/core/expression_rewriter.rs	leave	D09.4	temporary	GROUPING() needs the Expand operator of ROLLUP (aggregate / window building, D09.4)
 crates/planner/src/core/expression_rewriter.rs	to_column	D09.2	temporary	D09.2 part 2: a column of buildSimpleExpr's source table (ParseSimpleExpr)
+crates/planner/src/core/find_best_task.rs	add_selection_condition_for_global_index	D09.12	temporary	D09.12: PartitionPruning for global indexes on partitioned tables (partitioned tables stop in the plan builder)
 crates/planner/src/core/find_best_task.rs	child_req_prop	D10.3	temporary	D10.3: a nil child property, the inner side of an index join (index joins are not ported)
 crates/planner/src/core/find_best_task.rs	convert_candidates	D09.12	temporary	D09.12: the point get of a partitioned table (partitioned tables stop in the plan builder)
 crates/planner/src/core/find_best_task.rs	convert_candidates	D10.7	temporary	D10.7: an index merge path among the candidates (convertToIndexMergeScan)
 crates/planner/src/core/find_best_task.rs	convert_candidates	D10.8	temporary	D10.8: several point ranges on a unique key: BatchPointGet (convertToBatchPointGet)
-crates/planner/src/core/find_best_task.rs	convert_to_index_scan	D10.2	temporary	D10.2 part 2: an index path left after skyline pruning that can give a task: IndexReader / IndexLookUp (convertToIndexScan); the router falls back
+crates/planner/src/core/find_best_task.rs	convert_to_index_scan	D10.2	temporary	D10.2 part 2B: double-read index paths (PhysicalIndexLookUpReader); single-read IndexReader is ported in D10.2 part 2A
 crates/planner/src/core/find_best_task.rs	convert_to_table_scan	D10.1	temporary	D10.1: TiFlash table scans (the MPP task, TiFlash cop / batch cop reads)
 crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.1	temporary	D10.1: PhysicalTableScan.addPushedDownSelectionToMppTask (the MPP task of a TiFlash scan; convertToTableScan stops before it)
 crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.2	temporary	D10.2 part 2: PhysicalTableScan.appendExtraHandleCol (the keep-order index lookup)
 crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.7	temporary	D10.7: index merge helpers (isMatchPropForIndexMerge, expressionContainsHash, checkColinSchema); skyline pruning stops at index merge paths first
 crates/planner/src/core/find_best_task.rs	match_property	D10.1	temporary	D10.1: a vector index property (TiFlash ANN indexes)
-crates/planner/src/core/find_best_task.rs	match_property	D10.2	temporary	D10.2 part 2: an index path that needs a merge sort of its point ranges (GroupRangesByCols)
 crates/planner/src/core/find_best_task.rs	skyline_pruning	D10.7	temporary	D10.7: index merge paths in skyline pruning (convergeIndexMergeCandidate / getIndexMergeCandidate)
 crates/planner/src/core/initialize.rs	init_point_get_plan	D10.8	temporary	VS1-28: PointGetPlan.Init of FindBestTask (ExpandVirtualColumn); the fast path builds with newPointGetPlan
 crates/planner/src/core/logical_plan_builder.rs	add_alias_name	D09.15	temporary	addAliasName: aliases of the select fields of CREATE VIEW (capFlag canExpandAST), the write-path / DDL plans
@@ -184,16 +184,14 @@ crates/planner/src/core/optimizer.rs	physical_optimize	D02.2	temporary	physicalO
 crates/planner/src/core/optimizer.rs	predicate_push_down_to_table_scan	DEF.MPP	temporary	predicatePushDownToTableScanImpl: TiFlash late materialization (DEF.MPP); only a Selection over a TiFlash table scan reaches it
 crates/planner/src/core/optimizer.rs	refine_ce_trace	D02.2	temporary	refineCETrace: the cardinality estimation trace is only switched on by TRACE PLAN, not in the Rust AST
 crates/planner/src/core/physical_plans.rs	detach_root_table_scan_plan	D10.1	temporary	VS1-27: detachRootTableScanPlan, only the index lookup push down calls it (outside the slice); returns a pointer to a parent node, needs a design on the shared Arc tree
-crates/planner/src/core/physical_plans.rs	get_avg_row_size	D10.5	temporary	VS1-27: PhysicalTableReader.GetAvgRowSize needs getTblStats of the cost model v1 (plan_cost_ver1.go)
-crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27: PhysicalTableReader.LoadTableStats needs loadTableStats (stats.go), the sync stats load of FindBestTask (VS1-28)
+crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27 / D10.2-2A: PhysicalTableReader.LoadTableStats and PhysicalIndexReader.LoadTableStats need loadTableStats (stats.go), the sync stats load of FindBestTask
 crates/planner/src/core/physical_plans.rs	resolve_correlated_columns	D10.1	temporary	VS1-27: PhysicalTableScan.ResolveCorrelatedColumns needs SubstituteCorCol2Constant (D10.1 tasks.md P1-1: the correlated value lives in the executor eval state); only Apply / index join executors call it, outside the slice
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-27: enforceProperty of an MPP task (MppTask.enforceExchanger): MPP is outside the slice
 crates/planner/src/core/plan.rs	get_actual_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan.rs	get_estimated_probe_cnt_from_probe_parents	D10.1	temporary	the Apply / IndexJoin arms (join operators of D10.1)
 crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-prepared plan cache parameterization: not used by the new stack
-crates/planner/src/core/plan_cache_rebuild.rs	build_range_for_index_scan	D10.1	temporary	updateRange / buildRangeForIndexScan: the range rebuild of a cached index join or index scan; their operators are not ported, so such plans are not cached (instance plan cache, A3 first stage)
-crates/planner/src/core/plan_cache_rebuild.rs	build_range_for_table_scan	D10.2	temporary	GroupRangesByCols of a cached table scan with GroupByColIdxs (the merge sort of grouped ranges, D10.2 part 2)
+crates/planner/src/core/plan_cache_rebuild.rs	update_range	D10.1	temporary	updateRange: the range update of a cached index join; index joins are not ported (D10.1), so such plans are not cached (instance plan cache, A3)
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser / a parameter marker the AST walk does not reach (count differs from the parser's: defensive guard Go does not have, the statement falls back; #356)
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
 crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D04.1	temporary	the user and host of the instance plan cache key are empty until the session carries the user identity: different users must not share plans once identity exists

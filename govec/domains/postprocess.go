@@ -74,6 +74,9 @@ var ppMu sync.Mutex
 //go:linkname ppReaderAccessObject github.com/pingcap/tidb/pkg/planner/core.(*PhysicalTableReader).accessObject
 func ppReaderAccessObject(p *core.PhysicalTableReader, sctx base.PlanContext) base.AccessObject
 
+//go:linkname ppIndexReaderAccessObject github.com/pingcap/tidb/pkg/planner/core.(*PhysicalIndexReader).accessObject
+func ppIndexReaderAccessObject(p *core.PhysicalIndexReader, sctx base.PlanContext) base.AccessObject
+
 func init() {
 	vec.Register(&vec.Domain{
 		Name:     "postprocess",
@@ -92,15 +95,18 @@ var postprocessCoverage = map[string]vec.Coverage{
 	"plan": {Min: 600, GoFuncs: []string{
 		// resolve_indices.go
 		"PhysicalProjection.ResolveIndices", "PhysicalProjection.ResolveIndicesItself", "refine4NeighbourProj",
-		"resolveIndicesForVirtualColumn", "PhysicalTableReader.ResolveIndices", "PhysicalSelection.ResolveIndices",
+		"resolveIndicesForVirtualColumn", "PhysicalTableReader.ResolveIndices", "PhysicalIndexReader.ResolveIndices",
+		"PhysicalSelection.ResolveIndices",
 		"resolveIndicesForSort", "PhysicalSort.ResolveIndices", "PhysicalTopN.ResolveIndices",
 		"PhysicalLimit.ResolveIndices", "PhysicalTableScan.ResolveIndices", "PhysicalTableScan.ResolveIndicesItself",
 		"physicalSchemaProducer.ResolveIndices", "baseSchemaProducer.ResolveIndices",
 		// plan_to_pb.go
 		"PhysicalSelection.ToPB", "PhysicalProjection.ToPB", "PhysicalTopN.ToPB", "PhysicalLimit.ToPB",
-		"PhysicalTableScan.ToPB", "PhysicalSort.ToPB",
+		"PhysicalTableScan.ToPB", "PhysicalIndexScan.ToPB", "checkCoverIndex", "FindColumnInfoByID",
+		"PhysicalSort.ToPB",
 		// access_object.go
-		"PhysicalTableScan.AccessObject", "PointGetPlan.AccessObject", "PhysicalTableReader.accessObject",
+		"PhysicalTableScan.AccessObject", "PhysicalIndexScan.AccessObject", "PointGetPlan.AccessObject",
+		"PhysicalTableReader.accessObject", "PhysicalIndexReader.accessObject", "getAccessObjectFromIndexScan",
 		"getDynamicAccessPartition", "ScanAccessObject.String", "ScanAccessObject.NormalizedString",
 		"ScanAccessObject.SetIntoPB", "IndexAccess.ToPB",
 		// the reader's access object outside dynamic pruning, and for a table that is not
@@ -108,8 +114,9 @@ var postprocessCoverage = map[string]vec.Coverage{
 		// global statistics, so getDynamicAccessPartition always returns nil here)
 		"DynamicPartitionAccessObjects.String", "DynamicPartitionAccessObjects.NormalizedString",
 		"DynamicPartitionAccessObjects.SetIntoPB",
-		// explain.go: the executor id of a table scan
-		"PhysicalTableScan.ExplainID",
+		// explain.go: the executor id and TP of table / index scans
+		"PhysicalTableScan.ExplainID", "PhysicalIndexScan.ExplainID", "PhysicalIndexScan.TP",
+		"PhysicalIndexScan.haveCorCol", "PhysicalIndexScan.isFullScan",
 	}},
 	"missing": {Min: 100, GoFuncs: []string{
 		"PhysicalSelection.ResolveIndices", "PhysicalProjection.ResolveIndices", "PhysicalSort.ResolveIndices",
@@ -247,6 +254,20 @@ func ppDump(sctx *mock.Context, bctx *base.BuildPBContext, p base.PhysicalPlan, 
 	case *core.PhysicalTableScan:
 		o["cols"] = ppCols(x.Schema())
 		o["acc"] = ppAcc(x.AccessObject())
+	case *core.PhysicalIndexReader:
+		idxPlan := x.IndexPlans[len(x.IndexPlans)-1]
+		o["idx"] = ppDump(sctx, bctx, idxPlan, false)
+		o["out"] = ppCols(expression.NewSchema(x.OutputColumns...))
+		pbs := []any{}
+		for _, ip := range x.IndexPlans {
+			pbs = append(pbs, ppPB(ip.ToPB(bctx, kv.TiKV)))
+		}
+		o["pb"] = pbs
+		o["acc"] = ppAcc(ppIndexReaderAccessObject(x, sctx.GetPlanCtx()))
+	case *core.PhysicalIndexScan:
+		o["cols"] = ppCols(x.Schema())
+		o["acc"] = ppAcc(x.AccessObject())
+		o["eid"] = x.ExplainID().String()
 	case *core.PointGetPlan:
 		o["virt"] = ppVirt(x.Schema())
 		o["acc"] = ppAcc(x.AccessObject())
@@ -335,11 +356,14 @@ func ppOptimize(p []json.RawMessage, f func(*mock.Context, base.PhysicalPlan) an
 	return f(sctx, final), nil
 }
 
-// ppPreorder: a reader, then its table plan, then its children.
+// ppPreorder: a reader, then its pushed-down plan, then its children.
 func ppPreorder(p base.PhysicalPlan, out []base.PhysicalPlan) []base.PhysicalPlan {
 	out = append(out, p)
 	if r, ok := p.(*core.PhysicalTableReader); ok {
 		out = ppPreorder(r.GetTablePlan(), out)
+	}
+	if r, ok := p.(*core.PhysicalIndexReader); ok && len(r.IndexPlans) > 0 {
+		out = ppPreorder(r.IndexPlans[len(r.IndexPlans)-1], out)
 	}
 	for _, c := range p.Children() {
 		out = ppPreorder(c, out)
@@ -359,6 +383,8 @@ func ppMissing(final base.PhysicalPlan, k int) any {
 	p := nodes[k]
 	miss := ppMissingCol()
 	switch x := p.(type) {
+	case *core.PhysicalIndexReader:
+		x.OutputColumns = append(x.OutputColumns, miss)
 	case *core.PhysicalSelection:
 		x.Conditions = append(x.Conditions, miss)
 	case *core.PhysicalProjection:
@@ -482,6 +508,12 @@ var ppQueries = []string{
 	"SELECT c, a FROM tch WHERE c > 2 ORDER BY c LIMIT 3",
 	"SELECT b FROM tch ORDER BY b, a LIMIT 3",
 	"SELECT * FROM tc",
+	"SELECT k FROM sbtest1 WHERE k > 5 ORDER BY k LIMIT 3",
+	"SELECT k, id FROM sbtest1 WHERE k BETWEEN 1 AND 10",
+	"SELECT a, e FROM tm WHERE a = 1 AND e = 2",
+	"SELECT a, e FROM tm WHERE a > 1 AND e > 2",
+	"SELECT a, b FROM tm WHERE a = 1 ORDER BY b DESC LIMIT 3",
+	"SELECT a FROM tm",
 }
 
 func ppRandQuery(rng *rand.Rand) string {
