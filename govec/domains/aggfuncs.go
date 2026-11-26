@@ -1,10 +1,13 @@
 package domains
 
-// Domain "aggfuncs": block D12.4 parts A, B1, and B2, the core, common, and approximate
-// aggregate functions of pkg/executor/aggfuncs (tidb-rs specs/D12.4-aggfuncs §6.2): Build,
-// COUNT (including DISTINCT and multi-arg encoding), SUM, AVG, FIRST_ROW, MAX / MIN, BIT_*,
-// GROUP_CONCAT, VAR_POP / VAR_SAMP, STDDEV_POP / STDDEV_SAMP, JSON_ARRAYAGG, JSON_OBJECTAGG,
-// APPROX_COUNT_DISTINCT, and APPROX_PERCENTILE, run through the exported AggFunc interface.
+// Domain "aggfuncs": block D12.4 parts A, B1, B2, and W, the core, common, approximate,
+// and window aggregate functions of pkg/executor/aggfuncs (tidb-rs specs/D12.4-aggfuncs §6.2):
+// Build, BuildWindowFunctions, COUNT (including DISTINCT and multi-arg encoding), SUM, AVG,
+// FIRST_ROW, MAX / MIN (including sliding), BIT_*, GROUP_CONCAT, VAR_POP / VAR_SAMP,
+// STDDEV_POP / STDDEV_SAMP, JSON_ARRAYAGG, JSON_OBJECTAGG, APPROX_COUNT_DISTINCT,
+// APPROX_PERCENTILE, ROW_NUMBER, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST, NTILE,
+// FIRST_VALUE, LAST_VALUE, NTH_VALUE, LEAD, LAG, and the Slide methods, run through the
+// exported AggFunc / SlidingWindowAggFunc / MaxMinSlidingWindowAggFunc interfaces.
 //
 // A record carries the complete descriptor, so tidb-rs builds the AggFuncDesc directly and
 // does not run the type inference of D08.11 (covered by the aggdesc domain):
@@ -51,6 +54,7 @@ package domains
 // default).
 
 import (
+	"cmp"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -149,7 +153,10 @@ var aggfuncsCoverage = map[string]vec.Coverage{
 		"buildMaxMin", "buildBitOr", "buildBitXor", "buildBitAnd",
 		"buildGroupConcat", "buildVarPop", "buildStdDevPop", "buildVarSamp", "buildStddevSamp",
 		"buildJSONArrayagg", "buildJSONObjectAgg",
-		"buildApproxCountDistinct", "getEvalTypeForApproxPercentile", "buildApproxPercentile"}},
+		"buildApproxCountDistinct", "getEvalTypeForApproxPercentile", "buildApproxPercentile",
+		"BuildWindowFunctions", "buildRank", "buildRowNumber", "buildFirstValue", "buildLastValue",
+		"buildCumeDist", "buildNthValue", "buildNtile", "buildPercentRank", "buildLeadLag",
+		"buildLead", "buildLag", "buildMaxMinInWindowFunction"}},
 	"update_final": {Min: 2500, GoFuncs: append(append(append(afMethods(afAllocResetTypes, "AllocPartialResult"),
 		afMethods(afUpdateTypes, "UpdatePartialResult")...), afMethods(afFinalTypes, "AppendFinalResult2Chunk")...),
 		"calculateIntermediate")},
@@ -250,6 +257,67 @@ var aggfuncsCoverage = map[string]vec.Coverage{
 		"pkg/util/selection/selection.go:partition5",
 		"pkg/util/selection/selection.go:randomPivot",
 	}},
+	"window": {Min: 150, GoFuncs: []string{
+		"buildValueEvaluator",
+		"value4Int.evaluateRow", "value4Int.appendResult",
+		"value4Float32.evaluateRow", "value4Float32.appendResult",
+		"value4Float64.evaluateRow", "value4Float64.appendResult",
+		"value4Decimal.evaluateRow", "value4Decimal.appendResult",
+		"value4String.evaluateRow", "value4String.appendResult",
+		"value4Time.evaluateRow", "value4Time.appendResult",
+		"value4Duration.evaluateRow", "value4Duration.appendResult",
+		"value4JSON.evaluateRow", "value4JSON.appendResult",
+		"value4VectorFloat32.evaluateRow", "value4VectorFloat32.appendResult",
+		"firstValue.AllocPartialResult", "firstValue.ResetPartialResult",
+		"firstValue.UpdatePartialResult", "firstValue.AppendFinalResult2Chunk",
+		"lastValue.AllocPartialResult", "lastValue.ResetPartialResult",
+		"lastValue.UpdatePartialResult", "lastValue.AppendFinalResult2Chunk",
+		"nthValue.AllocPartialResult", "nthValue.ResetPartialResult",
+		"nthValue.UpdatePartialResult", "nthValue.AppendFinalResult2Chunk",
+		"buildRowComparer", "rowComparer.compareRows",
+		"rank.AllocPartialResult", "rank.ResetPartialResult",
+		"rank.UpdatePartialResult", "rank.AppendFinalResult2Chunk",
+		"rowNumber.AllocPartialResult", "rowNumber.ResetPartialResult",
+		"rowNumber.UpdatePartialResult", "rowNumber.AppendFinalResult2Chunk",
+		"rowNumber.Slide",
+		"baseLeadLag.AllocPartialResult", "baseLeadLag.ResetPartialResult",
+		"baseLeadLag.UpdatePartialResult",
+		"lead.AppendFinalResult2Chunk", "lag.AppendFinalResult2Chunk",
+		"percentRank.AllocPartialResult", "percentRank.ResetPartialResult",
+		"percentRank.UpdatePartialResult", "percentRank.AppendFinalResult2Chunk",
+		"ntile.AllocPartialResult", "ntile.ResetPartialResult",
+		"ntile.UpdatePartialResult", "ntile.AppendFinalResult2Chunk",
+		"cumeDist.AllocPartialResult", "cumeDist.ResetPartialResult",
+		"cumeDist.UpdatePartialResult", "cumeDist.AppendFinalResult2Chunk",
+		"NewDeque",
+		"MinMaxDeque.PushBack", "MinMaxDeque.PopFront", "MinMaxDeque.PopBack",
+		"MinMaxDeque.Back", "MinMaxDeque.Front", "MinMaxDeque.IsEmpty",
+		"MinMaxDeque.Reset", "MinMaxDeque.Dequeue", "MinMaxDeque.Enqueue",
+		"windowInfo.SetWindowStart",
+		"maxMin4IntSliding.AllocPartialResult", "maxMin4IntSliding.ResetPartialResult",
+		"maxMin4IntSliding.UpdatePartialResult", "maxMin4IntSliding.Slide",
+		"maxMin4UintSliding.AllocPartialResult", "maxMin4UintSliding.ResetPartialResult",
+		"maxMin4UintSliding.UpdatePartialResult", "maxMin4UintSliding.Slide",
+		"maxMin4Float32Sliding.AllocPartialResult", "maxMin4Float32Sliding.ResetPartialResult",
+		"maxMin4Float32Sliding.UpdatePartialResult", "maxMin4Float32Sliding.Slide",
+		"maxMin4Float64Sliding.AllocPartialResult", "maxMin4Float64Sliding.ResetPartialResult",
+		"maxMin4Float64Sliding.UpdatePartialResult", "maxMin4Float64Sliding.Slide",
+		"maxMin4DecimalSliding.AllocPartialResult", "maxMin4DecimalSliding.ResetPartialResult",
+		"maxMin4DecimalSliding.UpdatePartialResult", "maxMin4DecimalSliding.Slide",
+		"maxMin4StringSliding.AllocPartialResult", "maxMin4StringSliding.ResetPartialResult",
+		"maxMin4StringSliding.UpdatePartialResult", "maxMin4StringSliding.Slide",
+		"maxMin4TimeSliding.AllocPartialResult", "maxMin4TimeSliding.ResetPartialResult",
+		"maxMin4TimeSliding.UpdatePartialResult", "maxMin4TimeSliding.Slide",
+		"maxMin4DurationSliding.AllocPartialResult", "maxMin4DurationSliding.ResetPartialResult",
+		"maxMin4DurationSliding.UpdatePartialResult", "maxMin4DurationSliding.Slide",
+		"countOriginal4Int.Slide", "countOriginal4Real.Slide",
+		"countOriginal4Decimal.Slide", "countOriginal4Time.Slide",
+		"countOriginal4Duration.Slide", "countOriginal4JSON.Slide",
+		"countOriginal4VectorFloat32.Slide", "countOriginal4String.Slide",
+		"sum4Float64.Slide", "sum4Decimal.Slide",
+		"avgOriginal4Decimal.Slide", "avgOriginal4Float64.Slide",
+		"bitXorUint64.Slide",
+	}},
 }
 
 // afType is [tp, flag, flen, decimal, charset, collate, elems].
@@ -319,9 +387,18 @@ type afDesc struct {
 	TruncAsWarn bool        `json:"trunc_warn,omitempty"`
 	OrderBy     []afOrderBy `json:"order_by,omitempty"`
 	ExtraCols   []afType    `json:"extra_cols,omitempty"`
-	HasPct      bool        `json:"has_pct,omitempty"`
-	Pct         int64       `json:"pct,omitempty"`
-	PctBad      bool        `json:"pct_bad,omitempty"`
+	HasPct       bool        `json:"has_pct,omitempty"`
+	Pct          int64       `json:"pct,omitempty"`
+	PctBad       bool        `json:"pct_bad,omitempty"`
+	IsWindow     bool        `json:"is_window,omitempty"`
+	WinOrderCols []int       `json:"win_order_cols,omitempty"`
+	HasU64Arg    bool        `json:"has_u64_arg,omitempty"`
+	U64Arg       string      `json:"u64_arg,omitempty"`
+	U64ArgNull   bool        `json:"u64_arg_null,omitempty"`
+	DefKind      string      `json:"def_kind,omitempty"`
+	DefInt       int64       `json:"def_int,omitempty"`
+	DefStr       string      `json:"def_str,omitempty"`
+	DefCol       int         `json:"def_col,omitempty"`
 }
 
 // make builds the context and the descriptor of d.
@@ -364,6 +441,39 @@ func (d afDesc) make() (*exprstatic.ExprContext, *aggregation.AggFuncDesc) {
 			RetType: types.NewFieldType(mysql.TypeLong),
 		})
 	}
+	if d.U64ArgNull {
+		args = append(args, expression.NewNull())
+	} else if d.HasU64Arg {
+		v, err := strconv.ParseUint(d.U64Arg, 10, 64)
+		must(err)
+		u64Ft := types.NewFieldType(mysql.TypeLonglong)
+		u64Ft.AddFlag(mysql.UnsignedFlag)
+		args = append(args, &expression.Constant{
+			Value:   types.NewUintDatum(v),
+			RetType: u64Ft,
+		})
+	}
+	switch d.DefKind {
+	case "null":
+		args = append(args, expression.NewNull())
+	case "const_int":
+		args = append(args, &expression.Constant{
+			Value:   types.NewIntDatum(d.DefInt),
+			RetType: types.NewFieldType(mysql.TypeLonglong),
+		})
+	case "const_str":
+		defBytes, err := hex.DecodeString(d.DefStr)
+		must(err)
+		args = append(args, &expression.Constant{
+			Value:   types.NewStringDatum(string(defBytes)),
+			RetType: types.NewFieldType(mysql.TypeVarchar),
+		})
+	case "col":
+		args = append(args, &expression.Column{
+			RetType: allCols[d.DefCol].ft(),
+			Index:   d.DefCol,
+		})
+	}
 	desc := &aggregation.AggFuncDesc{Mode: aggregation.AggFunctionMode(d.Mode), HasDistinct: d.Distinct}
 	desc.Name = d.Name
 	desc.Args = args
@@ -389,6 +499,18 @@ func (d afDesc) chunkFts() []*types.FieldType {
 		fts = append(fts, a.ft())
 	}
 	return fts
+}
+
+func (d afDesc) winOrderByCols() []*expression.Column {
+	if len(d.WinOrderCols) == 0 {
+		return nil
+	}
+	fts := d.chunkFts()
+	cols := make([]*expression.Column, len(d.WinOrderCols))
+	for i, idx := range d.WinOrderCols {
+		cols[i] = &expression.Column{RetType: fts[idx], Index: idx}
+	}
+	return cols
 }
 
 func afDescOf(raw json.RawMessage) afDesc {
@@ -578,7 +700,12 @@ func aggfuncsExec(op string, args []json.RawMessage) (any, error) {
 	case "build":
 		d := afDescOf(args[0])
 		ctx, desc := d.make()
-		f := aggfuncs.Build(ctx, desc, 0)
+		var f aggfuncs.AggFunc
+		if d.IsWindow {
+			f = aggfuncs.BuildWindowFunctions(ctx, desc, 0, d.winOrderByCols())
+		} else {
+			f = aggfuncs.Build(ctx, desc, 0)
+		}
 		return map[string]any{"type": afTypeName(f)}, nil
 	case "update_final":
 		return afExecUpdateFinal(afDescOf(args[0]), args[1])
@@ -868,6 +995,182 @@ func aggfuncsExec(op string, args []json.RawMessage) (any, error) {
 			return afExecMerge(afDescOf(args[1]), afDescOf(args[2]), args[3], args[4])
 		default:
 			return nil, fmt.Errorf("aggfuncs percentile: unknown action %s", action)
+		}
+	case "window":
+		var action string
+		must(json.Unmarshal(args[0], &action))
+		switch action {
+		case "run":
+			d := afDescOf(args[1])
+			ctx, desc := d.make()
+			f := aggfuncs.BuildWindowFunctions(ctx, desc, 0, d.winOrderByCols())
+			_, isSliding := f.(aggfuncs.SlidingWindowAggFunc)
+			_, isMM := f.(aggfuncs.MaxMinSlidingWindowAggFunc)
+			fts := d.chunkFts()
+			type winPart struct {
+				Batches afBatches `json:"batches"`
+				Finals  int       `json:"finals"`
+			}
+			var parts []winPart
+			must(json.Unmarshal(args[2], &parts))
+			pr, _ := f.AllocPartialResult()
+			outParts := []any{}
+			out := map[string]any{
+				"type":            afTypeName(f),
+				"sliding":         isSliding,
+				"max_min_sliding": isMM,
+				"partitions":      outParts,
+				"step":            "",
+			}
+			for pi, pt := range parts {
+				if step, err := afUpdate(ctx, f, fts, pt.Batches, pr); err != nil {
+					out["partitions"], out["step"] = outParts, fmt.Sprintf("part %d %s", pi, step)
+					return out, err
+				}
+				c := chunk.NewChunkWithCapacity([]*types.FieldType{desc.RetTp}, pt.Finals)
+				for fi := range pt.Finals {
+					if err := f.AppendFinalResult2Chunk(ctx.GetEvalCtx(), pr, c); err != nil {
+						out["partitions"], out["step"] = outParts, fmt.Sprintf("part %d final %d", pi, fi)
+						return out, err
+					}
+				}
+				cells := make([]any, c.NumRows())
+				for r := range cells {
+					row := c.GetRow(r)
+					cells[r] = map[string]any{"null": row.IsNull(0), "raw": hex.EncodeToString(row.GetRaw(0))}
+				}
+				outParts = append(outParts, cells)
+				f.ResetPartialResult(pr)
+			}
+			out["partitions"] = outParts
+			return out, nil
+		case "slide":
+			d := afDescOf(args[1])
+			ctx, desc := d.make()
+			f := aggfuncs.BuildWindowFunctions(ctx, desc, 0, d.winOrderByCols())
+			sw, isSliding := f.(aggfuncs.SlidingWindowAggFunc)
+			mm, isMM := f.(aggfuncs.MaxMinSlidingWindowAggFunc)
+			fts := d.chunkFts()
+			var rawRows [][]json.RawMessage
+			must(json.Unmarshal(args[2], &rawRows))
+			var seqs [][][2]uint64
+			must(json.Unmarshal(args[3], &seqs))
+			rows := afChunk(fts, rawRows)
+			getRow := func(idx uint64) chunk.Row { return rows[idx] }
+			pr, _ := f.AllocPartialResult()
+			outSeqs := []any{}
+			out := map[string]any{
+				"type":            afTypeName(f),
+				"sliding":         isSliding,
+				"max_min_sliding": isMM,
+				"seqs":            outSeqs,
+				"step":            "",
+			}
+			for si, frames := range seqs {
+				c := chunk.NewChunkWithCapacity([]*types.FieldType{desc.RetTp}, len(frames))
+				var prevStart, prevEnd uint64
+				for fi, fr := range frames {
+					s, e := fr[0], fr[1]
+					if fi == 0 || s > prevEnd {
+						if fi > 0 {
+							f.ResetPartialResult(pr)
+						}
+						if isMM {
+							mm.SetWindowStart(s)
+						}
+						if _, err := f.UpdatePartialResult(ctx.GetEvalCtx(), rows[s:e], pr); err != nil {
+							out["seqs"], out["step"] = outSeqs, fmt.Sprintf("seq %d frame %d update", si, fi)
+							return out, err
+						}
+					} else {
+						if err := sw.Slide(ctx.GetEvalCtx(), getRow, prevStart, prevEnd, s-prevStart, e-prevEnd, pr); err != nil {
+							out["seqs"], out["step"] = outSeqs, fmt.Sprintf("seq %d frame %d slide", si, fi)
+							return out, err
+						}
+					}
+					if err := f.AppendFinalResult2Chunk(ctx.GetEvalCtx(), pr, c); err != nil {
+						out["seqs"], out["step"] = outSeqs, fmt.Sprintf("seq %d frame %d final", si, fi)
+						return out, err
+					}
+					prevStart, prevEnd = s, e
+				}
+				cells := make([]any, c.NumRows())
+				for r := range cells {
+					row := c.GetRow(r)
+					cells[r] = map[string]any{"null": row.IsNull(0), "raw": hex.EncodeToString(row.GetRaw(0))}
+				}
+				outSeqs = append(outSeqs, cells)
+				f.ResetPartialResult(pr)
+			}
+			out["seqs"] = outSeqs
+			return out, nil
+		case "deque":
+			var isMax bool
+			var ops [][]any
+			must(json.Unmarshal(args[1], &isMax))
+			must(json.Unmarshal(args[2], &ops))
+			dq := aggfuncs.NewDeque(isMax, func(i, j any) int {
+				return cmp.Compare(i.(int64), j.(int64))
+			})
+			res := make([]any, 0, len(ops))
+			for _, op := range ops {
+				kind := op[0].(string)
+				switch kind {
+				case "push_back":
+					dq.PushBack(uint64(op[1].(float64)), int64(op[2].(float64)))
+					res = append(res, nil)
+				case "pop_front":
+					err := dq.PopFront()
+					if err != nil {
+						res = append(res, err.Error())
+					} else {
+						res = append(res, "")
+					}
+				case "pop_back":
+					err := dq.PopBack()
+					if err != nil {
+						res = append(res, err.Error())
+					} else {
+						res = append(res, "")
+					}
+				case "front":
+					p, empty := dq.Front()
+					if empty {
+						res = append(res, nil)
+					} else {
+						res = append(res, []any{p.Idx, p.Item.(int64)})
+					}
+				case "back":
+					p, empty := dq.Back()
+					if empty {
+						res = append(res, nil)
+					} else {
+						res = append(res, []any{p.Idx, p.Item.(int64)})
+					}
+				case "is_empty":
+					res = append(res, dq.IsEmpty())
+				case "reset":
+					dq.Reset()
+					res = append(res, dq.IsEmpty())
+				case "enqueue":
+					err := dq.Enqueue(uint64(op[1].(float64)), int64(op[2].(float64)))
+					if err != nil {
+						res = append(res, err.Error())
+					} else {
+						res = append(res, "")
+					}
+				case "dequeue":
+					err := dq.Dequeue(uint64(op[1].(float64)))
+					if err != nil {
+						res = append(res, err.Error())
+					} else {
+						res = append(res, "")
+					}
+				}
+			}
+			return map[string]any{"res": res}, nil
+		default:
+			return nil, fmt.Errorf("aggfuncs window: unknown action %s", action)
 		}
 	}
 	return nil, fmt.Errorf("aggfuncs: unknown op %s", op)
@@ -1209,6 +1512,9 @@ func aggfuncsGenerate(vg *vec.Gen, rng *rand.Rand) {
 
 	// ---- Part B2 (D12.4): APPROX_COUNT_DISTINCT, APPROX_PERCENTILE ----
 	afGenPartB2(vg, g)
+
+	// ---- Part W (D12.4): Window functions, sliding MAX/MIN, and Slide methods ----
+	afGenPartW(vg, g)
 }
 
 func afGenPartB1(vg *vec.Gen, g *afGen) {
@@ -1829,4 +2135,393 @@ func afGenPartB2(vg *vec.Gen, g *afGen) {
 		vg.Add("percentile", "percentile", "update_final", d, [][][]any{rows})
 	}
 	_ = hexS
+}
+
+func afGenPartW(vg *vec.Gen, g *afGen) {
+	hexS := func(s string) string { return hex.EncodeToString([]byte(s)) }
+	intTp := afType{Tp: mysql.TypeLonglong, Flen: 20, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	uintTp := afType{Tp: mysql.TypeLonglong, Flag: mysql.UnsignedFlag, Flen: 20, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	fltTp := afType{Tp: mysql.TypeFloat, Flen: 12, Decimal: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dblTp := afType{Tp: mysql.TypeDouble, Flen: 22, Decimal: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	decTp := afType{Tp: mysql.TypeNewDecimal, Flen: 20, Decimal: 5, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dateTp := afType{Tp: mysql.TypeDate, Flen: 10, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	dtTp := afType{Tp: mysql.TypeDatetime, Flen: 26, Decimal: 6, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	tsTp := afType{Tp: mysql.TypeTimestamp, Flen: 19, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	durTp := afType{Tp: mysql.TypeDuration, Flen: 13, Decimal: 3, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	strBin := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin"}
+	strGeneral := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_general_ci"}
+	strUnicode := afType{Tp: mysql.TypeVarchar, Flen: 255, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_unicode_ci"}
+	bitTp := afType{Tp: mysql.TypeBit, Flag: mysql.UnsignedFlag, Flen: 8, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	jsonTp := afType{Tp: mysql.TypeJSON, Flen: 4294967295, Charset: charset.CharsetBin, Collate: charset.CollationBin, Flag: mysql.BinaryFlag}
+	vecTp := afType{Tp: mysql.TypeTiDBVectorFloat32, Flen: -1, Charset: charset.CharsetBin, Collate: charset.CollationBin}
+	enumTp := afType{Tp: mysql.TypeEnum, Flen: 1, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems}
+	setTp := afType{Tp: mysql.TypeSet, Flen: 9, Charset: charset.CharsetUTF8MB4, Collate: "utf8mb4_bin", Elems: afElems}
+
+	// 1. build records for BuildWindowFunctions across all window function names, MAX/MIN
+	// (sliding vs non-sliding types + DedupMode), fallback to Build (SUM/AVG/COUNT/BIT_XOR/unknown).
+	for _, name := range []string{
+		ast.WindowFuncRowNumber, ast.WindowFuncRank, ast.WindowFuncDenseRank,
+		ast.WindowFuncPercentRank, ast.WindowFuncCumeDist,
+	} {
+		ret := intTp
+		if name == ast.WindowFuncPercentRank || name == ast.WindowFuncCumeDist {
+			ret = dblTp
+		}
+		vg.Add("build", "build", afDesc{
+			Name: name, Ret: ret, IsWindow: true,
+			ExtraCols: []afType{intTp, strGeneral}, WinOrderCols: []int{0, 1},
+		})
+	}
+	for _, n := range []string{"0", "1", "3"} {
+		vg.Add("build", "build", afDesc{
+			Name: ast.WindowFuncNtile, Ret: uintTp, IsWindow: true, HasU64Arg: true, U64Arg: n,
+		})
+	}
+	vg.Add("build", "build", afDesc{
+		Name: ast.WindowFuncNtile, Ret: uintTp, IsWindow: true, U64ArgNull: true,
+	})
+	valTypes := []afType{intTp, uintTp, fltTp, dblTp, decTp, strBin, bitTp, dateTp, dtTp, tsTp, durTp, jsonTp, vecTp}
+	for _, vt := range valTypes {
+		for _, name := range []string{ast.WindowFuncFirstValue, ast.WindowFuncLastValue} {
+			vg.Add("build", "build", afDesc{
+				Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true,
+			})
+		}
+		vg.Add("build", "build", afDesc{
+			Name: ast.WindowFuncNthValue, Args: []afType{vt}, Ret: vt, IsWindow: true, HasU64Arg: true, U64Arg: "2",
+		})
+		for _, name := range []string{ast.WindowFuncLead, ast.WindowFuncLag} {
+			vg.Add("build", "build", afDesc{
+				Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true,
+			})
+			vg.Add("build", "build", afDesc{
+				Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true, HasU64Arg: true, U64Arg: "2", DefKind: "null",
+			})
+		}
+	}
+	for _, name := range []string{ast.AggFuncMax, ast.AggFuncMin} {
+		for _, at := range append(append([]afType{}, valTypes...), enumTp, setTp) {
+			for _, mode := range []int{int(aggregation.CompleteMode), int(aggregation.DedupMode)} {
+				vg.Add("build", "build", afDesc{
+					Name: name, Mode: mode, Args: []afType{at}, Ret: at, IsWindow: true,
+				})
+			}
+		}
+	}
+	for _, hp := range []bool{false, true} {
+		vg.Add("build", "build", afDesc{Name: ast.AggFuncSum, Args: []afType{dblTp}, Ret: dblTp, HP: hp, IsWindow: true})
+		vg.Add("build", "build", afDesc{Name: ast.AggFuncAvg, Args: []afType{dblTp}, Ret: dblTp, HP: hp, IsWindow: true})
+	}
+	vg.Add("build", "build", afDesc{Name: ast.AggFuncCount, Args: []afType{intTp}, Ret: intTp, IsWindow: true})
+	vg.Add("build", "build", afDesc{Name: ast.AggFuncBitXor, Args: []afType{intTp}, Ret: uintTp, IsWindow: true})
+	vg.Add("build", "build", afDesc{Name: "unknown_win_func", Ret: intTp, IsWindow: true})
+
+	// 2. window "run": ROW_NUMBER, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST, NTILE,
+	// FIRST_VALUE, LAST_VALUE, NTH_VALUE, LEAD, LAG.
+	type winPart struct {
+		Batches [][][]any `json:"batches"`
+		Finals  int       `json:"finals"`
+	}
+
+	// ROW_NUMBER across multiple partitions + empty batch.
+	{
+		d := afDesc{Name: ast.WindowFuncRowNumber, Ret: intTp, IsWindow: true, ExtraCols: []afType{intTp}}
+		vg.Add("window", "window", "run", d, []winPart{
+			{Batches: [][][]any{{{"1"}, {"2"}}, {{"3"}, {"4"}, {"5"}}}, Finals: 5},
+			{Batches: [][][]any{{{"10"}}}, Finals: 1},
+		})
+	}
+
+	// RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST: 0 order cols, 1 order col (with ties & NULLs),
+	// 2 order cols (int + utf8mb4_general_ci string), and an uncomparable TypeNull col skipped by buildRowComparer.
+	rankTypes := []struct {
+		extra []afType
+		ord   []int
+		rows1 [][]any
+		rows2 [][]any
+	}{
+		{
+			extra: []afType{intTp}, ord: nil,
+			rows1: [][]any{{"1"}, {"2"}, {"3"}},
+			rows2: [][]any{{"9"}},
+		},
+		{
+			extra: []afType{intTp}, ord: []int{0},
+			rows1: [][]any{{nil}, {nil}, {"1"}, {"1"}, {"2"}, {"3"}, {"3"}, {"3"}},
+			rows2: [][]any{{"5"}},
+		},
+		{
+			extra: []afType{intTp, strGeneral}, ord: []int{0, 1},
+			rows1: [][]any{
+				{"1", hexS("a")}, {"1", hexS("A")}, {"1", hexS("a ")},
+				{"1", hexS("b")}, {"2", hexS("a")}, {"2", nil},
+			},
+			rows2: [][]any{{"10", hexS("x")}, {"10", hexS("X")}},
+		},
+		{
+			extra: []afType{{Tp: mysql.TypeNull}, dblTp}, ord: []int{0, 1},
+			rows1: [][]any{
+				{nil, strconv.FormatUint(0, 10)},
+				{nil, strconv.FormatUint(1<<63, 10)},
+				{nil, strconv.FormatUint(math.Float64bits(1.5), 10)},
+				{nil, strconv.FormatUint(math.Float64bits(1.5), 10)},
+			},
+			rows2: [][]any{{nil, strconv.FormatUint(math.Float64bits(2.0), 10)}},
+		},
+	}
+	for _, name := range []string{ast.WindowFuncRank, ast.WindowFuncDenseRank, ast.WindowFuncPercentRank, ast.WindowFuncCumeDist} {
+		ret := intTp
+		if name == ast.WindowFuncPercentRank || name == ast.WindowFuncCumeDist {
+			ret = dblTp
+		}
+		for _, rt := range rankTypes {
+			d := afDesc{Name: name, Ret: ret, IsWindow: true, ExtraCols: rt.extra, WinOrderCols: rt.ord}
+			vg.Add("window", "window", "run", d, []winPart{
+				{Batches: [][][]any{rt.rows1[:len(rt.rows1)/2], rt.rows1[len(rt.rows1)/2:]}, Finals: len(rt.rows1)},
+				{Batches: [][][]any{rt.rows2}, Finals: len(rt.rows2)},
+			})
+		}
+	}
+
+	// NTILE: n = 0, NULL, 1, 3 (exact & remainder), 4, 10 (> numRows).
+	for _, spec := range []struct {
+		null bool
+		n    string
+	}{
+		{true, ""}, {false, "0"}, {false, "1"}, {false, "3"}, {false, "4"}, {false, "10"},
+	} {
+		d := afDesc{
+			Name: ast.WindowFuncNtile, Ret: uintTp, IsWindow: true,
+			HasU64Arg: !spec.null, U64Arg: spec.n, U64ArgNull: spec.null,
+			ExtraCols: []afType{intTp},
+		}
+		rows11 := make([][]any, 11)
+		for i := range rows11 {
+			rows11[i] = []any{strconv.Itoa(i)}
+		}
+		vg.Add("window", "window", "run", d, []winPart{
+			{Batches: [][][]any{rows11[:5], rows11[5:]}, Finals: 11},
+			{Batches: [][][]any{{{"0"}, {"1"}, {"2"}}}, Finals: 3},
+		})
+	}
+
+	// FIRST_VALUE, LAST_VALUE, NTH_VALUE across all 9 valueEvaluator types (+ BIT as ETString),
+	// empty partitions, NULL values, multi-batch, nth=0/NULL/1/2/5.
+	mkValBatches := func(vt afType) [][][]any {
+		g.start(&afDesc{Name: ast.WindowFuncFirstValue, Args: []afType{vt}, Ret: vt})
+		b1 := [][]any{{g.fresh(vt)}, {nil}, {g.fresh(vt)}}
+		b2 := [][]any{{g.fresh(vt)}, {g.fresh(vt)}}
+		return [][][]any{b1, b2}
+	}
+	for _, vt := range valTypes {
+		for _, name := range []string{ast.WindowFuncFirstValue, ast.WindowFuncLastValue} {
+			d := afDesc{Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true}
+			vg.Add("window", "window", "run", d, []winPart{
+				{Batches: mkValBatches(vt), Finals: 2},
+				{Batches: [][][]any{}, Finals: 1}, // empty frame -> NULL
+				{Batches: [][][]any{{{nil}}, {{nil}}}, Finals: 1},
+			})
+		}
+		for _, nth := range []struct {
+			null bool
+			n    string
+		}{{false, "0"}, {true, ""}, {false, "1"}, {false, "2"}, {false, "4"}, {false, "9"}} {
+			d := afDesc{
+				Name: ast.WindowFuncNthValue, Args: []afType{vt}, Ret: vt, IsWindow: true,
+				HasU64Arg: !nth.null, U64Arg: nth.n, U64ArgNull: nth.null,
+			}
+			vg.Add("window", "window", "run", d, []winPart{
+				{Batches: mkValBatches(vt), Finals: 2},
+				{Batches: [][][]any{}, Finals: 1},
+			})
+		}
+	}
+
+	// LEAD & LAG across all 9 valueEvaluator types: 1-arg, 2-arg (0, 1, 2, 10), 3-arg with
+	// NULL default, constant int/string default (converted to RetTp), and column default.
+	for _, vt := range valTypes {
+		for _, name := range []string{ast.WindowFuncLead, ast.WindowFuncLag} {
+			// 1-arg (default offset 1, NULL default)
+			d1 := afDesc{Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true}
+			b := mkValBatches(vt)
+			vg.Add("window", "window", "run", d1, []winPart{
+				{Batches: b, Finals: 5},
+				{Batches: [][][]any{{{nil}, {g.fresh(vt)}}}, Finals: 2},
+			})
+			// 2-arg offset 0, 2, 10
+			for _, off := range []string{"0", "2", "10"} {
+				d2 := afDesc{Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true, HasU64Arg: true, U64Arg: off}
+				vg.Add("window", "window", "run", d2, []winPart{{Batches: mkValBatches(vt), Finals: 5}})
+			}
+			// 3-arg column default (col 0)
+			dCol := afDesc{Name: name, Args: []afType{vt}, Ret: vt, IsWindow: true, HasU64Arg: true, U64Arg: "2", DefKind: "col", DefCol: 0}
+			vg.Add("window", "window", "run", dCol, []winPart{{Batches: mkValBatches(vt), Finals: 5}})
+		}
+	}
+	// LEAD & LAG constant default conversion (int -> decimal/double/string, string -> int/decimal/date).
+	for _, name := range []string{ast.WindowFuncLead, ast.WindowFuncLag} {
+		for _, tc := range []struct {
+			vt      afType
+			defKind string
+			defInt  int64
+			defStr  string
+		}{
+			{intTp, "const_int", -42, ""},
+			{dblTp, "const_int", 99, ""},
+			{decTp, "const_str", 0, "12.345"},
+			{strBin, "const_str", 0, "fallback"},
+			{dateTp, "const_str", 0, "2020-01-02"},
+			{intTp, "null", 0, ""},
+		} {
+			d := afDesc{
+				Name: name, Args: []afType{tc.vt}, Ret: tc.vt, IsWindow: true,
+				HasU64Arg: true, U64Arg: "2", DefKind: tc.defKind, DefInt: tc.defInt, DefStr: hexS(tc.defStr),
+			}
+			vg.Add("window", "window", "run", d, []winPart{{Batches: mkValBatches(tc.vt), Finals: 5}})
+		}
+	}
+	// R26 (#405) pinning vectors: LEAD with 2^64-1 and 2^64-2 (with/without default) +
+	// non-wrapping controls (LEAD 2^63-1, LAG 2^64-1, LAG 2^64-2).
+	r26Rows := [][][]any{{{"10"}, {"20"}, {"30"}, {"40"}, {"50"}}}
+	for _, tc := range []struct {
+		name    string
+		off     string
+		defKind string
+		defInt  int64
+	}{
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxUint64, 10), "", 0},
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxUint64, 10), "const_int", -1},
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxUint64-1, 10), "", 0},
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxUint64-1, 10), "const_int", -1},
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxInt64, 10), "", 0},
+		{ast.WindowFuncLead, strconv.FormatUint(math.MaxInt64, 10), "const_int", -1},
+		{ast.WindowFuncLag, strconv.FormatUint(math.MaxUint64, 10), "", 0},
+		{ast.WindowFuncLag, strconv.FormatUint(math.MaxUint64-1, 10), "const_int", -1},
+	} {
+		d := afDesc{
+			Name: tc.name, Args: []afType{intTp}, Ret: intTp, IsWindow: true,
+			HasU64Arg: true, U64Arg: tc.off, DefKind: tc.defKind, DefInt: tc.defInt,
+		}
+		vg.Add("window", "window", "run", d, []winPart{{Batches: r26Rows, Finals: 5}})
+	}
+
+	// 3. window "slide": all 22 SlidingWindowAggFunc implementations!
+	// Frame sequences cover: start=0 grow/slide/shrink/empty, disjoint jump (SetWindowStart > 0),
+	// and second sequence after ResetPartialResult.
+	slideSeqs := [][][2]uint64{
+		{{0, 3}, {1, 4}, {2, 5}, {3, 5}, {5, 5}, {5, 7}, {6, 8}},
+		{{2, 5}, {3, 6}, {7, 8}},
+	}
+	mkSlideRows := func(at afType, n int, noNaNInf bool) [][]any {
+		g.pool = map[int][]any{}
+		g.noNaN = noNaNInf
+		g.noInf = noNaNInf
+		rows := make([][]any, n)
+		for i := range rows {
+			if i == 3 || i == 6 {
+				rows[i] = []any{nil}
+			} else {
+				rows[i] = []any{g.value(0, at)}
+			}
+		}
+		return rows
+	}
+
+	// 3a. 8 countOriginal4*.Slide
+	for _, at := range []afType{intTp, dblTp, decTp, dtTp, durTp, jsonTp, vecTp, strBin} {
+		d := afDesc{Name: ast.AggFuncCount, Args: []afType{at}, Ret: intTp, IsWindow: true}
+		vg.Add("window", "window", "slide", d, mkSlideRows(at, 8, false), slideSeqs)
+	}
+	// 3b. sum4Float64.Slide & sum4Decimal.Slide (HP=false!)
+	{
+		dF := afDesc{Name: ast.AggFuncSum, Args: []afType{dblTp}, Ret: dblTp, HP: false, IsWindow: true}
+		vg.Add("window", "window", "slide", dF, mkSlideRows(dblTp, 8, true), slideSeqs)
+		dD := afDesc{Name: ast.AggFuncSum, Args: []afType{decTp}, Ret: decTp, HP: false, IsWindow: true}
+		// Use moderate decimals for slide so DecimalAdd/DecimalSub stays within range.
+		decRows := [][]any{{"10.5"}, {"-3.25"}, {"0"}, {nil}, {"100.125"}, {"-50.5"}, {nil}, {"7.75"}}
+		vg.Add("window", "window", "slide", dD, decRows, slideSeqs)
+	}
+	// 3c. avgOriginal4Float64.Slide & avgOriginal4Decimal.Slide (HP=false!)
+	{
+		dF := afDesc{Name: ast.AggFuncAvg, Args: []afType{dblTp}, Ret: dblTp, HP: false, DPI: 4, IsWindow: true}
+		vg.Add("window", "window", "slide", dF, mkSlideRows(dblTp, 8, true), slideSeqs)
+		dD := afDesc{Name: ast.AggFuncAvg, Args: []afType{decTp}, Ret: decTp, HP: false, DPI: 4, IsWindow: true}
+		decRows := [][]any{{"10.5"}, {"-3.25"}, {"0"}, {nil}, {"100.125"}, {"-50.5"}, {nil}, {"7.75"}}
+		vg.Add("window", "window", "slide", dD, decRows, slideSeqs)
+	}
+	// 3d. bitXorUint64.Slide
+	{
+		d := afDesc{Name: ast.AggFuncBitXor, Args: []afType{intTp}, Ret: uintTp, IsWindow: true}
+		vg.Add("window", "window", "slide", d, mkSlideRows(intTp, 8, false), slideSeqs)
+	}
+	// 3e. rowNumber.Slide
+	{
+		d := afDesc{Name: ast.WindowFuncRowNumber, Ret: intTp, IsWindow: true, ExtraCols: []afType{intTp}}
+		vg.Add("window", "window", "slide", d, mkSlideRows(intTp, 8, false), slideSeqs)
+	}
+	// 3f. 8 maxMin4*Sliding (MAX and MIN, plus collations for String and NaN/±0.0 for floats).
+	mmSlideTypes := []afType{intTp, uintTp, fltTp, dblTp, decTp, strBin, strGeneral, strUnicode, dateTp, dtTp, durTp}
+	for _, name := range []string{ast.AggFuncMax, ast.AggFuncMin} {
+		for _, at := range mmSlideTypes {
+			d := afDesc{Name: name, Args: []afType{at}, Ret: at, IsWindow: true}
+			vg.Add("window", "window", "slide", d, mkSlideRows(at, 8, false), slideSeqs)
+		}
+		// Float32/Float64 explicit NaN, -Inf, -0.0, +0.0, +Inf sequence to verify cmp.Compare order.
+		dF32 := afDesc{Name: name, Args: []afType{fltTp}, Ret: fltTp, IsWindow: true}
+		f32Rows := [][]any{
+			{strconv.FormatUint(0x7fc00000, 10)},             // NaN
+			{strconv.FormatUint(0xff800000, 10)},             // -Inf
+			{strconv.FormatUint(0x80000000, 10)},             // -0.0
+			{nil},                                            // NULL
+			{strconv.FormatUint(0x00000000, 10)},             // +0.0
+			{strconv.FormatUint(uint64(math.Float32bits(3.5)), 10)},
+			{strconv.FormatUint(0x7f800000, 10)},             // +Inf
+			{strconv.FormatUint(0x7fc00000, 10)},             // NaN
+		}
+		vg.Add("window", "window", "slide", dF32, f32Rows, slideSeqs)
+
+		dF64 := afDesc{Name: name, Args: []afType{dblTp}, Ret: dblTp, IsWindow: true}
+		f64Rows := [][]any{
+			{strconv.FormatUint(0x7ff8000000000001, 10)}, // NaN
+			{strconv.FormatUint(0xfff0000000000000, 10)}, // -Inf
+			{strconv.FormatUint(1<<63, 10)},              // -0.0
+			{nil},                                        // NULL
+			{strconv.FormatUint(0, 10)},                  // +0.0
+			{strconv.FormatUint(math.Float64bits(3.5), 10)},
+			{strconv.FormatUint(0x7ff0000000000000, 10)}, // +Inf
+			{strconv.FormatUint(0x7ff8000000000001, 10)}, // NaN
+		}
+		vg.Add("window", "window", "slide", dF64, f64Rows, slideSeqs)
+	}
+
+	// 4. window "deque": direct MinMaxDeque coverage including PopFront/PopBack empty errors.
+	for _, isMax := range []bool{true, false} {
+		vg.Add("window", "window", "deque", isMax, [][]any{
+			{"is_empty"},
+			{"front"},
+			{"back"},
+			{"pop_front"},
+			{"pop_back"},
+			{"push_back", 0, 10},
+			{"push_back", 1, 20},
+			{"front"},
+			{"back"},
+			{"pop_front"},
+			{"pop_back"},
+			{"is_empty"},
+			{"enqueue", 0, 5},
+			{"enqueue", 1, 15},
+			{"enqueue", 2, 10},
+			{"enqueue", 3, 15},
+			{"front"},
+			{"back"},
+			{"dequeue", 1},
+			{"front"},
+			{"dequeue", 10},
+			{"is_empty"},
+			{"enqueue", 4, 7},
+			{"reset"},
+			{"is_empty"},
+		})
+	}
 }
