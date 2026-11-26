@@ -47,14 +47,14 @@ func ctx2bExempt() map[string]string {
 	const (
 		toSessionVars = "owned by D05.3: the SessionVars provider of the builtins (N2: EvalContext is Send + Sync, " +
 			"SessionVars belongs to the session task); listed in tidb-rs specs/D05.3-session/tasks.md"
-		toDistSQL = "owned by D07.3: DistSQLContext's fields are D14.0 runtime stats and the D07.2 coprocessor " +
-			"client; listed in tidb-rs specs/D07.3-distsql/tasks.md"
+		distSQLPorted = "ported (tidb-rs crates/sessionctx/src/distsql_ctx.rs, D07.3 spec §4.2): " +
+			"DistSQLContext warning appender and pointer-preserving detach; Rust unit test (test_context_detach)"
 		pbCtx    = "ported (planctx.rs): accessor / struct copy over interface values (exprctx.BuildContext, kv.Client); Rust unit test (planctx_unit.rs)"
 		emptyCtx = "ported (planctx.rs): no-op of the empty plan context; Rust unit test (planctx_unit.rs)"
 	)
 	m := map[string]string{
-		"DistSQLContext.AppendWarning":                    toDistSQL,     // pkg/distsql/context/context.go
-		"DistSQLContext.Detach":                           toDistSQL,     // pkg/distsql/context/context.go
+		"DistSQLContext.AppendWarning":                    distSQLPorted, // pkg/distsql/context/context.go
+		"DistSQLContext.Detach":                           distSQLPorted, // pkg/distsql/context/context.go
 		"NewSessionVarsProvider":                          toSessionVars, // pkg/expression/expropt/sessionvars.go
 		"SessionVarsPropProvider.Desc":                    toSessionVars, // pkg/expression/expropt/sessionvars.go
 		"SessionVarsPropReader.GetSessionVars":            toSessionVars, // pkg/expression/expropt/sessionvars.go

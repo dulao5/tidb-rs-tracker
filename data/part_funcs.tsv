@@ -594,11 +594,11 @@ D07.3	VS1-33	pkg/distsql/distsql.go	SetEncodeType
 D07.3	VS1-33	pkg/distsql/distsql.go	WithSQLKvExecCounterInterceptor
 D07.3	VS1-33	pkg/distsql/distsql.go	canUseChunkRPC
 D07.3	VS1-33	pkg/distsql/distsql.go	checkAlignment
-D07.3	VS1-33	pkg/distsql/distsql.go	init
 D07.3	VS1-33	pkg/distsql/distsql.go	setChunkMemoryLayout
-D07.3	VS1-33	pkg/distsql/request_builder.go	BuildTableRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	CommonHandleRangesToKVRanges
+D07.3	VS1-33	pkg/distsql/request_builder.go	EncodeIndexKey
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.Build
+D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetAllowBatchCop
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetClosestReplicaReadAdjuster
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetConcurrency
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetConnIDAndConnAlias
@@ -616,6 +616,7 @@ D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetKeyRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetKeyRangesWithHints
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetMemTracker
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetPaging
+D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetPartitionKeyRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetReadReplicaScope
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetResourceGroupName
 D07.3	VS1-33	pkg/distsql/request_builder.go	RequestBuilder.SetResourceGroupTagger
@@ -631,13 +632,11 @@ D07.3	VS1-33	pkg/distsql/request_builder.go	SplitRangesAcrossInt64Boundary
 D07.3	VS1-33	pkg/distsql/request_builder.go	TableHandleRangesToKVRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	TableRangesToKVRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	VerifyTxnScope
-D07.3	VS1-33	pkg/distsql/request_builder.go	appendRanges
 D07.3	VS1-33	pkg/distsql/request_builder.go	encodeHandleKey
 D07.3	VS1-33	pkg/distsql/request_builder.go	tableRangesToKVRangesWithoutSplit
+D07.3	VS1-33	pkg/distsql/request_builder.go	tablesRangesToKVRanges
 D07.3	VS1-33	pkg/distsql/select_result.go	GetSelectResultConcurrency
-D07.3	VS1-33	pkg/distsql/select_result.go	newSelectResultIter
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.Close
-D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.IntoIter
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.Next
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.NextRaw
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.close
@@ -648,8 +647,6 @@ D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.readFromChunk
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.readFromDefault
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.readRowsData
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResult.updateCopRuntimeStats
-D07.3	VS1-33	pkg/distsql/select_result.go	selectResultIter.Close
-D07.3	VS1-33	pkg/distsql/select_result.go	selectResultIter.Next
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResultRuntimeStats.Clone
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResultRuntimeStats.Merge
 D07.3	VS1-33	pkg/distsql/select_result.go	selectResultRuntimeStats.String
