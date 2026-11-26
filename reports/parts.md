@@ -43,14 +43,14 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
 | D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
-| D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 354 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
-| D10.1 | VS1-27 | VS1-27 | in-progress | 110 / 354 | 1830 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
+| D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 356 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
+| D10.1 | VS1-27 | VS1-27 | in-progress | 110 / 356 | 1830 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
 | D10.10 | VS1-19 | VS1-19 | in-progress | 135 / 161 | 1338 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
 | D10.2 | VS1-28 | VS1-28 | in-progress | 89 / 181 | 2759 | tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
-| D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 58 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
+| D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 59 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality; the DeriveStats / ExtractColGroups of the slice's operators ported with VS1-28 (tidb-rs branch vs1/find-best-task): matched 48/54, 6 stubs |
 | D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | VS1-24 | VS1-24 | in-progress | 1 / 207 | 27 | tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31) |

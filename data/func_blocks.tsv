@@ -16581,7 +16581,7 @@ pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexMergeJoin.GetCo
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexMergeJoin.GetPlanCostVer1	692	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexMergeReader.GetPartialReaderNetDataSize	396	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexMergeReader.GetPlanCostVer1	333	EXC.B
-pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexReader.GetNetDataSize	243	EXC.B
+pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexReader.GetNetDataSize	243	D10.1
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexReader.GetPlanCostVer1	208	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalIndexScan.GetPlanCostVer1	427	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalMergeJoin.GetCost	767	EXC.B
@@ -16593,7 +16593,7 @@ pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalSort.GetCost	1022	EX
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalSort.GetPlanCostVer1	1044	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalStreamAgg.GetCost	940	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalStreamAgg.GetPlanCostVer1	955	EXC.B
-pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalTableReader.GetNetDataSize	327	EXC.B
+pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalTableReader.GetNetDataSize	327	D10.1
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalTableReader.GetPlanCostVer1	250	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalTableScan.GetPlanCostVer1	402	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	PhysicalTopN.GetCost	1060	EXC.B
@@ -16606,7 +16606,7 @@ pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	estimateNetSeekCost	1269	EXC
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	getCardinality	1250	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	getOperatorActRows	1233	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	getTableNetFactor	1296	EXC.B
-pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	getTblStats	1284	EXC.B
+pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	getTblStats	1284	D10.5
 pkg/planner/core	pkg/planner/core/plan_cost_ver1.go	hasCostFlag	41	EXC.B
 pkg/planner/core	pkg/planner/core/plan_cost_ver2.go	BatchPointGetPlan.GetPlanCostVer2	871	D10.5
 pkg/planner/core	pkg/planner/core/plan_cost_ver2.go	GetPlanCost	39	D10.5
