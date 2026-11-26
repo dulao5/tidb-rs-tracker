@@ -5,9 +5,7 @@ package domains
 
 func cardinalityExempt() map[string]string {
 	return map[string]string{
-		"pkg/planner/cardinality/cross_estimation.go:AdjustRowCountForIndexScanByLimit":                  "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/cardinality/cross_estimation.go:convertRangeFromExpectedCnt":                        "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-		"pkg/planner/cardinality/cross_estimation.go:crossEstimateIndexRowCount":                         "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/cardinality/cross_estimation.go:crossEstimateRowCount":                              "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/cardinality/cross_estimation.go:getColumnRangeCounts":                               "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/cardinality/cross_estimation.go:getMostCorrCol4Handle":                              "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",

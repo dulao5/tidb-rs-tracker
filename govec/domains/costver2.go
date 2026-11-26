@@ -37,6 +37,7 @@ import (
 	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/meta/model"
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	pmodel "github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/planner/core"
 	"github.com/pingcap/tidb/pkg/planner/core/base"
@@ -88,6 +89,9 @@ func cvOrderCostVer2(option *optimizetrace.PlanCostOption, rows, n float64, byIt
 //go:linkname cvDoubleReadCostVer2 github.com/pingcap/tidb/pkg/planner/core.doubleReadCostVer2
 func cvDoubleReadCostVer2(option *optimizetrace.PlanCostOption, numTasks float64, requestFactor costusage.CostVer2Factor) costusage.CostVer2
 
+//go:linkname cvGetTblStats github.com/pingcap/tidb/pkg/planner/core.getTblStats
+func cvGetTblStats(copTaskPlan base.PhysicalPlan) *statistics.HistColl
+
 func init() {
 	vec.Register(&vec.Domain{
 		Name:     "costver2",
@@ -106,8 +110,10 @@ var costver2Coverage = map[string]vec.Coverage{
 		"GetPlanCost", "getPlanCost",
 		"PhysicalSelection.GetPlanCostVer2", "PhysicalProjection.GetPlanCostVer2",
 		"PhysicalTableScan.GetPlanCostVer2", "PhysicalTableReader.GetPlanCostVer2",
+		"PhysicalIndexScan.GetPlanCostVer2", "PhysicalIndexReader.GetPlanCostVer2",
 		"PhysicalSort.GetPlanCostVer2", "PhysicalTopN.GetPlanCostVer2", "PointGetPlan.GetPlanCostVer2",
-		"getNumberOfRanges", "getTableScanPenalty", "scanCostVer2", "netCostVer2", "filterCostVer2",
+		"getNumberOfRanges", "getTableScanPenalty", "getTblStats",
+		"scanCostVer2", "netCostVer2", "filterCostVer2",
 		"numFunctions", "orderCostVer2",
 	}},
 	"factor": {Min: 300, GoFuncs: []string{
@@ -125,6 +131,7 @@ var (
 // The operators' cost factors the plan records set (and double for "again").
 var cvFactorVars = []string{
 	"table_full_scan", "table_range_scan", "table_rowid_scan", "table_tiflash_scan", "table_reader",
+	"index_scan", "index_reader",
 	"sort", "topn",
 }
 
@@ -140,6 +147,10 @@ func cvSetFactor(sv *variable.SessionVars, name string, v float64) {
 		sv.TableTiFlashScanCostFactor = v
 	case "table_reader":
 		sv.TableReaderCostFactor = v
+	case "index_scan":
+		sv.IndexScanCostFactor = v
+	case "index_reader":
+		sv.IndexReaderCostFactor = v
 	case "sort":
 		sv.SortCostFactor = v
 	case "topn":
@@ -161,6 +172,10 @@ func cvGetFactor(sv *variable.SessionVars, name string) float64 {
 		return sv.TableTiFlashScanCostFactor
 	case "table_reader":
 		return sv.TableReaderCostFactor
+	case "index_scan":
+		return sv.IndexScanCostFactor
+	case "index_reader":
+		return sv.IndexReaderCostFactor
 	case "sort":
 		return sv.SortCostFactor
 	case "topn":
@@ -264,6 +279,8 @@ type cvVars struct {
 type cvPlan struct {
 	Point     bool     `json:"point"`      // a PointGetPlan alone
 	PointCols []int    `json:"point_cols"` // the accessed column types (empty: nil)
+	Index     bool     `json:"index"`      // PhysicalIndexScan + optional PhysicalIndexReader
+	Unique    bool     `json:"unique"`     // Index.Unique when Index is true
 	Store     int      `json:"store"`      // kv.StoreType of the scan and the reader
 	Desc      bool     `json:"desc"`
 	Temp      bool     `json:"temp"`
@@ -409,9 +426,17 @@ func costver2Generate(g *vec.Gen, rng *rand.Rand) {
 		}
 		g.Add(fmt.Sprintf("rand/plan/%d", i), "plan", p)
 	}
+	for i := 0; i < 500; i++ {
+		p := cvGenPlan(rng)
+		p.Index = true
+		p.Unique = rng.IntN(2) == 0
+		p.Store = int(kv.TiKV)
+		p.Lookup = false
+		g.Add(fmt.Sprintf("rand/idx_plan/%d", i), "plan", p)
+	}
 	fns := []string{"cpu", "mem", "scan", "net", "request"}
-	kinds := []string{"ts", "reader", "sel_ts", "sel_reader", "pg"}
-	for i := 0; i < 400; i++ {
+	kinds := []string{"ts", "reader", "sel_ts", "sel_reader", "is", "ireader", "sel_is", "sel_ireader", "pg"}
+	for i := 0; i < 600; i++ {
 		fp := cvFactorPlan{Kind: kinds[rng.IntN(len(kinds))], Desc: rng.IntN(2) == 0, Temp: rng.IntN(3) == 0,
 			Store: []int{int(kv.TiKV), int(kv.TiFlash)}[rng.IntN(2)]}
 		g.Add(fmt.Sprintf("rand/factor/%d", i), "factor", fns[rng.IntN(len(fns))], rng.IntN(4), fp)
@@ -540,6 +565,7 @@ func cvRunPlan(in cvPlan) (any, error) {
 	sv.CostModelVersion = in.Vars.Version
 
 	var root base.PhysicalPlan
+	var readerSize any
 	if in.Point {
 		tbl := cvTable(in.Temp, false, false, []int{int(mysql.TypeLonglong)})
 		cols := []*expression.Column{}
@@ -578,19 +604,34 @@ func cvRunPlan(in cvPlan) (any, error) {
 		for _, r := range in.Ranges {
 			ranges = append(ranges, cvRange(r))
 		}
-		ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.StoreType(in.Store), Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
-		ts.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
-		ts.SetStats(stats(in.ScanRows))
-		ts.SetIsChildOfIndexLookUp(in.Lookup)
-		cvSetField(ts, "tblCols", tblCols)
-		cvSetField(ts, "tblColHists", hist)
-		if in.RangeInfo {
-			cvSetField(ts, "rangeInfo", "range decided by [eq(test.t.a, 1)]")
+		var cur base.PhysicalPlan
+		if in.Index {
+			idxCols := make([]*model.IndexColumn, in.SchemaN)
+			for i := 0; i < in.SchemaN; i++ {
+				idxCols[i] = &model.IndexColumn{Offset: i, Length: types.UnspecifiedLength}
+			}
+			idx := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Columns: idxCols, Unique: in.Unique}
+			is := core.PhysicalIndexScan{Table: tbl, Index: idx, Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
+			is.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
+			is.SetStats(stats(in.ScanRows))
+			cvSetField(is, "dataSourceSchema", expression.NewSchema(tblCols[:in.SchemaN]...))
+			cvSetField(is, "tblColHists", hist)
+			cur = is
+		} else {
+			ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.StoreType(in.Store), Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
+			ts.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
+			ts.SetStats(stats(in.ScanRows))
+			ts.SetIsChildOfIndexLookUp(in.Lookup)
+			cvSetField(ts, "tblCols", tblCols)
+			cvSetField(ts, "tblColHists", hist)
+			if in.RangeInfo {
+				cvSetField(ts, "rangeInfo", "range decided by [eq(test.t.a, 1)]")
+			}
+			if in.PartConds {
+				ts.PlanPartInfo = &core.PhysPlanPartInfo{PruningConds: []expression.Expression{expression.NewOne()}}
+			}
+			cur = ts
 		}
-		if in.PartConds {
-			ts.PlanPartInfo = &core.PhysPlanPartInfo{PruningConds: []expression.Expression{expression.NewOne()}}
-		}
-		var cur base.PhysicalPlan = ts
 		build := func(o cvOp) {
 			col := cur.Schema().Columns[0]
 			exprs := []expression.Expression{}
@@ -629,11 +670,23 @@ func cvRunPlan(in cvPlan) (any, error) {
 			build(o)
 		}
 		if in.Reader {
-			r := core.PhysicalTableReader{StoreType: kv.StoreType(in.Store)}
-			cvSetField(&r, "tablePlan", cur)
-			reader := r.Init(sctx, 0)
-			reader.SetStats(stats(in.ReaderRow))
-			cur = reader
+			if in.Index {
+				r := core.PhysicalIndexReader{}
+				cvSetField(&r, "indexPlan", cur)
+				reader := r.Init(sctx, 0)
+				reader.SetStats(stats(in.ReaderRow))
+				readerSize = phF(reader.GetNetDataSize())
+				cur = reader
+			} else {
+				r := core.PhysicalTableReader{StoreType: kv.StoreType(in.Store)}
+				cvSetField(&r, "tablePlan", cur)
+				reader := r.Init(sctx, 0)
+				reader.SetStats(stats(in.ReaderRow))
+				readerSize = phF(reader.GetAvgRowSize())
+				cur = reader
+			}
+		} else {
+			_ = cvGetTblStats(cur)
 		}
 		for _, o := range in.Root {
 			build(o)
@@ -656,12 +709,16 @@ func cvRunPlan(in cvPlan) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"cost": phF(cost), "ranges": cvGetNumberOfRanges(root), "nodes": nodes,
-		"again": phF(again)}, nil
+	out := map[string]any{"cost": phF(cost), "ranges": cvGetNumberOfRanges(root), "nodes": nodes,
+		"again": phF(again)}
+	if readerSize != nil {
+		out["reader_size"] = readerSize
+	}
+	return out, nil
 }
 
 // cvCollect appends [tp, init, cost...] of the memo of p and its subtree (preorder; a
-// reader's table plan after the reader).
+// reader's pushed-down plan after the reader).
 func cvCollect(p base.PhysicalPlan, out *[]any) {
 	var init bool
 	var c costusage.CostVer2
@@ -678,6 +735,9 @@ func cvCollect(p base.PhysicalPlan, out *[]any) {
 	if r, ok := p.(*core.PhysicalTableReader); ok {
 		cvCollect(r.GetTablePlan(), out)
 	}
+	if r, ok := p.(*core.PhysicalIndexReader); ok && len(r.IndexPlans) > 0 {
+		cvCollect(r.IndexPlans[len(r.IndexPlans)-1], out)
+	}
 	for _, ch := range p.Children() {
 		cvCollect(ch, out)
 	}
@@ -689,9 +749,18 @@ func cvRunFactor(fn string, task int, fp cvFactorPlan) any {
 	col := cvColumn(1, int(mysql.TypeLonglong))
 	ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.StoreType(fp.Store), Desc: fp.Desc}.Init(sctx, 0)
 	ts.SetSchema(expression.NewSchema(col))
+	idx := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Columns: []*model.IndexColumn{{Offset: 0, Length: types.UnspecifiedLength}}}
+	is := core.PhysicalIndexScan{Table: tbl, Index: idx, Desc: fp.Desc}.Init(sctx, 0)
+	is.SetSchema(expression.NewSchema(col))
+	cvSetField(is, "dataSourceSchema", expression.NewSchema(col))
 	mkReader := func(child base.PhysicalPlan) base.PhysicalPlan {
 		r := core.PhysicalTableReader{StoreType: kv.StoreType(fp.Store)}
 		cvSetField(&r, "tablePlan", child)
+		return r.Init(sctx, 0)
+	}
+	mkIdxReader := func(child base.PhysicalPlan) base.PhysicalPlan {
+		r := core.PhysicalIndexReader{}
+		cvSetField(&r, "indexPlan", child)
 		return r.Init(sctx, 0)
 	}
 	mkSel := func(child base.PhysicalPlan) base.PhysicalPlan {
@@ -709,6 +778,14 @@ func cvRunFactor(fn string, task int, fp cvFactorPlan) any {
 		p = mkSel(ts)
 	case "sel_reader":
 		p = mkSel(mkReader(ts))
+	case "is":
+		p = is
+	case "ireader":
+		p = mkIdxReader(is)
+	case "sel_is":
+		p = mkSel(is)
+	case "sel_ireader":
+		p = mkSel(mkIdxReader(is))
 	case "pg":
 		pgv := core.PointGetPlan{TblInfo: tbl}
 		cvSetField(&pgv, "schema", expression.NewSchema(col))

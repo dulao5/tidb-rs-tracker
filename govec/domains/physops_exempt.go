@@ -185,7 +185,7 @@ func physopsExempt() map[string]string {
 		"pkg/planner/core/physical_plans.go:CTEDefinition.ExplainInfo":                                                     rest,
 		"pkg/planner/core/physical_plans.go:CTEDefinition.MemoryUsage":                                                     rest,
 		"pkg/planner/core/physical_plans.go:CollectPlanStatsVersion":                                                       vs,
-		"pkg/planner/core/physical_plans.go:GetPhysicalIndexReader":                                                        rest,
+		"pkg/planner/core/physical_plans.go:GetPhysicalIndexReader":                                                        "not ported: exception B3 (only the old cascades planner builds the operator)",
 		"pkg/planner/core/physical_plans.go:GetPhysicalTableReader":                                                        ex,
 		"pkg/planner/core/physical_plans.go:NewPhysicalHashAgg":                                                            rest,
 		"pkg/planner/core/physical_plans.go:NewPhysicalHashJoin":                                                           rest,
@@ -440,7 +440,7 @@ func physopsExempt() map[string]string {
 		"pkg/planner/core/task_base.go:RootTask.Plan":                                                                      vs,
 		"pkg/planner/core/task_base.go:RootTask.SetEmpty":                                                                  vs,
 		"pkg/planner/core/task_base.go:RootTask.SetPlan":                                                                   vs,
-		"pkg/planner/core/plan_cost_ver1.go:PhysicalIndexReader.GetNetDataSize":                                            "not yet ported: reclassified from EXC.B to D10.1 (unconditionally called by builder.go:4073, tidb-rs#411); ported with D12.1 Part 2B",
+		"pkg/planner/core/plan_cost_ver1.go:PhysicalIndexReader.GetNetDataSize":                                            "ported in D10.2 part 2A; covered by domain costver2",
 		"pkg/planner/core/plan_cost_ver1.go:PhysicalTableReader.GetNetDataSize":                                            "not yet ported: reclassified from EXC.B to D10.1 (unconditionally called by builder.go:3708, tidb-rs#411); ported with D12.1 Part 2A",
 	}
 }

@@ -23,6 +23,7 @@ D07.3	D07.3-2	D07.3-2	in-progress	tidb-rs branch nora/issue-434 (#434, D07.3 dis
 D07.3	VS1-33	VS1-33	done	dulao5/tidb-rs#424 merged (#418, D07.3 distsql part 1): converge 66/66; govec distsql; also ports D00.1 P1-1 (3), D00.3 ppcpuusage (7) and resourcegrouptag (4)
 D08.11	D08.11-AB	D08.11-AB	in-progress	tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records
 D08.11	D08.11-C	D08.11-C	in-progress	tidb-rs branch nora/issue-397 (#397, window function descriptors): converge 6/6; govec aggdesc 6813 records (+1238 part C)
+D09.0	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan.Init, PhysicalIndexReader.Init (2/2); govec findbest
 D09.0	VS1-10	VS1-10	in-progress	tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess
 D09.0	VS1-11	VS1-11	in-progress	dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx
 D09.1	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 29/43 + 14 stubs
@@ -37,16 +38,21 @@ D09.4	D09.4-B	D09.4-B	in-progress	tidb-rs branch nora/issue-433 (#433, D09.4 win
 D09.4	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 6/6
 D09.7	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 18/21
 D09.8	VS1-23	VS1-23	in-progress	dulao5/tidb-rs#259: converge 34/34
+D10.1	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan (5), PhysicalIndexReader (8 + LoadTableStats D10.2 stub + GetNetDataSize), PhysPlanPartInfo.Clone, GetPhysicalIndexReader (EXC.B); unblocks CopTask.convertToRootTaskImpl IndexReader, IsPointGetWithPKOrUniqueKeyByAutoCommit, CollectPlanStatsVersion; also backfills PhysPlanPartInfo.MemoryUsage in VS1-27
 D10.1	VS1-19	VS1-19	in-progress	tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub
 D10.1	VS1-27	VS1-27	in-progress	tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops
 D10.10	VS1-19	VS1-19	in-progress	tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil
+D10.2	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): GroupRangesByCols (M-MAPORDER), PhysicalIndexScan.{getScanRowSize, initSchema, addSelectionConditionForGlobalIndex, addPushedDownSelection}, getOriginalPhysicalIndexScan (6/6), upgrades convertToIndexScan for single-read (double-read stays blocked-by:D10.2 for part 2B), backfills 14 Part-1 functions in VS1-28; govec findbest 2333 records (0 diffs, D10.2 528->215, Go:table 140->130)
 D10.2	VS1-21	VS1-21	in-progress	dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28)
 D10.2	VS1-28	VS1-28	in-progress	tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics)
 D10.3	VS1-27	VS1-27	in-progress	tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust)
 D10.4	VS1-25	VS1-25	done	95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild
+D10.5	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan.GetPlanCostVer2, PhysicalIndexReader.GetPlanCostVer2, getTblStats (3/3); unblocks PhysicalTableReader.GetAvgRowSize; govec costver2 3600 records (0 diffs)
 D10.5	VS1-30	VS1-30	in-progress	tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2
+D10.6	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): AdjustRowCountForIndexScanByLimit (M-FMA, gostd::math::min), crossEstimateIndexRowCount (2/2, getMostCorrCol4Index stays blocked-by:D10.6 on real stats); govec findbest
 D10.6	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality; the DeriveStats / ExtractColGroups of the slice's operators ported with VS1-28 (tidb-rs branch vs1/find-best-task): matched 48/54, 6 stubs
 D10.8	VS1-11	VS1-11	in-progress	dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan
+D10.9	D10.2-2A	D10.2-2A	in-progress	tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexReader.{ResolveIndices, accessObject}, PhysicalIndexScan.{AccessObject, ToPB, ExplainID, TP, haveCorCol, isFullScan}, checkCoverIndex, getAccessObjectFromIndexScan (10/10); 5 EXPLAIN text methods remain explain_stub (blocked-by:D10.9); govec postprocess 1081 records (0 diffs, D10.2 23->0)
 D10.9	VS1-24	VS1-24	in-progress	tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31)
 D10.9	VS1-31	VS1-31	in-progress	tidb-rs branch claude/issue-330 (#330): converge 37/37 (IndexAccess.ToPB and PhysicalTableScan.ExplainID added); govec postprocess
 D11.1	VS1-29	VS1-29	in-progress	tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality

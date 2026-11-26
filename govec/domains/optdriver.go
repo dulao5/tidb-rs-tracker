@@ -119,10 +119,11 @@ var optdriverCoverage = map[string]vec.Coverage{
 }
 
 type odOpts struct {
-	Mode      mysql.SQLMode `json:"mode"`
-	KeepOrder bool          `json:"keep_order"`
-	Stable    bool          `json:"stable"`
-	Dynamic   bool          `json:"dynamic"`
+	Mode         mysql.SQLMode `json:"mode"`
+	KeepOrder    bool          `json:"keep_order"`
+	Stable       bool          `json:"stable"`
+	Dynamic      bool          `json:"dynamic"`
+	NoIndexMerge bool          `json:"no_index_merge,omitempty"`
 }
 
 // odDump is sbDump (which dumps the TopN of the logical optimization too).
