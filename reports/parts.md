@@ -30,6 +30,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D07.2 | VS1-33 | VS1-33 | planned | 96 / 116 | 1775 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D07.3 | VS1-33 | VS1-33 | planned | 69 / 118 | 1209 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D08.11 | D08.11-AB | D08.11-AB | in-progress | 62 / 69 | 942 | tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records |
+| D08.11 | D08.11-C | D08.11-C | in-progress | 6 / 69 | 96 | tidb-rs branch nora/issue-397 (#397, window function descriptors): converge 6/6; govec aggdesc 6813 records (+1238 part C) |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
