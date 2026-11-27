@@ -306,19 +306,19 @@ func reExecClosestReadAdjuster(args []json.RawMessage) (any, error) {
 // reRangeSpec describes a single ranger.Range in JSON.
 // Kind: "int" (int64), "uint" (uint64 encoded as string), "common" ([int64, string]).
 type reRangeSpec struct {
-	Low          []any `json:"low"`
-	High         []any `json:"high"`
-	LowExclude   bool  `json:"low_exclude,omitempty"`
-	HighExclude  bool  `json:"high_exclude,omitempty"`
+	Low         []any `json:"low"`
+	High        []any `json:"high"`
+	LowExclude  bool  `json:"low_exclude,omitempty"`
+	HighExclude bool  `json:"high_exclude,omitempty"`
 }
 
 // reStreamSpec scripts one mock SelectResult returned by selectResultHook.
 type reStreamSpec struct {
-	OpenErr  string       `json:"open_err,omitempty"`
-	Rows     [][]*int64   `json:"rows,omitempty"`
-	NextErr  string       `json:"next_err,omitempty"`
-	ErrAfter int          `json:"err_after,omitempty"` // return NextErr after this many Next calls
-	CloseErr string       `json:"close_err,omitempty"`
+	OpenErr  string     `json:"open_err,omitempty"`
+	Rows     [][]*int64 `json:"rows,omitempty"`
+	NextErr  string     `json:"next_err,omitempty"`
+	ErrAfter int        `json:"err_after,omitempty"` // return NextErr after this many Next calls
+	CloseErr string     `json:"close_err,omitempty"`
 }
 
 type reTableReaderSpec struct {
@@ -1266,33 +1266,33 @@ type reLookUpTableEntry struct {
 }
 
 type reIndexLookUpSpec struct {
-	TableID              int64                 `json:"table_id"`
-	IndexID              int64                 `json:"index_id"`
-	IsCommonHandle       bool                  `json:"is_common_handle,omitempty"`
-	CommonHandleV0Str    bool                  `json:"common_handle_v0_str,omitempty"`
-	TempTable            bool                  `json:"temp_table,omitempty"`
-	SetDummyCall         bool                  `json:"set_dummy_call,omitempty"`
-	KeepOrder            bool                  `json:"keep_order"`
-	Desc                 bool                  `json:"desc"`
-	IndexPaging          bool                  `json:"index_paging,omitempty"`
-	IndexLookUpPushDown  bool                  `json:"index_look_up_push_down,omitempty"`
-	WeakConsistency      bool                  `json:"weak_consistency,omitempty"`
-	ExtraTblPlan         bool                  `json:"extra_tbl_plan,omitempty"`
-	IndexLookupSize      int                   `json:"index_lookup_size"`
-	IndexLookupConc      int                   `json:"index_lookup_concurrency"`
-	DistSQLConc          int                   `json:"dist_sql_concurrency"`
-	MaxChunkSize         int                   `json:"max_chunk_size"`
-	EstRows              float64               `json:"est_rows"`
-	ByItemsDesc          []bool                `json:"by_items_desc,omitempty"`
-	Ranges               []reRangeSpec         `json:"ranges,omitempty"`
-	GroupedRanges        [][]reRangeSpec       `json:"grouped_ranges,omitempty"`
-	PushedLimit          *reIndexLookUpLimit   `json:"pushed_limit,omitempty"`
-	IndexStreams         [][]reLookUpIndexBatch `json:"index_streams,omitempty"` // per index KV request -> list of response packets
-	TableEntries         []reLookUpTableEntry  `json:"table_entries,omitempty"`
-	IndexErr             string                `json:"index_err,omitempty"`
-	TableErr             string                `json:"table_err,omitempty"`
-	RequiredRows         []int                 `json:"required_rows"`
-	CopConc              int                   `json:"cop_conc,omitempty"` // optional CopInfo concurrency reported by index response
+	TableID             int64                  `json:"table_id"`
+	IndexID             int64                  `json:"index_id"`
+	IsCommonHandle      bool                   `json:"is_common_handle,omitempty"`
+	CommonHandleV0Str   bool                   `json:"common_handle_v0_str,omitempty"`
+	TempTable           bool                   `json:"temp_table,omitempty"`
+	SetDummyCall        bool                   `json:"set_dummy_call,omitempty"`
+	KeepOrder           bool                   `json:"keep_order"`
+	Desc                bool                   `json:"desc"`
+	IndexPaging         bool                   `json:"index_paging,omitempty"`
+	IndexLookUpPushDown bool                   `json:"index_look_up_push_down,omitempty"`
+	WeakConsistency     bool                   `json:"weak_consistency,omitempty"`
+	ExtraTblPlan        bool                   `json:"extra_tbl_plan,omitempty"`
+	IndexLookupSize     int                    `json:"index_lookup_size"`
+	IndexLookupConc     int                    `json:"index_lookup_concurrency"`
+	DistSQLConc         int                    `json:"dist_sql_concurrency"`
+	MaxChunkSize        int                    `json:"max_chunk_size"`
+	EstRows             float64                `json:"est_rows"`
+	ByItemsDesc         []bool                 `json:"by_items_desc,omitempty"`
+	Ranges              []reRangeSpec          `json:"ranges,omitempty"`
+	GroupedRanges       [][]reRangeSpec        `json:"grouped_ranges,omitempty"`
+	PushedLimit         *reIndexLookUpLimit    `json:"pushed_limit,omitempty"`
+	IndexStreams        [][]reLookUpIndexBatch `json:"index_streams,omitempty"` // per index KV request -> list of response packets
+	TableEntries        []reLookUpTableEntry   `json:"table_entries,omitempty"`
+	IndexErr            string                 `json:"index_err,omitempty"`
+	TableErr            string                 `json:"table_err,omitempty"`
+	RequiredRows        []int                  `json:"required_rows"`
+	CopConc             int                    `json:"cop_conc,omitempty"` // optional CopInfo concurrency reported by index response
 }
 
 type reIndexLookUpReqOut struct {
@@ -1320,10 +1320,10 @@ type reLookUpResultSubset struct {
 	data []byte
 }
 
-func (r *reLookUpResultSubset) GetData() []byte              { return r.data }
-func (r *reLookUpResultSubset) GetStartKey() kv.Key          { return nil }
-func (r *reLookUpResultSubset) MemSize() int64               { return int64(len(r.data)) }
-func (r *reLookUpResultSubset) RespTime() time.Duration      { return 0 }
+func (r *reLookUpResultSubset) GetData() []byte         { return r.data }
+func (r *reLookUpResultSubset) GetStartKey() kv.Key     { return nil }
+func (r *reLookUpResultSubset) MemSize() int64          { return int64(len(r.data)) }
+func (r *reLookUpResultSubset) RespTime() time.Duration { return 0 }
 
 type reLookUpMockResp struct {
 	packets [][]byte
@@ -1414,13 +1414,13 @@ type reTableRowKV struct {
 
 type reLookUpMockClient struct {
 	kv.Client
-	mu             sync.Mutex
-	spec           *reIndexLookUpSpec
-	indexFTs       []*types.FieldType
-	tableFTs       []*types.FieldType
-	tableKVs       []reTableRowKV
-	indexReqIdx    int
-	indexReqs      []reIndexLookUpReqOut
+	mu          sync.Mutex
+	spec        *reIndexLookUpSpec
+	indexFTs    []*types.FieldType
+	tableFTs    []*types.FieldType
+	tableKVs    []reTableRowKV
+	indexReqIdx int
+	indexReqs   []reIndexLookUpReqOut
 }
 
 func (c *reLookUpMockClient) IsRequestTypeSupported(int64, int64) bool { return true }
@@ -2819,7 +2819,7 @@ func readexecGenerate(g *vec.Gen, r *rand.Rand) {
 	})
 	g.Add("sys/index_lookup/table_err", "index_lookup", reIndexLookUpSpec{
 		TableID: 513, IndexID: 1, KeepOrder: true, IndexLookupSize: 10, IndexLookupConc: 1, DistSQLConc: 5, MaxChunkSize: 8,
-		Ranges: []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}},
+		Ranges:       []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}},
 		IndexStreams: [][]reLookUpIndexBatch{{mkIntIdxBatch([]int64{1, 2})}}, TableErr: "tbl lookup boom", RequiredRows: []int{4},
 	})
 
