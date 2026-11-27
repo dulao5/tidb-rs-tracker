@@ -215,7 +215,7 @@ crates/planner/src/core/planbuilder.rs	build	D12.12	temporary	VS1-10: build (blo
 crates/planner/src/core/planbuilder.rs	build_execute	D09.2	temporary	EXECUTE ... USING @var: the variables need the expression rewriter (b.rewrite); the binary protocol's arguments are values and do not
 crates/planner/src/core/planbuilder.rs	check_hinted_sql	D13.3	temporary	VS1-10: check_hinted_sql (blocked-by:D13.3)
 crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D10.2	temporary	getPossibleAccessPaths: hypothetical indexes / TiFlash replicas of EXPLAIN and the newest index states of the domain (GetLatestIndexInfo) for reads for update / READ COMMITTED
-crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D13.3	temporary	getPossibleAccessPaths: index hints (USE / FORCE / IGNORE INDEX) and HYPO_INDEX hints
+crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D13.3	temporary	getPossibleAccessPaths: statement-level HYPO_INDEX hints (the index hints of the table name are ported since tidb-rs#489; comment-style hints are not in the planner yet)
 crates/planner/src/core/planbuilder.rs	planbuilder_helper_boundary	D06.4	temporary	D06.4: tryGetCommonHandleCols (tables.TryGetCommonPkColumns; only ADMIN CHECK and the DML statements read it)
 crates/planner/src/core/planbuilder.rs	planbuilder_helper_boundary	D09.12	temporary	D09.12: setExtraPhysTblIDColsOnDataSource (the physical table id column of partitioned tables)
 crates/planner/src/core/planbuilder.rs	planbuilder_helper_boundary	D09.17	temporary	D09.17: ANALYZE helpers (addColumnsWithVirtualExprs, checkIsAllSpecialGlobalIndex)
