@@ -441,6 +441,6 @@ func physopsExempt() map[string]string {
 		"pkg/planner/core/task_base.go:RootTask.SetEmpty":                                                                  vs,
 		"pkg/planner/core/task_base.go:RootTask.SetPlan":                                                                   vs,
 		"pkg/planner/core/plan_cost_ver1.go:PhysicalIndexReader.GetNetDataSize":                                            "ported in D10.2 part 2A; covered by domain costver2",
-		"pkg/planner/core/plan_cost_ver1.go:PhysicalTableReader.GetNetDataSize":                                            "not yet ported: reclassified from EXC.B to D10.1 (unconditionally called by builder.go:3708, tidb-rs#411); ported with D12.1 Part 2A",
+		"pkg/planner/core/plan_cost_ver1.go:PhysicalTableReader.GetNetDataSize":                                            "covered by the readexec domain (table_reader op) and tidb-rs unit tests",
 	}
 }

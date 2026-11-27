@@ -16,11 +16,13 @@ crates/executor/src/aggregate/agg_hash_executor.rs	spill	D01.10	temporary	D12.3-
 crates/executor/src/aggregate/agg_hash_final_worker.rs	run	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.run disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/aggregate/agg_hash_final_worker.rs	send_final_result	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.sendFinalResult disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
-crates/executor/src/builder.rs	build	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
+crates/executor/src/builder.rs	build	D12.1	temporary	D12.1 parts 2B/2C/3A/3C/3D: IndexReader, IndexLookUp, BatchPointGet, UnionScan, TableSample executors
+crates/executor/src/builder.rs	build_no_range_table_reader	D06.4	temporary	D12.1 part 2A (VS1-34): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
+crates/executor/src/builder.rs	build_table_reader	D09.12	temporary	D12.1 part 2A (VS1-34): dynamic partition pruning in buildTableReader (part 3B after D09.12 partition pruning)
+crates/executor/src/builder.rs	build_table_reader	DEF.MPP	temporary	D12.1 part 2A (VS1-34): TiFlash / MPP / BatchCop TableReader (not ported, DEF.MPP)
 crates/executor/src/builder.rs	get_cache_table	D06.4	temporary	D06.4 part 2: cached tables (TryReadFromCache / UpdateLockForRead)
 crates/executor/src/builder.rs	get_snapshot	X	permanent	not ported (write path: the for-update snapshot of DML / locking reads)
 crates/executor/src/builder.rs	get_snapshot_ts	X	permanent	not ported (write path: the for-update TS of DML / locking reads)
-crates/executor/src/builder.rs	new_closest_read_adjuster	D07.3	temporary	VS1-34: DistSQLContext and kv.Request.MatchStoreLabels (table reader only)
 crates/executor/src/compiler.rs	check_execute_using	D09.2	temporary	EXECUTE ... USING @v (text protocol, never routed): the expression rewriter of buildExecute
 crates/executor/src/compiler.rs	count_stmt_node	D14.1	temporary	D14.1: metric vectors of pkg/metrics
 crates/executor/src/compiler.rs	is_physical_plan_need_lower_priority	D10.1	temporary	VS1-19: PhysicalPlan.StatsCount
@@ -33,11 +35,7 @@ crates/executor/src/detach.rs	projection_exec_detach	D12.2	temporary	VS1-35: sel
 crates/executor/src/detach.rs	projection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
-crates/executor/src/detach.rs	table_reader_executor_context_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
-crates/executor/src/detach.rs	table_reader_executor_detach	D12.1	temporary	VS1-12 / VS1-34: point get, table reader executors
 crates/executor/src/glue.rs	get_plan_replayer_handle	X	delegated	delegated (the block table puts pkg/domain/plan_replayer.go in X: it writes mysql.plan_replayer_status and dump files). Each node captures only the statements it executes itself, so statements sent to a tidb-rs node are captured by no node: the plan replayer handle (task collector of mysql.plan_replayer_task, dump worker); returns None, so tidb-rs nodes never execute PLAN REPLAYER CAPTURE tasks (docs/compatibility.md known limitation)
-crates/executor/src/internal/builder/builder_utils.rs	construct_dag_req	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
-crates/executor/src/internal/builder/builder_utils.rs	to_pb	D10.9	temporary	VS1-31: PhysicalPlan.ToPB / DAG request
 crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
 crates/executor/src/internal/exec/executor.rs	release_sys_session	D06.5	temporary	D06.5: domain system session pool
 crates/executor/src/internal/exec/executor.rs	top_sql_enabled	D14.2	temporary	D14.2: slow log / Top SQL / PrevStmt
@@ -66,6 +64,10 @@ crates/executor/src/sortexec/topn.rs	open	D01.10	temporary	VS1-36: the spill hel
 crates/executor/src/sortexec/topn.rs	open	D12.5	temporary	VS1-36: a rank top-n (the planner's PrefixCol, e.typeCtx in Open) stops with Blocked in Open, before the child opens, so the router can still hand the statement to Go TiDB
 crates/executor/src/sortexec/topn.rs	spill_top_n_exec_heap	D01.10	temporary	VS1-36: spills the top-n heap to disk (D01.10); unreachable without spill
 crates/executor/src/sortexec/topn_chunk_heap.rs	test_kill_signal_in_top_n	D01.10	temporary	VS1-36: a test hook of the spill tests (D01.10)
+crates/executor/src/table_reader.rs	build_kv_req	D06.5	temporary	D12.1 part 2A (VS1-34): cluster memory table DDLOwner routing requires domain.DDL (D06.5)
+crates/executor/src/table_reader.rs	build_resp_for_grouped_ranges	D07.3	temporary	D12.1 part 2A (VS1-34): multi-group TableReader merge requires distsql.NewSortedSelectResults (D07.3 part 2); intercepted pre-Open in buildTableReader
+crates/executor/src/table_reader.rs	build_resp_for_grouped_ranges	DEF.MPP	temporary	D12.1 part 2A (VS1-34): TiFlash BatchCop / NewSerialSelectResults partitioned TableReader (not ported, DEF.MPP)
+crates/executor/src/table_reader.rs	open_impl	D10.1	temporary	D12.1 part 2A (VS1-34): correlated column in TableReader access condition requires PhysicalTableScan.ResolveCorrelatedColumns (D10.1); intercepted pre-Open in buildTableReader
 crates/executor/src/utils.rs	encode_password	D04.1	temporary	D04.1: password encoding of user statements
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.10	temporary	signatures of unported function families
 crates/expr-pushdown/src/distsql_builtin.rs	not_ported	D08.6	temporary	signatures of unported function families
@@ -310,7 +312,6 @@ crates/session/src/metrics.rs	init	D14.1	temporary	VS1-14: session metric vector
 crates/session/src/metrics.rs	init_metrics_vars	D14.1	temporary	VS1-14: session metric vectors
 crates/session/src/session.rs	delete	D13.1	temporary	session plan cache stand-in holds no plans (the plan-cache exception A3); keeps the deleted keys
 crates/session/src/session.rs	do_commit	X	permanent	not ported (write path: committing a transaction with writes, N11 D8)
-crates/session/src/session.rs	get_build_pb_ctx	D10.9	temporary	VS1-14: planctx.BuildPBContext of ToPB
 crates/session/src/session.rs	get_domain	D06.5	temporary	VS1-14: the domain of the new session
 crates/session/src/session.rs	get_session_manager	D03.1	temporary	VS1-14: the server's session manager
 crates/session/src/session.rs	get_snapshot_info_schema	D06.5	temporary	VS1-14: domain.GetSnapshotInfoSchema (tidb_snapshot runs on the PoC)
