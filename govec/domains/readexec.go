@@ -16,6 +16,7 @@ package domains
 //     and Open / Next / Close error propagation.
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -23,6 +24,10 @@ import (
 	"math"
 	"math/rand/v2"
 	"reflect"
+	"slices"
+	"strings"
+	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/dulao5/tidb-rs-tracker/govec/vec"
@@ -37,6 +42,7 @@ import (
 	"github.com/pingcap/tidb/pkg/kv"
 	"github.com/pingcap/tidb/pkg/meta/model"
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/charset"
 	pmodel "github.com/pingcap/tidb/pkg/parser/model"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	plannercore "github.com/pingcap/tidb/pkg/planner/core"
@@ -45,9 +51,12 @@ import (
 	plannerutil "github.com/pingcap/tidb/pkg/planner/util"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/statistics"
+	"github.com/pingcap/tidb/pkg/tablecodec"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pingcap/tidb/pkg/util/chunk"
+	"github.com/pingcap/tidb/pkg/util/codec"
 	"github.com/pingcap/tidb/pkg/util/collate"
+	"github.com/pingcap/tidb/pkg/util/execdetails"
 	"github.com/pingcap/tidb/pkg/util/memory"
 	"github.com/pingcap/tidb/pkg/util/mock"
 	"github.com/pingcap/tidb/pkg/util/ranger"
@@ -118,6 +127,55 @@ var readexecCoverage = map[string]vec.Coverage{
 			"pkg/executor/distsql.go:buildKeyRanges",
 			"pkg/executor/distsql.go:needMergeSort",
 			"pkg/executor/distsql.go:newIndexReaderExecutorContext",
+		},
+	},
+	"index_lookup_helpers": {
+		Min: 150,
+		GoFuncs: []string{
+			"pkg/executor/distsql.go:CalculateBatchSize",
+			"pkg/executor/distsql.go:getIndexScanMaxInFlight",
+			"pkg/executor/distsql.go:getMergeSortIndexScanConcurrency",
+			"pkg/executor/distsql.go:GetLackHandles",
+			"pkg/executor/builder.go:buildIndexScanOutputOffsets",
+			"pkg/executor/distsql.go:IndexLookUpRunTimeStats.String",
+			"pkg/executor/distsql.go:IndexLookUpRunTimeStats.Clone",
+			"pkg/executor/distsql.go:IndexLookUpRunTimeStats.Merge",
+			"pkg/executor/distsql.go:IndexLookUpRunTimeStats.Tp",
+		},
+	},
+	"index_lookup": {
+		Min: 180,
+		GoFuncs: []string{
+			"pkg/executor/builder.go:buildTableReq",
+			"pkg/executor/builder.go:buildIndexLookUpPushDownDAGReq",
+			"pkg/executor/builder.go:buildIndexReq",
+			"pkg/executor/builder.go:buildNoRangeIndexLookUpReader",
+			"pkg/executor/builder.go:executorBuilder.buildIndexLookUpReader",
+			"pkg/executor/distsql.go:newIndexLookUpExecutorContext",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.Table",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.setDummy",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.Open",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.buildTableKeyRanges",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.open",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.startWorkers",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.startIndexWorker",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.buildIndexSelectResultForRange",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.calculateBatchSize",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.startTableWorker",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.buildTableReader",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.Close",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.Next",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.getResultTask",
+			"pkg/executor/distsql.go:IndexLookUpExecutor.getHandle",
+			"pkg/executor/distsql.go:indexWorker.fetchHandles",
+			"pkg/executor/distsql.go:indexWorker.fetchHandlesRolling",
+			"pkg/executor/distsql.go:indexWorker.extractTaskHandles",
+			"pkg/executor/distsql.go:indexWorker.extractLookUpPushDownRowsOrHandles",
+			"pkg/executor/distsql.go:tableWorker.pickAndExecTask",
+			"pkg/executor/distsql.go:tableWorker.executeTask",
+			"pkg/executor/distsql.go:lookupTableTask.Len",
+			"pkg/executor/distsql.go:lookupTableTask.Less",
+			"pkg/executor/distsql.go:lookupTableTask.Swap",
 		},
 	},
 }
@@ -553,6 +611,14 @@ func reSetDummy(e *executor.TableReaderExecutor)
 // ReplicaReadType, and ReplicaClosestReadThreshold from SessionVars (as real session.GetDistSQLCtx does).
 type reSessionCtx struct {
 	*mock.Context
+	client kv.Client
+}
+
+func (c *reSessionCtx) GetClient() kv.Client {
+	if c.client != nil {
+		return c.client
+	}
+	return c.Context.GetClient()
 }
 
 func (c *reSessionCtx) GetDistSQLCtx() *distsqlctx.DistSQLContext {
@@ -564,6 +630,11 @@ func (c *reSessionCtx) GetDistSQLCtx() *distsqlctx.DistSQLContext {
 	dctx.EnablePaging = vars.EnablePaging
 	dctx.MinPagingSize = vars.MinPagingSize
 	dctx.MaxPagingSize = vars.MaxPagingSize
+	dctx.EnableChunkRPC = vars.EnableChunkRPC
+	dctx.RuntimeStatsColl = vars.StmtCtx.RuntimeStatsColl
+	if c.client != nil {
+		dctx.Client = c.client
+	}
 	return dctx
 }
 
@@ -984,6 +1055,854 @@ func reExecIndexReader(args []json.RawMessage) (any, error) {
 	}
 	if err := ir.Close(); err != nil {
 		out.CloseErr = err.Error()
+	}
+	return out, nil
+}
+
+// ---------------------------------------------------------------------------
+// index_lookup_helpers (Part 2C)
+// ---------------------------------------------------------------------------
+
+//go:linkname reGetIndexScanMaxInFlight github.com/pingcap/tidb/pkg/executor.getIndexScanMaxInFlight
+func reGetIndexScanMaxInFlight(distSQLConcurrency int) int
+
+//go:linkname reGetMergeSortIndexScanConcurrency github.com/pingcap/tidb/pkg/executor.getMergeSortIndexScanConcurrency
+func reGetMergeSortIndexScanConcurrency(needMerge bool, kvRangesCount int, distSQLConcurrency int) int
+
+//go:linkname reBuildIndexScanOutputOffsets github.com/pingcap/tidb/pkg/executor.buildIndexScanOutputOffsets
+func reBuildIndexScanOutputOffsets(p *plannercore.PhysicalIndexScan, columns []*model.IndexColumn, handleLen int) ([]uint32, error)
+
+//go:linkname reIndexLookUpSetDummy github.com/pingcap/tidb/pkg/executor.(*IndexLookUpExecutor).setDummy
+func reIndexLookUpSetDummy(e *executor.IndexLookUpExecutor)
+
+type reRuntimeStatsSpec struct {
+	FetchHandleTotal         int64 `json:"fetch_handle_total"`
+	FetchHandle              int64 `json:"fetch_handle"`
+	TaskWait                 int64 `json:"task_wait"`
+	TableRowScan             int64 `json:"table_row_scan"`
+	TableTaskNum             int64 `json:"table_task_num"`
+	Concurrency              int   `json:"concurrency"`
+	NextWaitIndexScan        int64 `json:"next_wait_index_scan"`
+	NextWaitTableLookUpBuild int64 `json:"next_wait_table_lookup_build"`
+	NextWaitTableLookUpResp  int64 `json:"next_wait_table_lookup_resp"`
+}
+
+func (s reRuntimeStatsSpec) toGo() *executor.IndexLookUpRunTimeStats {
+	return &executor.IndexLookUpRunTimeStats{
+		FetchHandleTotal:         s.FetchHandleTotal,
+		FetchHandle:              s.FetchHandle,
+		TaskWait:                 s.TaskWait,
+		TableRowScan:             s.TableRowScan,
+		TableTaskNum:             s.TableTaskNum,
+		Concurrency:              s.Concurrency,
+		NextWaitIndexScan:        time.Duration(s.NextWaitIndexScan),
+		NextWaitTableLookUpBuild: time.Duration(s.NextWaitTableLookUpBuild),
+		NextWaitTableLookUpResp:  time.Duration(s.NextWaitTableLookUpResp),
+	}
+}
+
+func reExecIndexLookUpHelpers(args []json.RawMessage) (any, error) {
+	var kind string
+	if err := json.Unmarshal(args[0], &kind); err != nil {
+		return nil, err
+	}
+	switch kind {
+	case "calc_batch_size":
+		var estRows, initBatch, maxBatch int
+		_ = json.Unmarshal(args[1], &estRows)
+		_ = json.Unmarshal(args[2], &initBatch)
+		_ = json.Unmarshal(args[3], &maxBatch)
+		return executor.CalculateBatchSize(estRows, initBatch, maxBatch), nil
+	case "max_in_flight":
+		var c int
+		_ = json.Unmarshal(args[1], &c)
+		return reGetIndexScanMaxInFlight(c), nil
+	case "merge_sort_concurrency":
+		var needMerge bool
+		var kvRangesCount, c int
+		_ = json.Unmarshal(args[1], &needMerge)
+		_ = json.Unmarshal(args[2], &kvRangesCount)
+		_ = json.Unmarshal(args[3], &c)
+		return reGetMergeSortIndexScanConcurrency(needMerge, kvRangesCount, c), nil
+	case "lack_handles":
+		var isCommon bool
+		var expVals, obtVals []int64
+		_ = json.Unmarshal(args[1], &isCommon)
+		_ = json.Unmarshal(args[2], &expVals)
+		_ = json.Unmarshal(args[3], &obtVals)
+		mkH := func(v int64) kv.Handle {
+			if !isCommon {
+				return kv.IntHandle(v)
+			}
+			enc, err := codec.EncodeKey(time.UTC, nil, types.NewIntDatum(v))
+			if err != nil {
+				panic(err)
+			}
+			ch, err := kv.NewCommonHandle(enc)
+			if err != nil {
+				panic(err)
+			}
+			return ch
+		}
+		expected := make([]kv.Handle, len(expVals))
+		for i, v := range expVals {
+			expected[i] = mkH(v)
+		}
+		hm := kv.NewHandleMap()
+		for _, v := range obtVals {
+			hm.Set(mkH(v), true)
+		}
+		lack := executor.GetLackHandles(expected, hm)
+		out := make([]string, len(lack))
+		for i, h := range lack {
+			out[i] = h.String()
+		}
+		return map[string]any{
+			"lack":      out,
+			"rem_count": hm.Len(),
+		}, nil
+	case "index_scan_offsets":
+		var numIdxCols, handleLen int
+		var byItemColIDs []int64
+		var nonColByItem, isPartitioned, isGlobal, dynamicPrune bool
+		_ = json.Unmarshal(args[1], &numIdxCols)
+		_ = json.Unmarshal(args[2], &handleLen)
+		_ = json.Unmarshal(args[3], &byItemColIDs)
+		_ = json.Unmarshal(args[4], &nonColByItem)
+		_ = json.Unmarshal(args[5], &isPartitioned)
+		_ = json.Unmarshal(args[6], &isGlobal)
+		_ = json.Unmarshal(args[7], &dynamicPrune)
+
+		sctx := mock.NewContext()
+		sctx.GetSessionVars().StmtCtx.UseDynamicPruneMode = dynamicPrune
+		if dynamicPrune {
+			sctx.GetSessionVars().PartitionPruneMode.Store(string(variable.Dynamic))
+		} else {
+			sctx.GetSessionVars().PartitionPruneMode.Store(string(variable.Static))
+		}
+		tblInfo := &model.TableInfo{ID: 10, Name: pmodel.NewCIStr("t")}
+		if isPartitioned {
+			tblInfo.Partition = &model.PartitionInfo{Enable: true}
+		}
+		idxCols := make([]*model.IndexColumn, numIdxCols)
+		schemaCols := make([]*expression.Column, 0, numIdxCols+handleLen)
+		for i := 0; i < numIdxCols; i++ {
+			idxCols[i] = &model.IndexColumn{Name: pmodel.NewCIStr(fmt.Sprintf("c%d", i)), Offset: i}
+			schemaCols = append(schemaCols, &expression.Column{
+				ID:      int64(i + 1),
+				Index:   i,
+				RetType: types.NewFieldType(mysql.TypeLonglong),
+			})
+		}
+		for i := 0; i < handleLen; i++ {
+			schemaCols = append(schemaCols, &expression.Column{
+				ID:      int64(100 + i),
+				Index:   numIdxCols + i,
+				RetType: types.NewFieldType(mysql.TypeLonglong),
+			})
+		}
+		idxInfo := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Global: isGlobal, Columns: idxCols}
+		byItems := make([]*plannerutil.ByItems, 0, len(byItemColIDs)+1)
+		if nonColByItem {
+			byItems = append(byItems, &plannerutil.ByItems{Expr: expression.NewOne()})
+		}
+		for _, cid := range byItemColIDs {
+			byItems = append(byItems, &plannerutil.ByItems{
+				Expr: &expression.Column{ID: cid, RetType: types.NewFieldType(mysql.TypeLonglong)},
+			})
+		}
+		scan := plannercore.PhysicalIndexScan{
+			Table:   tblInfo,
+			Index:   idxInfo,
+			ByItems: byItems,
+		}.Init(sctx.GetPlanCtx(), 0)
+		scan.SetSchema(expression.NewSchema(schemaCols...))
+		offs, err := reBuildIndexScanOutputOffsets(scan, idxCols, handleLen)
+		if err != nil {
+			return map[string]any{"err": err.Error()}, nil
+		}
+		return map[string]any{"offsets": offs}, nil
+	case "runtime_stats":
+		var aSpec, bSpec reRuntimeStatsSpec
+		_ = json.Unmarshal(args[1], &aSpec)
+		_ = json.Unmarshal(args[2], &bSpec)
+		a := aSpec.toGo()
+		b := bSpec.toGo()
+		aStr := a.String()
+		cloneStr := a.Clone().String()
+		a.Merge(b)
+		return map[string]any{
+			"a_str":      aStr,
+			"clone_str":  cloneStr,
+			"merged_str": a.String(),
+			"tp":         a.Tp(),
+		}, nil
+	default:
+		return nil, fmt.Errorf("index_lookup_helpers: unknown kind %q", kind)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// index_lookup (Part 2C)
+// ---------------------------------------------------------------------------
+
+type reIndexLookUpLimit struct {
+	Offset uint64 `json:"offset"`
+	Count  uint64 `json:"count"`
+}
+
+// reLookUpIndexBatch represents one scripted SelectResponse chunk returned for an index scan.
+// For normal mode: Rows has columns matching getRetTpsForIndexReader (optional byItem + handle col(s)).
+// For pushdown mode: HitRows goes to main Chunks (channel 1), MissHandles goes to IntermediateOutputs[0] (channel 0).
+type reLookUpIndexBatch struct {
+	Rows        [][]any `json:"rows,omitempty"`
+	HitRows     [][]any `json:"hit_rows,omitempty"`
+	MissHandles [][]any `json:"miss_handles,omitempty"`
+}
+
+type reLookUpTableEntry struct {
+	HandleKey []any `json:"handle_key"` // [int64] for int handle, or [int64, string] for common handle
+	Row       []any `json:"row"`        // table output columns: [id, val] or [k1, k2, val]
+}
+
+type reIndexLookUpSpec struct {
+	TableID              int64                 `json:"table_id"`
+	IndexID              int64                 `json:"index_id"`
+	IsCommonHandle       bool                  `json:"is_common_handle,omitempty"`
+	CommonHandleV0Str    bool                  `json:"common_handle_v0_str,omitempty"`
+	TempTable            bool                  `json:"temp_table,omitempty"`
+	SetDummyCall         bool                  `json:"set_dummy_call,omitempty"`
+	KeepOrder            bool                  `json:"keep_order"`
+	Desc                 bool                  `json:"desc"`
+	IndexPaging          bool                  `json:"index_paging,omitempty"`
+	IndexLookUpPushDown  bool                  `json:"index_look_up_push_down,omitempty"`
+	WeakConsistency      bool                  `json:"weak_consistency,omitempty"`
+	ExtraTblPlan         bool                  `json:"extra_tbl_plan,omitempty"`
+	IndexLookupSize      int                   `json:"index_lookup_size"`
+	IndexLookupConc      int                   `json:"index_lookup_concurrency"`
+	DistSQLConc          int                   `json:"dist_sql_concurrency"`
+	MaxChunkSize         int                   `json:"max_chunk_size"`
+	EstRows              float64               `json:"est_rows"`
+	ByItemsDesc          []bool                `json:"by_items_desc,omitempty"`
+	Ranges               []reRangeSpec         `json:"ranges,omitempty"`
+	GroupedRanges        [][]reRangeSpec       `json:"grouped_ranges,omitempty"`
+	PushedLimit          *reIndexLookUpLimit   `json:"pushed_limit,omitempty"`
+	IndexStreams         [][]reLookUpIndexBatch `json:"index_streams,omitempty"` // per index KV request -> list of response packets
+	TableEntries         []reLookUpTableEntry  `json:"table_entries,omitempty"`
+	IndexErr             string                `json:"index_err,omitempty"`
+	TableErr             string                `json:"table_err,omitempty"`
+	RequiredRows         []int                 `json:"required_rows"`
+	CopConc              int                   `json:"cop_conc,omitempty"` // optional CopInfo concurrency reported by index response
+}
+
+type reIndexLookUpReqOut struct {
+	KeyRanges     []reKVRangeOut `json:"key_ranges"`
+	Desc          bool           `json:"desc"`
+	KeepOrder     bool           `json:"keep_order"`
+	Concurrency   int            `json:"concurrency"`
+	Paging        bool           `json:"paging"`
+	MinPagingSize uint64         `json:"min_paging_size"`
+	Cacheable     bool           `json:"cacheable"`
+	OutputOffsets []uint32       `json:"output_offsets"`
+}
+
+type reIndexLookUpOut struct {
+	IndexReqs    []reIndexLookUpReqOut `json:"index_reqs"`
+	TableTaskNum int64                 `json:"table_task_num"`
+	Rows         [][]any               `json:"rows"`
+	Err          string                `json:"err,omitempty"`
+	TableIDCheck int64                 `json:"table_id_check"`
+	IndexNames   []string              `json:"index_names"`
+	TableIDs     []int64               `json:"table_ids"`
+}
+
+type reLookUpResultSubset struct {
+	data []byte
+}
+
+func (r *reLookUpResultSubset) GetData() []byte              { return r.data }
+func (r *reLookUpResultSubset) GetStartKey() kv.Key          { return nil }
+func (r *reLookUpResultSubset) MemSize() int64               { return int64(len(r.data)) }
+func (r *reLookUpResultSubset) RespTime() time.Duration      { return 0 }
+
+type reLookUpMockResp struct {
+	packets [][]byte
+	idx     int
+	errMsg  string
+	conc    int
+}
+
+func (r *reLookUpMockResp) Next(context.Context) (kv.ResultSubset, error) {
+	if r.errMsg != "" {
+		msg := r.errMsg
+		r.errMsg = ""
+		return nil, errors.New(msg)
+	}
+	if r.idx >= len(r.packets) {
+		return nil, nil
+	}
+	pkt := r.packets[r.idx]
+	r.idx++
+	return &reLookUpResultSubset{data: pkt}, nil
+}
+
+func (r *reLookUpMockResp) Close() error { return nil }
+
+func (r *reLookUpMockResp) GetConcurrency() (int, int) {
+	if r.conc > 0 {
+		return r.conc, 0
+	}
+	return 1, 0
+}
+
+func (r *reLookUpMockResp) GetStoreBatchInfo() (uint64, uint64) { return 0, 0 }
+
+func reEncodeChunkBytes(fts []*types.FieldType, rows [][]any, v0SortKey bool) []byte {
+	chk := chunk.NewChunkWithCapacity(fts, len(rows))
+	var coll collate.Collator
+	if v0SortKey {
+		coll = collate.GetCollator("utf8mb4_general_ci")
+	}
+	for _, row := range rows {
+		for colIdx, ft := range fts {
+			if colIdx >= len(row) || row[colIdx] == nil {
+				chk.AppendNull(colIdx)
+				continue
+			}
+			if ft.EvalType() == types.ETString {
+				s := row[colIdx].(string)
+				if v0SortKey && !mysql.HasBinaryFlag(ft.GetFlag()) {
+					chk.AppendBytes(colIdx, coll.Key(s))
+				} else {
+					chk.AppendString(colIdx, s)
+				}
+			} else {
+				chk.AppendInt64(colIdx, int64(row[colIdx].(float64)))
+			}
+		}
+	}
+	return chunk.NewCodec(fts).Encode(chk)
+}
+
+func reEncodeSelectResp(fts []*types.FieldType, rows [][]any, rowsSortKey bool, interFTs []*types.FieldType, interRows [][]any, interSortKey bool) []byte {
+	resp := &tipb.SelectResponse{
+		EncodeType: tipb.EncodeType_TypeChunk,
+	}
+	if len(rows) > 0 {
+		resp.Chunks = []tipb.Chunk{{RowsData: reEncodeChunkBytes(fts, rows, rowsSortKey)}}
+	}
+	if interFTs != nil {
+		inter := &tipb.IntermediateOutput{
+			EncodeType: tipb.EncodeType_TypeChunk,
+		}
+		if len(interRows) > 0 {
+			inter.Chunks = []tipb.Chunk{{RowsData: reEncodeChunkBytes(interFTs, interRows, interSortKey)}}
+		}
+		resp.IntermediateOutputs = []*tipb.IntermediateOutput{inter}
+	}
+	data, err := resp.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
+type reTableRowKV struct {
+	key []byte
+	row []any
+}
+
+type reLookUpMockClient struct {
+	kv.Client
+	mu             sync.Mutex
+	spec           *reIndexLookUpSpec
+	indexFTs       []*types.FieldType
+	tableFTs       []*types.FieldType
+	tableKVs       []reTableRowKV
+	indexReqIdx    int
+	indexReqs      []reIndexLookUpReqOut
+}
+
+func (c *reLookUpMockClient) IsRequestTypeSupported(int64, int64) bool { return true }
+
+func (c *reLookUpMockClient) Send(_ context.Context, req *kv.Request, _ any, _ *kv.ClientSendOption) kv.Response {
+	var dag tipb.DAGRequest
+	if err := dag.Unmarshal(req.Data); err != nil {
+		return &reLookUpMockResp{errMsg: err.Error()}
+	}
+	if len(dag.Executors) == 0 {
+		return &reLookUpMockResp{}
+	}
+	if dag.Executors[0].Tp == tipb.ExecType_TypeIndexScan {
+		c.mu.Lock()
+		krs := req.KeyRanges.AppendSelfTo(nil)
+		krOut := make([]reKVRangeOut, 0, len(krs))
+		for _, kr := range krs {
+			krOut = append(krOut, reKVRangeOut{
+				Start: hex.EncodeToString(kr.StartKey),
+				End:   hex.EncodeToString(kr.EndKey),
+			})
+		}
+		offs := append([]uint32(nil), dag.OutputOffsets...)
+		c.indexReqs = append(c.indexReqs, reIndexLookUpReqOut{
+			KeyRanges:     krOut,
+			Desc:          req.Desc,
+			KeepOrder:     req.KeepOrder,
+			Concurrency:   req.Concurrency,
+			Paging:        req.Paging.Enable,
+			MinPagingSize: req.Paging.MinPagingSize,
+			Cacheable:     req.Cacheable,
+			OutputOffsets: offs,
+		})
+		streamIdx := c.indexReqIdx
+		c.indexReqIdx++
+		c.mu.Unlock()
+
+		if c.spec.IndexErr != "" {
+			return &reLookUpMockResp{errMsg: c.spec.IndexErr, conc: c.spec.CopConc}
+		}
+		var batches []reLookUpIndexBatch
+		if streamIdx < len(c.spec.IndexStreams) {
+			batches = c.spec.IndexStreams[streamIdx]
+		}
+		pkts := make([][]byte, 0, len(batches))
+		for _, b := range batches {
+			if c.spec.IndexLookUpPushDown {
+				pkts = append(pkts, reEncodeSelectResp(c.tableFTs, b.HitRows, false, c.indexFTs, b.MissHandles, c.spec.CommonHandleV0Str))
+			} else {
+				pkts = append(pkts, reEncodeSelectResp(c.indexFTs, b.Rows, c.spec.CommonHandleV0Str, nil, nil, false))
+			}
+		}
+		return &reLookUpMockResp{packets: pkts, conc: c.spec.CopConc}
+	}
+
+	// Table-side lookup request: scan matching tableKVs in req.KeyRanges.
+	if c.spec.TableErr != "" {
+		return &reLookUpMockResp{errMsg: c.spec.TableErr}
+	}
+	krs := req.KeyRanges.AppendSelfTo(nil)
+	var matched [][]any
+	for _, kr := range krs {
+		for _, kvRow := range c.tableKVs {
+			if bytes.Compare(kvRow.key, kr.StartKey) >= 0 && bytes.Compare(kvRow.key, kr.EndKey) < 0 {
+				matched = append(matched, kvRow.row)
+			}
+		}
+	}
+	if len(matched) == 0 {
+		return &reLookUpMockResp{}
+	}
+	return &reLookUpMockResp{packets: [][]byte{reEncodeSelectResp(c.tableFTs, matched, false, nil, nil, false)}}
+}
+
+func reBuildIndexLookUpTableAndPlan(sctx *mock.Context, spec *reIndexLookUpSpec) (*model.TableInfo, *plannercore.PhysicalIndexLookUpReader, []*types.FieldType, []*types.FieldType) {
+	intFT := func() *types.FieldType {
+		return types.NewFieldType(mysql.TypeLonglong)
+	}
+	strFT := func(bin bool) *types.FieldType {
+		ft := types.NewFieldType(mysql.TypeVarchar)
+		ft.SetFlen(64)
+		ft.SetCharset(charset.CharsetUTF8MB4)
+		if bin {
+			ft.SetCollate(charset.CollationBin)
+			ft.AddFlag(mysql.BinaryFlag)
+		} else {
+			ft.SetCollate("utf8mb4_general_ci")
+		}
+		return ft
+	}
+
+	var cols []*model.ColumnInfo
+	var indices []*model.IndexInfo
+	var idxScanCols []*expression.Column
+	var tblCols []*expression.Column
+	var extraHandleCol *expression.Column
+	var commonHandleCols []*expression.Column
+
+	if !spec.IsCommonHandle {
+		pkFT := intFT()
+		pkFT.AddFlag(mysql.PriKeyFlag | mysql.NotNullFlag)
+		c0 := &model.ColumnInfo{ID: 1, Name: pmodel.NewCIStr("id"), Offset: 0, FieldType: *pkFT, State: model.StatePublic}
+		c1 := &model.ColumnInfo{ID: 2, Name: pmodel.NewCIStr("k"), Offset: 1, FieldType: *intFT(), State: model.StatePublic}
+		c2 := &model.ColumnInfo{ID: 3, Name: pmodel.NewCIStr("v"), Offset: 2, FieldType: *intFT(), State: model.StatePublic}
+		cols = []*model.ColumnInfo{c0, c1, c2}
+		idxInfo := &model.IndexInfo{
+			ID:      spec.IndexID,
+			Name:    pmodel.NewCIStr("idx_k"),
+			Table:   pmodel.NewCIStr("t"),
+			State:   model.StatePublic,
+			Columns: []*model.IndexColumn{{Name: pmodel.NewCIStr("k"), Offset: 1, Length: types.UnspecifiedLength}},
+		}
+		indices = []*model.IndexInfo{idxInfo}
+		idxScanCols = []*expression.Column{
+			{ID: 2, UniqueID: 2, Index: 0, RetType: intFT()},
+			{ID: 1, UniqueID: 1, Index: 1, RetType: pkFT.Clone()},
+		}
+		tblCols = []*expression.Column{
+			{ID: 1, UniqueID: 1, Index: 0, RetType: pkFT.Clone()},
+			{ID: 3, UniqueID: 3, Index: 1, RetType: intFT()},
+		}
+		extraHandleCol = tblCols[0]
+	} else {
+		k1FT := intFT()
+		k1FT.AddFlag(mysql.PriKeyFlag | mysql.NotNullFlag)
+		k2FT := strFT(!spec.CommonHandleV0Str)
+		k2FT.AddFlag(mysql.PriKeyFlag | mysql.NotNullFlag)
+		c0 := &model.ColumnInfo{ID: 1, Name: pmodel.NewCIStr("k1"), Offset: 0, FieldType: *k1FT, State: model.StatePublic}
+		c1 := &model.ColumnInfo{ID: 2, Name: pmodel.NewCIStr("k2"), Offset: 1, FieldType: *k2FT, State: model.StatePublic}
+		c2 := &model.ColumnInfo{ID: 3, Name: pmodel.NewCIStr("k"), Offset: 2, FieldType: *intFT(), State: model.StatePublic}
+		c3 := &model.ColumnInfo{ID: 4, Name: pmodel.NewCIStr("v"), Offset: 3, FieldType: *intFT(), State: model.StatePublic}
+		cols = []*model.ColumnInfo{c0, c1, c2, c3}
+		pkIdx := &model.IndexInfo{
+			ID:      1,
+			Name:    pmodel.NewCIStr("PRIMARY"),
+			Table:   pmodel.NewCIStr("t"),
+			Primary: true,
+			Unique:  true,
+			State:   model.StatePublic,
+			Columns: []*model.IndexColumn{
+				{Name: pmodel.NewCIStr("k1"), Offset: 0, Length: types.UnspecifiedLength},
+				{Name: pmodel.NewCIStr("k2"), Offset: 1, Length: types.UnspecifiedLength},
+			},
+		}
+		secIdx := &model.IndexInfo{
+			ID:      spec.IndexID,
+			Name:    pmodel.NewCIStr("idx_k"),
+			Table:   pmodel.NewCIStr("t"),
+			State:   model.StatePublic,
+			Columns: []*model.IndexColumn{{Name: pmodel.NewCIStr("k"), Offset: 2, Length: types.UnspecifiedLength}},
+		}
+		indices = []*model.IndexInfo{pkIdx, secIdx}
+		idxScanCols = []*expression.Column{
+			{ID: 3, UniqueID: 3, Index: 0, RetType: intFT()},
+			{ID: 1, UniqueID: 1, Index: 1, RetType: k1FT.Clone()},
+			{ID: 2, UniqueID: 2, Index: 2, RetType: k2FT.Clone()},
+		}
+		tblCols = []*expression.Column{
+			{ID: 1, UniqueID: 1, Index: 0, RetType: k1FT.Clone()},
+			{ID: 2, UniqueID: 2, Index: 1, RetType: k2FT.Clone()},
+			{ID: 4, UniqueID: 4, Index: 2, RetType: intFT()},
+		}
+		commonHandleCols = []*expression.Column{tblCols[0], tblCols[1]}
+	}
+
+	secIdx := indices[len(indices)-1]
+	tblInfo := &model.TableInfo{
+		ID:                  spec.TableID,
+		Name:                pmodel.NewCIStr("t"),
+		Columns:             cols,
+		Indices:             indices,
+		PKIsHandle:          !spec.IsCommonHandle,
+		IsCommonHandle:      spec.IsCommonHandle,
+		CommonHandleVersion: 1,
+		State:               model.StatePublic,
+	}
+	if spec.CommonHandleV0Str {
+		tblInfo.CommonHandleVersion = 0
+	}
+	if spec.TempTable {
+		tblInfo.TempTableType = model.TempTableLocal
+	}
+
+	idxSchema := expression.NewSchema(idxScanCols...)
+	tblSchema := expression.NewSchema(tblCols...)
+
+	byItems := make([]*plannerutil.ByItems, len(spec.ByItemsDesc))
+	for i, desc := range spec.ByItemsDesc {
+		byItems[i] = &plannerutil.ByItems{
+			Expr: idxScanCols[i],
+			Desc: desc,
+		}
+	}
+
+	var groupedRanges [][]*ranger.Range
+	if len(spec.GroupedRanges) > 0 {
+		groupedRanges = make([][]*ranger.Range, len(spec.GroupedRanges))
+		for i, g := range spec.GroupedRanges {
+			groupedRanges[i] = reBuildRanges("int", g)
+		}
+	}
+
+	estRows := spec.EstRows
+	if estRows <= 0 {
+		estRows = 50
+	}
+	stats := &property.StatsInfo{RowCount: estRows}
+	pseudo := statistics.PseudoTable(tblInfo, false, false)
+
+	var isCols []*model.ColumnInfo
+	if !spec.IsCommonHandle {
+		isCols = []*model.ColumnInfo{cols[1], cols[0]}
+	} else {
+		isCols = []*model.ColumnInfo{cols[2], cols[0], cols[1]}
+	}
+	idxScan := plannercore.PhysicalIndexScan{
+		Table:         tblInfo,
+		Index:         secIdx,
+		Columns:       isCols,
+		Ranges:        reBuildRanges("int", spec.Ranges),
+		GroupedRanges: groupedRanges,
+		KeepOrder:     spec.KeepOrder,
+		Desc:          spec.Desc,
+		ByItems:       byItems,
+	}.Init(sctx.GetPlanCtx(), 0)
+	idxScan.SetSchema(idxSchema)
+	idxScan.SetStats(stats)
+	fDSS := reflect.ValueOf(idxScan).Elem().FieldByName("dataSourceSchema")
+	reflect.NewAt(fDSS.Type(), unsafe.Pointer(fDSS.UnsafeAddr())).Elem().Set(reflect.ValueOf(idxSchema))
+	fHists := reflect.ValueOf(idxScan).Elem().FieldByName("tblColHists")
+	reflect.NewAt(fHists.Type(), unsafe.Pointer(fHists.UnsafeAddr())).Elem().Set(reflect.ValueOf(&pseudo.HistColl))
+
+	var tsCols []*model.ColumnInfo
+	if !spec.IsCommonHandle {
+		tsCols = []*model.ColumnInfo{cols[0], cols[2]}
+	} else {
+		tsCols = []*model.ColumnInfo{cols[0], cols[1], cols[3]}
+	}
+	tblScan := plannercore.PhysicalTableScan{
+		Table:     tblInfo,
+		Columns:   tsCols,
+		StoreType: kv.TiKV,
+	}.Init(sctx.GetPlanCtx(), 0)
+	tblScan.SetSchema(tblSchema)
+	tblScan.SetStats(stats)
+	fTHists := reflect.ValueOf(tblScan).Elem().FieldByName("tblColHists")
+	reflect.NewAt(fTHists.Type(), unsafe.Pointer(fTHists.UnsafeAddr())).Elem().Set(reflect.ValueOf(&pseudo.HistColl))
+
+	tablePlans := []base.PhysicalPlan{tblScan}
+	if spec.ExtraTblPlan {
+		lim := plannercore.PhysicalLimit{Count: 100000}.Init(sctx.GetPlanCtx(), stats, 0)
+		lim.SetSchema(tblSchema)
+		lim.SetChildren(tblScan)
+		tablePlans = append(tablePlans, lim)
+	}
+
+	indexPlans := []base.PhysicalPlan{idxScan}
+	var unNatureOrders map[int]int
+	if spec.IndexLookUpPushDown {
+		localLookup := plannercore.PhysicalLocalIndexLookUp{
+			IndexHandleOffsets: []uint32{uint32(len(idxScanCols) - 1)},
+		}.Init(sctx.GetPlanCtx(), idxScan, tblScan, 0)
+		localLookup.SetSchema(tblSchema)
+		indexPlans = []base.PhysicalPlan{idxScan, tblScan, localLookup}
+		unNatureOrders = map[int]int{0: 2, 1: 2}
+	}
+
+	var pushedLimit *plannercore.PushedDownLimit
+	if spec.PushedLimit != nil {
+		pushedLimit = &plannercore.PushedDownLimit{
+			Offset: spec.PushedLimit.Offset,
+			Count:  spec.PushedLimit.Count,
+		}
+	}
+
+	rawReader := plannercore.PhysicalIndexLookUpReader{
+		Paging:              spec.IndexPaging,
+		ExtraHandleCol:      extraHandleCol,
+		CommonHandleCols:    commonHandleCols,
+		PushedLimit:         pushedLimit,
+		IndexLookUpPushDown: spec.IndexLookUpPushDown,
+	}
+	fKO := reflect.ValueOf(&rawReader).Elem().FieldByName("keepOrder")
+	reflect.NewAt(fKO.Type(), unsafe.Pointer(fKO.UnsafeAddr())).Elem().SetBool(spec.KeepOrder)
+	fIP := reflect.ValueOf(&rawReader).Elem().FieldByName("indexPlan")
+	reflect.NewAt(fIP.Type(), unsafe.Pointer(fIP.UnsafeAddr())).Elem().Set(reflect.ValueOf(indexPlans[len(indexPlans)-1]))
+	fTP := reflect.ValueOf(&rawReader).Elem().FieldByName("tablePlan")
+	reflect.NewAt(fTP.Type(), unsafe.Pointer(fTP.UnsafeAddr())).Elem().Set(reflect.ValueOf(tablePlans[len(tablePlans)-1]))
+	reader := rawReader.Init(sctx.GetPlanCtx(), 0, plannerutil.IndexLookUpPushDownNone)
+	if spec.IndexLookUpPushDown {
+		reader.IndexLookUpPushDown = true
+		reader.IndexPlans = indexPlans
+		reader.IndexPlansUnNatureOrders = unNatureOrders
+	}
+	reader.SetStats(stats)
+
+	// Determine effective index-side field types (after single-range byItems strip).
+	idxFTs := make([]*types.FieldType, 0, len(byItems)+2)
+	if len(spec.GroupedRanges) > 1 && len(byItems) > 0 {
+		for _, bi := range byItems {
+			idxFTs = append(idxFTs, bi.Expr.GetType(sctx.GetExprCtx().GetEvalCtx()))
+		}
+	}
+	if !spec.IsCommonHandle {
+		idxFTs = append(idxFTs, types.NewFieldType(mysql.TypeLonglong))
+	} else {
+		for _, hc := range commonHandleCols {
+			idxFTs = append(idxFTs, hc.RetType)
+		}
+	}
+	tblFTs := make([]*types.FieldType, len(tblCols))
+	for i, c := range tblCols {
+		tblFTs[i] = c.RetType
+	}
+	return tblInfo, reader, idxFTs, tblFTs
+}
+
+func reSortRowSlice(rows [][]any) {
+	slices.SortFunc(rows, func(a, b []any) int {
+		for i := 0; i < len(a) && i < len(b); i++ {
+			sa := fmt.Sprintf("%v", a[i])
+			sb := fmt.Sprintf("%v", b[i])
+			if sa < sb {
+				return -1
+			}
+			if sa > sb {
+				return 1
+			}
+		}
+		return len(a) - len(b)
+	})
+}
+
+func reExecIndexLookUp(args []json.RawMessage) (any, error) {
+	var spec reIndexLookUpSpec
+	if err := json.Unmarshal(args[0], &spec); err != nil {
+		return nil, err
+	}
+
+	sctx := &reSessionCtx{Context: mock.NewContext()}
+	vars := sctx.GetSessionVars()
+	vars.InitChunkSize = variable.DefInitChunkSize
+	vars.MaxChunkSize = spec.MaxChunkSize
+	vars.EnableChunkRPC = true
+	vars.EnablePaging = spec.IndexPaging
+	vars.IndexLookupSize = spec.IndexLookupSize
+	if spec.IndexLookupConc > 0 {
+		vars.SetIndexLookupConcurrency(spec.IndexLookupConc)
+	}
+	if spec.DistSQLConc > 0 {
+		vars.SetDistSQLScanConcurrency(spec.DistSQLConc)
+	}
+	vars.StmtCtx.WeakConsistency = spec.WeakConsistency
+	vars.StmtCtx.MemTracker = memory.NewTracker(-1, -1)
+	vars.StmtCtx.RuntimeStatsColl = execdetails.NewRuntimeStatsColl(nil)
+	sctx.BindDomain(domain.NewMockDomain())
+
+	tblInfo, readerPlan, idxFTs, tblFTs := reBuildIndexLookUpTableAndPlan(sctx.Context, &spec)
+
+	// Pre-encode table entries as (record_key, row) for key-range scanning.
+	tableKVs := make([]reTableRowKV, 0, len(spec.TableEntries))
+	for _, te := range spec.TableEntries {
+		var h kv.Handle
+		if !spec.IsCommonHandle {
+			h = kv.IntHandle(int64(te.HandleKey[0].(float64)))
+		} else {
+			d0 := types.NewIntDatum(int64(te.HandleKey[0].(float64)))
+			var d1 types.Datum
+			if spec.CommonHandleV0Str {
+				d1 = types.NewCollationStringDatum(te.HandleKey[1].(string), "utf8mb4_general_ci")
+			} else {
+				d1 = types.NewStringDatum(te.HandleKey[1].(string))
+			}
+			enc, err := codec.EncodeKey(time.UTC, nil, d0, d1)
+			if err != nil {
+				return nil, err
+			}
+			ch, err := kv.NewCommonHandle(enc)
+			if err != nil {
+				return nil, err
+			}
+			h = ch
+		}
+		rk := tablecodec.EncodeRowKeyWithHandle(spec.TableID, h)
+		tableKVs = append(tableKVs, reTableRowKV{key: rk, row: te.Row})
+	}
+	slices.SortFunc(tableKVs, func(a, b reTableRowKV) int {
+		return bytes.Compare(a.key, b.key)
+	})
+
+	mockClient := &reLookUpMockClient{
+		spec:     &spec,
+		indexFTs: idxFTs,
+		tableFTs: tblFTs,
+		tableKVs: tableKVs,
+	}
+	sctx.client = mockClient
+
+	is := infoschema.MockInfoSchema([]*model.TableInfo{tblInfo})
+	b := executor.NewMockExecutorBuilderForTest(sctx, is, nil)
+	ebVal := reflect.ValueOf(b).Elem().FieldByName("executorBuilder").Elem()
+	fForDRB := ebVal.FieldByName("forDataReaderBuilder")
+	reflect.NewAt(fForDRB.Type(), unsafe.Pointer(fForDRB.UnsafeAddr())).Elem().SetBool(true)
+	fDRBTS := ebVal.FieldByName("dataReaderTS")
+	reflect.NewAt(fDRBTS.Type(), unsafe.Pointer(fDRBTS.UnsafeAddr())).Elem().SetUint(100)
+	built := b.Build(readerPlan)
+	if err := beBuilderErr(b); err != nil {
+		return nil, err
+	}
+	ilu := built.(*executor.IndexLookUpExecutor)
+	if spec.SetDummyCall {
+		reIndexLookUpSetDummy(ilu)
+	}
+	tblIDCheck := ilu.Table().Meta().ID
+	indexNames := append([]string(nil), vars.StmtCtx.IndexNames...)
+	tableIDs := append([]int64(nil), vars.StmtCtx.TableIDs...)
+
+	ctx := context.Background()
+	out := reIndexLookUpOut{
+		IndexReqs:    []reIndexLookUpReqOut{},
+		Rows:         [][]any{},
+		TableIDCheck: tblIDCheck,
+		IndexNames:   indexNames,
+		TableIDs:     tableIDs,
+	}
+	if err := ilu.Open(ctx); err != nil {
+		out.Err = err.Error()
+		_ = ilu.Close()
+		out.IndexReqs = mockClient.indexReqs
+		return out, nil
+	}
+
+	chk := ilu.NewChunk()
+	numCols := chk.NumCols()
+	reqIdx := 0
+	for {
+		reqRows := spec.MaxChunkSize
+		if reqIdx < len(spec.RequiredRows) {
+			reqRows = spec.RequiredRows[reqIdx]
+			reqIdx++
+		}
+		chk.SetRequiredRows(reqRows, spec.MaxChunkSize)
+		if err := ilu.Next(ctx, chk); err != nil {
+			out.Err = err.Error()
+			break
+		}
+		if chk.NumRows() == 0 {
+			break
+		}
+		for r := 0; r < chk.NumRows(); r++ {
+			row := chk.GetRow(r)
+			vals := make([]any, numCols)
+			for c := 0; c < numCols; c++ {
+				if row.IsNull(c) {
+					vals[c] = nil
+				} else if tblFTs[c].EvalType() == types.ETString {
+					vals[c] = strings.Clone(row.GetString(c))
+				} else {
+					vals[c] = row.GetInt64(c)
+				}
+			}
+			out.Rows = append(out.Rows, vals)
+		}
+	}
+	if err := ilu.Close(); err != nil && out.Err == "" {
+		out.Err = err.Error()
+	}
+
+	mockClient.mu.Lock()
+	out.IndexReqs = append([]reIndexLookUpReqOut{}, mockClient.indexReqs...)
+	mockClient.mu.Unlock()
+
+	if !spec.KeepOrder {
+		reSortRowSlice(out.Rows)
+	}
+	// Read TableTaskNum from registered IndexLookUpRunTimeStats.
+	fStats := reflect.ValueOf(ilu).Elem().FieldByName("stats")
+	if !fStats.IsNil() {
+		st := reflect.NewAt(fStats.Type(), unsafe.Pointer(fStats.UnsafeAddr())).Elem().Interface().(*executor.IndexLookUpRunTimeStats)
+		if st != nil {
+			out.TableTaskNum = st.TableTaskNum
+		}
 	}
 	return out, nil
 }
@@ -1558,6 +2477,430 @@ func readexecGenerate(g *vec.Gen, r *rand.Rand) {
 			RequiredRows:  reqRows,
 		})
 	}
+
+	// 4. index_lookup_helpers (Part 2C, >= 150 cases)
+	// 4a. CalculateBatchSize
+	for _, est := range []int{0, 1, 5, 32, 64, 100, 127, 128, 129, 500, 20000, 50000} {
+		for _, initB := range []int{1, 16, 32, 64, 1024} {
+			for _, maxB := range []int{32, 100, 20000} {
+				g.Add("sys/ilu_helpers/calc_batch", "index_lookup_helpers", "calc_batch_size", est, initB, maxB)
+			}
+		}
+	}
+	// 4b. getIndexScanMaxInFlight
+	for _, c := range []int{-5, 0, 1, 2, 3, 5, 15, 32, 64} {
+		g.Add("sys/ilu_helpers/max_in_flight", "index_lookup_helpers", "max_in_flight", c)
+	}
+	// 4c. getMergeSortIndexScanConcurrency (including c=1 boundary!)
+	for _, needMerge := range []bool{false, true} {
+		for _, nRanges := range []int{0, 1, 2, 3, 4, 8, 16, 32, 100} {
+			for _, c := range []int{-1, 0, 1, 2, 4, 5, 15} {
+				g.Add("sys/ilu_helpers/merge_conc", "index_lookup_helpers", "merge_sort_concurrency", needMerge, nRanges, c)
+			}
+		}
+	}
+	// 4d. GetLackHandles (int & common)
+	for _, isCommon := range []bool{false, true} {
+		g.Add("sys/ilu_helpers/lack_none", "index_lookup_helpers", "lack_handles", isCommon, []int64{1, 2, 3, 4, 5}, []int64{1, 2, 3, 4, 5})
+		g.Add("sys/ilu_helpers/lack_some", "index_lookup_helpers", "lack_handles", isCommon, []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, []int64{1, 5, 10})
+		g.Add("sys/ilu_helpers/lack_all", "index_lookup_helpers", "lack_handles", isCommon, []int64{10, 20, 30}, []int64{})
+		g.Add("sys/ilu_helpers/lack_dup", "index_lookup_helpers", "lack_handles", isCommon, []int64{1, 1, 2, 2, 3}, []int64{1, 2})
+	}
+	// 4e. buildIndexScanOutputOffsets
+	for _, isPart := range []bool{false, true} {
+		for _, isGlob := range []bool{false, true} {
+			for _, dynPrune := range []bool{false, true} {
+				for _, byIDs := range [][]int64{{}, {1}, {2, 1}} {
+					g.Add("sys/ilu_helpers/offsets", "index_lookup_helpers", "index_scan_offsets", 2, 1, byIDs, false, isPart, isGlob, dynPrune)
+				}
+			}
+		}
+	}
+	g.Add("sys/ilu_helpers/offsets_common", "index_lookup_helpers", "index_scan_offsets", 2, 2, []int64{1}, false, false, false, false)
+	g.Add("sys/ilu_helpers/offsets_noncol_err", "index_lookup_helpers", "index_scan_offsets", 2, 1, []int64{}, true, false, false, false)
+	g.Add("sys/ilu_helpers/offsets_missing_err", "index_lookup_helpers", "index_scan_offsets", 2, 1, []int64{999}, false, false, false, false)
+	// 4f. IndexLookUpRunTimeStats (including spec §14.5 bug parity: indexScan==0 && tableScan==0 && NextWait>0)
+	statsCases := [][2]reRuntimeStatsSpec{
+		{
+			{FetchHandleTotal: 5e9, FetchHandle: 2e9, TaskWait: 2e9, TableRowScan: 2e9, TableTaskNum: 2, Concurrency: 1, NextWaitIndexScan: 1e9, NextWaitTableLookUpBuild: 2e9, NextWaitTableLookUpResp: 3e9},
+			{FetchHandleTotal: 5e9, FetchHandle: 2e9, TaskWait: 2e9, TableRowScan: 2e9, TableTaskNum: 2, Concurrency: 1, NextWaitIndexScan: 1e9, NextWaitTableLookUpBuild: 2e9, NextWaitTableLookUpResp: 3e9},
+		},
+		{
+			{FetchHandle: 0, TableRowScan: 0, NextWaitIndexScan: 1e6, NextWaitTableLookUpBuild: 2e6, NextWaitTableLookUpResp: 3e6, Concurrency: 5},
+			{FetchHandle: 0, TableRowScan: 0, NextWaitIndexScan: 0, Concurrency: 5},
+		},
+		{
+			{FetchHandleTotal: 0, FetchHandle: 0, TableRowScan: 3e6, TableTaskNum: 1, Concurrency: 5, NextWaitTableLookUpResp: 1e6},
+			{FetchHandleTotal: 10e6, FetchHandle: 4e6, TaskWait: 2e6, TableRowScan: 2e6, TableTaskNum: 2, Concurrency: 5},
+		},
+		{
+			{FetchHandleTotal: 8e6, FetchHandle: 3e6, TaskWait: 1e6, TableRowScan: 0, Concurrency: 3},
+			{FetchHandleTotal: 0, FetchHandle: 0, TableRowScan: 0, Concurrency: 3},
+		},
+	}
+	for _, sc := range statsCases {
+		g.Add("sys/ilu_helpers/stats", "index_lookup_helpers", "runtime_stats", sc[0], sc[1])
+	}
+
+	// 5. index_lookup (Part 2C, >= 180 cases)
+	mkIntTable := func(ids []int64) []reLookUpTableEntry {
+		entries := make([]reLookUpTableEntry, len(ids))
+		for i, id := range ids {
+			entries[i] = reLookUpTableEntry{
+				HandleKey: []any{float64(id)},
+				Row:       []any{float64(id), float64(id * 100)},
+			}
+		}
+		return entries
+	}
+	mkIntIdxBatch := func(ids []int64) reLookUpIndexBatch {
+		rows := make([][]any, len(ids))
+		for i, id := range ids {
+			rows[i] = []any{float64(id)}
+		}
+		return reLookUpIndexBatch{Rows: rows}
+	}
+
+	// 5a. Basic int handle: keepOrder x desc x indexPaging x concurrency
+	for _, keepOrder := range []bool{false, true} {
+		for _, desc := range []bool{false, true} {
+			for _, paging := range []bool{false, true} {
+				ids := []int64{5, 2, 8, 1, 9, 3, 7, 4, 6}
+				g.Add("sys/index_lookup/basic_int", "index_lookup", reIndexLookUpSpec{
+					TableID:         501,
+					IndexID:         1,
+					KeepOrder:       keepOrder,
+					Desc:            desc,
+					IndexPaging:     paging,
+					IndexLookupSize: 4,
+					IndexLookupConc: 3,
+					DistSQLConc:     5,
+					MaxChunkSize:    4,
+					EstRows:         20,
+					Ranges:          []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(100)}}},
+					IndexStreams:    [][]reLookUpIndexBatch{{mkIntIdxBatch(ids[:5]), mkIntIdxBatch(ids[5:])}},
+					TableEntries:    mkIntTable([]int64{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+					RequiredRows:    []int{2, 3, 4, 4},
+				})
+			}
+		}
+	}
+
+	// 5b. Spec §12.2 900-row batch size / whole-chunk reuse test:
+	//     900 rows, index_lookup_size=100 -> max_chunk_size=1024 yields table_task_num=9,
+	//     max_chunk_size=64 yields table_task_num=8!
+	{
+		all900 := make([]int64, 900)
+		for i := range all900 {
+			all900[i] = int64(i + 1)
+		}
+		var batches64 []reLookUpIndexBatch
+		for off := 0; off < 900; off += 64 {
+			end := min(off+64, 900)
+			batches64 = append(batches64, mkIntIdxBatch(all900[off:end]))
+		}
+		tbl900 := mkIntTable(all900)
+		for _, maxChk := range []int{1024, 64} {
+			g.Add(fmt.Sprintf("sys/index_lookup/batch900_chk%d", maxChk), "index_lookup", reIndexLookUpSpec{
+				TableID:         502,
+				IndexID:         1,
+				KeepOrder:       true,
+				IndexLookupSize: 100,
+				IndexLookupConc: 2,
+				DistSQLConc:     5,
+				MaxChunkSize:    maxChk,
+				EstRows:         900,
+				Ranges:          []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(1000)}}},
+				IndexStreams:    [][]reLookUpIndexBatch{batches64},
+				TableEntries:    tbl900,
+				RequiredRows:    []int{maxChk},
+			})
+		}
+	}
+
+	// 5c. Common handle (both v1 binary string & v0 non-binary collation string sortKey path in getHandle)
+	for _, v0Str := range []bool{false, true} {
+		for _, keepOrder := range []bool{false, true} {
+			idxRows := [][]any{
+				{float64(3), "cc"},
+				{float64(1), "aa"},
+				{float64(2), "bb"},
+				{float64(4), "dd"},
+			}
+			tblEntries := []reLookUpTableEntry{
+				{HandleKey: []any{float64(1), "aa"}, Row: []any{float64(1), "aa", float64(11)}},
+				{HandleKey: []any{float64(2), "bb"}, Row: []any{float64(2), "bb", float64(22)}},
+				{HandleKey: []any{float64(3), "cc"}, Row: []any{float64(3), "cc", float64(33)}},
+				{HandleKey: []any{float64(4), "dd"}, Row: []any{float64(4), "dd", float64(44)}},
+			}
+			g.Add("sys/index_lookup/common_handle", "index_lookup", reIndexLookUpSpec{
+				TableID:           503,
+				IndexID:           2,
+				IsCommonHandle:    true,
+				CommonHandleV0Str: v0Str,
+				KeepOrder:         keepOrder,
+				IndexLookupSize:   2,
+				IndexLookupConc:   2,
+				DistSQLConc:       5,
+				MaxChunkSize:      8,
+				EstRows:           10,
+				Ranges:            []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(100)}}},
+				IndexStreams:      [][]reLookUpIndexBatch{{{Rows: idxRows}}},
+				TableEntries:      tblEntries,
+				RequiredRows:      []int{2, 8},
+			})
+		}
+	}
+
+	// 5d. PushedLimit (offset + count, exact boundary, offset > total rows)
+	for _, lim := range []reIndexLookUpLimit{{0, 3}, {2, 4}, {5, 10}, {20, 5}, {0, 0}} {
+		ids := []int64{10, 20, 30, 40, 50, 60, 70, 80}
+		g.Add("sys/index_lookup/pushed_limit", "index_lookup", reIndexLookUpSpec{
+			TableID:         504,
+			IndexID:         1,
+			KeepOrder:       true,
+			IndexPaging:     true,
+			IndexLookupSize: 4,
+			IndexLookupConc: 2,
+			DistSQLConc:     5,
+			MaxChunkSize:    4,
+			EstRows:         8,
+			PushedLimit:     &lim,
+			Ranges:          []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(100)}}},
+			IndexStreams:    [][]reLookUpIndexBatch{{mkIntIdxBatch(ids[:4]), mkIntIdxBatch(ids[4:])}},
+			TableEntries:    mkIntTable(ids),
+			RequiredRows:    []int{2, 4, 4},
+		})
+	}
+
+	// 5e. Grouped ranges: rolling mode (!keepOrder / no byItems) with CopConc AND merge-sort mode (keepOrder + byItems, ASC & DESC)
+	for _, desc := range []bool{false, true} {
+		// Merge-sort mode: 3 groups, each emits [by_col, handle]
+		mkMergeBatch := func(pairs [][2]int64) reLookUpIndexBatch {
+			rows := make([][]any, len(pairs))
+			for i, p := range pairs {
+				rows[i] = []any{float64(p[0]), float64(p[1])}
+			}
+			return reLookUpIndexBatch{Rows: rows}
+		}
+		var s0, s1, s2 [][2]int64
+		if !desc {
+			s0 = [][2]int64{{10, 1}, {40, 4}}
+			s1 = [][2]int64{{20, 2}, {50, 5}}
+			s2 = [][2]int64{{30, 3}, {60, 6}}
+		} else {
+			s0 = [][2]int64{{40, 4}, {10, 1}}
+			s1 = [][2]int64{{50, 5}, {20, 2}}
+			s2 = [][2]int64{{60, 6}, {30, 3}}
+		}
+		g.Add("sys/index_lookup/merge_sort", "index_lookup", reIndexLookUpSpec{
+			TableID:         505,
+			IndexID:         1,
+			KeepOrder:       true,
+			Desc:            desc,
+			IndexLookupSize: 3,
+			IndexLookupConc: 2,
+			DistSQLConc:     1, // also exercises c=1 merge-sort concurrency!
+			MaxChunkSize:    4,
+			EstRows:         6,
+			ByItemsDesc:     []bool{desc},
+			GroupedRanges: [][]reRangeSpec{
+				{{Low: []any{float64(1)}, High: []any{float64(10)}}},
+				{{Low: []any{float64(11)}, High: []any{float64(20)}}},
+				{{Low: []any{float64(21)}, High: []any{float64(30)}}},
+			},
+			IndexStreams: [][]reLookUpIndexBatch{
+				{mkMergeBatch(s0)},
+				{mkMergeBatch(s1)},
+				{mkMergeBatch(s2)},
+			},
+			TableEntries: mkIntTable([]int64{1, 2, 3, 4, 5, 6}),
+			RequiredRows: []int{2, 4, 4},
+		})
+		// Rolling mode (no merge sort) with CopConc > 1
+		g.Add("sys/index_lookup/rolling", "index_lookup", reIndexLookUpSpec{
+			TableID:         506,
+			IndexID:         1,
+			KeepOrder:       false,
+			Desc:            desc,
+			IndexLookupSize: 3,
+			IndexLookupConc: 2,
+			DistSQLConc:     2,
+			MaxChunkSize:    4,
+			EstRows:         6,
+			CopConc:         2,
+			GroupedRanges: [][]reRangeSpec{
+				{{Low: []any{float64(1)}, High: []any{float64(10)}}},
+				{{Low: []any{float64(11)}, High: []any{float64(20)}}},
+				{{Low: []any{float64(21)}, High: []any{float64(30)}}},
+			},
+			IndexStreams: [][]reLookUpIndexBatch{
+				{mkIntIdxBatch([]int64{1, 4})},
+				{mkIntIdxBatch([]int64{2, 5})},
+				{mkIntIdxBatch([]int64{3, 6})},
+			},
+			TableEntries: mkIntTable([]int64{1, 2, 3, 4, 5, 6}),
+			RequiredRows: []int{2, 4, 4},
+		})
+	}
+
+	// 5f. indexLookUpPushDown (dual-channel hit + miss, verifying Paging=false & Cacheable=false)
+	for _, withLimit := range []bool{false, true} {
+		var pl *reIndexLookUpLimit
+		if withLimit {
+			pl = &reIndexLookUpLimit{Offset: 1, Count: 4}
+		}
+		g.Add("sys/index_lookup/pushdown", "index_lookup", reIndexLookUpSpec{
+			TableID:             507,
+			IndexID:             1,
+			KeepOrder:           false,
+			IndexPaging:         true, // must be forced false in pushdown request!
+			IndexLookUpPushDown: true,
+			IndexLookupSize:     10,
+			IndexLookupConc:     2,
+			DistSQLConc:         5,
+			MaxChunkSize:        8,
+			EstRows:             10,
+			PushedLimit:         pl,
+			Ranges:              []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(100)}}},
+			IndexStreams: [][]reLookUpIndexBatch{{
+				{
+					HitRows:     [][]any{{float64(1), float64(100)}, {float64(3), float64(300)}},
+					MissHandles: [][]any{{float64(2)}, {float64(4)}},
+				},
+				{
+					HitRows:     [][]any{{float64(5), float64(500)}},
+					MissHandles: [][]any{{float64(6)}},
+				},
+			}},
+			TableEntries: mkIntTable([]int64{2, 4, 6}),
+			RequiredRows: []int{4, 8},
+		})
+	}
+
+	// 5g. Inconsistent index (8133 error), weakConsistency exemption, extraTblPlan exemption
+	for _, weak := range []bool{false, true} {
+		for _, extraPlan := range []bool{false, true} {
+			g.Add("sys/index_lookup/inconsistent", "index_lookup", reIndexLookUpSpec{
+				TableID:         508,
+				IndexID:         1,
+				KeepOrder:       true,
+				WeakConsistency: weak,
+				ExtraTblPlan:    extraPlan,
+				IndexLookupSize: 10,
+				IndexLookupConc: 1,
+				DistSQLConc:     5,
+				MaxChunkSize:    8,
+				EstRows:         5,
+				Ranges:          []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}},
+				IndexStreams:    [][]reLookUpIndexBatch{{mkIntIdxBatch([]int64{1, 2, 3, 4})}},
+				TableEntries:    mkIntTable([]int64{1, 3}), // missing handles 2 & 4
+				RequiredRows:    []int{8},
+			})
+		}
+	}
+
+	// 5h. Dummy (temp table + setDummy), empty ranges, index error, table error
+	g.Add("sys/index_lookup/temp_dummy", "index_lookup", reIndexLookUpSpec{
+		TableID: 509, IndexID: 1, TempTable: true, IndexLookupSize: 10, IndexLookupConc: 2, DistSQLConc: 5, MaxChunkSize: 8,
+		Ranges: []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}}, RequiredRows: []int{4},
+	})
+	g.Add("sys/index_lookup/set_dummy", "index_lookup", reIndexLookUpSpec{
+		TableID: 510, IndexID: 1, SetDummyCall: true, IndexLookupSize: 10, IndexLookupConc: 2, DistSQLConc: 5, MaxChunkSize: 8,
+		Ranges: []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}}, RequiredRows: []int{4},
+	})
+	g.Add("sys/index_lookup/empty", "index_lookup", reIndexLookUpSpec{
+		TableID: 511, IndexID: 1, KeepOrder: true, IndexLookupSize: 10, IndexLookupConc: 2, DistSQLConc: 5, MaxChunkSize: 8,
+		Ranges: []reRangeSpec{}, IndexStreams: [][]reLookUpIndexBatch{{}}, RequiredRows: []int{4},
+	})
+	g.Add("sys/index_lookup/index_err", "index_lookup", reIndexLookUpSpec{
+		TableID: 512, IndexID: 1, KeepOrder: true, IndexLookupSize: 10, IndexLookupConc: 2, DistSQLConc: 5, MaxChunkSize: 8,
+		Ranges: []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}}, IndexErr: "idx lookup boom", RequiredRows: []int{4},
+	})
+	g.Add("sys/index_lookup/table_err", "index_lookup", reIndexLookUpSpec{
+		TableID: 513, IndexID: 1, KeepOrder: true, IndexLookupSize: 10, IndexLookupConc: 1, DistSQLConc: 5, MaxChunkSize: 8,
+		Ranges: []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(10)}}},
+		IndexStreams: [][]reLookUpIndexBatch{{mkIntIdxBatch([]int64{1, 2})}}, TableErr: "tbl lookup boom", RequiredRows: []int{4},
+	})
+
+	// 5i. Randomized index_lookup cases to exceed Min=180 cleanly
+	for i := 0; i < 160; i++ {
+		keepOrder := r.IntN(2) == 0
+		desc := r.IntN(2) == 0
+		paging := r.IntN(2) == 0
+		isCommon := r.IntN(4) == 0
+		pushDown := !keepOrder && !isCommon && r.IntN(5) == 0
+		lookupSize := []int{2, 4, 8, 16, 64}[r.IntN(5)]
+		lookupConc := 1 + r.IntN(4)
+		distConc := []int{1, 2, 5}[r.IntN(3)]
+		maxChk := []int{2, 4, 8, 16}[r.IntN(4)]
+		nRows := 1 + r.IntN(20)
+
+		var idxStreams [][]reLookUpIndexBatch
+		var tblEntries []reLookUpTableEntry
+		if !isCommon {
+			ids := make([]int64, nRows)
+			for j := range ids {
+				ids[j] = int64(j + 1)
+			}
+			// Shuffle handle order to exercise keepOrder sorting.
+			r.Shuffle(len(ids), func(a, b int) { ids[a], ids[b] = ids[b], ids[a] })
+			tblEntries = mkIntTable(ids)
+			if pushDown {
+				var hits [][]any
+				var misses [][]any
+				for idx, id := range ids {
+					if idx%2 == 0 {
+						hits = append(hits, []any{float64(id), float64(id * 100)})
+					} else {
+						misses = append(misses, []any{float64(id)})
+					}
+				}
+				idxStreams = [][]reLookUpIndexBatch{{{HitRows: hits, MissHandles: misses}}}
+			} else {
+				split := max(1, len(ids)/2)
+				idxStreams = [][]reLookUpIndexBatch{{mkIntIdxBatch(ids[:split]), mkIntIdxBatch(ids[split:])}}
+			}
+		} else {
+			idxRows := make([][]any, nRows)
+			tblEntries = make([]reLookUpTableEntry, nRows)
+			for j := 0; j < nRows; j++ {
+				s := fmt.Sprintf("k%02d", j)
+				id := int64(nRows - j)
+				idxRows[j] = []any{float64(id), s}
+				tblEntries[j] = reLookUpTableEntry{
+					HandleKey: []any{float64(id), s},
+					Row:       []any{float64(id), s, float64(id * 10)},
+				}
+			}
+			idxStreams = [][]reLookUpIndexBatch{{{Rows: idxRows}}}
+		}
+
+		var pl *reIndexLookUpLimit
+		if r.IntN(4) == 0 {
+			pl = &reIndexLookUpLimit{Offset: uint64(r.IntN(3)), Count: uint64(1 + r.IntN(nRows))}
+		}
+		g.Add(fmt.Sprintf("rand/index_lookup/%d", i), "index_lookup", reIndexLookUpSpec{
+			TableID:             int64(600 + i),
+			IndexID:             2,
+			IsCommonHandle:      isCommon,
+			CommonHandleV0Str:   isCommon && r.IntN(2) == 0,
+			KeepOrder:           keepOrder,
+			Desc:                desc,
+			IndexPaging:         paging,
+			IndexLookUpPushDown: pushDown,
+			IndexLookupSize:     lookupSize,
+			IndexLookupConc:     lookupConc,
+			DistSQLConc:         distConc,
+			MaxChunkSize:        maxChk,
+			EstRows:             float64(nRows),
+			PushedLimit:         pl,
+			Ranges:              []reRangeSpec{{Low: []any{float64(1)}, High: []any{float64(1000)}}},
+			IndexStreams:        idxStreams,
+			TableEntries:        tblEntries,
+			RequiredRows:        []int{1 + r.IntN(maxChk), maxChk},
+		})
+	}
 }
 
 func readexecExec(op string, args []json.RawMessage) (any, error) {
@@ -1568,6 +2911,10 @@ func readexecExec(op string, args []json.RawMessage) (any, error) {
 		return reExecTableReader(args)
 	case "index_reader":
 		return reExecIndexReader(args)
+	case "index_lookup_helpers":
+		return reExecIndexLookUpHelpers(args)
+	case "index_lookup":
+		return reExecIndexLookUp(args)
 	default:
 		return nil, fmt.Errorf("readexec: unknown op %q", op)
 	}
