@@ -187,7 +187,6 @@ crates/planner/src/core/optimizer.rs	predicate_push_down_to_table_scan	DEF.MPP	t
 crates/planner/src/core/optimizer.rs	refine_ce_trace	D02.2	temporary	refineCETrace: the cardinality estimation trace is only switched on by TRACE PLAN, not in the Rust AST
 crates/planner/src/core/physical_plans.rs	detach_root_table_scan_plan	D10.1	temporary	VS1-27: detachRootTableScanPlan, only the index lookup push down calls it (outside the slice); returns a pointer to a parent node, needs a design on the shared Arc tree
 crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27 / D10.2-2A: PhysicalTableReader.LoadTableStats and PhysicalIndexReader.LoadTableStats need loadTableStats (stats.go), the sync stats load of FindBestTask
-crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27: PhysicalTableReader.LoadTableStats needs loadTableStats (stats.go), the sync stats load of FindBestTask (VS1-28)
 crates/planner/src/core/physical_plans.rs	resolve_correlated_columns	D10.1	temporary	VS1-27: PhysicalTableScan.ResolveCorrelatedColumns needs SubstituteCorCol2Constant (D10.1 tasks.md P1-1: the correlated value lives in the executor eval state); only Apply / index join executors call it, outside the slice
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
 crates/planner/src/core/plan.rs	enforce_property	D10.1	temporary	VS1-27: enforceProperty of an MPP task (MppTask.enforceExchanger): MPP is outside the slice

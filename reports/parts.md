@@ -67,8 +67,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
 | D12.0 | D12.3-A | D12.3-A | in-progress | 8 / 211 | 485 | tidb-rs branch claude/issue-376 (#376, stream aggregation part A): the vecgroupchecker file, 8/8, ported with the stream aggregation executor (D12.3 spec decision 3); govec aggexec |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
-| D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 836 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
-| D12.1 | VS1-34 | VS1-34 | planned | 26 / 245 | 631 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 831 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
+| D12.1 | VS1-34 | VS1-34 | in-progress | 28 / 245 | 695 | dulao5/tidb-rs#426 (TableReader Part 2A): converge 28/28 + 1 exception (DEF.MPP); govec readexec 379 records (0 blocked) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D12.2 | VS1-14 | VS1-14 | in-progress | 2 / 72 | 343 | dulao5/tidb-rs#235 merged (VS1-14 part 1): ResetContextOfStmt, isWeakConsistencyRead ahead of VS1-35, converge 2/2; govec resetstmt |
 | D12.2 | VS1-35 | VS1-35 | in-progress | 35 / 72 | 663 | dulao5/tidb-rs#328 (issue; VS1-35, basic executors part 1; first try #338 reverted): converge 35/35, no stubs; govec basicexec |
@@ -87,7 +87,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-364 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+365 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -101,8 +101,8 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.4 | 14 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
-| D06.4 | 18 | 0 | 0 |
-| D06.5 | 13 | 0 | 0 |
+| D06.4 | 19 | 0 | 0 |
+| D06.5 | 14 | 0 | 0 |
 | D07.1 | 18 | 0 | 0 |
 | D07.3 | 1 | 0 | 0 |
 | D08.10 | 1 | 0 | 0 |
@@ -114,7 +114,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
 | D09.11 | 1 | 0 | 0 |
-| D09.12 | 10 | 0 | 0 |
+| D09.12 | 11 | 0 | 0 |
 | D09.13 | 7 | 0 | 0 |
 | D09.14 | 11 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
@@ -126,7 +126,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
 | D09.9 | 4 | 0 | 0 |
-| D10.1 | 17 | 0 | 0 |
+| D10.1 | 18 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
 | D10.2 | 8 | 0 | 0 |
 | D10.3 | 3 | 0 | 0 |
@@ -134,11 +134,11 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D10.6 | 8 | 0 | 0 |
 | D10.7 | 8 | 0 | 0 |
 | D10.8 | 3 | 0 | 0 |
-| D10.9 | 10 | 0 | 0 |
+| D10.9 | 7 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
-| D12.1 | 7 | 0 | 0 |
+| D12.1 | 5 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 4 | 0 | 0 |
 | D12.5 | 4 | 0 | 0 |
@@ -147,6 +147,6 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 8 | 0 | 0 |
 | D15.2 | 1 | 0 | 0 |
-| DEF.MPP | 1 | 0 | 0 |
+| DEF.MPP | 3 | 0 | 0 |
 | EXC.B | 0 | 1 | 0 |
 | X | 1 | 12 | 2 |
