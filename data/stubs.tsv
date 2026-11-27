@@ -124,10 +124,8 @@ crates/planner/src/core/find_best_task.rs	child_req_prop	D10.3	temporary	D10.3: 
 crates/planner/src/core/find_best_task.rs	convert_candidates	D09.12	temporary	D09.12: the point get of a partitioned table (partitioned tables stop in the plan builder)
 crates/planner/src/core/find_best_task.rs	convert_candidates	D10.7	temporary	D10.7: an index merge path among the candidates (convertToIndexMergeScan)
 crates/planner/src/core/find_best_task.rs	convert_candidates	D10.8	temporary	D10.8: several point ranges on a unique key: BatchPointGet (convertToBatchPointGet)
-crates/planner/src/core/find_best_task.rs	convert_to_index_scan	D10.2	temporary	D10.2 part 2B: double-read index paths (PhysicalIndexLookUpReader); single-read IndexReader is ported in D10.2 part 2A
 crates/planner/src/core/find_best_task.rs	convert_to_table_scan	D10.1	temporary	D10.1: TiFlash table scans (the MPP task, TiFlash cop / batch cop reads)
 crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.1	temporary	D10.1: PhysicalTableScan.addPushedDownSelectionToMppTask (the MPP task of a TiFlash scan; convertToTableScan stops before it)
-crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.2	temporary	D10.2 part 2: PhysicalTableScan.appendExtraHandleCol (the keep-order index lookup)
 crates/planner/src/core/find_best_task.rs	find_best_task_boundary	D10.7	temporary	D10.7: index merge helpers (isMatchPropForIndexMerge, expressionContainsHash, checkColinSchema); skyline pruning stops at index merge paths first
 crates/planner/src/core/find_best_task.rs	match_property	D10.1	temporary	D10.1: a vector index property (TiFlash ANN indexes)
 crates/planner/src/core/find_best_task.rs	skyline_pruning	D10.7	temporary	D10.7: index merge paths in skyline pruning (convergeIndexMergeCandidate / getIndexMergeCandidate)
@@ -185,7 +183,6 @@ crates/planner/src/core/optimizer.rs	optimize	D11.2	temporary	CollectPredicateCo
 crates/planner/src/core/optimizer.rs	physical_optimize	D02.2	temporary	physicalOptimize: the optimizer trace / debug trace (TRACE PLAN, PLAN REPLAYER) are not in the Rust AST
 crates/planner/src/core/optimizer.rs	predicate_push_down_to_table_scan	DEF.MPP	temporary	predicatePushDownToTableScanImpl: TiFlash late materialization (DEF.MPP); only a Selection over a TiFlash table scan reaches it
 crates/planner/src/core/optimizer.rs	refine_ce_trace	D02.2	temporary	refineCETrace: the cardinality estimation trace is only switched on by TRACE PLAN, not in the Rust AST
-crates/planner/src/core/physical_plans.rs	detach_root_table_scan_plan	D10.1	temporary	VS1-27: detachRootTableScanPlan, only the index lookup push down calls it (outside the slice); returns a pointer to a parent node, needs a design on the shared Arc tree
 crates/planner/src/core/physical_plans.rs	load_table_stats	D10.2	temporary	VS1-27 / D10.2-2A: PhysicalTableReader.LoadTableStats and PhysicalIndexReader.LoadTableStats need loadTableStats (stats.go), the sync stats load of FindBestTask
 crates/planner/src/core/physical_plans.rs	resolve_correlated_columns	D10.1	temporary	VS1-27: PhysicalTableScan.ResolveCorrelatedColumns needs SubstituteCorCol2Constant (D10.1 tasks.md P1-1: the correlated value lives in the executor eval state); only Apply / index join executors call it, outside the slice
 crates/planner/src/core/plan.rs	as_sctx	D05.3	temporary	VS1-10: as_sctx (blocked-by:D05.3)
@@ -213,7 +210,6 @@ crates/planner/src/core/planbuilder.rs	build	D09.16	temporary	PlanBuilder.Build:
 crates/planner/src/core/planbuilder.rs	build	D09.5	temporary	PlanBuilder.Build: set operations (buildSetOpr)
 crates/planner/src/core/planbuilder.rs	build	D12.12	temporary	VS1-10: build (blocked-by:D12.12)
 crates/planner/src/core/planbuilder.rs	build_execute	D09.2	temporary	EXECUTE ... USING @var: the variables need the expression rewriter (b.rewrite); the binary protocol's arguments are values and do not
-crates/planner/src/core/planbuilder.rs	check_auto_force_index_look_up_push_down	D10.2	temporary	checkAutoForceIndexLookUpPushDown: the force policies of tidb_index_lookup_pushdown_policy (checkIndexLookUpPushDownSupported)
 crates/planner/src/core/planbuilder.rs	check_hinted_sql	D13.3	temporary	VS1-10: check_hinted_sql (blocked-by:D13.3)
 crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D10.2	temporary	getPossibleAccessPaths: hypothetical indexes / TiFlash replicas of EXPLAIN and the newest index states of the domain (GetLatestIndexInfo) for reads for update / READ COMMITTED
 crates/planner/src/core/planbuilder.rs	get_possible_access_paths	D13.3	temporary	getPossibleAccessPaths: index hints (USE / FORCE / IGNORE INDEX) and HYPO_INDEX hints
@@ -254,7 +250,6 @@ crates/planner/src/core/stats.rs	path_aliases_of	D10.7	temporary	D10.7: a possib
 crates/planner/src/core/task.rs	attach2_task_limit	D10.1	temporary	VS1-27: PhysicalLimit.Attach2Task on a cop task with index merge partial plans (sinkIntoIndexMerge): index merge is outside the slice
 crates/planner/src/core/task.rs	attach2_task_top_n	D10.1	temporary	VS1-27: PhysicalTopN.Attach2Task on an index merge with advisory sort items (handleAdvisorySortItemsForIndexMerge): index merge is outside the slice
 crates/planner/src/core/task.rs	compute_partial_cursor_offset	D08.11	temporary	VS1-27: computePartialCursorOffset needs aggregation.NeedCount / NeedValue (aggregate functions, D08.11); only the aggregation push down calls it
-crates/planner/src/core/task.rs	finish_index_plan	D10.1	temporary	VS1-27: CopTask.finishIndexPlan of an index lookup (both index and table plan; Go writes the stats version through the shared stats object): index lookup is outside the slice
 crates/planner/src/core/task_base.rs	convert_to_root_task_impl	D10.1	temporary	VS1-27: CopTask.convertToRootTaskImpl of index merge / index lookup / index read and of a scan that gains virtual columns (Go expands the shared scan in place, spec §5); MppTask.ConvertToRootTaskImpl (MPP exchange sender): outside the slice
 crates/planner/src/core/task_base.rs	leaf_table_scan	D10.1	temporary	VS1-27: a join in the table plan of a cop task (PhysicalHashJoin, TiFlash): outside the slice
 crates/planner/src/core/util.rs	get_stats_info	D10.9	temporary	VS1-10: get_stats_info (blocked-by:D10.9)

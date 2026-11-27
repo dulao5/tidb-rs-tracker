@@ -30,7 +30,6 @@ func costver2Exempt() map[string]string {
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexHashJoin.GetPlanCostVer2":     rest,
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexJoin.GetPlanCostVer2":         rest,
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexJoin.getIndexJoinCostVer2":    rest,
-		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexLookUpReader.GetPlanCostVer2": rest,
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexMergeJoin.GetPlanCostVer2":    rest,
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalIndexMergeReader.GetPlanCostVer2":  rest,
 		"pkg/planner/core/plan_cost_ver2.go:PhysicalMergeJoin.GetPlanCostVer2":         rest,

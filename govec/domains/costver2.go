@@ -111,6 +111,7 @@ var costver2Coverage = map[string]vec.Coverage{
 		"PhysicalSelection.GetPlanCostVer2", "PhysicalProjection.GetPlanCostVer2",
 		"PhysicalTableScan.GetPlanCostVer2", "PhysicalTableReader.GetPlanCostVer2",
 		"PhysicalIndexScan.GetPlanCostVer2", "PhysicalIndexReader.GetPlanCostVer2",
+		"PhysicalIndexLookUpReader.GetPlanCostVer2",
 		"PhysicalSort.GetPlanCostVer2", "PhysicalTopN.GetPlanCostVer2", "PointGetPlan.GetPlanCostVer2",
 		"getNumberOfRanges", "getTableScanPenalty", "getTblStats",
 		"scanCostVer2", "netCostVer2", "filterCostVer2",
@@ -131,7 +132,7 @@ var (
 // The operators' cost factors the plan records set (and double for "again").
 var cvFactorVars = []string{
 	"table_full_scan", "table_range_scan", "table_rowid_scan", "table_tiflash_scan", "table_reader",
-	"index_scan", "index_reader",
+	"index_scan", "index_reader", "index_lookup",
 	"sort", "topn",
 }
 
@@ -151,6 +152,8 @@ func cvSetFactor(sv *variable.SessionVars, name string, v float64) {
 		sv.IndexScanCostFactor = v
 	case "index_reader":
 		sv.IndexReaderCostFactor = v
+	case "index_lookup":
+		sv.IndexLookupCostFactor = v
 	case "sort":
 		sv.SortCostFactor = v
 	case "topn":
@@ -176,6 +179,8 @@ func cvGetFactor(sv *variable.SessionVars, name string) float64 {
 		return sv.IndexScanCostFactor
 	case "index_reader":
 		return sv.IndexReaderCostFactor
+	case "index_lookup":
+		return sv.IndexLookupCostFactor
 	case "sort":
 		return sv.SortCostFactor
 	case "topn":
@@ -277,10 +282,20 @@ type cvVars struct {
 }
 
 type cvPlan struct {
-	Point     bool     `json:"point"`      // a PointGetPlan alone
-	PointCols []int    `json:"point_cols"` // the accessed column types (empty: nil)
-	Index     bool     `json:"index"`      // PhysicalIndexScan + optional PhysicalIndexReader
-	Unique    bool     `json:"unique"`     // Index.Unique when Index is true
+	Point            bool     `json:"point"`      // a PointGetPlan alone
+	PointCols        []int    `json:"point_cols"` // the accessed column types (empty: nil)
+	Index            bool     `json:"index"`      // PhysicalIndexScan + optional PhysicalIndexReader
+	LookupReader     bool     `json:"lookup_reader,omitempty"`
+	PushedLimitCount uint64   `json:"pushed_limit_count,omitempty"`
+	HasPushedLimit   bool     `json:"has_pushed_limit,omitempty"`
+	ExpectedCnt      uint64   `json:"expected_cnt,omitempty"`
+	EnablePaging     bool     `json:"enable_paging,omitempty"`
+	LookupPushDown   bool     `json:"lookup_push_down,omitempty"`
+	LookupConc       int      `json:"lookup_conc,omitempty"`
+	LookupSize       int      `json:"lookup_size,omitempty"`
+	LimitFactor      string   `json:"limit_factor,omitempty"`
+	TableRows        string   `json:"table_rows,omitempty"`
+	Unique           bool     `json:"unique"`     // Index.Unique when Index is true
 	Store     int      `json:"store"`      // kv.StoreType of the scan and the reader
 	Desc      bool     `json:"desc"`
 	Temp      bool     `json:"temp"`
@@ -434,8 +449,29 @@ func costver2Generate(g *vec.Gen, rng *rand.Rand) {
 		p.Lookup = false
 		g.Add(fmt.Sprintf("rand/idx_plan/%d", i), "plan", p)
 	}
+	for i := 0; i < 300; i++ {
+		p := cvGenPlan(rng)
+		p.Index = false
+		p.LookupReader = true
+		p.Reader = true
+		p.Unique = rng.IntN(2) == 0
+		p.Store = int(kv.TiKV)
+		p.Lookup = true
+		p.TableRows = cvRows(rng)
+		p.HasPushedLimit = rng.IntN(3) == 0
+		if p.HasPushedLimit {
+			p.PushedLimitCount = []uint64{0, 1, 10, 500, 10000}[rng.IntN(5)]
+		}
+		p.ExpectedCnt = []uint64{0, 1, 100, 960, 961, 5000}[rng.IntN(6)]
+		p.EnablePaging = rng.IntN(2) == 0
+		p.LookupPushDown = rng.IntN(3) == 0
+		p.LookupConc = []int{1, 4, 8}[rng.IntN(3)]
+		p.LookupSize = []int{100, 20000}[rng.IntN(2)]
+		p.LimitFactor = []string{"1", "0.5", "2.5"}[rng.IntN(3)]
+		g.Add(fmt.Sprintf("rand/lookup_plan/%d", i), "plan", p)
+	}
 	fns := []string{"cpu", "mem", "scan", "net", "request"}
-	kinds := []string{"ts", "reader", "sel_ts", "sel_reader", "is", "ireader", "sel_is", "sel_ireader", "pg"}
+	kinds := []string{"ts", "reader", "sel_ts", "sel_reader", "is", "ireader", "sel_is", "sel_ireader", "lookup_reader", "sel_lookup_reader", "pg"}
 	for i := 0; i < 600; i++ {
 		fp := cvFactorPlan{Kind: kinds[rng.IntN(len(kinds))], Desc: rng.IntN(2) == 0, Temp: rng.IntN(3) == 0,
 			Store: []int{int(kv.TiKV), int(kv.TiFlash)}[rng.IntN(2)]}
@@ -551,6 +587,22 @@ func cvRunPlan(in cvPlan) (any, error) {
 		sv.SetProjectionConcurrency(in.Vars.ProjConc)
 	}
 	sv.SetDistSQLScanConcurrency(in.Vars.ScanConc)
+	if in.LookupConc > 0 {
+		sv.SetIndexLookupConcurrency(in.LookupConc)
+	} else {
+		sv.SetIndexLookupConcurrency(variable.DefIndexLookupConcurrency)
+	}
+	if in.LookupSize > 0 {
+		sv.IndexLookupSize = in.LookupSize
+	} else {
+		sv.IndexLookupSize = variable.DefIndexLookupSize
+	}
+	sv.EnablePaging = in.EnablePaging
+	if in.LimitFactor != "" {
+		sv.LimitCostFactor = cvFloat(in.LimitFactor)
+	} else {
+		sv.LimitCostFactor = 1.0
+	}
 	if in.Vars.EnforceMPP {
 		if err := sv.SetSystemVar(variable.TiDBEnforceMPPExecution, "ON"); err != nil {
 			return nil, err
@@ -605,33 +657,6 @@ func cvRunPlan(in cvPlan) (any, error) {
 			ranges = append(ranges, cvRange(r))
 		}
 		var cur base.PhysicalPlan
-		if in.Index {
-			idxCols := make([]*model.IndexColumn, in.SchemaN)
-			for i := 0; i < in.SchemaN; i++ {
-				idxCols[i] = &model.IndexColumn{Offset: i, Length: types.UnspecifiedLength}
-			}
-			idx := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Columns: idxCols, Unique: in.Unique}
-			is := core.PhysicalIndexScan{Table: tbl, Index: idx, Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
-			is.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
-			is.SetStats(stats(in.ScanRows))
-			cvSetField(is, "dataSourceSchema", expression.NewSchema(tblCols[:in.SchemaN]...))
-			cvSetField(is, "tblColHists", hist)
-			cur = is
-		} else {
-			ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.StoreType(in.Store), Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
-			ts.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
-			ts.SetStats(stats(in.ScanRows))
-			ts.SetIsChildOfIndexLookUp(in.Lookup)
-			cvSetField(ts, "tblCols", tblCols)
-			cvSetField(ts, "tblColHists", hist)
-			if in.RangeInfo {
-				cvSetField(ts, "rangeInfo", "range decided by [eq(test.t.a, 1)]")
-			}
-			if in.PartConds {
-				ts.PlanPartInfo = &core.PhysPlanPartInfo{PruningConds: []expression.Expression{expression.NewOne()}}
-			}
-			cur = ts
-		}
 		build := func(o cvOp) {
 			col := cur.Schema().Columns[0]
 			exprs := []expression.Expression{}
@@ -666,27 +691,95 @@ func cvRunPlan(in cvPlan) (any, error) {
 			next.SetChildren(cur)
 			cur = next
 		}
-		for _, o := range in.Cop {
-			build(o)
-		}
-		if in.Reader {
-			if in.Index {
-				r := core.PhysicalIndexReader{}
-				cvSetField(&r, "indexPlan", cur)
-				reader := r.Init(sctx, 0)
-				reader.SetStats(stats(in.ReaderRow))
-				readerSize = phF(reader.GetNetDataSize())
-				cur = reader
-			} else {
-				r := core.PhysicalTableReader{StoreType: kv.StoreType(in.Store)}
-				cvSetField(&r, "tablePlan", cur)
-				reader := r.Init(sctx, 0)
-				reader.SetStats(stats(in.ReaderRow))
-				readerSize = phF(reader.GetAvgRowSize())
-				cur = reader
+		if in.LookupReader {
+			idxCols := make([]*model.IndexColumn, in.SchemaN)
+			for i := 0; i < in.SchemaN; i++ {
+				idxCols[i] = &model.IndexColumn{Offset: i, Length: types.UnspecifiedLength}
 			}
+			idx := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Columns: idxCols, Unique: in.Unique}
+			is := core.PhysicalIndexScan{Table: tbl, Index: idx, Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
+			is.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
+			is.SetStats(stats(in.ScanRows))
+			cvSetField(is, "dataSourceSchema", expression.NewSchema(tblCols[:in.SchemaN]...))
+			cvSetField(is, "tblColHists", hist)
+			cur = is
+			for _, o := range in.Cop {
+				build(o)
+			}
+			indexPlan := cur
+
+			ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.TiKV, Desc: false, Ranges: ranges}.Init(sctx, 0)
+			ts.SetSchema(expression.NewSchema(tblCols...))
+			ts.SetStats(stats(in.TableRows))
+			ts.SetIsChildOfIndexLookUp(true)
+			cvSetField(ts, "tblCols", tblCols)
+			cvSetField(ts, "tblColHists", hist)
+
+			r := core.PhysicalIndexLookUpReader{}
+			cvSetField(&r, "indexPlan", indexPlan)
+			cvSetField(&r, "tablePlan", base.PhysicalPlan(ts))
+			cvSetField(&r, "expectedCnt", in.ExpectedCnt)
+			pushBy := plannerutil.IndexLookUpPushDownNone
+			if in.LookupPushDown {
+				pushBy = plannerutil.IndexLookUpPushDownBySysVar
+			}
+			reader := r.Init(sctx, 0, pushBy)
+			if in.HasPushedLimit {
+				reader.PushedLimit = &core.PushedDownLimit{Offset: 0, Count: in.PushedLimitCount}
+			}
+			reader.SetStats(stats(in.ReaderRow))
+			readerSize = []any{phF(reader.GetIndexNetDataSize()), phF(reader.GetAvgTableRowSize())}
+			cur = reader
 		} else {
-			_ = cvGetTblStats(cur)
+			if in.Index {
+				idxCols := make([]*model.IndexColumn, in.SchemaN)
+				for i := 0; i < in.SchemaN; i++ {
+					idxCols[i] = &model.IndexColumn{Offset: i, Length: types.UnspecifiedLength}
+				}
+				idx := &model.IndexInfo{ID: 1, Name: pmodel.NewCIStr("idx"), Columns: idxCols, Unique: in.Unique}
+				is := core.PhysicalIndexScan{Table: tbl, Index: idx, Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
+				is.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
+				is.SetStats(stats(in.ScanRows))
+				cvSetField(is, "dataSourceSchema", expression.NewSchema(tblCols[:in.SchemaN]...))
+				cvSetField(is, "tblColHists", hist)
+				cur = is
+			} else {
+				ts := core.PhysicalTableScan{Table: tbl, StoreType: kv.StoreType(in.Store), Desc: in.Desc, Ranges: ranges}.Init(sctx, 0)
+				ts.SetSchema(expression.NewSchema(tblCols[:in.SchemaN]...))
+				ts.SetStats(stats(in.ScanRows))
+				ts.SetIsChildOfIndexLookUp(in.Lookup)
+				cvSetField(ts, "tblCols", tblCols)
+				cvSetField(ts, "tblColHists", hist)
+				if in.RangeInfo {
+					cvSetField(ts, "rangeInfo", "range decided by [eq(test.t.a, 1)]")
+				}
+				if in.PartConds {
+					ts.PlanPartInfo = &core.PhysPlanPartInfo{PruningConds: []expression.Expression{expression.NewOne()}}
+				}
+				cur = ts
+			}
+			for _, o := range in.Cop {
+				build(o)
+			}
+			if in.Reader {
+				if in.Index {
+					r := core.PhysicalIndexReader{}
+					cvSetField(&r, "indexPlan", cur)
+					reader := r.Init(sctx, 0)
+					reader.SetStats(stats(in.ReaderRow))
+					readerSize = phF(reader.GetNetDataSize())
+					cur = reader
+				} else {
+					r := core.PhysicalTableReader{StoreType: kv.StoreType(in.Store)}
+					cvSetField(&r, "tablePlan", cur)
+					reader := r.Init(sctx, 0)
+					reader.SetStats(stats(in.ReaderRow))
+					readerSize = phF(reader.GetAvgRowSize())
+					cur = reader
+				}
+			} else {
+				_ = cvGetTblStats(cur)
+			}
 		}
 		for _, o := range in.Root {
 			build(o)
@@ -738,6 +831,14 @@ func cvCollect(p base.PhysicalPlan, out *[]any) {
 	if r, ok := p.(*core.PhysicalIndexReader); ok && len(r.IndexPlans) > 0 {
 		cvCollect(r.IndexPlans[len(r.IndexPlans)-1], out)
 	}
+	if r, ok := p.(*core.PhysicalIndexLookUpReader); ok {
+		if len(r.IndexPlans) > 0 {
+			cvCollect(r.IndexPlans[len(r.IndexPlans)-1], out)
+		}
+		if len(r.TablePlans) > 0 {
+			cvCollect(r.TablePlans[len(r.TablePlans)-1], out)
+		}
+	}
 	for _, ch := range p.Children() {
 		cvCollect(ch, out)
 	}
@@ -763,6 +864,12 @@ func cvRunFactor(fn string, task int, fp cvFactorPlan) any {
 		cvSetField(&r, "indexPlan", child)
 		return r.Init(sctx, 0)
 	}
+	mkLookupReader := func() base.PhysicalPlan {
+		r := core.PhysicalIndexLookUpReader{}
+		cvSetField(&r, "indexPlan", base.PhysicalPlan(is))
+		cvSetField(&r, "tablePlan", base.PhysicalPlan(ts))
+		return r.Init(sctx, 0, plannerutil.IndexLookUpPushDownNone)
+	}
 	mkSel := func(child base.PhysicalPlan) base.PhysicalPlan {
 		s := core.PhysicalSelection{Conditions: []expression.Expression{col}}.Init(sctx, &property.StatsInfo{RowCount: 1}, 0)
 		s.SetChildren(child)
@@ -786,6 +893,10 @@ func cvRunFactor(fn string, task int, fp cvFactorPlan) any {
 		p = mkSel(is)
 	case "sel_ireader":
 		p = mkSel(mkIdxReader(is))
+	case "lookup_reader":
+		p = mkLookupReader()
+	case "sel_lookup_reader":
+		p = mkSel(mkLookupReader())
 	case "pg":
 		pgv := core.PointGetPlan{TblInfo: tbl}
 		cvSetField(&pgv, "schema", expression.NewSchema(col))
