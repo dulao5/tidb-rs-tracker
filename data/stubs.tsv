@@ -173,7 +173,6 @@ crates/planner/src/core/optimizer.rs	RESOLVE_EXPAND	D09.4	temporary	optRuleList:
 crates/planner/src/core/optimizer.rs	SEMI_JOIN_REWRITER	D09.6	temporary	optRuleList: SemiJoinRewriter (subqueries, D09.6)
 crates/planner/src/core/optimizer.rs	SKEW_DISTINCT_AGG_REWRITER	D09.9	temporary	optRuleList: SkewDistinctAggRewriter (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	check_no_partitioned_data_source	D09.12	temporary	PartitionProcessor (partition pruning): a partitioned data source is a boundary; tables without partitions are left as Go leaves them
-crates/planner/src/core/optimizer.rs	check_privilege	D04.1	temporary	CheckPrivilege: needs the privilege manager (D04.1); the new stack has none (VS1 plan §3.2), Go skips it without one
 crates/planner/src/core/optimizer.rs	check_table_lock	X	permanent	not ported (LOCK TABLES: the table lock checker of enable-table-lock)
 crates/planner/src/core/optimizer.rs	check_table_mode	X	temporary	CheckTableMode: a table in import / restore mode needs dbutil.CheckTableModeIsNormal's ErrProtectedTableMode (block X)
 crates/planner/src/core/optimizer.rs	do_optimize	D02.2	temporary	doOptimize: the optimizer trace (TRACE PLAN) is not in the Rust AST
@@ -196,7 +195,6 @@ crates/planner/src/core/plan_cache.rs	parameterize_ast	D13.1	temporary	the non-p
 crates/planner/src/core/plan_cache_rebuild.rs	update_range	D10.1	temporary	updateRange: the range update of a cached index join; index joins are not ported (D10.1), so such plans are not cached (instance plan cache, A3)
 crates/planner/src/core/plan_cache_utils.rs	generate_plan_cache_stmt_with_ast	D02.2	temporary	preparing statements other than SELECT / parser.NormalizeDigest: not in the Rust AST / parser / a parameter marker the AST walk does not reach (count differs from the parser's: defensive guard Go does not have, the statement falls back; #356)
 crates/planner/src/core/plan_cache_utils.rs	get_stmt_label	D12.0	temporary	stmtctx.GetStmtLabel for statements other than SELECT
-crates/planner/src/core/plan_cache_utils.rs	new_plan_cache_key	D04.1	temporary	the user and host of the instance plan cache key are empty until the session carries the user identity: different users must not share plans once identity exists
 crates/planner/src/core/plan_cache_utils.rs	not_resident	D06.3	temporary	synchronous table lookup of the planner: a table not loaded into the InfoSchema table cache before planning (loading reads TiKV; the session loads the statement's tables first, InfoSchema spec D06.3 §11.2)
 crates/planner/src/core/plan_cacheable_checker.rs	cacheable	D13.1	temporary	Cacheable: Go test helper with a nil context, not used
 crates/planner/src/core/plan_cacheable_checker.rs	check_table_cacheable	D13.1	temporary	the non-prepared plan cache's stricter table check: not used by the new stack
@@ -239,7 +237,6 @@ crates/planner/src/core/preprocess.rs	enter	D02.2	temporary	VS1-10: enter (block
 crates/planner/src/core/preprocess.rs	erase_last_semicolon	D02.2	temporary	VS1-10: erase_last_semicolon (blocked-by:D02.2)
 crates/planner/src/core/preprocess.rs	handle_table_name	D05.4	temporary	VS1-10: handle_table_name (blocked-by:D05.4)
 crates/planner/src/core/preprocess.rs	has_auto_convert_warning	D02.2	temporary	VS1-10: has_auto_convert_warning (blocked-by:D02.2)
-crates/planner/src/core/preprocess.rs	table_by_name	D04.1	temporary	preprocessor tableByName: the privilege check of a table that is not found needs the privilege manager (D04.1); the PoC answers
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.3	temporary	metadata lock (read path, #146 part 1, #252 go-gap): global temporary tables and SessionExtendedInfoSchema.UpdateTableInfo (a table newer than the transaction's InfoSchema) need the session-extended InfoSchema of the infoschema block part 2; the PoC answers
 crates/planner/src/core/preprocess.rs	try_lock_mdl_inner	D06.5	temporary	metadata lock: domain.GetDomain(sctx) when the caller hands in no domain InfoSchema (the session always does)
 crates/planner/src/core/preprocess.rs	update_state_from_stale_read_processor	D05.4	temporary	VS1-10: update_state_from_stale_read_processor (blocked-by:D05.4)
