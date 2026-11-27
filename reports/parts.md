@@ -73,6 +73,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.0 | D12.3-A | D12.3-A | in-progress | 8 / 211 | 485 | tidb-rs branch claude/issue-376 (#376, stream aggregation part A): the vecgroupchecker file, 8/8, ported with the stream aggregation executor (D12.3 spec decision 3); govec aggexec |
 | D12.0 | VS1-13 | VS1-13 | in-progress | 123 / 211 | 2012 | dulao5/tidb-rs#222: converge 123/123 |
 | D12.1 | D12.1-2B | D12.1-2B | in-progress | 14 / 245 | 341 | dulao5/tidb-rs#432 (IndexReader Part 2B): converge 14/14; unblocks IndexReaderExecutor.Detach and indexReaderExecutorContext.Detach; govec readexec 578 records (199 index_reader, 0 blocked, 0 diffs) |
+| D12.1 | D12.1-2C | D12.1-2C | in-progress | 60 / 245 | 1827 | dulao5/tidb-rs#461 (IndexLookUp Part 2C): converge 60/60; unblocks IndexLookUpExecutor.Detach and indexLookUpExecutorContext.Detach; upstream-pitfall #463 (go-bug-kept); govec readexec index_lookup_helpers + index_lookup |
 | D12.1 | VS1-12 | VS1-12 | in-progress | 33 / 245 | 831 | dulao5/tidb-rs#234: converge 29/31 + 2 stubs; govec pointget |
 | D12.1 | VS1-34 | VS1-34 | in-progress | 28 / 245 | 695 | dulao5/tidb-rs#426 (TableReader Part 2A): converge 28/28 + 1 exception (DEF.MPP); govec readexec 379 records (0 blocked) |
 | D12.12 | VS1-15 | VS1-15 | planned | 2 / 264 | 87 | tidb-rs specs/VS1-vertical-slice (#205) |
@@ -86,6 +87,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.4 | D12.4-W | D12.4-W | in-progress | 128 / 663 | 1535 | tidb-rs branch nora/issue-404 (#404, window functions, sliding MAX / MIN, and Slide methods): converge 128/128, 0 stubs; govec aggfuncs 20221 records (0 blocked, 3 R23, 4 R26) |
 | D12.5 | D12.5-PS | D12.5-PS | in-progress | 46 / 188 | 659 | tidb-rs branch claude/issue-339 (#339, the parallel sort): converge 44/46 + 2 stubs (D01.10 spill); govec sortexec op psort 137 records |
 | D12.5 | VS1-36 | VS1-36 | in-progress | 65 / 188 | 1154 | dulao5/tidb-rs#349 merged (#329): converge 59/65 + 6 stubs; the three parallel sort stubs ported by #339: converge 62/65 + 3 stubs (D01.10); govec sortexec |
+| D12.7 | D12.7-2C | D12.7-2C | in-progress | 3 / 92 | 64 | dulao5/tidb-rs#461 (carried with D12.1 Part 2C): dataReaderBuilder.{buildTableReaderBase,buildTableReaderFromHandles}, executorBuilder.newDataReaderBuilder (3/3) |
 | D13.1 | VS1-15 | VS1-15 | planned | 44 / 100 | 1070 | tidb-rs specs/VS1-vertical-slice (#205) |
 | D13.1 | VS1-20b | VS1-20b | in-progress | 1 / 100 | 13 | the point plan short path (IsSafeToReusePointGetExecutor, D05.3 spec §10): converge 1/1 |
 | D13.1 | VS1-39 | VS1-39 | in-progress | 29 / 100 | 848 | the instance plan cache, first stage (A3 spec §7): converge 22/29 + 2 stubs + 5 exceptions (EXC.A3) |
@@ -93,7 +95,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-360 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+363 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -107,7 +109,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D05.4 | 14 | 0 | 0 |
 | D06.2 | 4 | 0 | 0 |
 | D06.3 | 2 | 0 | 0 |
-| D06.4 | 21 | 0 | 0 |
+| D06.4 | 24 | 0 | 0 |
 | D06.5 | 14 | 0 | 0 |
 | D07.1 | 18 | 0 | 0 |
 | D07.3 | 1 | 0 | 0 |
@@ -120,7 +122,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.1 | 1 | 0 | 0 |
 | D09.10 | 1 | 0 | 0 |
 | D09.11 | 1 | 0 | 0 |
-| D09.12 | 11 | 0 | 0 |
+| D09.12 | 12 | 0 | 0 |
 | D09.13 | 7 | 0 | 0 |
 | D09.14 | 11 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
@@ -132,7 +134,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
 | D09.9 | 4 | 0 | 0 |
-| D10.1 | 16 | 0 | 0 |
+| D10.1 | 17 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
 | D10.2 | 5 | 0 | 0 |
 | D10.3 | 3 | 0 | 0 |
@@ -144,7 +146,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
-| D12.1 | 3 | 0 | 0 |
+| D12.1 | 1 | 0 | 0 |
 | D12.12 | 3 | 0 | 0 |
 | D12.2 | 4 | 0 | 0 |
 | D12.5 | 4 | 0 | 0 |
