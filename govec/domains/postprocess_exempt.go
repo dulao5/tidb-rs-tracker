@@ -71,8 +71,6 @@ func postprocessExempt() map[string]string {
 		"PhysicalIndexJoin.explainInfo":                          "not ported here: the EXPLAIN text of the operators is VS1-38 (EXPLAIN output, D10.9's explain part)",
 		"PhysicalIndexLookUpReader.CloneForPlanCache":            "not ported here: plan cloning (the instance plan cache copies plans) is outside VS1-31; boundary stubs in tidb-rs",
 		"PhysicalIndexLookUpReader.ExplainInfo":                  "not ported here: the EXPLAIN text of the operators is VS1-38 (EXPLAIN output, D10.9's explain part)",
-		"PhysicalIndexLookUpReader.ResolveIndices":               "not ported: the ResolveIndices of an operator outside the first vertical slice (joins, aggregation, index readers, window, apply, ...); it comes with its operator",
-		"PhysicalIndexLookUpReader.accessObject":                 "not ported: the access object of an operator outside the first vertical slice (index readers, batch point get, memory tables, CTE); it comes with its operator",
 		"PhysicalIndexMergeJoin.ExplainInfo":                     "not ported here: the EXPLAIN text of the operators is VS1-38 (EXPLAIN output, D10.9's explain part)",
 		"PhysicalIndexMergeJoin.ExplainNormalizedInfo":           "not ported here: the EXPLAIN text of the operators is VS1-38 (EXPLAIN output, D10.9's explain part)",
 		"PhysicalIndexMergeReader.CloneForPlanCache":             "not ported here: plan cloning (the instance plan cache copies plans) is outside VS1-31; boundary stubs in tidb-rs",

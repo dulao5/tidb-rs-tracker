@@ -89,6 +89,7 @@ var findbestCoverage = map[string]vec.Coverage{
 		"indexCoveringColumn", "isIndexColsCoveringCol", "isIndexCoveringColumns", "isIndexCoveringCondition",
 		"isSingleScan", "SplitSelCondsWithVirtualColumn", "splitIndexFilterConditions", "convertToTableScan",
 		"convertToPointGet", "convertToIndexScan", "PhysicalTableScan.addPushedDownSelection", "getOriginalPhysicalTableScan",
+		"PhysicalTableScan.appendExtraHandleCol",
 		"GroupRangesByCols", "PhysicalIndexScan.initSchema", "PhysicalIndexScan.addSelectionConditionForGlobalIndex",
 		"PhysicalIndexScan.addPushedDownSelection", "getOriginalPhysicalIndexScan",
 		"appendCandidate", "pushDownNot",
@@ -110,7 +111,7 @@ var findbestCoverage = map[string]vec.Coverage{
 		"AdjustRowCountForTableScanByLimit", "crossEstimateTableRowCount",
 		"AdjustRowCountForIndexScanByLimit", "crossEstimateIndexRowCount",
 		// D09.0 / D13.1 helpers of the table, index and point get tasks
-		"PointGetPlan.Init", "PhysicalIndexScan.Init", "PhysicalIndexReader.Init",
+		"PointGetPlan.Init", "PhysicalIndexScan.Init", "PhysicalIndexReader.Init", "PhysicalIndexLookUpReader.Init",
 		"optimizeByShuffle", "isSafePointGetPath4PlanCache", "isSafePointGetPath4PlanCacheScenario1",
 		// the index pruning's ShouldPreferIndexMerge (skyline pruning)
 		"ShouldPreferIndexMerge",
@@ -225,6 +226,49 @@ func fbDump(sctx *mock.Context, p base.PhysicalPlan) map[string]any {
 			o["idx"] = fbDump(sctx, x.IndexPlans[len(x.IndexPlans)-1])
 		}
 		o["outputCols"] = fbStrs(sctx, x.OutputColumns)
+	case *core.PhysicalIndexLookUpReader:
+		idxPlans := make([]any, 0, len(x.IndexPlans))
+		for _, ip := range x.IndexPlans {
+			idxPlans = append(idxPlans, []any{ip.TP(), ip.ID()})
+		}
+		o["indexPlans"] = idxPlans
+		tblPlans := make([]any, 0, len(x.TablePlans))
+		for _, tp := range x.TablePlans {
+			tblPlans = append(tblPlans, []any{tp.TP(), tp.ID()})
+		}
+		o["tablePlans"] = tblPlans
+		if len(x.IndexPlans) > 0 {
+			o["idx"] = fbDump(sctx, x.IndexPlans[len(x.IndexPlans)-1])
+		}
+		if len(x.TablePlans) > 0 {
+			o["tbl"] = fbDump(sctx, x.TablePlans[len(x.TablePlans)-1])
+		}
+		o["indexLookUpPushDown"] = x.IndexLookUpPushDown
+		unoKeys := make([]int, 0, len(x.IndexPlansUnNatureOrders))
+		for k := range x.IndexPlansUnNatureOrders {
+			unoKeys = append(unoKeys, k)
+		}
+		sort.Ints(unoKeys)
+		uno := make([]any, 0, len(unoKeys))
+		for _, k := range unoKeys {
+			uno = append(uno, []any{k, x.IndexPlansUnNatureOrders[k]})
+		}
+		o["indexPlansUnNatureOrders"] = uno
+		o["paging"] = x.Paging
+		o["keepOrder"] = cvGetField(x, "keepOrder").Bool()
+		if x.PushedLimit != nil {
+			o["pushedLimit"] = map[string]any{"offset": x.PushedLimit.Offset, "count": x.PushedLimit.Count}
+		}
+		if x.ExtraHandleCol != nil {
+			o["extraHandle"] = vec.GoString(x.ExtraHandleCol.StringWithCtx(sctx.GetExprCtx().GetEvalCtx(), errors.RedactLogDisable))
+		}
+		o["commonHandleCols"] = fbStrs(sctx, x.CommonHandleCols)
+	case *core.PhysicalLocalIndexLookUp:
+		offs := make([]any, 0, len(x.IndexHandleOffsets))
+		for _, v := range x.IndexHandleOffsets {
+			offs = append(offs, v)
+		}
+		o["indexHandleOffsets"] = offs
 	case *core.PhysicalIndexScan:
 		o["table"] = x.Table.Name.O
 		o["index"] = x.Index.Name.O
@@ -366,6 +410,17 @@ func fbPlan(p []json.RawMessage) (out any, err error) {
 		sctx.GetSessionVars().SetEnableIndexMerge(false)
 		defer sctx.GetSessionVars().SetEnableIndexMerge(prev)
 	}
+	if o.PushdownPolicy != "" {
+		vars := sctx.GetSessionVars()
+		prevPolicy := vars.IndexLookUpPushDownPolicy
+		prevIso := vars.TxnCtx.Isolation
+		vars.IndexLookUpPushDownPolicy = o.PushdownPolicy
+		vars.TxnCtx.Isolation = "REPEATABLE-READ"
+		defer func() {
+			vars.IndexLookUpPushDownPolicy = prevPolicy
+			vars.TxnCtx.Isolation = prevIso
+		}()
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			out, err = map[string]any{"panic": vec.GoString(fmt.Sprint(r))}, nil
@@ -501,6 +556,17 @@ func findbestGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	for _, sql := range fbIndexQueries {
 		g.Add("sys/index", "plan", fbDDLs, sql, def)
+	}
+	pushForce := odOpts{Mode: mysql.ModeOnlyFullGroupBy, PushdownPolicy: "force"}
+	for _, sql := range []string{
+		"SELECT c FROM sbtest1 WHERE k = 5",
+		"SELECT * FROM t2 WHERE a = 1",
+		"SELECT * FROM tm WHERE a = 1 AND e = 2",
+		"SELECT * FROM tc WHERE b = 'xyz' AND a = 2",
+		"SELECT c FROM sbtest1 ORDER BY k LIMIT 3",
+		"SELECT * FROM tm WHERE b = 1 ORDER BY a LIMIT 2",
+	} {
+		g.Add("sys/pushdown", "plan", fbDDLs, sql, pushForce)
 	}
 	noMerge := odOpts{Mode: mysql.ModeOnlyFullGroupBy, NoIndexMerge: true}
 	for _, sql := range fbGroupRangeQueries {

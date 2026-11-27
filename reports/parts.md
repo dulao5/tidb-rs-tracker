@@ -33,6 +33,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.11 | D08.11-AB | D08.11-AB | in-progress | 62 / 69 | 942 | tidb-rs branch claude/issue-348 (#348): converge 56/62 + 6 exceptions (EXC.B Hash64/Equals); govec aggdesc 5575 records |
 | D08.11 | D08.11-C | D08.11-C | in-progress | 6 / 69 | 96 | tidb-rs branch nora/issue-397 (#397, window function descriptors): converge 6/6; govec aggdesc 6813 records (+1238 part C) |
 | D09.0 | D10.2-2A | D10.2-2A | in-progress | 2 / 214 | 9 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan.Init, PhysicalIndexReader.Init (2/2); govec findbest |
+| D09.0 | D10.2-2B | D10.2-2B | in-progress | 1 / 214 | 10 | tidb-rs branch nora/issue-451 (#451, D10.2 part 2B IndexLookUpReader): PhysicalIndexLookUpReader.Init (1/1); govec findbest |
 | D09.0 | VS1-10 | VS1-10 | in-progress | 97 / 214 | 1748 | tidb-rs branch vs1/planner-optimize: converge matched 71/97 (tryLockMDLAndUpdateSchemaIfNecessary ported in vs1/read-mdl), accounted 26 stubs; govec preprocess |
 | D09.0 | VS1-11 | VS1-11 | in-progress | 2 / 214 | 53 | dulao5/tidb-rs#239: converge 2/2 (EncodeUniqueIndexKey / ValuesForKey); govec fastplan uidx |
 | D09.1 | VS1-21 | VS1-21 | in-progress | 43 / 48 | 1980 | dulao5/tidb-rs#284: converge 29/43 + 14 stubs |
@@ -48,20 +49,24 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.7 | VS1-23 | VS1-23 | in-progress | 21 / 33 | 428 | dulao5/tidb-rs#259: converge 18/21 |
 | D09.8 | VS1-23 | VS1-23 | in-progress | 34 / 51 | 539 | dulao5/tidb-rs#259: converge 34/34 |
 | D10.1 | D10.2-2A | D10.2-2A | in-progress | 16 / 356 | 175 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan (5), PhysicalIndexReader (8 + LoadTableStats D10.2 stub + GetNetDataSize), PhysPlanPartInfo.Clone, GetPhysicalIndexReader (EXC.B); unblocks CopTask.convertToRootTaskImpl IndexReader, IsPointGetWithPKOrUniqueKeyByAutoCommit, CollectPlanStatsVersion; also backfills PhysPlanPartInfo.MemoryUsage in VS1-27 |
+| D10.1 | D10.2-2B | D10.2-2B | in-progress | 18 / 356 | 285 | tidb-rs branch nora/issue-451 (#451, D10.2 part 2B IndexLookUpReader): PhysicalIndexLookUpReader (9 + LoadTableStats D10.2 stub), PhysicalLocalIndexLookUp (5), AddExtraPhysTblIDColumn, buildPushDownIndexLookUpPlan, buildIndexLookUpTask, setTableScanToTableRowIDScan (18/18); unblocks CopTask.convertToRootTaskImpl IndexLookUp, CopTask.finishIndexPlan, PhysicalLimit.sinkIntoIndexLookUp, detachRootTableScanPlan (pure-Arc replace_leaf_table_scan_with_local_lookup) |
 | D10.1 | VS1-19 | VS1-19 | in-progress | 47 / 356 | 322 | tidb-rs branch vs1/planner-base: converge matched 46/47, accounted 1 stub |
 | D10.1 | VS1-27 | VS1-27 | in-progress | 111 / 356 | 1850 | tidb-rs branch vs1/physical-operators: converge matched 93/110, accounted 16 stubs / 1 EXC.B exception; govec physops |
 | D10.10 | VS1-19 | VS1-19 | in-progress | 135 / 161 | 1338 | tidb-rs branch vs1/planner-base: converge matched 136/142, accounted 2 stubs / 4 EXC.B exceptions; govec planutil |
 | D10.2 | D10.2-2A | D10.2-2A | in-progress | 6 / 181 | 283 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): GroupRangesByCols (M-MAPORDER), PhysicalIndexScan.{getScanRowSize, initSchema, addSelectionConditionForGlobalIndex, addPushedDownSelection}, getOriginalPhysicalIndexScan (6/6), upgrades convertToIndexScan for single-read (double-read stays blocked-by:D10.2 for part 2B), backfills 14 Part-1 functions in VS1-28; govec findbest 2333 records (0 diffs, D10.2 528->215, Go:table 140->130) |
+| D10.2 | D10.2-2B | D10.2-2B | in-progress | 2 / 181 | 45 | tidb-rs branch nora/issue-451 (#451, D10.2 part 2B IndexLookUpReader): PhysicalIndexScan.NeedExtraOutputCol, checkIndexLookUpPushDownSupported (2/2), unblocks convertToIndexScan double-read, PhysicalTableScan.appendExtraHandleCol, checkAutoForceIndexLookUpPushDown; govec findbest 2445 records (0 diffs, D10.2 215->0, Go:table 130->0, incl. pushdown LocalIndexLookUp) |
 | D10.2 | VS1-21 | VS1-21 | in-progress | 9 / 181 | 368 | dulao5/tidb-rs#284: converge 9/9 (access paths and the handle column stack, moved from VS1-28) |
 | D10.2 | VS1-28 | VS1-28 | in-progress | 103 / 181 | 3302 | tidb-rs branch vs1/find-best-task: converge 73/89 + 12 stubs + 4 exceptions (part 1: memo, TableDual / DataSource table paths, skyline, path statistics) |
 | D10.3 | VS1-27 | VS1-27 | in-progress | 22 / 103 | 368 | tidb-rs branch vs1/physical-operators: converge matched 22/22; govec physops (exhaust) |
 | D10.4 | VS1-25 | VS1-25 | done | 95 / 95 | 3309 | 95/95 (the whole block), dulao5/tidb-rs#240, tracker#93; govec rangerbuild |
 | D10.5 | D10.2-2A | D10.2-2A | in-progress | 3 / 59 | 48 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexScan.GetPlanCostVer2, PhysicalIndexReader.GetPlanCostVer2, getTblStats (3/3); unblocks PhysicalTableReader.GetAvgRowSize; govec costver2 3600 records (0 diffs) |
+| D10.5 | D10.2-2B | D10.2-2B | in-progress | 2 / 59 | 88 | tidb-rs branch nora/issue-451 (#451, D10.2 part 2B IndexLookUpReader): PhysicalIndexLookUpReader.GetPlanCostVer2, getTableInfo (2/2), unblocks getNumberOfRanges; govec costver2 3900 records (0 diffs) |
 | D10.5 | VS1-30 | VS1-30 | in-progress | 32 / 59 | 641 | tidb-rs branch vs1/cost-model-v2: converge matched 20/20 (12 not ported: v1-only cost details, batch point get); govec costver2 |
 | D10.6 | D10.2-2A | D10.2-2A | in-progress | 2 / 104 | 45 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): AdjustRowCountForIndexScanByLimit (M-FMA, gostd::math::min), crossEstimateIndexRowCount (2/2, getMostCorrCol4Index stays blocked-by:D10.6 on real stats); govec findbest |
 | D10.6 | VS1-29 | VS1-29 | in-progress | 55 / 104 | 2009 | tidb-rs branch vs1/pseudo-stats: converge matched 38/54, accounted 16 stubs, 1 not ported; govec cardinality; the DeriveStats / ExtractColGroups of the slice's operators ported with VS1-28 (tidb-rs branch vs1/find-best-task): matched 48/54, 6 stubs |
 | D10.8 | VS1-11 | VS1-11 | in-progress | 52 / 88 | 1121 | dulao5/tidb-rs#239: converge 46/52 + 6 stubs; govec fastplan |
 | D10.9 | D10.2-2A | D10.2-2A | in-progress | 10 / 207 | 160 | tidb-rs branch nora/issue-442 (#442, D10.2 part 2A IndexReader): PhysicalIndexReader.{ResolveIndices, accessObject}, PhysicalIndexScan.{AccessObject, ToPB, ExplainID, TP, haveCorCol, isFullScan}, checkCoverIndex, getAccessObjectFromIndexScan (10/10); 5 EXPLAIN text methods remain explain_stub (blocked-by:D10.9); govec postprocess 1081 records (0 diffs, D10.2 23->0) |
+| D10.9 | D10.2-2B | D10.2-2B | in-progress | 2 / 207 | 32 | tidb-rs branch nora/issue-451 (#451, D10.2 part 2B IndexLookUpReader): PhysicalIndexLookUpReader.{ResolveIndices, accessObject} (2/2); PhysicalIndexLookUpReader.ExplainInfo remains explain_stub (blocked-by:D10.9); govec postprocess 1091 records (0 diffs, incl. IndexLookUp and pushdown LocalIndexLookUp ToPB/ResolveIndices) |
 | D10.9 | VS1-24 | VS1-24 | in-progress | 1 / 207 | 27 | tidb-rs branch vs1/optimizer-driver: converge 1/1 (refine4NeighbourProj, called by InjectExtraProjection; moved from VS1-31) |
 | D10.9 | VS1-31 | VS1-31 | in-progress | 37 / 207 | 654 | tidb-rs branch claude/issue-330 (#330): converge 37/37 (IndexAccess.ToPB and PhysicalTableScan.ExplainID added); govec postprocess |
 | D11.1 | VS1-29 | VS1-29 | in-progress | 85 / 317 | 913 | tidb-rs branch vs1/pseudo-stats: converge matched 85/85; govec cardinality |
@@ -88,7 +93,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-365 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+360 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -127,9 +132,9 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
 | D09.9 | 4 | 0 | 0 |
-| D10.1 | 18 | 0 | 0 |
+| D10.1 | 16 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
-| D10.2 | 8 | 0 | 0 |
+| D10.2 | 5 | 0 | 0 |
 | D10.3 | 3 | 0 | 0 |
 | D10.5 | 1 | 0 | 0 |
 | D10.6 | 8 | 0 | 0 |

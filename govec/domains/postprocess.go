@@ -77,6 +77,9 @@ func ppReaderAccessObject(p *core.PhysicalTableReader, sctx base.PlanContext) ba
 //go:linkname ppIndexReaderAccessObject github.com/pingcap/tidb/pkg/planner/core.(*PhysicalIndexReader).accessObject
 func ppIndexReaderAccessObject(p *core.PhysicalIndexReader, sctx base.PlanContext) base.AccessObject
 
+//go:linkname ppIndexLookUpReaderAccessObject github.com/pingcap/tidb/pkg/planner/core.(*PhysicalIndexLookUpReader).accessObject
+func ppIndexLookUpReaderAccessObject(p *core.PhysicalIndexLookUpReader, sctx base.PlanContext) base.AccessObject
+
 func init() {
 	vec.Register(&vec.Domain{
 		Name:     "postprocess",
@@ -96,6 +99,7 @@ var postprocessCoverage = map[string]vec.Coverage{
 		// resolve_indices.go
 		"PhysicalProjection.ResolveIndices", "PhysicalProjection.ResolveIndicesItself", "refine4NeighbourProj",
 		"resolveIndicesForVirtualColumn", "PhysicalTableReader.ResolveIndices", "PhysicalIndexReader.ResolveIndices",
+		"PhysicalIndexLookUpReader.ResolveIndices",
 		"PhysicalSelection.ResolveIndices",
 		"resolveIndicesForSort", "PhysicalSort.ResolveIndices", "PhysicalTopN.ResolveIndices",
 		"PhysicalLimit.ResolveIndices", "PhysicalTableScan.ResolveIndices", "PhysicalTableScan.ResolveIndicesItself",
@@ -106,7 +110,8 @@ var postprocessCoverage = map[string]vec.Coverage{
 		"PhysicalSort.ToPB",
 		// access_object.go
 		"PhysicalTableScan.AccessObject", "PhysicalIndexScan.AccessObject", "PointGetPlan.AccessObject",
-		"PhysicalTableReader.accessObject", "PhysicalIndexReader.accessObject", "getAccessObjectFromIndexScan",
+		"PhysicalTableReader.accessObject", "PhysicalIndexReader.accessObject", "PhysicalIndexLookUpReader.accessObject",
+		"getAccessObjectFromIndexScan",
 		"getDynamicAccessPartition", "ScanAccessObject.String", "ScanAccessObject.NormalizedString",
 		"ScanAccessObject.SetIntoPB", "IndexAccess.ToPB",
 		// the reader's access object outside dynamic pruning, and for a table that is not
@@ -264,6 +269,34 @@ func ppDump(sctx *mock.Context, bctx *base.BuildPBContext, p base.PhysicalPlan, 
 		}
 		o["pb"] = pbs
 		o["acc"] = ppAcc(ppIndexReaderAccessObject(x, sctx.GetPlanCtx()))
+	case *core.PhysicalIndexLookUpReader:
+		o["virt"] = ppVirt(x.Schema())
+		idxPlan := x.IndexPlans[len(x.IndexPlans)-1]
+		tblPlan := x.TablePlans[len(x.TablePlans)-1]
+		o["idx"] = ppDump(sctx, bctx, idxPlan, false)
+		o["tbl"] = ppDump(sctx, bctx, tblPlan, false)
+		idxPBs := []any{}
+		for _, ip := range x.IndexPlans {
+			idxPBs = append(idxPBs, ppPB(ip.ToPB(bctx, kv.TiKV)))
+		}
+		o["idxPb"] = idxPBs
+		tblPBs := []any{}
+		for _, tp := range x.TablePlans {
+			tblPBs = append(tblPBs, ppPB(tp.ToPB(bctx, kv.TiKV)))
+		}
+		o["tblPb"] = tblPBs
+		o["acc"] = ppAcc(ppIndexLookUpReaderAccessObject(x, sctx.GetPlanCtx()))
+		if x.ExtraHandleCol != nil {
+			o["extraHandle"] = x.ExtraHandleCol.Index
+		}
+		o["commonHandle"] = ppCols(expression.NewSchema(x.CommonHandleCols...))
+	case *core.PhysicalLocalIndexLookUp:
+		offs := make([]any, 0, len(x.IndexHandleOffsets))
+		for _, v := range x.IndexHandleOffsets {
+			offs = append(offs, v)
+		}
+		o["offsets"] = offs
+		o["pb"] = ppPB(x.ToPB(bctx, kv.TiKV))
 	case *core.PhysicalIndexScan:
 		o["cols"] = ppCols(x.Schema())
 		o["acc"] = ppAcc(x.AccessObject())
@@ -338,6 +371,17 @@ func ppOptimize(p []json.RawMessage, f func(*mock.Context, base.PhysicalPlan) an
 	o := arg[odOpts](p, 2)
 	sctx, restore := fbSession()
 	defer restore()
+	if o.PushdownPolicy != "" {
+		vars := sctx.GetSessionVars()
+		prevPolicy := vars.IndexLookUpPushDownPolicy
+		prevIso := vars.TxnCtx.Isolation
+		vars.IndexLookUpPushDownPolicy = o.PushdownPolicy
+		vars.TxnCtx.Isolation = "REPEATABLE-READ"
+		defer func() {
+			vars.IndexLookUpPushDownPolicy = prevPolicy
+			vars.TxnCtx.Isolation = prevIso
+		}()
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			out, err = map[string]any{"panic": vec.GoString(fmt.Sprint(r))}, nil
@@ -364,6 +408,14 @@ func ppPreorder(p base.PhysicalPlan, out []base.PhysicalPlan) []base.PhysicalPla
 	}
 	if r, ok := p.(*core.PhysicalIndexReader); ok && len(r.IndexPlans) > 0 {
 		out = ppPreorder(r.IndexPlans[len(r.IndexPlans)-1], out)
+	}
+	if r, ok := p.(*core.PhysicalIndexLookUpReader); ok {
+		if len(r.IndexPlans) > 0 {
+			out = ppPreorder(r.IndexPlans[len(r.IndexPlans)-1], out)
+		}
+		if len(r.TablePlans) > 0 {
+			out = ppPreorder(r.TablePlans[len(r.TablePlans)-1], out)
+		}
 	}
 	for _, c := range p.Children() {
 		out = ppPreorder(c, out)
@@ -580,6 +632,17 @@ func postprocessGenerate(g *vec.Gen, rng *rand.Rand) {
 	for _, sql := range fixed {
 		g.Add("sys/fixed", "plan", ppDDLs, sql, def)
 		g.Add("sys/fixed", "plan", ppDDLs, sql, dyn)
+	}
+	pushForce := odOpts{Mode: mysql.ModeOnlyFullGroupBy, PushdownPolicy: "force"}
+	for _, sql := range []string{
+		"SELECT c FROM sbtest1 WHERE k = 5",
+		"SELECT c FROM sbtest1 ORDER BY k LIMIT 3",
+		"SELECT * FROM tm WHERE a = 1 AND e = 2",
+		"SELECT * FROM tc WHERE b = 'xyz' AND a = 2",
+		"SELECT c FROM sbtest1 WHERE k = 5 AND pad = 'x'",
+	} {
+		g.Add("sys/lookup", "plan", ppDDLs, sql, def)
+		g.Add("sys/lookup", "plan", ppDDLs, sql, pushForce)
 	}
 	for n := 0; n < 500; n++ {
 		g.Add("rand/query", "plan", ppDDLs, ppRandQuery(rng),
