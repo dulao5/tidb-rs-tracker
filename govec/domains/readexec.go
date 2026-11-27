@@ -42,6 +42,7 @@ import (
 	plannercore "github.com/pingcap/tidb/pkg/planner/core"
 	"github.com/pingcap/tidb/pkg/planner/core/base"
 	"github.com/pingcap/tidb/pkg/planner/property"
+	plannerutil "github.com/pingcap/tidb/pkg/planner/util"
 	"github.com/pingcap/tidb/pkg/sessionctx/variable"
 	"github.com/pingcap/tidb/pkg/statistics"
 	"github.com/pingcap/tidb/pkg/types"
@@ -99,6 +100,24 @@ var readexecCoverage = map[string]vec.Coverage{
 			"pkg/executor/table_reader.go:tableResultHandler.Close",
 			"pkg/executor/table_reader.go:tableResultHandler.nextChunk",
 			"pkg/executor/table_reader.go:tableResultHandler.open",
+		},
+	},
+	"index_reader": {
+		Min: 180,
+		GoFuncs: []string{
+			"pkg/executor/builder.go:buildNoRangeIndexReader",
+			"pkg/executor/builder.go:executorBuilder.buildIndexReader",
+			"pkg/executor/distsql.go:IndexReaderExecutor.Close",
+			"pkg/executor/distsql.go:IndexReaderExecutor.Next",
+			"pkg/executor/distsql.go:IndexReaderExecutor.Open",
+			"pkg/executor/distsql.go:IndexReaderExecutor.Table",
+			"pkg/executor/distsql.go:IndexReaderExecutor.buildKVRangesForIndexReader",
+			"pkg/executor/distsql.go:IndexReaderExecutor.buildKVReq",
+			"pkg/executor/distsql.go:IndexReaderExecutor.open",
+			"pkg/executor/distsql.go:IndexReaderExecutor.setDummy",
+			"pkg/executor/distsql.go:buildKeyRanges",
+			"pkg/executor/distsql.go:needMergeSort",
+			"pkg/executor/distsql.go:newIndexReaderExecutorContext",
 		},
 	},
 }
@@ -542,6 +561,9 @@ func (c *reSessionCtx) GetDistSQLCtx() *distsqlctx.DistSQLContext {
 	dctx.DistSQLConcurrency = vars.DistSQLScanConcurrency()
 	dctx.ReplicaReadType = vars.GetReplicaRead()
 	dctx.ReplicaClosestReadThreshold = vars.ReplicaClosestReadThreshold
+	dctx.EnablePaging = vars.EnablePaging
+	dctx.MinPagingSize = vars.MinPagingSize
+	dctx.MaxPagingSize = vars.MaxPagingSize
 	return dctx
 }
 
@@ -660,6 +682,307 @@ func reExecTableReader(args []json.RawMessage) (any, error) {
 		out.Nexts = append(out.Nexts, reNextOut{Rows: rows})
 	}
 	if err := tr.Close(); err != nil {
+		out.CloseErr = err.Error()
+	}
+	return out, nil
+}
+
+// ---------------------------------------------------------------------------
+// index_reader
+// ---------------------------------------------------------------------------
+
+type reIndexReaderSpec struct {
+	TableID       int64           `json:"table_id"`
+	IndexID       int64           `json:"index_id"` // -1 for common handle, >= 1 for secondary index
+	TempTable     bool            `json:"temp_table,omitempty"`
+	SetDummyCall  bool            `json:"set_dummy_call,omitempty"`
+	KeepOrder     bool            `json:"keep_order"`
+	Desc          bool            `json:"desc"`
+	Paging        bool            `json:"paging"`
+	Concurrency   int             `json:"concurrency"`
+	ReplicaRead   string          `json:"replica_read"`
+	Threshold     int64           `json:"threshold"`
+	MaxChunkSize  int             `json:"max_chunk_size"`
+	OutputOffsets []int           `json:"output_offsets"`
+	ByItemsDesc   []bool          `json:"by_items_desc,omitempty"`
+	Ranges        []reRangeSpec   `json:"ranges,omitempty"`
+	GroupedRanges [][]reRangeSpec `json:"grouped_ranges,omitempty"`
+	Streams       []reStreamSpec  `json:"streams"`
+	RequiredRows  []int           `json:"required_rows"`
+}
+
+type reIndexReaderOut struct {
+	Reqs         []reReqOut     `json:"reqs"`
+	KVRanges     []reKVRangeOut `json:"kv_ranges"`
+	OpenErr      string         `json:"open_err,omitempty"`
+	Nexts        []reNextOut    `json:"nexts"`
+	CloseErr     string         `json:"close_err,omitempty"`
+	TableIDCheck int64          `json:"table_id_check"`
+	IndexNames   []string       `json:"index_names"`
+}
+
+func reSetIndexSelectResultHook(ir *executor.IndexReaderExecutor, fn func(context.Context, *distsqlctx.DistSQLContext, *kv.Request, []*types.FieldType, []int) (distsql.SelectResult, error)) {
+	fHook := reflect.ValueOf(ir).Elem().FieldByName("selectResultHook")
+	fFn := fHook.FieldByName("selectResultFunc")
+	reflect.NewAt(fFn.Type(), unsafe.Pointer(fFn.UnsafeAddr())).Elem().Set(reflect.ValueOf(fn))
+}
+
+func reReadIndexKVRanges(ir *executor.IndexReaderExecutor) []reKVRangeOut {
+	f := reflect.ValueOf(ir).Elem().FieldByName("kvRanges")
+	krs := reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem().Interface().([]kv.KeyRange)
+	out := make([]reKVRangeOut, 0, len(krs))
+	for _, kr := range krs {
+		out = append(out, reKVRangeOut{
+			Start: hex.EncodeToString(kr.StartKey),
+			End:   hex.EncodeToString(kr.EndKey),
+		})
+	}
+	return out
+}
+
+func reReadIndexDagOutputOffsets(ir *executor.IndexReaderExecutor) []uint32 {
+	f := reflect.ValueOf(ir).Elem().FieldByName("dagPB")
+	dag := reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem().Interface().(*tipb.DAGRequest)
+	out := make([]uint32, len(dag.OutputOffsets))
+	copy(out, dag.OutputOffsets)
+	return out
+}
+
+//go:linkname reIndexSetDummy github.com/pingcap/tidb/pkg/executor.(*IndexReaderExecutor).setDummy
+func reIndexSetDummy(e *executor.IndexReaderExecutor)
+
+func reBuildIndexTableAndPlan(sctx *mock.Context, spec *reIndexReaderSpec) (*model.TableInfo, *plannercore.PhysicalIndexReader) {
+	intFT := func() *types.FieldType {
+		return types.NewFieldType(mysql.TypeLonglong)
+	}
+	pkFT := intFT()
+	pkFT.AddFlag(mysql.PriKeyFlag | mysql.NotNullFlag)
+	c0 := &model.ColumnInfo{ID: 1, Name: pmodel.NewCIStr("id"), Offset: 0, FieldType: *pkFT, State: model.StatePublic}
+	c1 := &model.ColumnInfo{ID: 2, Name: pmodel.NewCIStr("k1"), Offset: 1, FieldType: *intFT(), State: model.StatePublic}
+	c2 := &model.ColumnInfo{ID: 3, Name: pmodel.NewCIStr("k2"), Offset: 2, FieldType: *intFT(), State: model.StatePublic}
+	cols := []*model.ColumnInfo{c0, c1, c2}
+
+	isCommon := spec.IndexID == -1
+	idxName := "idx_k"
+	if isCommon {
+		idxName = "PRIMARY"
+	}
+	idxInfo := &model.IndexInfo{
+		ID:      spec.IndexID,
+		Name:    pmodel.NewCIStr(idxName),
+		Table:   pmodel.NewCIStr("t"),
+		Primary: isCommon,
+		Unique:  isCommon,
+		State:   model.StatePublic,
+		Columns: []*model.IndexColumn{
+			{Name: pmodel.NewCIStr("k1"), Offset: 1, Length: types.UnspecifiedLength},
+			{Name: pmodel.NewCIStr("k2"), Offset: 2, Length: types.UnspecifiedLength},
+		},
+	}
+
+	tblInfo := &model.TableInfo{
+		ID:             spec.TableID,
+		Name:           pmodel.NewCIStr("t"),
+		Columns:        cols,
+		Indices:        []*model.IndexInfo{idxInfo},
+		PKIsHandle:     !isCommon,
+		IsCommonHandle: isCommon,
+		State:          model.StatePublic,
+	}
+	if spec.TempTable {
+		tblInfo.TempTableType = model.TempTableLocal
+	}
+
+	scanCols := []*expression.Column{
+		{ID: 2, UniqueID: 2, Index: 0, RetType: intFT()},
+		{ID: 3, UniqueID: 3, Index: 1, RetType: intFT()},
+		{ID: 1, UniqueID: 1, Index: 2, RetType: pkFT.Clone()},
+	}
+	scanSchema := expression.NewSchema(scanCols...)
+
+	outCols := make([]*expression.Column, len(spec.OutputOffsets))
+	readerCols := make([]*expression.Column, len(spec.OutputOffsets))
+	for i, off := range spec.OutputOffsets {
+		sc := scanCols[off]
+		outCols[i] = &expression.Column{
+			ID:       sc.ID,
+			UniqueID: sc.UniqueID,
+			Index:    off,
+			RetType:  sc.RetType.Clone(),
+		}
+		readerCols[i] = &expression.Column{
+			ID:       sc.ID,
+			UniqueID: sc.UniqueID,
+			Index:    i,
+			RetType:  sc.RetType.Clone(),
+		}
+	}
+	readerSchema := expression.NewSchema(readerCols...)
+
+	byItems := make([]*plannerutil.ByItems, len(spec.ByItemsDesc))
+	for i, desc := range spec.ByItemsDesc {
+		byItems[i] = &plannerutil.ByItems{
+			Expr: readerCols[i],
+			Desc: desc,
+		}
+	}
+
+	var groupedRanges [][]*ranger.Range
+	if len(spec.GroupedRanges) > 0 {
+		groupedRanges = make([][]*ranger.Range, len(spec.GroupedRanges))
+		for i, g := range spec.GroupedRanges {
+			groupedRanges[i] = reBuildRanges("int", g)
+		}
+	}
+
+	stats := &property.StatsInfo{RowCount: 50}
+	scan := plannercore.PhysicalIndexScan{
+		Table:         tblInfo,
+		Index:         idxInfo,
+		Columns:       []*model.ColumnInfo{c1, c2, c0},
+		Ranges:        reBuildRanges("int", spec.Ranges),
+		GroupedRanges: groupedRanges,
+		KeepOrder:     spec.KeepOrder,
+		Desc:          spec.Desc,
+		ByItems:       byItems,
+	}.Init(sctx.GetPlanCtx(), 0)
+	scan.SetSchema(scanSchema)
+	scan.SetStats(stats)
+	fDSS := reflect.ValueOf(scan).Elem().FieldByName("dataSourceSchema")
+	reflect.NewAt(fDSS.Type(), unsafe.Pointer(fDSS.UnsafeAddr())).Elem().Set(reflect.ValueOf(scanSchema))
+	pseudo := statistics.PseudoTable(tblInfo, false, false)
+	fHists := reflect.ValueOf(scan).Elem().FieldByName("tblColHists")
+	reflect.NewAt(fHists.Type(), unsafe.Pointer(fHists.UnsafeAddr())).Elem().Set(reflect.ValueOf(&pseudo.HistColl))
+
+	reader := plannercore.PhysicalIndexReader{
+		IndexPlans:    []base.PhysicalPlan{scan},
+		OutputColumns: outCols,
+	}.Init(sctx.GetPlanCtx(), 0)
+	fIP := reflect.ValueOf(reader).Elem().FieldByName("indexPlan")
+	reflect.NewAt(fIP.Type(), unsafe.Pointer(fIP.UnsafeAddr())).Elem().Set(reflect.ValueOf(scan))
+	// Set schema directly on physicalSchemaProducer so reader keeps custom OutputColumns and schema.
+	fSP := reflect.ValueOf(reader).Elem().FieldByName("physicalSchemaProducer")
+	fSch := fSP.FieldByName("schema")
+	reflect.NewAt(fSch.Type(), unsafe.Pointer(fSch.UnsafeAddr())).Elem().Set(reflect.ValueOf(readerSchema))
+	reader.SetStats(stats)
+	return tblInfo, reader
+}
+
+func reExecIndexReader(args []json.RawMessage) (any, error) {
+	var spec reIndexReaderSpec
+	if err := json.Unmarshal(args[0], &spec); err != nil {
+		return nil, err
+	}
+
+	sctx := &reSessionCtx{Context: mock.NewContext()}
+	vars := sctx.GetSessionVars()
+	vars.InitChunkSize = variable.DefInitChunkSize
+	vars.MaxChunkSize = spec.MaxChunkSize
+	vars.EnableChunkRPC = true
+	vars.EnablePaging = spec.Paging
+	vars.SetDistSQLScanConcurrency(spec.Concurrency)
+	vars.SetReplicaRead(reParseReplicaRead(spec.ReplicaRead))
+	vars.ReplicaClosestReadThreshold = spec.Threshold
+	vars.StmtCtx.MemTracker = memory.NewTracker(-1, -1)
+	sctx.BindDomain(domain.NewMockDomain())
+
+	tblInfo, readerPlan := reBuildIndexTableAndPlan(sctx.Context, &spec)
+	is := infoschema.MockInfoSchema([]*model.TableInfo{tblInfo})
+
+	b := executor.NewMockExecutorBuilderForTest(sctx, is, nil)
+	ebVal := reflect.ValueOf(b).Elem().FieldByName("executorBuilder").Elem()
+	fForDRB := ebVal.FieldByName("forDataReaderBuilder")
+	reflect.NewAt(fForDRB.Type(), unsafe.Pointer(fForDRB.UnsafeAddr())).Elem().SetBool(true)
+	fDRBTS := ebVal.FieldByName("dataReaderTS")
+	reflect.NewAt(fDRBTS.Type(), unsafe.Pointer(fDRBTS.UnsafeAddr())).Elem().SetUint(100)
+	built := b.Build(readerPlan)
+	if err := beBuilderErr(b); err != nil {
+		return nil, err
+	}
+	ir := built.(*executor.IndexReaderExecutor)
+	if spec.SetDummyCall {
+		reIndexSetDummy(ir)
+	}
+	tblIDCheck := ir.Table().Meta().ID
+	indexNames := append([]string(nil), vars.StmtCtx.IndexNames...)
+
+	reqs := []reReqOut{}
+	streamIdx := 0
+	outputOffsets := reReadIndexDagOutputOffsets(ir)
+	reSetIndexSelectResultHook(ir, func(_ context.Context, _ *distsqlctx.DistSQLContext, kvReq *kv.Request, fieldTypes []*types.FieldType, copPlanIDs []int) (distsql.SelectResult, error) {
+		krs := kvReq.KeyRanges.AppendSelfTo(nil)
+		krOut := make([]reKVRangeOut, 0, len(krs))
+		for _, kr := range krs {
+			krOut = append(krOut, reKVRangeOut{
+				Start: hex.EncodeToString(kr.StartKey),
+				End:   hex.EncodeToString(kr.EndKey),
+			})
+		}
+		idsCopy := make([]int, len(copPlanIDs))
+		copy(idsCopy, copPlanIDs)
+		reqs = append(reqs, reReqOut{
+			KeyRanges:     krOut,
+			Desc:          kvReq.Desc,
+			KeepOrder:     kvReq.KeepOrder,
+			Concurrency:   kvReq.Concurrency,
+			Paging:        kvReq.Paging.Enable,
+			StartTS:       kvReq.StartTs,
+			ReplicaRead:   reFormatReplicaRead(kvReq.ReplicaRead),
+			OutputOffsets: outputOffsets,
+			CopPlanIDs:    idsCopy,
+		})
+		var st reStreamSpec
+		if streamIdx < len(spec.Streams) {
+			st = spec.Streams[streamIdx]
+		}
+		streamIdx++
+		if st.OpenErr != "" {
+			return nil, errors.New(st.OpenErr)
+		}
+		return &reMockSelectResult{spec: st, numCols: len(fieldTypes)}, nil
+	})
+
+	ctx := context.Background()
+	out := reIndexReaderOut{
+		Reqs:         []reReqOut{},
+		KVRanges:     []reKVRangeOut{},
+		Nexts:        []reNextOut{},
+		TableIDCheck: tblIDCheck,
+		IndexNames:   indexNames,
+	}
+	if err := ir.Open(ctx); err != nil {
+		out.Reqs = reqs
+		out.KVRanges = reReadIndexKVRanges(ir)
+		out.OpenErr = err.Error()
+		_ = ir.Close()
+		return out, nil
+	}
+	out.Reqs = reqs
+	out.KVRanges = reReadIndexKVRanges(ir)
+
+	chk := ir.NewChunk()
+	numCols := chk.NumCols()
+	for _, reqRows := range spec.RequiredRows {
+		chk.SetRequiredRows(reqRows, spec.MaxChunkSize)
+		if err := ir.Next(ctx, chk); err != nil {
+			out.Nexts = append(out.Nexts, reNextOut{Err: err.Error()})
+			break
+		}
+		rows := make([][]*int64, chk.NumRows())
+		for r := 0; r < chk.NumRows(); r++ {
+			row := chk.GetRow(r)
+			vals := make([]*int64, numCols)
+			for c := 0; c < numCols; c++ {
+				if !row.IsNull(c) {
+					v := row.GetInt64(c)
+					vals[c] = &v
+				}
+			}
+			rows[r] = vals
+		}
+		out.Nexts = append(out.Nexts, reNextOut{Rows: rows})
+	}
+	if err := ir.Close(); err != nil {
 		out.CloseErr = err.Error()
 	}
 	return out, nil
@@ -960,6 +1283,281 @@ func readexecGenerate(g *vec.Gen, r *rand.Rand) {
 			RequiredRows: reqRows,
 		})
 	}
+
+	// 3. index_reader (~210 cases covering all Part 2B behaviors)
+	// 3a. Single-range & multi-range secondary index + common handle (index_id=-1),
+	//     desc on/off, keepOrder on/off, custom OutputOffsets.
+	offsetVariants := [][]int{{0}, {1, 0}, {0, 1}, {2, 0}, {2, 1, 0}}
+	for _, idxID := range []int64{1, -1} {
+		for _, desc := range []bool{false, true} {
+			for _, keepOrder := range []bool{false, true} {
+				for _, offs := range offsetVariants {
+					g.Add("sys/index_reader/basic", "index_reader", reIndexReaderSpec{
+						TableID:       301,
+						IndexID:       idxID,
+						KeepOrder:     keepOrder,
+						Desc:          desc,
+						Paging:        desc,
+						Concurrency:   15,
+						ReplicaRead:   "leader",
+						Threshold:     4096,
+						MaxChunkSize:  32,
+						OutputOffsets: offs,
+						Ranges: []reRangeSpec{
+							{Low: []any{float64(10), float64(1)}, High: []any{float64(20), float64(100)}},
+							{Low: []any{float64(1), float64(0)}, High: []any{float64(5), float64(50)}, LowExclude: true, HighExclude: true},
+						},
+						Streams:      []reStreamSpec{{Rows: mkRows(5, len(offs), 100)}},
+						RequiredRows: []int{2, 2, 4, 4},
+					})
+				}
+			}
+		}
+	}
+
+	// 3b. Multi-group / grouped-range with needMergeSort ON (by_items non-empty, >1 KV range)
+	//     and OFF (by_items empty, or 1 KV range), ASC & DESC merge, multi-column ByItems.
+	mkSortedRows := func(vals []int64, nCols int, desc bool) [][]*int64 {
+		rows := make([][]*int64, len(vals))
+		for i := range vals {
+			idx := i
+			if desc {
+				idx = len(vals) - 1 - i
+			}
+			row := make([]*int64, nCols)
+			for c := 0; c < nCols; c++ {
+				row[c] = reIntPtr(vals[idx]*10 + int64(c))
+			}
+			rows[i] = row
+		}
+		return rows
+	}
+	for _, desc := range []bool{false, true} {
+		for _, idxID := range []int64{2, -1} {
+			// Grouped ranges with merge sort ON (3 groups -> 3 separate KV requests merged by col 0).
+			g.Add("sys/index_reader/merge_sort", "index_reader", reIndexReaderSpec{
+				TableID:       302,
+				IndexID:       idxID,
+				KeepOrder:     true,
+				Desc:          desc,
+				Paging:        false,
+				Concurrency:   4,
+				ReplicaRead:   "leader",
+				Threshold:     4096,
+				MaxChunkSize:  32,
+				OutputOffsets: []int{1, 0},
+				ByItemsDesc:   []bool{desc},
+				GroupedRanges: [][]reRangeSpec{
+					{{Low: []any{float64(30), float64(0)}, High: []any{float64(30), float64(100)}}},
+					{{Low: []any{float64(10), float64(0)}, High: []any{float64(10), float64(100)}}},
+					{{Low: []any{float64(20), float64(0)}, High: []any{float64(20), float64(100)}}},
+				},
+				Streams: []reStreamSpec{
+					{Rows: mkSortedRows([]int64{1, 4, 7}, 2, desc)},
+					{Rows: mkSortedRows([]int64{2, 5, 8}, 2, desc)},
+					{Rows: mkSortedRows([]int64{3, 6, 9}, 2, desc)},
+				},
+				RequiredRows: []int{2, 3, 2, 5, 5},
+			})
+			// Single range with ByItems non-empty -> needMergeSort is FALSE (single KV request).
+			g.Add("sys/index_reader/single_range_by_items", "index_reader", reIndexReaderSpec{
+				TableID:       303,
+				IndexID:       idxID,
+				KeepOrder:     true,
+				Desc:          desc,
+				Paging:        false,
+				Concurrency:   4,
+				ReplicaRead:   "leader",
+				Threshold:     4096,
+				MaxChunkSize:  32,
+				OutputOffsets: []int{0, 1},
+				ByItemsDesc:   []bool{desc},
+				Ranges:        []reRangeSpec{{Low: []any{float64(1), float64(0)}, High: []any{float64(10), float64(100)}}},
+				Streams:       []reStreamSpec{{Rows: mkSortedRows([]int64{1, 2, 3, 4}, 2, desc)}},
+				RequiredRows:  []int{2, 10, 10},
+			})
+		}
+	}
+
+	// 3c. Empty ranges, temp_table dummy, setDummy, mid-stream Close, and Open/Next/Close error propagation.
+	for _, desc := range []bool{false, true} {
+		g.Add("sys/index_reader/empty", "index_reader", reIndexReaderSpec{
+			TableID:       304,
+			IndexID:       1,
+			KeepOrder:     true,
+			Desc:          desc,
+			Concurrency:   15,
+			ReplicaRead:   "leader",
+			MaxChunkSize:  32,
+			OutputOffsets: []int{0},
+			Ranges:        []reRangeSpec{},
+			Streams:       []reStreamSpec{{Rows: nil}},
+			RequiredRows:  []int{5},
+		})
+		g.Add("sys/index_reader/temp_dummy", "index_reader", reIndexReaderSpec{
+			TableID:       305,
+			IndexID:       1,
+			TempTable:     true,
+			KeepOrder:     false,
+			Desc:          desc,
+			Concurrency:   15,
+			ReplicaRead:   "leader",
+			MaxChunkSize:  32,
+			OutputOffsets: []int{0, 2},
+			Ranges: []reRangeSpec{
+				{Low: []any{float64(20), float64(0)}, High: []any{float64(30), float64(10)}},
+				{Low: []any{float64(1), float64(0)}, High: []any{float64(5), float64(10)}},
+			},
+			RequiredRows: []int{5},
+		})
+		g.Add("sys/index_reader/set_dummy", "index_reader", reIndexReaderSpec{
+			TableID:       306,
+			IndexID:       1,
+			SetDummyCall:  true,
+			KeepOrder:     true,
+			Desc:          desc,
+			Concurrency:   15,
+			ReplicaRead:   "leader",
+			MaxChunkSize:  32,
+			OutputOffsets: []int{0},
+			Ranges:        []reRangeSpec{{Low: []any{float64(1), float64(1)}, High: []any{float64(5), float64(5)}}},
+			RequiredRows:  []int{5},
+		})
+	}
+	idxErrSpecs := []reIndexReaderSpec{
+		{
+			TableID: 307, IndexID: 1, KeepOrder: false, Concurrency: 4, ReplicaRead: "leader", MaxChunkSize: 32,
+			OutputOffsets: []int{0},
+			Ranges:        []reRangeSpec{{Low: []any{float64(1), float64(1)}, High: []any{float64(10), float64(10)}}},
+			Streams:       []reStreamSpec{{OpenErr: "idx open boom 1"}},
+			RequiredRows:  []int{5},
+		},
+		{
+			// Mid-open k-th failure in needMergeSort loop.
+			TableID: 308, IndexID: 1, KeepOrder: true, Concurrency: 4, ReplicaRead: "leader", MaxChunkSize: 32,
+			OutputOffsets: []int{0, 1},
+			ByItemsDesc:   []bool{false},
+			GroupedRanges: [][]reRangeSpec{
+				{{Low: []any{float64(1), float64(0)}, High: []any{float64(1), float64(10)}}},
+				{{Low: []any{float64(2), float64(0)}, High: []any{float64(2), float64(10)}}},
+				{{Low: []any{float64(3), float64(0)}, High: []any{float64(3), float64(10)}}},
+			},
+			Streams: []reStreamSpec{
+				{Rows: mkSortedRows([]int64{1, 2}, 2, false)},
+				{OpenErr: "idx open boom 2"},
+				{Rows: mkSortedRows([]int64{3, 4}, 2, false)},
+			},
+			RequiredRows: []int{5},
+		},
+		{
+			TableID: 309, IndexID: 1, KeepOrder: true, Concurrency: 4, ReplicaRead: "leader", MaxChunkSize: 32,
+			OutputOffsets: []int{0, 1},
+			Ranges:        []reRangeSpec{{Low: []any{float64(1), float64(1)}, High: []any{float64(10), float64(10)}}},
+			Streams:       []reStreamSpec{{Rows: mkRows(4, 2, 1), NextErr: "idx next boom", ErrAfter: 1}},
+			RequiredRows:  []int{2, 2, 2},
+		},
+		{
+			TableID: 310, IndexID: 1, KeepOrder: true, Concurrency: 4, ReplicaRead: "leader", MaxChunkSize: 32,
+			OutputOffsets: []int{0, 1},
+			Ranges:        []reRangeSpec{{Low: []any{float64(1), float64(1)}, High: []any{float64(10), float64(10)}}},
+			Streams:       []reStreamSpec{{Rows: mkRows(6, 2, 1), CloseErr: "idx close boom"}},
+			// Mid-stream stop: consume only 2 of 6 rows, then Close.
+			RequiredRows: []int{2},
+		},
+		{
+			TableID: 311, IndexID: 1, KeepOrder: true, Concurrency: 4, ReplicaRead: "leader", MaxChunkSize: 32,
+			OutputOffsets: []int{0, 1},
+			ByItemsDesc:   []bool{false},
+			GroupedRanges: [][]reRangeSpec{
+				{{Low: []any{float64(1), float64(0)}, High: []any{float64(1), float64(10)}}},
+				{{Low: []any{float64(2), float64(0)}, High: []any{float64(2), float64(10)}}},
+			},
+			Streams: []reStreamSpec{
+				{Rows: mkSortedRows([]int64{1, 3, 5}, 2, false), CloseErr: "merge close boom 1"},
+				{Rows: mkSortedRows([]int64{2, 4, 6}, 2, false)},
+			},
+			// Mid-stream stop on merged stream: take 2 of 6 rows, then Close.
+			RequiredRows: []int{2},
+		},
+	}
+	for _, sp := range idxErrSpecs {
+		g.Add("sys/index_reader/err", "index_reader", sp)
+	}
+
+	// 3d. Randomized index_reader cases to exceed Min=180 cleanly.
+	for i := 0; i < 140; i++ {
+		idxID := int64(1 + r.IntN(3))
+		if r.IntN(4) == 0 {
+			idxID = -1
+		}
+		keepOrder := r.IntN(2) == 0
+		desc := r.IntN(2) == 0
+		paging := r.IntN(2) == 0
+		rr := rrModes[r.IntN(len(rrModes))]
+		conc := concurrencies[r.IntN(len(concurrencies))]
+		maxChk := maxChunks[r.IntN(len(maxChunks))]
+		offs := offsetVariants[r.IntN(len(offsetVariants))]
+		useMerge := r.IntN(3) == 0
+
+		var rngs []reRangeSpec
+		var grouped [][]reRangeSpec
+		var byItemsDesc []bool
+		var streams []reStreamSpec
+		if useMerge {
+			nGroups := 2 + r.IntN(2)
+			byItemsDesc = []bool{desc}
+			grouped = make([][]reRangeSpec, nGroups)
+			streams = make([]reStreamSpec, nGroups)
+			for gi := 0; gi < nGroups; gi++ {
+				baseK := int64((nGroups - gi) * 100)
+				grouped[gi] = []reRangeSpec{{Low: []any{float64(baseK), float64(0)}, High: []any{float64(baseK), float64(50)}}}
+				nRows := r.IntN(6)
+				vals := make([]int64, nRows)
+				cur := int64(r.IntN(10))
+				for ri := 0; ri < nRows; ri++ {
+					cur += int64(1 + r.IntN(5))
+					vals[ri] = cur
+				}
+				streams[gi] = reStreamSpec{Rows: mkSortedRows(vals, len(offs), desc)}
+			}
+		} else {
+			nRanges := 1 + r.IntN(3)
+			rngs = make([]reRangeSpec, nRanges)
+			for ri := 0; ri < nRanges; ri++ {
+				lo := int64(r.IntN(200) - 100)
+				hi := lo + int64(r.IntN(50))
+				rngs[ri] = reRangeSpec{
+					Low:         []any{float64(lo), float64(0)},
+					High:        []any{float64(hi), float64(100)},
+					LowExclude:  r.IntN(2) == 0,
+					HighExclude: r.IntN(2) == 0,
+				}
+			}
+			streams = []reStreamSpec{{Rows: mkRows(r.IntN(10), len(offs), int64(i*100))}}
+		}
+		nNexts := 1 + r.IntN(5)
+		reqRows := make([]int, nNexts)
+		for j := range reqRows {
+			reqRows[j] = 1 + r.IntN(maxChk)
+		}
+		g.Add(fmt.Sprintf("rand/index_reader/%d", i), "index_reader", reIndexReaderSpec{
+			TableID:       int64(400 + i),
+			IndexID:       idxID,
+			KeepOrder:     keepOrder,
+			Desc:          desc,
+			Paging:        paging,
+			Concurrency:   conc,
+			ReplicaRead:   rr,
+			Threshold:     4096,
+			MaxChunkSize:  maxChk,
+			OutputOffsets: offs,
+			ByItemsDesc:   byItemsDesc,
+			Ranges:        rngs,
+			GroupedRanges: grouped,
+			Streams:       streams,
+			RequiredRows:  reqRows,
+		})
+	}
 }
 
 func readexecExec(op string, args []json.RawMessage) (any, error) {
@@ -968,6 +1566,8 @@ func readexecExec(op string, args []json.RawMessage) (any, error) {
 		return reExecClosestReadAdjuster(args)
 	case "table_reader":
 		return reExecTableReader(args)
+	case "index_reader":
+		return reExecIndexReader(args)
 	default:
 		return nil, fmt.Errorf("readexec: unknown op %q", op)
 	}
