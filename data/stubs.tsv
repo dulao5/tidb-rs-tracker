@@ -17,6 +17,9 @@ crates/executor/src/aggregate/agg_hash_final_worker.rs	run	D01.10	temporary	D12.
 crates/executor/src/aggregate/agg_hash_final_worker.rs	send_final_result	D01.10	temporary	D12.3-B (hash aggregation part B, D12.3 spec §3): HashAggFinalWorker.sendFinalResult disk restore branch when spilled partitions exist (D01.10, ported in D12.3 part C); unreachable before spill writes files
 crates/executor/src/builder.rs	build	D12.0	temporary	D12.0 part 2: executors of other plans
 crates/executor/src/builder.rs	build	D12.1	temporary	D12.1 parts 3A/3C/3D: BatchPointGet, UnionScan, TableSample executors
+crates/executor/src/builder.rs	build_index_look_up_reader	D06.4	temporary	D12.1 part 2C (D12.1-2C): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
+crates/executor/src/builder.rs	build_index_look_up_reader	D09.12	temporary	D12.1 part 2C (D12.1-2C): dynamic partition pruning in buildIndexLookUpReader stops at build before Open
+crates/executor/src/builder.rs	build_index_look_up_reader	D10.1	temporary	D12.1 part 2C (D12.1-2C): correlated column in IndexLookUpReader access condition (rebuildIndexRanges) stops at build before Open
 crates/executor/src/builder.rs	build_index_reader	D06.4	temporary	D12.1 part 2B (D12.1-2B): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
 crates/executor/src/builder.rs	build_no_range_index_reader	D06.4	temporary	D12.1 part 2B (D12.1-2B): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
 crates/executor/src/builder.rs	build_no_range_table_reader	D06.4	temporary	D12.1 part 2A (VS1-34): static partitioned table (PartitionedTable.GetPartition) and cached table reads stop at build before Open
@@ -34,6 +37,7 @@ crates/executor/src/detach.rs	projection_exec_detach	D12.2	temporary	VS1-35: sel
 crates/executor/src/detach.rs	projection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	selection_exec_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
 crates/executor/src/detach.rs	selection_executor_context_detach	D12.2	temporary	VS1-35: selection / projection / limit / table dual executors
+crates/executor/src/distsql.rs	compare_data	D06.4	temporary	D12.1 part 2C (D12.1-2C): ADMIN CHECK path (tables.CompareIndexAndVal in tableWorker.compareData) stops at D06.4
 crates/executor/src/glue.rs	get_plan_replayer_handle	X	delegated	delegated (the block table puts pkg/domain/plan_replayer.go in X: it writes mysql.plan_replayer_status and dump files). Each node captures only the statements it executes itself, so statements sent to a tidb-rs node are captured by no node: the plan replayer handle (task collector of mysql.plan_replayer_task, dump worker); returns None, so tidb-rs nodes never execute PLAN REPLAYER CAPTURE tasks (docs/compatibility.md known limitation)
 crates/executor/src/internal/exec/executor.rs	get_sys_session	D06.5	temporary	D06.5: domain system session pool
 crates/executor/src/internal/exec/executor.rs	release_sys_session	D06.5	temporary	D06.5: domain system session pool

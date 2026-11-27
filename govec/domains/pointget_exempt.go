@@ -8,6 +8,7 @@ func pointgetExempt() map[string]string {
 	part2a := "D12.1 Part 2A function without a readexec record: covered by tidb-rs unit tests (crates/executor/src/table_reader.rs)"
 	part2b := "D12.1 Part 2B function without a readexec record: covered by tidb-rs unit tests (crates/executor/src/distsql.rs; correlated-column substitution stops at D10.1)"
 	part2c := "D12.1 Part 2C internal helper invoked via IndexLookUpExecutor or covered by tidb-rs unit tests (crates/executor/src/distsql.rs)"
+	part2cAdminCheck := "D12.1 Part 2C ADMIN CHECK path only (not reached by readexec vectors; compareData is a blocked-by:D06.4 stub in tidb-rs, getDatumRow is only called by compareData and unit-tested in crates/executor/src/distsql.rs)"
 	rest := "D12.1 outside the ported parts (VS1-12, Part 2A, Part 2B, and Part 2C); not yet ported"
 	return map[string]string{
 		"pkg/executor/batch_point_get.go:BatchPointGetExec.Close":                             rest,
@@ -70,7 +71,7 @@ func pointgetExempt() map[string]string {
 		"pkg/executor/distsql.go:IndexLookUpExecutor.initRuntimeStats":                        part2c,
 		"pkg/executor/distsql.go:IndexLookUpExecutor.isCommonHandle":                          part2c,
 		"pkg/executor/distsql.go:IndexLookUpExecutor.needPartitionHandle":                     part2c,
-		"pkg/executor/distsql.go:getDatumRow":                                                 part2c,
+		"pkg/executor/distsql.go:getDatumRow":                                                 part2cAdminCheck,
 		"pkg/executor/distsql.go:getMergeSortSharedCoprRequestRateLimit":                      part2c,
 		"pkg/executor/distsql.go:getSelectResultInFlightCost":                                 part2c,
 		"pkg/executor/distsql.go:indexWorker.buildAndDispatchLookupTasks":                     part2c,
@@ -85,7 +86,7 @@ func pointgetExempt() map[string]string {
 		"pkg/executor/distsql.go:rebuildIndexRanges":                                          part2b,
 		"pkg/executor/distsql.go:selectResultList.Close":                                      part2c,
 		"pkg/executor/distsql.go:selectResultWithMeta.Close":                                  part2c,
-		"pkg/executor/distsql.go:tableWorker.compareData":                                     part2c,
+		"pkg/executor/distsql.go:tableWorker.compareData":                                     part2cAdminCheck,
 		"pkg/executor/mem_reader.go:buildMemIndexLookUpReader":                                rest,
 		"pkg/executor/mem_reader.go:buildMemIndexMergeReader":                                 rest,
 		"pkg/executor/mem_reader.go:buildMemIndexReader":                                      rest,
