@@ -79,7 +79,7 @@ func init() {
 		Name:     "selectbuild",
 		Seed:     selectbuildSeed,
 		Coverage: selectbuildCoverage,
-		Blocks:   []string{"D09.1", "D09.4", "D10.2", "D09.0", "D09.2"},
+		Blocks:   []string{"D09.1", "D09.4", "D10.2", "D09.0", "D09.2", "D09.3"},
 		Exempt:   selectbuildExempt(),
 		Gzip:     true,
 		Generate: selectbuildGenerate,
@@ -137,6 +137,14 @@ var selectbuildCoverage = map[string]vec.Coverage{
 		"WindowFuncExtractor.Enter", "WindowFuncExtractor.Leave",
 		// D09.2: ORDER BY positions.
 		"expressionRewriter.positionToScalarFunc",
+		// D09.3 part A: join plan building (the fixed join statements, source sys/join).
+		"PlanBuilder.buildJoin", "PlanBuilder.buildUsingClause", "PlanBuilder.buildNaturalJoin",
+		"PlanBuilder.coalesceCommonColumns", "findJoinFullSchema", "containsLateralTableSource",
+		"findColFromNaturalUsingJoin", "PlanBuilder.buildJoinFuncDepend",
+		"LogicalJoin.Init", "LogicalJoin.MergeSchema", "LogicalJoin.SetPreferredJoinTypeAndOrder",
+		"LogicalJoin.AttachOnConds", "LogicalJoin.AppendJoinConds", "LogicalJoin.extractOnCondition",
+		"LogicalJoin.ExtractOnCondition", "LogicalJoin.pushDownConstExpr",
+		"BuildLogicalJoinSchema", "JoinType.IsOuterJoin",
 	}},
 	"aggop": {Min: 20, GoFuncs: []string{
 		// D09.4 part A: LogicalAggregation operator methods.
@@ -154,6 +162,13 @@ var selectbuildCoverage = map[string]vec.Coverage{
 		"LogicalAggregation.getGroupNDVs",
 		// D10.2: co-ported LogicalAggregation.PreparePossibleProperties.
 		"LogicalAggregation.PreparePossibleProperties",
+	}},
+	"joinop": {Min: 300, GoFuncs: []string{
+		// D09.3 part A: LogicalJoin operator methods.
+		"JoinType.String", "JoinType.IsSemiJoin", "LogicalJoin.GetJoinKeys", "LogicalJoin.GetNAJoinKeys",
+		"LogicalJoin.IsNAAJ", "LogicalJoin.PreferAny", "LogicalJoin.GetPotentialPartitionKeys",
+		"LogicalJoin.BuildKeyInfo", "LogicalJoin.SetPreferredJoinType", "containDifferentJoinTypes",
+		"setPreferredJoinTypeFromOneSide", "LogicalJoin.ReplaceExprColumns",
 	}},
 	"winop": {Min: 15, GoFuncs: []string{
 		// D09.4 part B: LogicalWindow / WindowFrame / FrameBound operator methods.
@@ -298,6 +313,26 @@ func sbDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 		o["gby"] = lrExprs(x.GroupByItems, f)
 		o["prefer_agg_type"] = x.PreferAggType
 		o["prefer_agg_to_cop"] = x.PreferAggToCop
+	case *logicalop.LogicalJoin:
+		o["join_type"] = int(x.JoinType)
+		o["reordered"] = x.Reordered
+		o["cartesian"] = x.CartesianJoin
+		o["straight"] = x.StraightJoin
+		o["prefer_join_type"] = x.PreferJoinType
+		o["prefer_join_order"] = x.PreferJoinOrder
+		o["left_prefer_join_type"] = x.LeftPreferJoinType
+		o["right_prefer_join_type"] = x.RightPreferJoinType
+		o["eq"] = lrExprs(x.EqualConditions, f)
+		o["na_eq"] = lrExprs(x.NAEQConditions, f)
+		o["left"] = lrExprs(x.LeftConditions, f)
+		o["right"] = lrExprs(x.RightConditions, f)
+		o["other"] = lrExprs(x.OtherConditions, f)
+		var fullSchema any
+		if x.FullSchema != nil {
+			fullSchema = lrExprs(x.FullSchema.Columns, f)
+		}
+		o["full_schema"] = fullSchema
+		o["full_names"] = sbNames(x.FullNames)
 	case *logicalop.LogicalWindow:
 		wfs := []any{}
 		for _, w := range x.WindowFuncDescs {
@@ -349,7 +384,8 @@ func sbDump(sctx *mock.Context, p base.LogicalPlan) map[string]any {
 func sbSupported(p base.LogicalPlan) string {
 	switch p.(type) {
 	case *logicalop.DataSource, *logicalop.LogicalSelection, *logicalop.LogicalProjection, *logicalop.LogicalLimit,
-		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalAggregation, *logicalop.LogicalWindow:
+		*logicalop.LogicalSort, *logicalop.LogicalTableDual, *logicalop.LogicalAggregation, *logicalop.LogicalWindow,
+		*logicalop.LogicalJoin:
 	default:
 		return p.TP()
 	}
@@ -447,6 +483,8 @@ func selectbuildExec(op string, p []json.RawMessage) (out any, err error) {
 		return sbExecAggOp(is, arg[string](p, 1), arg[sbAggSpec](p, 2))
 	case "winop":
 		return sbExecWinOp(is, arg[string](p, 1), arg[sbWinSpec](p, 2))
+	case "joinop":
+		return sbExecJoinOp(is, arg[string](p, 1), arg[sbJoinSpec](p, 2))
 	}
 	return nil, fmt.Errorf("selectbuild: unknown op %s", op)
 }
@@ -1307,6 +1345,13 @@ func selectbuildGenerate(g *vec.Gen, rng *rand.Rand) {
 	}
 	for _, c := range sbWinOpCases {
 		g.Add("sys/winop", "winop", sbDDLs, c.sql, c.spec)
+	}
+	for _, sql := range sbJoinFixed {
+		sbAdd(g, "sys/join", sql, sbOpts{Mode: mysql.ModeOnlyFullGroupBy})
+		sbAdd(g, "sys/join", sql, sbOpts{KeepOrder: true})
+	}
+	for _, c := range sbJoinOpCases() {
+		g.Add("sys/joinop", "joinop", sbDDLs, c.sql, c.spec)
 	}
 	for n := 0; n < 1500; n++ {
 		sbAdd(g, "rand/query", sbRandQuery(rng), sbModes(rng))

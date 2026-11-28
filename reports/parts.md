@@ -43,6 +43,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D09.13 | VS1-24 | VS1-24 | in-progress | 60 / 211 | 1364 | tidb-rs branch vs1/optimizer-driver: converge 56/60 + 4 stubs |
 | D09.14 | VS1-23 | VS1-23 | in-progress | 91 / 111 | 1352 | dulao5/tidb-rs#259: converge 59/91 |
 | D09.2 | VS1-22 | VS1-22 | planned | 53 / 109 | 1789 | tidb-rs specs/VS1-vertical-slice (#205) |
+| D09.3 | D09.3-A | D09.3-A | in-progress | 38 / 73 | 1294 | tidb-rs branch claude/issue-522 (#522, D09.3 join plan building part A): converge 33/38 + 5 temporary stubs (ExplainInfo D10.9, ExtractFD x4 D09.14); govec selectbuild 3442 records (0 diffs, 435 joinop); also ports D10.10 util/null_misc.go (14), D13.3 ExtractTableAlias / PlanBuilder.TableHints, D09.13 GetNullRejectCheckExprCtx, D06.3 TableIsView, the join branches of D09.1 / D09.2 / D09.4 / D09.13 / D09.14 functions, and LogicalJoin ExtractColGroups (D10.6) / PreparePossibleProperties (D10.2) / ExtractCorrelatedCols (D09.6) |
 | D09.4 | D09.4-A | D09.4-A | in-progress | 47 / 116 | 1281 | tidb-rs branch nora/issue-427 (#427, D09.4 aggregation plan building part A): converge 41/47 + 2 temporary stubs (ExplainInfo D10.9, ExtractFD D09.14) + 4 exceptions (EXC.B Hash64/Equals/CopyAggHints/IsCompleteModeAgg); govec selectbuild 2449 records (0 diffs); also ports D08.12 P1-2 (2), D02.1 ExpressionDeepEqual, D09.0 AggregateFuncExtractor (2), D09.1 (4), D09.13 AppendFunctionPruneTraceStep, D09.15 (4), and LogicalAggregation rule methods (D09.6/D09.7/D09.8/D10.2/D10.6) |
 | D09.4 | D09.4-B | D09.4-B | in-progress | 38 / 116 | 911 | tidb-rs branch nora/issue-433 (#433, D09.4 window plan building part B): converge 35/38 + 3 exceptions (EXC.B EqualPartitionBy/EqualOrderBy/EqualFrame); govec selectbuild 2815 records (0 diffs), optdriver 2690 records (0 diffs), findbest 2428 records (0 diffs); also ports D08.12 ParamMarkerInPrepareChecker (2), D09.0 WindowFuncExtractor (2), D09.1 (3), and LogicalWindow rule methods (D09.6/D09.7/D09.8/D10.2/D10.6) + ExhaustPhysicalPlans stub (D10.3) |
 | D09.4 | VS1-21 | VS1-21 | in-progress | 6 / 116 | 313 | dulao5/tidb-rs#284: converge 6/6 |
@@ -95,7 +96,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 
 ## Boundary stubs by block
 
-360 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
+370 stubs in tidb-rs (`scan` keeps data/stubs.tsv in step with the code).
 
 | block | temporary | permanent | delegated |
 |---|--:|--:|--:|
@@ -120,29 +121,31 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D08.9 | 4 | 0 | 0 |
 | D09.0 | 1 | 0 | 0 |
 | D09.1 | 1 | 0 | 0 |
-| D09.10 | 1 | 0 | 0 |
-| D09.11 | 1 | 0 | 0 |
+| D09.10 | 2 | 0 | 0 |
+| D09.11 | 2 | 0 | 0 |
 | D09.12 | 12 | 0 | 0 |
 | D09.13 | 7 | 0 | 0 |
-| D09.14 | 11 | 0 | 0 |
+| D09.14 | 15 | 0 | 0 |
 | D09.15 | 8 | 0 | 0 |
 | D09.16 | 1 | 0 | 0 |
 | D09.17 | 2 | 0 | 0 |
 | D09.2 | 9 | 0 | 0 |
-| D09.3 | 4 | 0 | 0 |
+| D09.3 | 1 | 0 | 0 |
 | D09.4 | 4 | 0 | 0 |
 | D09.5 | 5 | 0 | 0 |
 | D09.6 | 7 | 0 | 0 |
+| D09.7 | 1 | 0 | 0 |
+| D09.8 | 4 | 0 | 0 |
 | D09.9 | 4 | 0 | 0 |
 | D10.1 | 17 | 0 | 0 |
 | D10.11 | 1 | 0 | 0 |
 | D10.2 | 5 | 0 | 0 |
-| D10.3 | 3 | 0 | 0 |
+| D10.3 | 4 | 0 | 0 |
 | D10.5 | 1 | 0 | 0 |
-| D10.6 | 8 | 0 | 0 |
+| D10.6 | 9 | 0 | 0 |
 | D10.7 | 8 | 0 | 0 |
 | D10.8 | 3 | 0 | 0 |
-| D10.9 | 7 | 0 | 0 |
+| D10.9 | 8 | 0 | 0 |
 | D11.1 | 13 | 0 | 0 |
 | D11.2 | 8 | 0 | 0 |
 | D12.0 | 3 | 0 | 0 |
@@ -151,7 +154,7 @@ A part converges on its own functions (tidb-rs `scripts/converge.py --part`); th
 | D12.2 | 4 | 0 | 0 |
 | D12.5 | 4 | 0 | 0 |
 | D13.1 | 7 | 0 | 0 |
-| D13.3 | 4 | 0 | 0 |
+| D13.3 | 3 | 0 | 0 |
 | D14.1 | 4 | 0 | 0 |
 | D14.2 | 8 | 0 | 0 |
 | D15.2 | 1 | 0 | 0 |

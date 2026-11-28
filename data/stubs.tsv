@@ -142,11 +142,10 @@ crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.1	temporar
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.12	temporary	buildDataSource: partitioned tables (partition pruning flags, global stats, the partitioned table; the table layer of D06.4 part 1 only marks them)
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D09.14	temporary	buildDataSource: LogicalUnionScan for a table the transaction wrote, a local temporary table or a cached table
 crates/planner/src/core/logical_plan_builder.rs	build_data_source	D10.11	temporary	buildDataSource: memory tables (buildMemTable: information_schema, performance_schema, metrics_schema)
-crates/planner/src/core/logical_plan_builder.rs	build_join	D02.2	temporary	buildJoin: a join without a left side from the Rust parser
-crates/planner/src/core/logical_plan_builder.rs	build_join	D09.3	temporary	buildJoin: joins of two table sources (the join builder, LogicalJoin)
+crates/planner/src/core/logical_plan_builder.rs	build_join	D02.2	temporary	buildJoin: a join without a left side from the Rust parser; FULL OUTER JOIN, which the Rust parser builds and v8.5.8 rejects as a syntax error
+crates/planner/src/core/logical_plan_builder.rs	build_join	D09.3	temporary	buildJoin: a LATERAL derived table (the outer schema stack and buildLateralJoin, the apply part C of the join builder); the parser does not build LATERAL yet
 crates/planner/src/core/logical_plan_builder.rs	build_projection	D09.14	temporary	buildProjection: the new ONLY_FULL_GROUP_BY check (LogicalProjection.ExtractFD, pkg/planner/funcdep)
 crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.14	temporary	buildProjectionField: MapHashCode2UniqueID4ExtendedCol of the new ONLY_FULL_GROUP_BY check (functional dependencies)
-crates/planner/src/core/logical_plan_builder.rs	build_projection_field	D09.3	temporary	buildProjectionField: findColFromNaturalUsingJoin, the redundant columns of NATURAL / USING joins
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D02.2	temporary	buildResultSetNode: a FROM clause the Rust parser builds as a placeholder
 crates/planner/src/core/logical_plan_builder.rs	build_result_set_node	D09.5	temporary	buildResultSetNode: set operations (buildSetOpr)
 crates/planner/src/core/logical_plan_builder.rs	build_select_inner	D09.5	temporary	buildSelect: WITH (buildWith, common table expressions)
@@ -161,13 +160,13 @@ crates/planner/src/core/logical_plan_builder.rs	resolve_having_and_order_by	D09.
 crates/planner/src/core/optimizer.rs	AGGREGATION_ELIMINATOR	D09.9	temporary	optRuleList: AggregationEliminator (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	AGGREGATION_PUSH_DOWN_SOLVER	D09.9	temporary	optRuleList: AggregationPushDownSolver (aggregation rules, D09.9)
 crates/planner/src/core/optimizer.rs	BUILD_KEY_SOLVER	D09.13	temporary	optRuleList: BuildKeySolver (the key-info rule); only aggregations, DISTINCT and subqueries set its flag; needs DataSource / LogicalSelection BuildKeyInfo
-crates/planner/src/core/optimizer.rs	CONVERT_OUTER_TO_INNER_JOIN	D09.3	temporary	optRuleList: ConvertOuterToInnerJoin (joins, D09.3)
+crates/planner/src/core/optimizer.rs	CONVERT_OUTER_TO_INNER_JOIN	D09.8	temporary	optRuleList: ConvertOuterToInnerJoin (the outer-to-inner join rule of predicate push down, D09.8; no flag enables it in v8.5.8)
 crates/planner/src/core/optimizer.rs	CORRELATE_SOLVER	D09.6	temporary	optRuleList: CorrelateSolver (subqueries, D09.6)
 crates/planner/src/core/optimizer.rs	DECORRELATE_SOLVER	D09.6	temporary	optRuleList: DecorrelateSolver (subqueries, D09.6)
 crates/planner/src/core/optimizer.rs	GC_SUBSTITUTER	D09.13	temporary	optRuleList: GcSubstituter (generated column substitution); only virtual generated columns set its flag, the builder stops at them
 crates/planner/src/core/optimizer.rs	JOIN_RE_ORDER_SOLVER	D09.10	temporary	optRuleList: JoinReOrderSolver (join reorder, D09.10)
 crates/planner/src/core/optimizer.rs	MAX_MIN_ELIMINATOR	D09.9	temporary	optRuleList: MaxMinEliminator (aggregation rules, D09.9)
-crates/planner/src/core/optimizer.rs	OUTER_JOIN_ELIMINATOR	D09.3	temporary	optRuleList: OuterJoinEliminator (joins, D09.3)
+crates/planner/src/core/optimizer.rs	OUTER_JOIN_ELIMINATOR	D09.10	temporary	optRuleList: OuterJoinEliminator (outer join elimination, with join reorder, D09.10)
 crates/planner/src/core/optimizer.rs	PUSH_DOWN_SEQUENCE_SOLVER	D09.14	temporary	optRuleList: PushDownSequenceSolver (the sequence operator)
 crates/planner/src/core/optimizer.rs	RESOLVE_EXPAND	D09.4	temporary	optRuleList: ResolveExpand (the Expand operator of GROUP BY ... WITH ROLLUP, D09.4)
 crates/planner/src/core/optimizer.rs	SEMI_JOIN_REWRITER	D09.6	temporary	optRuleList: SemiJoinRewriter (subqueries, D09.6)
@@ -268,6 +267,18 @@ crates/planner/src/logicalop/logical_aggregation.rs	extract_fd	D09.14	temporary	
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.13	temporary	D09.13: DataSource.BuildKeyInfo needs rule/util CheckIndexCanBeKey and GetLatestIndexInfo (key-info rule, VS1-24)
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D09.14	temporary	D09.14: DataSource.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_datasource.rs	data_source_boundary	D10.2	temporary	D10.2: DataSource.IsSingleScan / CheckPartialIndexes / CheckPartialIndexByFilters belong to access path handling
+crates/planner/src/logicalop/logical_join.rs	constant_propagation	D09.8	temporary	LogicalJoin.ConstantPropagation: constant propagation through a join (join builder part B, D09.8)
+crates/planner/src/logicalop/logical_join.rs	convert_outer_to_inner_join	D09.8	temporary	LogicalJoin.ConvertOuterToInnerJoin: outer join simplification (join builder part B, D09.8)
+crates/planner/src/logicalop/logical_join.rs	derive_stats	D10.6	temporary	LogicalJoin.DeriveStats: join cardinality estimation (cardinality/join.go, D10.6)
+crates/planner/src/logicalop/logical_join.rs	exhaust_physical_plans	D10.3	temporary	LogicalJoin.ExhaustPhysicalPlans: physical join enumeration (D10.3) and the physical join operators (D10.1)
+crates/planner/src/logicalop/logical_join.rs	explain_info	D10.9	temporary	LogicalJoin.ExplainInfo: SortedExplainExpressionList (D10.9)
+crates/planner/src/logicalop/logical_join.rs	extract_fd	D09.14	temporary	LogicalJoin.ExtractFD: functional dependency sets (pkg/planner/funcdep, D09.14)
+crates/planner/src/logicalop/logical_join.rs	extract_fd_for_inner_join	D09.14	temporary	LogicalJoin.ExtractFDForInnerJoin: functional dependency sets (pkg/planner/funcdep, D09.14)
+crates/planner/src/logicalop/logical_join.rs	extract_fd_for_outer_join	D09.14	temporary	LogicalJoin.ExtractFDForOuterJoin: functional dependency sets (pkg/planner/funcdep, D09.14)
+crates/planner/src/logicalop/logical_join.rs	extract_fd_for_semi_join	D09.14	temporary	LogicalJoin.ExtractFDForSemiJoin: functional dependency sets (pkg/planner/funcdep, D09.14)
+crates/planner/src/logicalop/logical_join.rs	predicate_push_down	D09.8	temporary	LogicalJoin.PredicatePushDown: predicate push down of a join (join builder part B, D09.8)
+crates/planner/src/logicalop/logical_join.rs	prune_columns	D09.7	temporary	LogicalJoin.PruneColumns: column pruning of a join (join builder part B, D09.7)
+crates/planner/src/logicalop/logical_join.rs	push_down_top_n	D09.11	temporary	LogicalJoin.PushDownTopN: TopN push down through a join (join builder part B, D09.11)
 crates/planner/src/logicalop/logical_limit.rs	limit_hash_code_boundary	D14.2	temporary	D14.2: LogicalLimit.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D09.14	temporary	D09.14: LogicalProjection.ExtractFD needs pkg/planner/funcdep
 crates/planner/src/logicalop/logical_projection.rs	projection_boundary	D14.2	temporary	D14.2: LogicalProjection.HashCode needs plancodec.TypeStringToPhysicalID (util/plancodec)
@@ -287,7 +298,6 @@ crates/planner/src/optimize.rs	optimize_stmt_on_success	D15.2	temporary	Optimize
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
-crates/planner/src/util/misc.rs	extract_table_alias	D13.3	temporary	VS1-24: ExtractTableAlias (hint.HintedTable, PlannerSelectBlockAsName)
 crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_global_sys_var_only	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
