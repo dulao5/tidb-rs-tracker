@@ -51,7 +51,7 @@ func cardinalityExempt() map[string]string {
 		"pkg/planner/core/operator/logicalop/logical_cte_table.go:LogicalCTETable.DeriveStats":           "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/core/operator/logicalop/logical_index_scan.go:LogicalIndexScan.DeriveStats":         "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/core/operator/logicalop/logical_join.go:LogicalJoin.DeriveStats":                    "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
-		"pkg/planner/core/operator/logicalop/logical_join.go:LogicalJoin.ExtractColGroups":               "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
+		"pkg/planner/core/operator/logicalop/logical_join.go:LogicalJoin.ExtractColGroups":               "ported with the join plan building (tidb-rs specs/D09.3-join-build spec §3.7); no plan reaches it before LogicalJoin.DeriveStats (D10.6) is ported",
 		"pkg/planner/core/operator/logicalop/logical_max_one_row.go:LogicalMaxOneRow.DeriveStats":        "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/core/operator/logicalop/logical_mem_table.go:LogicalMemTable.DeriveStats":           "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",
 		"pkg/planner/core/operator/logicalop/logical_sequence.go:LogicalSequence.DeriveStats":            "D10.6 outside the VS1-29 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported",

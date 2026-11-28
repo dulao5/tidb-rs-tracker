@@ -174,11 +174,15 @@ func planutilExempt() map[string]string {
 	for _, f := range []string{"WrapCastForAggFuncs", "ExtractCorColumnsBySchema", "ExtractCorColumnsBySchema4LogicalPlan",
 		"ExtractCorColumnsBySchema4PhysicalPlan", "ExtractCorrelatedCols4LogicalPlan",
 		"ExtractCorrelatedCols4PhysicalPlan", "ExplainByItems", "ExplainPartitionBy", "ExtractConstantCols",
-		"ExtractEquivalenceCols", "ExtractNotNullFromConds", "allConstants", "foldNullifiedFunction", "IsNullRejected",
+		"ExtractEquivalenceCols", "ExtractNotNullFromConds"} {
+		ex[f] = "D10.10 outside the VS1-19 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported"
+	}
+	// util/null_misc.go: ported with the join plan building (tidb-rs specs/D09.3-join-build spec §3.7).
+	for _, f := range []string{"allConstants", "foldNullifiedFunction", "IsNullRejected",
 		"nullRejectFoldCtx", "proofFromConstant", "proveNullRejected", "proveNullRejectedIn",
 		"proveNullRejectedScalarFunc", "ResetNotNullFlag", "tryFoldNullifiedCoalesceLike", "tryFoldNullifiedConstant",
 		"tryFoldNullifiedIf", "tryFoldNullifiedScalarFunc", "tryFoldStaticConstant"} {
-		ex[f] = "D10.10 outside the VS1-19 part (tidb-rs specs/VS1-vertical-slice functions.tsv); not yet ported"
+		ex[f] = "ported with the join plan building (tidb-rs specs/D09.3-join-build spec §3.7): the Go test TestIsNullRejectedProofModes is a tidb-rs unit test; the null-reject proof is reached through the derived conditions of LogicalJoin.ExtractOnCondition (domain selectbuild, op joinop, kind extract) and the NOT NULL reset of outer joins (selectbuild build)"
 	}
 	return ex
 }
