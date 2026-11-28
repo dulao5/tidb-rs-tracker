@@ -119,7 +119,6 @@ crates/planner/src/core/expression_rewriter.rs	has_current_datetime_default	D09.
 crates/planner/src/core/expression_rewriter.rs	leave	D02.2	temporary	an expression node the Rust parser does not model yet (parser AST, D02.2)
 crates/planner/src/core/expression_rewriter.rs	leave	D08.9	temporary	user variables @a / @a := x need the getvar / setvar functions (misc built-ins, D08.9)
 crates/planner/src/core/expression_rewriter.rs	leave	D09.15	temporary	DEFAULT(col) reads column default values (write-path plans D09.15)
-crates/planner/src/core/expression_rewriter.rs	leave	D09.2	temporary	D09.2 part 2: system variables @@x (the rewriter does not get the session variables yet)
 crates/planner/src/core/expression_rewriter.rs	leave	D09.4	temporary	GROUPING() needs the Expand operator of ROLLUP (aggregate / window building, D09.4)
 crates/planner/src/core/expression_rewriter.rs	to_column	D09.2	temporary	D09.2 part 2: a column of buildSimpleExpr's source table (ParseSimpleExpr)
 crates/planner/src/core/find_best_task.rs	add_selection_condition_for_global_index	D09.12	temporary	D09.12: PartitionPruning for global indexes on partitioned tables (partitioned tables stop in the plan builder)
@@ -298,7 +297,6 @@ crates/planner/src/optimize.rs	optimize_stmt_on_success	D15.2	temporary	Optimize
 crates/planner/src/optimize.rs	save_logical_plan_build_ctx	D09.13	temporary	VS1-10: save_logical_plan_build_ctx (blocked-by:D09.13)
 crates/planner/src/ranger/ranger.rs	new_function_internal_or_blocked	D08.9	temporary	VS1-25: points2EqOrInCond rebuilds in(...) (the IN function class, D08.9) when merged eq/in conditions leave several points
 crates/planner/src/util/misc.rs	clone_assignments	D09.15	temporary	CloneAssignments: expression.Assignment (write path)
-crates/poc/session/src/router/newstack.rs	get_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_global_sys_var_only	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/poc/session/src/router/newstack.rs	set_tidb_table_value	D06.5	temporary	VS1-17: the domain sysvar cache and mysql.tidb for the new session
 crates/session/src/glue.rs	batch_get	D07.1	temporary	VS1-14: the store driver's kv.Storage Begin / GetOracle in the new session (wire with VS1-20)
